@@ -1,16 +1,17 @@
-[
 {
-  "modid": "examplemod",
-  "name": "Example Mod",
-  "description": "Example placeholder mod.",
-  "version": "${version}",
-  "mcversion": "${mcversion}",
-  "url": "",
-  "updateUrl": "",
-  "authorList": ["CleanroomMC"],
-  "credits": "Authors of this project",
-  "logoFile": "",
-  "screenshots": [],
-  "dependencies": []
+    "modListVersion": 2,
+    "modList": [
+        {
+            "modid": "stackup",
+            "name": "StackUpUp",
+            "version": "${version}",
+            "mcversion": "${mcversion}",
+            "description": "Because 64 just wasn't enough",
+            "authorList": [
+                "asiekierka"
+            ],
+            "url": "http://charset.asie.pl",
+            "updateUrl": "http://asie.pl/files/minecraft/update/stackup.json"
+        }
+    ]
 }
-]

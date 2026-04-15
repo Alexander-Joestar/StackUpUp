@@ -17,7 +17,7 @@ pluginManagement {
 
 plugins {
     // Automatic toolchain provisioning
-    id("org.gradle.toolchains.foojay-resolver-convention") version "0.4.0"
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
 dependencyResolutionManagement { 
@@ -28,6 +28,4 @@ dependencyResolutionManagement {
     }
 }
 
-// Due to an IntelliJ bug, this has to be done
-// rootProject.name = archives_base_name
-rootProject.name = rootProject.projectDir.getName()
+rootProject.name = "StackUpUp"

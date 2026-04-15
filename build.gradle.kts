@@ -1,7 +1,10 @@
+import org.gradle.api.internal.artifacts.dsl.dependencies.DependenciesExtensionModule.module
 import org.jetbrains.gradle.ext.Gradle
 import org.jetbrains.gradle.ext.compiler
 import org.jetbrains.gradle.ext.runConfigurations
 import org.jetbrains.gradle.ext.settings
+import java.util.Locale
+import java.util.Locale.getDefault
 
 buildscript { 
     repositories {
@@ -54,8 +57,6 @@ val coremod_plugin_class_name: String by project
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(8))
-        // Azul covers the most platforms for Java 8 toolchains, crucially including MacOS arm64
-        vendor.set(JvmVendorSpec.AZUL)
     }
     // Generate sources and javadocs jars when building and publishing
     withSourcesJar()
@@ -115,6 +116,18 @@ tasks.injectTags.configure {
     outputClassName.set("${maven_group}.${archives_base_name}.Tags")
 }
 
+tasks.named("compileInjectedTagsKotlin").configure {
+    dependsOn("injectTags")
+}
+
+tasks.named("compileMcLauncherKotlin").configure {
+    dependsOn("createMcLauncherFiles")
+}
+
+tasks.named("compilePatchedMcKotlin").configure {
+    dependsOn("decompressDecompiledSources")
+}
+
 repositories {
     maven {
         name = "CleanroomMC Maven"
@@ -169,7 +182,7 @@ dependencies {
 @Suppress("Deprecation")
 if (use_access_transformer.toBoolean()) {
     for (at in sourceSets.getByName("main").resources.files) {
-        if (at.name.toLowerCase().endsWith("_at.cfg")) {
+        if (at.name.lowercase(getDefault()).endsWith("_at.cfg")) {
             tasks.deobfuscateMergedJarToSrg.get().accessTransformerFiles.from(at)
             tasks.srgifyBinpatchedJar.get().accessTransformerFiles.from(at)
         }
@@ -202,7 +215,7 @@ tasks.withType<Jar> {
             attributeMap["FMLCorePlugin"] = coremod_plugin_class_name
             if (include_mod.toBoolean()) {
                 attributeMap["FMLCorePluginContainsFMLMod"] = true.toString()
-                attributeMap["ForceLoadAsMod"] = (project.gradle.startParameter.taskNames[0] == "build").toString()
+                attributeMap["ForceLoadAsMod"] = project.gradle.startParameter.taskNames.any { it == "build" }.toString()
             }
         }
         if (use_access_transformer.toBoolean()) {

@@ -1,8 +1,10 @@
-## TemplateDevEnv for Kotlin
+## StackUpUp
 
-Template workspace for modding Minecraft 1.12.2 in Kotlin. Licensed under MIT, it is made for public use.
+StackUp migrated onto the modern Kotlin mod template. Licensed under MIT.
 
-This template currently utilizies **Gradle 8.1.1** + **[RetroFuturaGradle](https://github.com/GTNewHorizons/RetroFuturaGradle) 1.3.27** + **Forge 14.23.5.2847**.
+This project currently uses **Gradle 9.3.0** + **[RetroFuturaGradle](https://github.com/GTNewHorizons/RetroFuturaGradle) 2.0.2** + **Forge 14.23.5.2847**.
+
+It requires a Java 25 runtime for Gradle.
 
 With **coremod and mixin support** that is easy to configure.
 

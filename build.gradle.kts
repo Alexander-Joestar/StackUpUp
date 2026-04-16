@@ -176,6 +176,11 @@ dependencies {
             isTransitive = false
         }
     }
+
+    testImplementation(platform("org.junit:junit-bom:5.12.2"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation(kotlin("test"))
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 // Adds Access Transformer files to tasks
@@ -265,4 +270,8 @@ idea {
 
 tasks.named("processIdeaSettings").configure {
     dependsOn("injectTags")
+}
+
+tasks.withType<Test>().configureEach {
+    useJUnitPlatform()
 }

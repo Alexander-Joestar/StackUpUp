@@ -155,9 +155,6 @@ dependencies {
     if (use_assetmover.toBoolean()) {
         implementation("com.cleanroommc:assetmover:2.5")
     }
-    if (use_mixins.toBoolean()) {
-        implementation("zone.rong:mixinbooter:7.1")
-    }
 
     // Example of deobfuscating a dependency
     // implementation rfg.deobf("curse.maven:had-enough-items-557549:4543375")
@@ -165,9 +162,9 @@ dependencies {
     if (use_mixins.toBoolean()) {
         // Change your mixin refmap name here:
         val mixin =
-            modUtils.enableMixins("org.spongepowered:mixin:0.8.3", "mixins.${archives_base_name}.refmap.json") as String
+            modUtils.enableMixins("zone.rong:mixinbooter:10.7", "mixins.${archives_base_name}.refmap.json") as String
         api(mixin) {
-            isTransitive = true
+            isTransitive = false
         }
         annotationProcessor("org.ow2.asm:asm-debug-all:5.2")
         annotationProcessor("com.google.guava:guava:24.1.1-jre")

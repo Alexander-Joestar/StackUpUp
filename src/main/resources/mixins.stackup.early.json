@@ -1,0 +1,12 @@
+{
+  "package": "pl.asie.stackup.mixin.early",
+  "refmap": "mixins.StackUpUp.refmap.json",
+  "target": "@env(DEFAULT)",
+  "minVersion": "0.8",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "ItemMixin"
+  ],
+  "client": [],
+  "server": []
+}

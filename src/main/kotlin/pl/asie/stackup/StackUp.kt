@@ -39,7 +39,7 @@ import java.util.Objects
     modid = "stackup",
     name = "StackUpUp",
     version = StackUp.VERSION,
-    dependencies = "before:refinedstorage;before:mantle;before:ic2;before:appliedenergistics2;before:actuallyadditions",
+    dependencies = "required-after:mixinbooter;before:refinedstorage;before:mantle;before:ic2;before:appliedenergistics2;before:actuallyadditions",
     guiFactory = "pl.asie.stackup.config.ConfigGuiFactory"
 )
 class StackUp {
@@ -175,6 +175,7 @@ class StackUp {
 
     @Mod.EventHandler
     fun preInit(event: FMLPreInitializationEvent) {
+        StackUpConfig.coremodActive = StackUpCore.isCoremodInjected()
         if (!StackUpConfig.coremodActive) {
             throw RuntimeException("Cannot load StackUp - coremod not present!")
         }

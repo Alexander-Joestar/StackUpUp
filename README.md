@@ -38,4 +38,5 @@ With **coremod and mixin support** that is easy to configure.
 
 1. 目标版本是 **1.12.2**，仅支持 **矿物辞典**，不支持高版本标签。
 2. 旧脚本格式处于过渡兼容阶段，建议逐步迁移到 DSL v2。
-3. `DSL v2` 的迁移说明与示例见 [docs/DSL-v2-迁移说明.md](docs/DSL-v2-迁移说明.md) 与 [docs/DSL-v2-规则示例.md](docs/DSL-v2-规则示例.md)。
+3. 开发环境下 `MixinBooter` 会自动接入；普通整合包环境需要确保存在 `mixinbooter` 运行时依赖。
+4. `DSL v2` 的迁移说明与示例见 [docs/DSL-v2-迁移说明.md](docs/DSL-v2-迁移说明.md) 与 [docs/DSL-v2-规则示例.md](docs/DSL-v2-规则示例.md)。

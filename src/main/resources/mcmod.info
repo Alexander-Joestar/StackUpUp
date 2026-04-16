@@ -7,6 +7,9 @@
             "version": "${version}",
             "mcversion": "${mcversion}",
             "description": "Because 64 just wasn't enough",
+            "requiredMods": [
+                "mixinbooter"
+            ],
             "authorList": [
                 "asiekierka"
             ],

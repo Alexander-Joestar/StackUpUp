@@ -10,6 +10,7 @@
     "NetHandlerPlayServerMixin",
     "PacketBufferMixin",
     "PacketUtilMixin",
+    "RenderEntityItemMixin",
     "RenderItemMixin",
     "ServerRecipeBookHelperMixin"
   ],

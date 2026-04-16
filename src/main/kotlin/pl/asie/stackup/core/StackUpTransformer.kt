@@ -129,21 +129,6 @@ class StackUpTransformer : IClassTransformer {
                 changed = true
             }
 
-            transformedName == "net.minecraft.client.renderer.entity.RenderEntityItem" -> {
-                consumer = consumer.andThen(
-                    Consumer { node ->
-                        spliceClasses(
-                            node,
-                            "pl.asie.stackup.core.RenderEntityItemSplice",
-                            "getModelCount",
-                            "func_177078_a"
-                        )
-                        RenderEntityItemPatch.patchDistanceConstant(node)
-                    }
-                )
-                changed = true
-            }
-
             transformedName == "net.minecraft.item.ItemStack" -> {
                 consumer = consumer.andThen(Consumer { node -> ItemStackPatch.patchCountGetSet(node) })
                 changed = true

@@ -31,6 +31,7 @@ class PacketBufferWriterSplice(wrapped: ByteBuf) : PacketBuffer(wrapped) {
             this.writeShort(-1)
         } else {
             this.writeShort(Item.getIdFromItem(stack.item))
+            // 物品 ID 之外仍然保留 count、metadata 和 NBT；只把 count 的编码从 1 字节扩展到“魔数 + int”。
             if (stack.count in 0..64) {
                 this.writeByte(stack.count)
             } else {

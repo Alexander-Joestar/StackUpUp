@@ -9,6 +9,7 @@ class TokenResourceLocation<T>(function: Function<T, List<String>>) : TokenStrin
             val str1 = str.split(":")
             val str2 = getString().split(":")
             if (str1.size == 2 && str2.size == 2) {
+                // 这里只按注册名 modid:path 匹配，不区分 metadata。
                 if (str2[0] != "*" && !compare(str1[0], str2[0])) {
                     return !cResult
                 }

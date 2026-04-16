@@ -23,6 +23,7 @@ private fun toSlashName(name: String): String {
     return builder.toString()
 }
 
+// 类层级探测也处在 coremod 启动期，避免使用字符串扩展，防止再次拉起 kotlin.text。
 object StackUpClassTracker {
     private val superclassMap: MutableMap<String, String?> = HashMap()
     private val interfaceMap: Multimap<String, String> = HashMultimap.create()

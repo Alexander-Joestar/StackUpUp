@@ -47,6 +47,7 @@ private fun hasPrefix(text: String, prefix: String): Boolean {
     return true
 }
 
+// 这里是 coremod 启动期的热路径，尽量只用基础字符串操作，避免触发 kotlin.text 的额外类加载。
 class StackUpTransformer : IClassTransformer {
     fun hasClass(s: String): Boolean {
         return try {

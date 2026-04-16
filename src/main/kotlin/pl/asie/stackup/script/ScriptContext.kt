@@ -163,6 +163,7 @@ class ScriptContext(
 
             val target = stackSizeMap.get(i)
             StackUp.backupStackSize(i)
+            // 这里修改的是 Item 级别的堆叠上限，同一个 Item 的所有 metadata 变体会共享这个值。
             i.setMaxStackSize(target)
             val result = i.itemStackLimit
             if (target != result) {

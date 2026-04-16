@@ -273,12 +273,7 @@ class StackUp {
                 val rulesFile = File(stackupScriptLocation, StackUpConfig.rulesFileName)
                 val result = DslRuleSource.fromFile(rulesFile).load()
                 StackUpServices.replaceSnapshot(result.snapshot)
-                StackUpServices.replaceOreDictIndex(
-                    OreDictIndex { _, _ ->
-                        // 这里先占位为空，后续在运行时接线阶段替换为真实的矿物辞典索引。
-                        emptySet()
-                    }
-                )
+                StackUpServices.replaceOreDictIndex(OreDictIndex.createDefault())
                 requireNotNull(logger).info("已加载 {} 条 DSL 规则。", result.snapshot.rules.size)
                 for (error in result.errors) {
                     requireNotNull(logger).error(error)

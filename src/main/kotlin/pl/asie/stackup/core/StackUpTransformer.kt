@@ -163,38 +163,8 @@ class StackUpTransformer : IClassTransformer {
                 changed = true
             }
 
-            transformedName == "net.minecraft.network.PacketBuffer" -> {
-                consumer = consumer.andThen(
-                    Consumer { node ->
-                        spliceClasses(
-                            node,
-                            "pl.asie.stackup.core.PacketBufferWriterSplice",
-                            "readItemStack",
-                            "func_150791_c",
-                            "writeItemStack",
-                            "func_150788_a"
-                        )
-                    }
-                )
-                changed = true
-            }
-
             transformedName == "net.minecraft.client.renderer.RenderItem" -> {
                 consumer = consumer.andThen(Consumer { node -> RenderItemPatch.patchDrawItemCount(node) })
-                changed = true
-            }
-
-            transformedName == "net.minecraft.network.NetHandlerPlayServer" -> {
-                consumer = consumer.andThen(Consumer { node -> NetHandlerPlayServerPatch.patchCreativeInventory(node) })
-                changed = true
-            }
-
-            transformedName == "net.minecraftforge.common.util.PacketUtil" -> {
-                consumer = consumer.andThen(
-                    Consumer { node ->
-                        spliceClasses(node, "pl.asie.stackup.core.PacketUtilWriterSplice", "writeItemStackFromClientToServer")
-                    }
-                )
                 changed = true
             }
 

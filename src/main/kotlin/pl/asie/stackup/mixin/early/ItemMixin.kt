@@ -12,7 +12,11 @@ import pl.asie.stackup.limit.StackUpServices
 
 @Mixin(Item::class)
 abstract class ItemMixin {
-    @Inject(method = ["getItemStackLimit"], at = [At("RETURN")], cancellable = true)
+    @Inject(
+        method = ["getItemStackLimit(Lnet/minecraft/item/ItemStack;)I", "func_77639_j(Lnet/minecraft/item/ItemStack;)I"],
+        at = [At("RETURN")],
+        cancellable = true
+    )
     private fun applyRules(stack: ItemStack, cir: CallbackInfoReturnable<Int>) {
         val registryName = stack.item.registryName ?: return
         val type = if (stack.item is ItemBlock) "block" else "item"

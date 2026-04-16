@@ -24,6 +24,9 @@ import net.minecraftforge.registries.IForgeRegistry
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import pl.asie.stackup.config.ConfigUtils
+import pl.asie.stackup.limit.OreDictIndex
+import pl.asie.stackup.limit.StackUpServices
+import pl.asie.stackup.rules.io.DslRuleSource
 import pl.asie.stackup.script.ScriptHandler
 import pl.asie.stackup.script.TokenBoolean
 import pl.asie.stackup.script.TokenClass
@@ -49,8 +52,22 @@ class StackUp {
                 "general",
                 "enableScripting",
                 true,
-                "Enable StackUp's own rules/scripting format.",
+                "是否启用旧版 StackUp 脚本格式。该格式处于过渡兼容阶段，建议逐步迁移到 DSL v2。",
                 true
+            )
+            StackUpConfig.enableDslRules = ConfigUtils.getBoolean(
+                config,
+                "general",
+                "enableDslRules",
+                true,
+                "是否启用 DSL v2 规则文件。推荐保持开启。",
+                true
+            )
+            StackUpConfig.rulesFileName = config.getString(
+                "rulesFileName",
+                "general",
+                "rules.su",
+                "DSL v2 规则文件名，位于 config/stackup/ 目录下。"
             )
             maxStackSize = ConfigUtils.getInt(
                 config,
@@ -168,7 +185,7 @@ class StackUp {
         handleConfigChanged(false)
 
         stackupScriptLocation = File(event.modConfigurationDirectory, "stackup")
-        if (StackUpConfig.scriptingActive && !stackupScriptLocation.exists()) {
+        if ((StackUpConfig.scriptingActive || StackUpConfig.enableDslRules) && !stackupScriptLocation.exists()) {
             stackupScriptLocation.mkdir()
         }
 
@@ -252,6 +269,24 @@ class StackUp {
 
         @JvmStatic
         fun reload(registry: IForgeRegistry<Item>) {
+            if (StackUpConfig.enableDslRules) {
+                val rulesFile = File(stackupScriptLocation, StackUpConfig.rulesFileName)
+                val result = DslRuleSource.fromFile(rulesFile).load()
+                StackUpServices.replaceSnapshot(result.snapshot)
+                StackUpServices.replaceOreDictIndex(
+                    OreDictIndex { _, _ ->
+                        // 这里先占位为空，后续在运行时接线阶段替换为真实的矿物辞典索引。
+                        emptySet()
+                    }
+                )
+                requireNotNull(logger).info("已加载 {} 条 DSL 规则。", result.snapshot.rules.size)
+                for (error in result.errors) {
+                    requireNotNull(logger).error(error)
+                }
+            } else {
+                StackUpServices.replaceSnapshot(pl.asie.stackup.rules.compile.RuleSnapshot(0L, emptyList()))
+            }
+
             for (i in oldStackValues.keySet()) {
                 i.setMaxStackSize(oldStackValues.get(i))
             }

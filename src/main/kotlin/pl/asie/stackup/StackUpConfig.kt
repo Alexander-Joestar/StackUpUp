@@ -23,6 +23,12 @@ object StackUpConfig {
     var scriptingActive: Boolean = false
 
     @JvmField
+    var enableDslRules: Boolean = true
+
+    @JvmField
+    var rulesFileName: String = "rules.su"
+
+    @JvmField
     var scaleTextLinearly: Boolean = false
 
     @JvmField

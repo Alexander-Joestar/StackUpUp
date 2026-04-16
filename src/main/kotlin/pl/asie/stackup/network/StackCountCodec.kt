@@ -1,0 +1,22 @@
+package pl.asie.stackup.network
+
+import net.minecraft.network.PacketBuffer
+import pl.asie.stackup.Constants
+
+object StackCountCodec {
+    @JvmStatic
+    fun writeCount(buffer: PacketBuffer, count: Int) {
+        if (count in 0..64) {
+            buffer.writeByte(count)
+        } else {
+            buffer.writeByte(Constants.COUNT_MAGIC)
+            buffer.writeInt(count)
+        }
+    }
+
+    @JvmStatic
+    fun readCount(buffer: PacketBuffer): Int {
+        val marker = buffer.readByte().toInt()
+        return if (marker == Constants.COUNT_MAGIC) buffer.readInt() else marker
+    }
+}

@@ -144,30 +144,6 @@ class StackUpTransformer : IClassTransformer {
                 changed = true
             }
 
-            transformedName == "net.minecraft.inventory.InventoryHelper" -> {
-                consumer = consumer.andThen(
-                    Consumer { node ->
-                        spliceClasses(
-                            node,
-                            "pl.asie.stackup.core.InventoryHelperPerformanceSplice",
-                            "spawnItemStack",
-                            "func_180173_a"
-                        )
-                    }
-                )
-                changed = true
-            }
-
-            transformedName == "net.minecraft.util.ServerRecipeBookHelper" -> {
-                consumer = consumer.andThen(MaxStackConstantPatch.patchMaxLimit("func_194324_a"))
-                changed = true
-            }
-
-            transformedName == "net.minecraft.client.renderer.RenderItem" -> {
-                consumer = consumer.andThen(Consumer { node -> RenderItemPatch.patchDrawItemCount(node) })
-                changed = true
-            }
-
             transformedName == "net.minecraft.item.ItemStack" -> {
                 consumer = consumer.andThen(Consumer { node -> ItemStackPatch.patchCountGetSet(node) })
                 changed = true

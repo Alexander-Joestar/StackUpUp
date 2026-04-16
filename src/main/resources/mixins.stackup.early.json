@@ -5,10 +5,13 @@
   "minVersion": "0.8",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
+    "InventoryHelperMixin",
     "ItemMixin",
     "NetHandlerPlayServerMixin",
     "PacketBufferMixin",
-    "PacketUtilMixin"
+    "PacketUtilMixin",
+    "RenderItemMixin",
+    "ServerRecipeBookHelperMixin"
   ],
   "client": [],
   "server": []

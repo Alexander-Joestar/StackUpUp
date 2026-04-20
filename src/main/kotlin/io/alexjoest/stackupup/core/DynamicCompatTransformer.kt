@@ -1,6 +1,10 @@
 package io.alexjoest.stackupup.core
 
 import net.minecraft.launchwrapper.IClassTransformer
+import org.objectweb.asm.ClassReader
+import org.objectweb.asm.ClassWriter
+import org.objectweb.asm.tree.ClassNode
+import java.util.function.Consumer
 
 /**
  * 当前保留的最小动态兼容层。
@@ -21,12 +25,32 @@ class DynamicCompatTransformer : IClassTransformer {
             return basicClass
         }
 
-        val transformedName = toDotClassName(internalName)
-        val plan = DynamicCompatPlanBuilder.build(transformedName, basicClass)
-        return if (plan.hasPatches) {
-            BytecodePatchApplier.apply(basicClass, plan.patches)
+        val transformedName = toDotName(internalName)
+        val patches = DynamicCompatPlanBuilder.build(transformedName, basicClass)
+        return if (patches.isNotEmpty()) {
+            applyPatches(basicClass, patches)
         } else {
             basicClass
         }
+    }
+
+    private fun applyPatches(data: ByteArray, patches: List<Consumer<ClassNode>>): ByteArray {
+        val reader = ClassReader(data)
+        val originalNode = ClassNode()
+        reader.accept(originalNode, 0)
+        for (patch in patches) {
+            patch.accept(originalNode)
+        }
+        val writer = ClassWriter(0)
+        originalNode.accept(writer)
+        return writer.toByteArray()
+    }
+
+    private fun toDotName(name: String): String {
+        val builder = StringBuilder(name.length)
+        for (char in name) {
+            builder.append(if (char == '/') '.' else char)
+        }
+        return builder.toString()
     }
 }

@@ -4,10 +4,10 @@ import org.objectweb.asm.tree.ClassNode
 import java.util.function.Consumer
 
 internal object DynamicCompatPlanBuilder {
-    fun build(transformedName: String, basicClass: ByteArray? = null): DynamicCompatPlan {
+    fun build(transformedName: String, basicClass: ByteArray? = null): List<Consumer<ClassNode>> {
         val patches = ArrayList<Consumer<ClassNode>>(4)
         collectDynamicPatches(transformedName, basicClass, patches)
-        return DynamicCompatPlan(patches)
+        return patches
     }
 
     private fun collectDynamicPatches(

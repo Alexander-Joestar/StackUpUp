@@ -11,8 +11,16 @@ import java.util.concurrent.ConcurrentHashMap
 
 private fun toSlashName(name: String): String {
     val builder = StringBuilder(name.length)
-    for (c in name) {
-        builder.append(if (c == '.') '/' else c)
+    for (char in name) {
+        builder.append(if (char == '.') '/' else char)
+    }
+    return builder.toString()
+}
+
+private fun toDotName(name: String): String {
+    val builder = StringBuilder(name.length)
+    for (char in name) {
+        builder.append(if (char == '/') '.' else char)
     }
     return builder.toString()
 }
@@ -70,11 +78,11 @@ internal object ClassHierarchyRepository {
 
         fun toMetadata(): ClassHierarchyMetadata {
             val superClass = rawSuperClass?.let {
-                toDotClassName(FMLDeobfuscatingRemapper.INSTANCE.map(it))
+                toDotName(FMLDeobfuscatingRemapper.INSTANCE.map(it))
             }
             val interfaces = LinkedHashSet<String>(rawInterfaces.size)
             for (rawInterface in rawInterfaces) {
-                interfaces += toDotClassName(FMLDeobfuscatingRemapper.INSTANCE.map(rawInterface))
+                interfaces += toDotName(FMLDeobfuscatingRemapper.INSTANCE.map(rawInterface))
             }
             return ClassHierarchyMetadata(superClass = superClass, interfaces = interfaces)
         }

@@ -14,37 +14,37 @@
 
 **Create:**
 
-- `src/test/kotlin/pl/asie/stackup/rules/DslTokenizerTest.kt`
-- `src/test/kotlin/pl/asie/stackup/rules/DslParserTest.kt`
-- `src/test/kotlin/pl/asie/stackup/limit/StackLimitServiceTest.kt`
-- `src/test/kotlin/pl/asie/stackup/limit/OreDictIndexTest.kt`
-- `src/main/kotlin/pl/asie/stackup/rules/ast/RuleAst.kt`
-- `src/main/kotlin/pl/asie/stackup/rules/ast/ConditionAst.kt`
-- `src/main/kotlin/pl/asie/stackup/rules/parse/DslToken.kt`
-- `src/main/kotlin/pl/asie/stackup/rules/parse/DslTokenizer.kt`
-- `src/main/kotlin/pl/asie/stackup/rules/parse/DslParser.kt`
-- `src/main/kotlin/pl/asie/stackup/rules/compile/CompiledRule.kt`
-- `src/main/kotlin/pl/asie/stackup/rules/compile/RuleCompiler.kt`
-- `src/main/kotlin/pl/asie/stackup/rules/compile/RuleSnapshot.kt`
-- `src/main/kotlin/pl/asie/stackup/rules/model/RuleAction.kt`
-- `src/main/kotlin/pl/asie/stackup/rules/model/RuleMatchContext.kt`
-- `src/main/kotlin/pl/asie/stackup/rules/io/DslRuleSource.kt`
-- `src/main/kotlin/pl/asie/stackup/rules/io/RuleLoadResult.kt`
-- `src/main/kotlin/pl/asie/stackup/limit/StackIdentity.kt`
-- `src/main/kotlin/pl/asie/stackup/limit/StackLimitService.kt`
-- `src/main/kotlin/pl/asie/stackup/limit/OreDictIndex.kt`
-- `src/main/kotlin/pl/asie/stackup/limit/VanillaStackLimitView.kt`
-- `src/main/kotlin/pl/asie/stackup/bootstrap/StackUpLateMixins.kt`
-- `src/main/kotlin/pl/asie/stackup/mixin/early/ItemMixin.kt`
-- `src/main/kotlin/pl/asie/stackup/mixin/early/ItemStackMixin.kt`
-- `src/main/kotlin/pl/asie/stackup/mixin/early/PacketBufferMixin.kt`
-- `src/main/kotlin/pl/asie/stackup/mixin/early/NetHandlerPlayServerMixin.kt`
-- `src/main/kotlin/pl/asie/stackup/mixin/late/PacketUtilMixin.kt`
-- `src/main/kotlin/pl/asie/stackup/mixin/late/InventoryHelperMixin.kt`
-- `src/main/kotlin/pl/asie/stackup/mixin/late/RenderItemMixin.kt`
-- `src/main/kotlin/pl/asie/stackup/mixin/late/RenderEntityItemMixin.kt`
-- `src/main/kotlin/pl/asie/stackup/mixin/late/ServerRecipeBookHelperMixin.kt`
-- `src/main/resources/mixins.stackup.early.json`
+- `src/test/kotlin/io/alexjoest/stackupup/rules/DslTokenizerTest.kt`
+- `src/test/kotlin/io/alexjoest/stackupup/rules/DslParserTest.kt`
+- `src/test/kotlin/io/alexjoest/stackupup/limit/StackLimitServiceTest.kt`
+- `src/test/kotlin/io/alexjoest/stackupup/limit/OreDictIndexTest.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/rules/ast/RuleAst.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/rules/ast/ConditionAst.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/rules/parse/DslToken.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/rules/parse/DslTokenizer.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/rules/parse/DslParser.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/rules/compile/CompiledRule.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/rules/compile/RuleCompiler.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/rules/compile/RuleSnapshot.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/rules/model/RuleAction.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/rules/model/RuleMatchContext.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/rules/io/DslRuleSource.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/rules/io/RuleLoadResult.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/limit/StackIdentity.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/limit/StackLimitService.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/limit/OreDictIndex.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/limit/VanillaStackLimitView.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/bootstrap/StackUpLateMixins.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/mixin/early/ItemMixin.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/mixin/early/ItemStackMixin.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/mixin/early/PacketBufferMixin.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/mixin/early/NetHandlerPlayServerMixin.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/mixin/late/PacketUtilMixin.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/mixin/late/InventoryHelperMixin.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/mixin/late/RenderItemMixin.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/mixin/late/RenderEntityItemMixin.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/mixin/late/ServerRecipeBookHelperMixin.kt`
+- `src/main/resources/mixins.stackupup.early.json`
 - `src/main/resources/mixins.stackup.late.json`
 - `docs/DSL-v2-迁移说明.md`
 - `docs/DSL-v2-规则示例.md`
@@ -53,12 +53,12 @@
 
 - `build.gradle.kts`
 - `gradle.properties`
-- `src/main/kotlin/pl/asie/stackup/StackUpCore.kt`
-- `src/main/kotlin/pl/asie/stackup/StackUp.kt`
-- `src/main/kotlin/pl/asie/stackup/StackUpConfig.kt`
-- `src/main/kotlin/pl/asie/stackup/CommandStackUp.kt`
-- `src/main/kotlin/pl/asie/stackup/core/StackUpTransformer.kt`
-- `src/main/kotlin/pl/asie/stackup/core/StackUpClassTracker.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/StackUpUpCore.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/StackUpUp.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/StackUpUpConfig.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/CommandStackUpUpUp.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/core/DynamicCompatTransformer.kt`
+- `src/main/kotlin/io/alexjoest/stackupup/core/ClassHierarchyTracker.kt`
 - `README.md`
 
 ### Task 1: 补齐测试基础与规则内核骨架
@@ -67,25 +67,25 @@
 
 - Modify: `build.gradle.kts`
 - Modify: `gradle.properties`
-- Create: `src/test/kotlin/pl/asie/stackup/rules/DslTokenizerTest.kt`
-- Create: `src/test/kotlin/pl/asie/stackup/rules/DslParserTest.kt`
-- Create: `src/main/kotlin/pl/asie/stackup/rules/ast/RuleAst.kt`
-- Create: `src/main/kotlin/pl/asie/stackup/rules/ast/ConditionAst.kt`
-- Create: `src/main/kotlin/pl/asie/stackup/rules/parse/DslToken.kt`
-- Create: `src/main/kotlin/pl/asie/stackup/rules/parse/DslTokenizer.kt`
-- Create: `src/main/kotlin/pl/asie/stackup/rules/parse/DslParser.kt`
-- Test: `src/test/kotlin/pl/asie/stackup/rules/DslTokenizerTest.kt`
-- Test: `src/test/kotlin/pl/asie/stackup/rules/DslParserTest.kt`
+- Create: `src/test/kotlin/io/alexjoest/stackupup/rules/DslTokenizerTest.kt`
+- Create: `src/test/kotlin/io/alexjoest/stackupup/rules/DslParserTest.kt`
+- Create: `src/main/kotlin/io/alexjoest/stackupup/rules/ast/RuleAst.kt`
+- Create: `src/main/kotlin/io/alexjoest/stackupup/rules/ast/ConditionAst.kt`
+- Create: `src/main/kotlin/io/alexjoest/stackupup/rules/parse/DslToken.kt`
+- Create: `src/main/kotlin/io/alexjoest/stackupup/rules/parse/DslTokenizer.kt`
+- Create: `src/main/kotlin/io/alexjoest/stackupup/rules/parse/DslParser.kt`
+- Test: `src/test/kotlin/io/alexjoest/stackupup/rules/DslTokenizerTest.kt`
+- Test: `src/test/kotlin/io/alexjoest/stackupup/rules/DslParserTest.kt`
 
 - [ ] **Step 1: 写失败的 DSL 分词测试**
 
 ```kotlin
-package pl.asie.stackup.rules
+package io.alexjoest.stackupup.rules
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import pl.asie.stackup.rules.parse.DslTokenType
-import pl.asie.stackup.rules.parse.DslTokenizer
+import io.alexjoest.stackupup.rules.parse.DslTokenType
+import io.alexjoest.stackupup.rules.parse.DslTokenizer
 
 class DslTokenizerTest {
     @Test
@@ -113,11 +113,11 @@ class DslTokenizerTest {
 - [ ] **Step 2: 写失败的 DSL 解析测试**
 
 ```kotlin
-package pl.asie.stackup.rules
+package io.alexjoest.stackupup.rules
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import pl.asie.stackup.rules.parse.DslParser
+import io.alexjoest.stackupup.rules.parse.DslParser
 
 class DslParserTest {
     @Test
@@ -165,7 +165,7 @@ use_mixins = true
 - [ ] **Step 4: 写最小 AST 与分词器骨架**
 
 ```kotlin
-package pl.asie.stackup.rules.ast
+package io.alexjoest.stackupup.rules.ast
 
 sealed interface ConditionAst {
     fun debugFields(): List<String>
@@ -193,7 +193,7 @@ data class RuleAst(
 ```
 
 ```kotlin
-package pl.asie.stackup.rules.parse
+package io.alexjoest.stackupup.rules.parse
 
 enum class DslTokenType {
     IDENTIFIER,
@@ -221,13 +221,13 @@ enum class DslTokenType {
 
 - [ ] **Step 5: 跑测试确认红转绿**
 
-Run: `.\gradlew test --tests "pl.asie.stackup.rules.*" --info`  
+Run: `.\gradlew test --tests "io.alexjoest.stackupup.rules.*" --info`  
 Expected: `BUILD SUCCESSFUL`
 
 - [ ] **Step 6: 提交**
 
 ```bash
-git add build.gradle.kts gradle.properties src/main/kotlin/pl/asie/stackup/rules src/test/kotlin/pl/asie/stackup/rules
+git add build.gradle.kts gradle.properties src/main/kotlin/io/alexjoest/stackupup/rules src/test/kotlin/io/alexjoest/stackupup/rules
 git commit -m "test: add dsl parser test foundation"
 ```
 
@@ -235,12 +235,12 @@ git commit -m "test: add dsl parser test foundation"
 
 **Files:**
 
-- Modify: `src/main/kotlin/pl/asie/stackup/rules/parse/DslParser.kt`
-- Create: `src/main/kotlin/pl/asie/stackup/rules/compile/CompiledRule.kt`
-- Create: `src/main/kotlin/pl/asie/stackup/rules/compile/RuleCompiler.kt`
-- Create: `src/main/kotlin/pl/asie/stackup/rules/model/RuleAction.kt`
-- Create: `src/main/kotlin/pl/asie/stackup/rules/model/RuleMatchContext.kt`
-- Test: `src/test/kotlin/pl/asie/stackup/rules/DslParserTest.kt`
+- Modify: `src/main/kotlin/io/alexjoest/stackupup/rules/parse/DslParser.kt`
+- Create: `src/main/kotlin/io/alexjoest/stackupup/rules/compile/CompiledRule.kt`
+- Create: `src/main/kotlin/io/alexjoest/stackupup/rules/compile/RuleCompiler.kt`
+- Create: `src/main/kotlin/io/alexjoest/stackupup/rules/model/RuleAction.kt`
+- Create: `src/main/kotlin/io/alexjoest/stackupup/rules/model/RuleMatchContext.kt`
+- Test: `src/test/kotlin/io/alexjoest/stackupup/rules/DslParserTest.kt`
 
 - [ ] **Step 1: 写编译器失败测试**
 
@@ -323,13 +323,13 @@ class DslParseException(
 
 - [ ] **Step 5: 跑解析与编译测试**
 
-Run: `.\gradlew test --tests "pl.asie.stackup.rules.DslParserTest" --info`  
+Run: `.\gradlew test --tests "io.alexjoest.stackupup.rules.DslParserTest" --info`  
 Expected: `BUILD SUCCESSFUL`
 
 - [ ] **Step 6: 提交**
 
 ```bash
-git add src/main/kotlin/pl/asie/stackup/rules src/test/kotlin/pl/asie/stackup/rules
+git add src/main/kotlin/io/alexjoest/stackupup/rules src/test/kotlin/io/alexjoest/stackupup/rules
 git commit -m "feat: implement dsl v2 parser and compiler"
 ```
 
@@ -337,23 +337,23 @@ git commit -m "feat: implement dsl v2 parser and compiler"
 
 **Files:**
 
-- Create: `src/main/kotlin/pl/asie/stackup/rules/compile/RuleSnapshot.kt`
-- Create: `src/main/kotlin/pl/asie/stackup/limit/StackIdentity.kt`
-- Create: `src/main/kotlin/pl/asie/stackup/limit/OreDictIndex.kt`
-- Create: `src/main/kotlin/pl/asie/stackup/limit/StackLimitService.kt`
-- Create: `src/main/kotlin/pl/asie/stackup/limit/VanillaStackLimitView.kt`
-- Create: `src/test/kotlin/pl/asie/stackup/limit/StackLimitServiceTest.kt`
-- Create: `src/test/kotlin/pl/asie/stackup/limit/OreDictIndexTest.kt`
+- Create: `src/main/kotlin/io/alexjoest/stackupup/rules/compile/RuleSnapshot.kt`
+- Create: `src/main/kotlin/io/alexjoest/stackupup/limit/StackIdentity.kt`
+- Create: `src/main/kotlin/io/alexjoest/stackupup/limit/OreDictIndex.kt`
+- Create: `src/main/kotlin/io/alexjoest/stackupup/limit/StackLimitService.kt`
+- Create: `src/main/kotlin/io/alexjoest/stackupup/limit/VanillaStackLimitView.kt`
+- Create: `src/test/kotlin/io/alexjoest/stackupup/limit/StackLimitServiceTest.kt`
+- Create: `src/test/kotlin/io/alexjoest/stackupup/limit/OreDictIndexTest.kt`
 
 - [ ] **Step 1: 写失败的规则执行测试**
 
 ```kotlin
-package pl.asie.stackup.limit
+package io.alexjoest.stackupup.limit
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import pl.asie.stackup.rules.compile.RuleCompiler
-import pl.asie.stackup.rules.compile.RuleSnapshot
+import io.alexjoest.stackupup.rules.compile.RuleCompiler
+import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 
 class StackLimitServiceTest {
     @Test
@@ -379,7 +379,7 @@ class StackLimitServiceTest {
 - [ ] **Step 2: 写失败的矿物辞典缓存测试**
 
 ```kotlin
-package pl.asie.stackup.limit
+package io.alexjoest.stackupup.limit
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -397,10 +397,10 @@ class OreDictIndexTest {
 - [ ] **Step 3: 写最小服务实现**
 
 ```kotlin
-package pl.asie.stackup.limit
+package io.alexjoest.stackupup.limit
 
-import pl.asie.stackup.rules.compile.RuleSnapshot
-import pl.asie.stackup.rules.model.RuleMatchContext
+import io.alexjoest.stackupup.rules.compile.RuleSnapshot
+import io.alexjoest.stackupup.rules.model.RuleMatchContext
 
 class StackLimitService(
     private val snapshot: RuleSnapshot
@@ -443,13 +443,13 @@ class OreDictIndex(
 
 - [ ] **Step 5: 跑 limit 测试**
 
-Run: `.\gradlew test --tests "pl.asie.stackup.limit.*" --info`  
+Run: `.\gradlew test --tests "io.alexjoest.stackupup.limit.*" --info`  
 Expected: `BUILD SUCCESSFUL`
 
 - [ ] **Step 6: 提交**
 
 ```bash
-git add src/main/kotlin/pl/asie/stackup/limit src/main/kotlin/pl/asie/stackup/rules/compile src/test/kotlin/pl/asie/stackup/limit
+git add src/main/kotlin/io/alexjoest/stackupup/limit src/main/kotlin/io/alexjoest/stackupup/rules/compile src/test/kotlin/io/alexjoest/stackupup/limit
 git commit -m "feat: add stack limit runtime service"
 ```
 
@@ -457,11 +457,11 @@ git commit -m "feat: add stack limit runtime service"
 
 **Files:**
 
-- Create: `src/main/kotlin/pl/asie/stackup/rules/io/DslRuleSource.kt`
-- Create: `src/main/kotlin/pl/asie/stackup/rules/io/RuleLoadResult.kt`
-- Modify: `src/main/kotlin/pl/asie/stackup/StackUp.kt`
-- Modify: `src/main/kotlin/pl/asie/stackup/StackUpConfig.kt`
-- Modify: `src/main/kotlin/pl/asie/stackup/CommandStackUp.kt`
+- Create: `src/main/kotlin/io/alexjoest/stackupup/rules/io/DslRuleSource.kt`
+- Create: `src/main/kotlin/io/alexjoest/stackupup/rules/io/RuleLoadResult.kt`
+- Modify: `src/main/kotlin/io/alexjoest/stackupup/StackUpUp.kt`
+- Modify: `src/main/kotlin/io/alexjoest/stackupup/StackUpUpConfig.kt`
+- Modify: `src/main/kotlin/io/alexjoest/stackupup/CommandStackUpUpUp.kt`
 - Create: `docs/DSL-v2-迁移说明.md`
 - Create: `docs/DSL-v2-规则示例.md`
 - Modify: `README.md`
@@ -486,7 +486,7 @@ fun `应当忽略注释与空行`() {
 - [ ] **Step 2: 在配置中新增 DSL v2 入口**
 
 ```kotlin
-object StackUpConfig {
+object StackUpUpConfig {
     @JvmField
     var enableDslRules: Boolean = true
 
@@ -495,13 +495,13 @@ object StackUpConfig {
 }
 ```
 
-- [ ] **Step 3: 在 StackUp 中替换旧 ScriptHandler 的主路径**
+- [ ] **Step 3: 在 StackUpUp 中替换旧 ScriptHandler 的主路径**
 
 ```kotlin
 @JvmStatic
 fun reload(registry: IForgeRegistry<Item>) {
-    val rulesResult = DslRuleSource.fromFile(File(stackupScriptLocation, StackUpConfig.rulesFileName)).load()
-    StackUpServices.replaceSnapshot(rulesResult.snapshot)
+    val rulesResult = DslRuleSource.fromFile(File(stackupScriptLocation, StackUpUpConfig.rulesFileName)).load()
+    RuleRuntime.replaceSnapshot(rulesResult.snapshot)
     if (rulesResult.errors.isNotEmpty()) {
         for (error in rulesResult.errors) {
             requireNotNull(logger).error(error)
@@ -526,13 +526,13 @@ fun reload(registry: IForgeRegistry<Item>) {
 
 - [ ] **Step 5: 跑规则与命令相关测试**
 
-Run: `.\gradlew test --tests "pl.asie.stackup.rules.*" --tests "pl.asie.stackup.limit.*" --info`  
+Run: `.\gradlew test --tests "io.alexjoest.stackupup.rules.*" --tests "io.alexjoest.stackupup.limit.*" --info`  
 Expected: `BUILD SUCCESSFUL`
 
 - [ ] **Step 6: 提交**
 
 ```bash
-git add src/main/kotlin/pl/asie/stackup/StackUp.kt src/main/kotlin/pl/asie/stackup/StackUpConfig.kt src/main/kotlin/pl/asie/stackup/CommandStackUp.kt src/main/kotlin/pl/asie/stackup/rules/io README.md docs/DSL-v2-迁移说明.md docs/DSL-v2-规则示例.md
+git add src/main/kotlin/io/alexjoest/stackupup/StackUpUp.kt src/main/kotlin/io/alexjoest/stackupup/StackUpUpConfig.kt src/main/kotlin/io/alexjoest/stackupup/CommandStackUpUpUp.kt src/main/kotlin/io/alexjoest/stackupup/rules/io README.md docs/DSL-v2-迁移说明.md docs/DSL-v2-规则示例.md
 git commit -m "feat: wire dsl rules into runtime reload"
 ```
 
@@ -541,43 +541,43 @@ git commit -m "feat: wire dsl rules into runtime reload"
 **Files:**
 
 - Modify: `build.gradle.kts`
-- Modify: `src/main/kotlin/pl/asie/stackup/StackUpCore.kt`
-- Create: `src/main/kotlin/pl/asie/stackup/bootstrap/StackUpLateMixins.kt`
-- Create: `src/main/resources/mixins.stackup.early.json`
+- Modify: `src/main/kotlin/io/alexjoest/stackupup/StackUpUpCore.kt`
+- Create: `src/main/kotlin/io/alexjoest/stackupup/bootstrap/StackUpLateMixins.kt`
+- Create: `src/main/resources/mixins.stackupup.early.json`
 - Create: `src/main/resources/mixins.stackup.late.json`
-- Create: `src/main/kotlin/pl/asie/stackup/mixin/early/ItemMixin.kt`
-- Create: `src/main/kotlin/pl/asie/stackup/mixin/early/ItemStackMixin.kt`
-- Create: `src/main/kotlin/pl/asie/stackup/mixin/early/PacketBufferMixin.kt`
-- Create: `src/main/kotlin/pl/asie/stackup/mixin/early/NetHandlerPlayServerMixin.kt`
-- Create: `src/main/kotlin/pl/asie/stackup/mixin/late/PacketUtilMixin.kt`
-- Create: `src/main/kotlin/pl/asie/stackup/mixin/late/InventoryHelperMixin.kt`
-- Create: `src/main/kotlin/pl/asie/stackup/mixin/late/RenderItemMixin.kt`
-- Create: `src/main/kotlin/pl/asie/stackup/mixin/late/RenderEntityItemMixin.kt`
-- Create: `src/main/kotlin/pl/asie/stackup/mixin/late/ServerRecipeBookHelperMixin.kt`
+- Create: `src/main/kotlin/io/alexjoest/stackupup/mixin/early/ItemMixin.kt`
+- Create: `src/main/kotlin/io/alexjoest/stackupup/mixin/early/ItemStackMixin.kt`
+- Create: `src/main/kotlin/io/alexjoest/stackupup/mixin/early/PacketBufferMixin.kt`
+- Create: `src/main/kotlin/io/alexjoest/stackupup/mixin/early/NetHandlerPlayServerMixin.kt`
+- Create: `src/main/kotlin/io/alexjoest/stackupup/mixin/late/PacketUtilMixin.kt`
+- Create: `src/main/kotlin/io/alexjoest/stackupup/mixin/late/InventoryHelperMixin.kt`
+- Create: `src/main/kotlin/io/alexjoest/stackupup/mixin/late/RenderItemMixin.kt`
+- Create: `src/main/kotlin/io/alexjoest/stackupup/mixin/late/RenderEntityItemMixin.kt`
+- Create: `src/main/kotlin/io/alexjoest/stackupup/mixin/late/ServerRecipeBookHelperMixin.kt`
 
 - [ ] **Step 1: 写引导层失败测试或最小启动断言**
 
 ```kotlin
 @Test
 fun `mixin 配置文件名应保持稳定`() {
-    assertEquals(listOf("mixins.stackup.early.json"), StackUpCore().mixinConfigsForTest())
+    assertEquals(listOf("mixins.stackupup.early.json"), StackUpUpCore().mixinConfigsForTest())
 }
 ```
 
 - [ ] **Step 2: 让 coremod 同时实现 IEarlyMixinLoader**
 
 ```kotlin
-class StackUpCore : IFMLLoadingPlugin, IEarlyMixinLoader {
-    override fun getASMTransformerClass(): Array<String> = arrayOf("pl.asie.stackup.core.StackUpTransformer")
+class StackUpUpCore : IFMLLoadingPlugin, IEarlyMixinLoader {
+    override fun getASMTransformerClass(): Array<String> = arrayOf("io.alexjoest.stackupup.core.DynamicCompatTransformer")
 
-    override fun getMixinConfigs(): List<String> = listOf("mixins.stackup.early.json")
+    override fun getMixinConfigs(): List<String> = listOf("mixins.stackupup.early.json")
 }
 ```
 
 - [ ] **Step 3: 增加 Late Mixin Loader**
 
 ```kotlin
-package pl.asie.stackup.bootstrap
+package io.alexjoest.stackupup.bootstrap
 
 import zone.rong.mixinbooter.ILateMixinLoader
 
@@ -595,10 +595,10 @@ abstract class ItemMixin {
     private fun stackupup$applyRules(stack: ItemStack, cir: CallbackInfoReturnable<Int>) {
         val item = stack.item.registryName?.toString() ?: return
         val mod = stack.item.registryName?.namespace ?: return
-        cir.returnValue = StackUpServices.limitService().resolve(
+        cir.returnValue = RuleRuntime.limitService().resolve(
             StackIdentity(item, mod, stack.metadata, if (stack.item is ItemBlock) "block" else "item"),
             cir.returnValue,
-            StackUpServices.oreDictIndex().getOreNames(item, stack.metadata)
+            RuleRuntime.oreDictIndex().getOreNames(item, stack.metadata)
         )
     }
 }
@@ -612,7 +612,7 @@ Expected: `BUILD SUCCESSFUL`
 - [ ] **Step 6: 提交**
 
 ```bash
-git add build.gradle.kts src/main/kotlin/pl/asie/stackup/StackUpCore.kt src/main/kotlin/pl/asie/stackup/bootstrap src/main/kotlin/pl/asie/stackup/mixin src/main/resources/mixins.stackup.early.json src/main/resources/mixins.stackup.late.json
+git add build.gradle.kts src/main/kotlin/io/alexjoest/stackupup/StackUpUpCore.kt src/main/kotlin/io/alexjoest/stackupup/bootstrap src/main/kotlin/io/alexjoest/stackupup/mixin src/main/resources/mixins.stackupup.early.json src/main/resources/mixins.stackup.late.json
 git commit -m "feat: add mixinbooter fixed-target patches"
 ```
 
@@ -620,18 +620,18 @@ git commit -m "feat: add mixinbooter fixed-target patches"
 
 **Files:**
 
-- Modify: `src/main/kotlin/pl/asie/stackup/core/StackUpTransformer.kt`
-- Modify: `src/main/kotlin/pl/asie/stackup/core/StackUpClassTracker.kt`
-- Modify: `src/main/kotlin/pl/asie/stackup/StackUpHelpers.kt`
-- Modify: `src/main/kotlin/pl/asie/stackup/core/MaxStackConstantPatch.kt`
-- Modify: `src/main/kotlin/pl/asie/stackup/core/NetHandlerPlayServerPatch.kt`
+- Modify: `src/main/kotlin/io/alexjoest/stackupup/core/DynamicCompatTransformer.kt`
+- Modify: `src/main/kotlin/io/alexjoest/stackupup/core/ClassHierarchyTracker.kt`
+- Modify: `src/main/kotlin/io/alexjoest/stackupup/StackCompat.kt`
+- Modify: `src/main/kotlin/io/alexjoest/stackupup/core/MaxStackConstantPatch.kt`
+- Modify: `src/main/kotlin/io/alexjoest/stackupup/core/NetHandlerPlayServerPatch.kt`
 
 - [ ] **Step 1: 写失败的动态适配测试或最小 hook 断言**
 
 ```kotlin
 @Test
 fun `动态适配层只负责返回值转接`() {
-    val result = StackUpHelpers.applyDynamicStackLimit("gregtech:gt.metaitem.01", "gregtech", 11305, "item", 64, setOf("ingotSteel"))
+    val result = StackCompat.applyDynamicStackLimit("gregtech:gt.metaitem.01", "gregtech", 11305, "item", 64, setOf("ingotSteel"))
     assertEquals(64, result)
 }
 ```
@@ -639,7 +639,7 @@ fun `动态适配层只负责返回值转接`() {
 - [ ] **Step 2: 把帮助方法收口到单一入口**
 
 ```kotlin
-object StackUpHelpers {
+object StackCompat {
     @JvmStatic
     fun applyDynamicStackLimit(
         itemId: String,
@@ -649,7 +649,7 @@ object StackUpHelpers {
         baseLimit: Int,
         oreNames: Set<String>
     ): Int {
-        return StackUpServices.limitService().resolve(
+        return RuleRuntime.limitService().resolve(
             StackIdentity(itemId, modId, meta, type),
             baseLimit,
             oreNames
@@ -671,7 +671,7 @@ when {
 - [ ] **Step 4: 保留并收窄动态接口/继承补丁**
 
 ```kotlin
-if (StackUpClassTracker.isImplements(transformedName, "net.minecraft.inventory.IInventory")) {
+if (ClassHierarchyTracker.isImplements(transformedName, "net.minecraft.inventory.IInventory")) {
     consumer = consumer.andThen(MaxStackConstantPatch.patchMaxLimit("getInventoryStackLimit", "func_70297_j_"))
 }
 ```
@@ -686,7 +686,7 @@ Expected: `test` 与 `compileKotlin` 成功；客户端能进入主菜单且无 
 - [ ] **Step 6: 提交**
 
 ```bash
-git add src/main/kotlin/pl/asie/stackup/core src/main/kotlin/pl/asie/stackup/StackUpHelpers.kt
+git add src/main/kotlin/io/alexjoest/stackupup/core src/main/kotlin/io/alexjoest/stackupup/StackCompat.kt
 git commit -m "refactor: shrink asm to dynamic compatibility layer"
 ```
 
@@ -707,4 +707,9 @@ git commit -m "refactor: shrink asm to dynamic compatibility layer"
 2. 所有关键命令均给出可执行形式。
 3. 规则语法全程使用 `=`、`in`、`&&`、`||`，未混入 `==`。
 4. 所有任务围绕同一内核：`CompiledRule`、`RuleSnapshot`、`StackLimitService`。
+
+
+
+
+
 

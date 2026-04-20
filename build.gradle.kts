@@ -1,4 +1,7 @@
+import java.io.File
 import org.gradle.api.internal.artifacts.dsl.dependencies.DependenciesExtensionModule.module
+import org.gradle.api.tasks.Sync
+import org.gradle.api.tasks.compile.AbstractCompile
 import org.jetbrains.gradle.ext.Gradle
 import org.jetbrains.gradle.ext.compiler
 import org.jetbrains.gradle.ext.runConfigurations
@@ -35,6 +38,8 @@ val maven_group: String by project
 val mod_id: String by project
 @Suppress("PropertyName")
 val archives_base_name: String by project
+group = maven_group
+version = mod_version
 
 @Suppress("PropertyName")
 val forgelin_continuous_version: String by project
@@ -54,6 +59,137 @@ val include_mod: String by project
 @Suppress("PropertyName")
 val coremod_plugin_class_name: String by project
 
+fun compatibleGradleProperty(newName: String, legacyName: String): String? =
+    providers.gradleProperty(newName).orNull ?: providers.gradleProperty(legacyName).orNull
+
+val autoTestRequestedTasks = setOf("runClientAutoTest", "runServerAutoTest")
+val autoTestRequestedByTask = gradle.startParameter.taskNames.any { it in autoTestRequestedTasks }
+val autoTestRequestedByProperty =
+    compatibleGradleProperty("stackupupDevAutoTest", "stackupDevAutoTest")?.toBoolean() == true
+val autoTestMode = when {
+    gradle.startParameter.taskNames.any { it == "runServerAutoTest" } -> "server"
+    gradle.startParameter.taskNames.any { it == "runClientAutoTest" } -> "client"
+    else -> compatibleGradleProperty("stackupupDevAutoTestMode", "stackupDevAutoTestMode")
+}
+val enableDevAutoTest = autoTestRequestedByTask || autoTestRequestedByProperty
+val autoTestOre = compatibleGradleProperty("stackupupDevAutoTestOre", "stackupDevAutoTestOre") ?: "ingotSteel"
+val autoTestRule =
+    compatibleGradleProperty("stackupupDevAutoTestRule", "stackupDevAutoTestRule") ?: "ore = $autoTestOre -> 1024"
+val autoTestItem = compatibleGradleProperty("stackupupDevAutoTestItem", "stackupDevAutoTestItem") ?: ""
+val autoTestMeta = compatibleGradleProperty("stackupupDevAutoTestMeta", "stackupDevAutoTestMeta") ?: "11305"
+val autoTestCount = compatibleGradleProperty("stackupupDevAutoTestCount", "stackupDevAutoTestCount") ?: "128"
+val autoTestWorldFolder =
+    compatibleGradleProperty("stackupupDevAutoTestWorldFolder", "stackupDevAutoTestWorldFolder") ?: "stackupup_dev_autotest"
+val autoTestWorldName =
+    compatibleGradleProperty("stackupupDevAutoTestWorldName", "stackupDevAutoTestWorldName") ?: "StackUpUp 自动测试"
+val autoTestServerPort =
+    compatibleGradleProperty("stackupupDevAutoTestServerPort", "stackupDevAutoTestServerPort") ?: "0"
+val autoTestMatrix = compatibleGradleProperty("stackupupDevAutoTestMatrix", "stackupDevAutoTestMatrix") ?: "false"
+
+fun localDevModRuntimeName(file: File): String =
+    if (file.name.endsWith(".jar.disable")) {
+        file.name.removeSuffix(".disable")
+    } else {
+        file.name
+    }
+
+val localDevModSourceFiles =
+    buildList {
+        addAll(
+            fileTree("local-dev-mods") {
+                include("*.jar")
+            }.files
+        )
+        addAll(
+            fileTree("run/mods") {
+                include("*.jar")
+            }.files
+        )
+        addAll(
+            fileTree("run/mods") {
+                include("*.jar.disable")
+            }.files
+        )
+    }.sortedBy { it.name }
+
+val preparedLocalDevModDirectory = layout.buildDirectory.dir("generated/local-dev-mods")
+val preparedLocalDevModFiles =
+    localDevModSourceFiles.map { sourceFile ->
+        preparedLocalDevModDirectory.get().file(localDevModRuntimeName(sourceFile)).asFile
+    }
+
+val compileOnlyLocalDevModFiles = localDevModSourceFiles.filter { it.name.endsWith(".jar") }
+val runtimeLocalDevModSourceFiles =
+    localDevModSourceFiles.filter { sourceFile ->
+        sourceFile.name.endsWith(".jar") && sourceFile.parentFile?.name == "local-dev-mods"
+    }
+val copiedRuntimeLocalDevModFiles =
+    runtimeLocalDevModSourceFiles.map { sourceFile ->
+        preparedLocalDevModDirectory.get().file(localDevModRuntimeName(sourceFile)).asFile
+    }
+
+val prepareAutoTestServerFiles =
+    tasks.register("prepareAutoTestServerFiles") {
+        group = "build setup"
+        description = "为服务端自动验收准备无交互启动所需的 EULA 与基础配置。"
+        doLast {
+            val runDirectory = file("run")
+            if (!runDirectory.exists()) {
+                runDirectory.mkdirs()
+            }
+
+            val eulaFile = runDirectory.resolve("eula.txt")
+            eulaFile.writeText(
+                """
+                # 自动生成：仅用于本地开发自动验收
+                eula=true
+                """.trimIndent() + System.lineSeparator(),
+                Charsets.UTF_8
+            )
+
+            val serverPropertiesFile = runDirectory.resolve("server.properties")
+            val existingLines =
+                if (serverPropertiesFile.exists()) {
+                    serverPropertiesFile.readLines(Charsets.UTF_8)
+                } else {
+                    emptyList()
+                }
+
+            val filteredLines = existingLines.filterNot { it.startsWith("online-mode=") }
+                .filterNot { it.startsWith("server-port=") }
+                .filterNot { it.startsWith("level-name=") }
+            val finalLines = buildList {
+                add("online-mode=false")
+                add("server-port=$autoTestServerPort")
+                add("level-name=$autoTestWorldFolder")
+                addAll(filteredLines)
+            }
+            serverPropertiesFile.writeText(
+                finalLines.joinToString(separator = System.lineSeparator(), postfix = System.lineSeparator()),
+                Charsets.UTF_8
+            )
+        }
+    }
+
+val prepareLocalDevMods =
+    tasks.register<Sync>("prepareLocalDevMods") {
+        group = "build setup"
+        description = "准备本地开发模组依赖，并兼容停用中的 .jar.disable 形式。"
+        into(preparedLocalDevModDirectory)
+        from("local-dev-mods") {
+            include("*.jar")
+        }
+        from("run/mods") {
+            include("*.jar")
+        }
+        from("run/mods") {
+            include("*.jar.disable")
+            rename("""(.+)\.disable$""", "$1")
+        }
+        includeEmptyDirs = false
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    }
+
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(8))
@@ -69,8 +205,47 @@ tasks.withType<JavaCompile>().configureEach {
 
 configurations {
     val embed = create("embed")
+    val runtimeOnlyNonPublishable =
+        create("runtimeOnlyNonPublishable") {
+            description = "仅用于开发运行时、不随本模组发布的依赖。"
+            isCanBeConsumed = false
+            isCanBeResolved = false
+        }
+    val devOnlyNonPublishable =
+        create("devOnlyNonPublishable") {
+            description = "仅用于本地开发编译和运行、但不会发布的依赖。"
+            isCanBeConsumed = false
+            isCanBeResolved = false
+        }
+
     implementation.configure {
         extendsFrom(embed)
+    }
+    compileOnly.configure {
+        extendsFrom(devOnlyNonPublishable)
+    }
+    runtimeClasspath.configure {
+        extendsFrom(runtimeOnlyNonPublishable)
+    }
+    testRuntimeClasspath.configure {
+        extendsFrom(runtimeOnlyNonPublishable)
+    }
+}
+
+if (localDevModSourceFiles.isNotEmpty()) {
+    tasks.withType<AbstractCompile>().configureEach {
+        dependsOn(prepareLocalDevMods)
+    }
+    listOf("processResources", "runClient", "runServer", "runObfClient", "runObfServer").forEach { taskName ->
+        tasks.named(taskName).configure {
+            dependsOn(prepareLocalDevMods)
+        }
+    }
+}
+
+if (enableDevAutoTest && autoTestMode == "server") {
+    tasks.named("runServer").configure {
+        dependsOn(prepareAutoTestServerFiles)
     }
 }
 
@@ -97,6 +272,23 @@ minecraft {
         args += "-Dmixin.checks.interfaces=true"
         args += "-Dmixin.debug.export=true"
     }
+    if (enableDevAutoTest) {
+        // 开发期自动验收默认关闭。
+        // 显式通过 -PstackupupDevAutoTest=true 或 run*AutoTest 任务开启。
+        args += "-Dstackupup.dev.autoTest.enabled=true"
+        args += "-Dstackupup.dev.autoTest.mode=${autoTestMode ?: "client"}"
+        args += "-Dstackupup.dev.autoTest.ore=$autoTestOre"
+        args += "-Dstackupup.dev.autoTest.rule=$autoTestRule"
+        args += "-Dstackupup.dev.autoTest.item=$autoTestItem"
+        args += "-Dstackupup.dev.autoTest.meta=$autoTestMeta"
+        args += "-Dstackupup.dev.autoTest.count=$autoTestCount"
+        args += "-Dstackupup.dev.autoTest.worldFolder=$autoTestWorldFolder"
+        args += "-Dstackupup.dev.autoTest.worldName=$autoTestWorldName"
+        args += "-Dstackupup.dev.autoTest.matrix=$autoTestMatrix"
+        args += "-Dstackupup.dev.autoTest.autoShutdown=true"
+        args += "-Dstackupup.dev.autoTest.failFast=true"
+        args += "-Dstackupup.dev.autoTest.clearInventoryBeforeGive=true"
+    }
     extraRunJvmArguments.addAll(args)
 
     // Include and use dependencies' Access Transformer files
@@ -105,7 +297,7 @@ minecraft {
     // Add any properties you want to swap out for a dynamic value at build time here
     // Any properties here will be added to a class at build time, the name can be configured below
     // Example:
-    injectedTags.put("VERSION", project.version)
+    injectedTags.put("VERSION", mod_version)
     injectedTags.put("MOD_ID", mod_id)
     injectedTags.put("MOD_NAME", archives_base_name)
 }
@@ -113,7 +305,7 @@ minecraft {
 // Generate a group.archives_base_name.Tags class
 tasks.injectTags.configure {
     // Change Tags class' name here:
-    outputClassName.set("${maven_group}.${archives_base_name}.Tags")
+    outputClassName.set("io.alexjoest.stackupup.Tags")
 }
 
 tasks.named("compileInjectedTagsKotlin").configure {
@@ -129,6 +321,7 @@ tasks.named("compilePatchedMcKotlin").configure {
 }
 
 repositories {
+    mavenCentral()
     maven {
         name = "CleanroomMC Maven"
         url = uri("https://maven.cleanroommc.com")
@@ -158,6 +351,20 @@ dependencies {
 
     // Example of deobfuscating a dependency
     // implementation rfg.deobf("curse.maven:had-enough-items-557549:4543375")
+    // 本地开发版模组入口：
+    // 1. 优先读取 local-dev-mods/*.jar；
+    // 2. 兼容 run/mods/*.jar.disable，便于把发行包“停用但继续参与开发类路径”；
+    // 3. 统一复制到 build/generated/local-dev-mods，再以 devOnly 方式接入。
+    // 所有现成 jar 都进入编译类路径，保证 IDEA 与注解处理器可解析目标类。
+    for (localDevMod in compileOnlyLocalDevModFiles) {
+        add("devOnlyNonPublishable", rfg.deobf(project.files(localDevMod)))
+    }
+
+    // 只有 local-dev-mods 下的模组才需要额外注入运行时；
+    // run/mods 里的 jar 会被 FML 目录扫描发现，不能再走 classpath，避免重复装载。
+    for (localDevMod in copiedRuntimeLocalDevModFiles) {
+        add("runtimeOnlyNonPublishable", rfg.deobf(project.files(localDevMod)))
+    }
 
     if (use_mixins.toBoolean()) {
         // Change your mixin refmap name here:
@@ -166,6 +373,8 @@ dependencies {
         api(mixin) {
             isTransitive = false
         }
+        compileOnly("io.github.llamalad7:mixinextras-common:0.5.0")
+        annotationProcessor("io.github.llamalad7:mixinextras-common:0.5.0")
         annotationProcessor("org.ow2.asm:asm-debug-all:5.2")
         annotationProcessor("com.google.guava:guava:24.1.1-jre")
         annotationProcessor("com.google.code.gson:gson:2.8.6")
@@ -246,6 +455,9 @@ idea {
                 add(Gradle("2. Run Server").apply {
                     setProperty("taskNames", listOf("runServer"))
                 })
+                add(Gradle("2a. Run Server AutoTest Matrix").apply {
+                    setProperty("taskNames", listOf("runServerAutoTestMatrix"))
+                })
                 add(Gradle("3. Run Obfuscated Client").apply {
                     setProperty("taskNames", listOf("runObfClient"))
                 })
@@ -267,6 +479,129 @@ idea {
 
 tasks.named("processIdeaSettings").configure {
     dependsOn("injectTags")
+}
+
+tasks.register("runClientAutoTest") {
+    group = "modded minecraft"
+    description = "以开发自动验收模式运行客户端。"
+    dependsOn("runClient")
+}
+
+tasks.register("runServerAutoTest") {
+    group = "modded minecraft"
+    description = "以开发自动验收模式运行服务端。"
+    dependsOn("runServer")
+}
+
+tasks.register<Exec>("runServerAutoTestMatrix") {
+    group = "modded minecraft"
+    description = "在单次服务端启动中运行核心自动验收矩阵。"
+    workingDir = project.projectDir
+    commandLine(
+        "cmd",
+        "/c",
+        ".\\gradlew.bat",
+        "--no-daemon",
+        "runServerAutoTest",
+        "-PstackupupDevAutoTest=true",
+        "-PstackupupDevAutoTestMode=server",
+        "-PstackupupDevAutoTestMatrix=true",
+        "-PstackupupDevAutoTestRule=",
+        "-PstackupupDevAutoTestServerPort=0",
+        "-PstackupupDevAutoTestWorldFolder=stackupup_dev_autotest_matrix",
+        "-PstackupupDevAutoTestWorldName=StackUpUp 自动测试 Matrix",
+        "-PstackupupDevAutoTestCount=128",
+        "--stacktrace"
+    )
+}
+
+tasks.register<Exec>("runServerAutoTestIngotSteel") {
+    group = "modded minecraft"
+    description = "运行 IngotSteel 服务端自动验收样例。"
+    workingDir = project.projectDir
+    commandLine(
+        "cmd",
+        "/c",
+        ".\\gradlew.bat",
+        "--no-daemon",
+        "runServerAutoTest",
+        "-PstackupupDevAutoTest=true",
+        "-PstackupupDevAutoTestMode=server",
+        "-PstackupupDevAutoTestOre=ingotSteel",
+        "-PstackupupDevAutoTestRule=ore = ingotSteel -> 1024",
+        "-PstackupupDevAutoTestServerPort=0",
+        "-PstackupupDevAutoTestWorldFolder=stackupup_dev_autotest_ingotsteel",
+        "-PstackupupDevAutoTestWorldName=StackUpUp 自动测试 IngotSteel",
+        "-PstackupupDevAutoTestCount=128",
+        "--stacktrace"
+    )
+}
+
+tasks.register<Exec>("runServerAutoTestPlateSteel") {
+    group = "modded minecraft"
+    description = "运行 PlateSteel 服务端自动验收样例。"
+    workingDir = project.projectDir
+    commandLine(
+        "cmd",
+        "/c",
+        ".\\gradlew.bat",
+        "--no-daemon",
+        "runServerAutoTest",
+        "-PstackupupDevAutoTest=true",
+        "-PstackupupDevAutoTestMode=server",
+        "-PstackupupDevAutoTestOre=plateSteel",
+        "-PstackupupDevAutoTestRule=ore = plateSteel -> 1024",
+        "-PstackupupDevAutoTestServerPort=0",
+        "-PstackupupDevAutoTestWorldFolder=stackupup_dev_autotest_platesteel",
+        "-PstackupupDevAutoTestWorldName=StackUpUp 自动测试 PlateSteel",
+        "-PstackupupDevAutoTestCount=128",
+        "--stacktrace"
+    )
+}
+
+tasks.register<Exec>("runServerAutoTestDustSteel") {
+    group = "modded minecraft"
+    description = "运行 DustSteel 服务端自动验收样例。"
+    workingDir = project.projectDir
+    commandLine(
+        "cmd",
+        "/c",
+        ".\\gradlew.bat",
+        "--no-daemon",
+        "runServerAutoTest",
+        "-PstackupupDevAutoTest=true",
+        "-PstackupupDevAutoTestMode=server",
+        "-PstackupupDevAutoTestOre=dustSteel",
+        "-PstackupupDevAutoTestRule=ore = dustSteel -> 1024",
+        "-PstackupupDevAutoTestServerPort=0",
+        "-PstackupupDevAutoTestWorldFolder=stackupup_dev_autotest_duststeel",
+        "-PstackupupDevAutoTestWorldName=StackUpUp 自动测试 DustSteel",
+        "-PstackupupDevAutoTestCount=128",
+        "--stacktrace"
+    )
+}
+
+tasks.register<Exec>("runServerAutoTestVacuumTube") {
+    group = "modded minecraft"
+    description = "运行 VacuumTube 服务端自动验收样例。"
+    workingDir = project.projectDir
+    commandLine(
+        "cmd",
+        "/c",
+        ".\\gradlew.bat",
+        "--no-daemon",
+        "runServerAutoTest",
+        "-PstackupupDevAutoTest=true",
+        "-PstackupupDevAutoTestMode=server",
+        "-PstackupupDevAutoTestItem=gregtech:meta_item_1",
+        "-PstackupupDevAutoTestMeta=516",
+        "-PstackupupDevAutoTestRule=item = gregtech:meta_item_1 && meta = 516 -> 512",
+        "-PstackupupDevAutoTestServerPort=0",
+        "-PstackupupDevAutoTestWorldFolder=stackupup_dev_autotest_vacuumtube",
+        "-PstackupupDevAutoTestWorldName=StackUpUp 自动测试 VacuumTube",
+        "-PstackupupDevAutoTestCount=128",
+        "--stacktrace"
+    )
 }
 
 tasks.withType<Test>().configureEach {

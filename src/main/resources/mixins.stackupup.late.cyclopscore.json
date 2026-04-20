@@ -1,0 +1,12 @@
+{
+  "package": "io.alexjoest.stackupup.mixin.late",
+  "required": false,
+  "refmap": "mixins.StackUpUp.refmap.json",
+  "target": "@env(DEFAULT)",
+  "minVersion": "0.8",
+  "mixins": [
+    "SimpleInventoryMixin"
+  ]
+}
+
+

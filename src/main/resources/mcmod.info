@@ -2,7 +2,7 @@
     "modListVersion": 2,
     "modList": [
         {
-            "modid": "stackup",
+            "modid": "stackupup",
             "name": "StackUpUp",
             "version": "${version}",
             "mcversion": "${mcversion}",
@@ -11,10 +11,10 @@
                 "mixinbooter"
             ],
             "authorList": [
-                "asiekierka"
+                "Alex_Joest"
             ],
-            "url": "http://charset.asie.pl",
-            "updateUrl": "http://asie.pl/files/minecraft/update/stackup.json"
+            "url": "https://github.com/AlexJoest",
+            "updateUrl": ""
         }
     ]
 }

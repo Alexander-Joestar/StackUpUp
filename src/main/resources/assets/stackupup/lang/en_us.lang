@@ -1,0 +1,54 @@
+# Config
+config.stackupup.title=StackUpUp Configuration
+
+config.stackupup.client.name=Client and Rendering
+config.stackupup.client.name.tooltip=Configure client-side display behavior for large stacks.
+config.stackupup.client.fontScaleMinimum.name=Minimum Font Size
+config.stackupup.client.fontScaleMaximum.name=Maximum Font Size
+config.stackupup.client.fontScaleLinear.name=Linear Font Scaling
+config.stackupup.client.fontScaleMinimum.tooltip=Minimum scale used when stack counts are squeezed into slot overlays.
+config.stackupup.client.fontScaleMaximum.tooltip=Maximum scale used when stack counts are squeezed into slot overlays.
+config.stackupup.client.fontScaleLinear.tooltip=Use smooth scaling for slot count text instead of stepped scaling.
+
+config.stackupup.general.name=General
+config.stackupup.general.name.tooltip=Configure StackUpUp runtime behavior and rule loading.
+config.stackupup.general.enableDslRules.name=Enable DSL v2 Rules
+config.stackupup.general.tooltipStackDisplayMode.name=Tooltip Stack Display
+config.stackupup.general.ruleComplexityWarnings.name=Rule Complexity Warnings
+config.stackupup.general.enableDslRules.tooltip=Load DSL v2 rules from config/stackupup/*.su, with world and user overrides layered on top.
+config.stackupup.general.tooltipStackDisplayMode.tooltip=Choose when to show current stack size and max stack size in tooltips.
+config.stackupup.general.ruleComplexityWarnings.tooltip=Warn when the ruleset becomes unusually large or long.
+
+config.stackupup.modpatches.name=Mod Patches
+config.stackupup.modpatches.name.tooltip=Enable or disable optional compatibility patches.
+config.stackupup.modpatches.actuallyadditions.name=Actually Additions
+config.stackupup.modpatches.appliedenergistics2.name=Applied Energistics 2
+config.stackupup.modpatches.chiselsandbits.name=Chisels and Bits
+config.stackupup.modpatches.cyclopscore.name=Cyclops Core
+config.stackupup.modpatches.industrialcraft2.name=IndustrialCraft 2
+config.stackupup.modpatches.mantle.name=Mantle or Tinkers Construct
+config.stackupup.modpatches.refinedstorage.name=Refined Storage
+config.stackupup.modpatches.actuallyadditions.tooltip=Patch Actually Additions inventories for large-stack compatibility.
+config.stackupup.modpatches.appliedenergistics2.tooltip=Patch Applied Energistics 2 inventories for large-stack compatibility.
+config.stackupup.modpatches.chiselsandbits.tooltip=Adjust Chisels and Bits bit stacks to match their bag limit.
+config.stackupup.modpatches.cyclopscore.tooltip=Patch CyclopsCore inventories for large-stack compatibility.
+config.stackupup.modpatches.industrialcraft2.tooltip=Patch IndustrialCraft 2 inventories for large-stack compatibility.
+config.stackupup.modpatches.mantle.tooltip=Patch Mantle or Tinkers Construct inventories for large-stack compatibility.
+config.stackupup.modpatches.refinedstorage.tooltip=Patch Refined Storage inventories for large-stack compatibility.
+
+commands.stackupup.usage=/stackupup <reload|edit>
+commands.stackupup.reload.success=Reloaded StackUpUp rules.
+commands.stackupup.edit.success=Opened rules file: %s
+commands.stackupup.edit.missing=Rules file does not exist yet: %s
+commands.stackupup.edit.unsupported=Desktop file opening is not supported in the current environment.
+commands.stackupup.edit.failed=Failed to open rules file: %s
+
+message.stackupup.rule_complexity.prefix=[StackUpUp] Rule complexity warning:
+message.stackupup.rule_reload_error.prefix=[StackUpUp] Rule load errors:
+message.stackupup.rule_complexity.rule_count=Ruleset is getting large: %s rules.
+message.stackupup.rule_complexity.rule_length=A rule is getting long: longest rule has %s characters.
+message.stackupup.rule_complexity.total_length=Ruleset text is getting large: %s characters in total.
+
+tooltip.stackupup.current_max=Stack: %s/%s
+
+

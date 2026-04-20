@@ -1,0 +1,60 @@
+package io.alexjoest.stackupup.core
+
+import io.alexjoest.stackupup.Constants
+import io.alexjoest.stackupup.StackUpUpIds
+import org.objectweb.asm.Opcodes
+import org.objectweb.asm.tree.ClassNode
+import org.objectweb.asm.tree.IntInsnNode
+import org.objectweb.asm.tree.MethodInsnNode
+import java.util.function.Consumer
+
+internal object CompatibilityLimitPatch {
+    private const val defaultStackLimit: Int = Constants.VANILLA_STACK_LIMIT
+    private const val helperOwner: String = StackUpUpIds.STACK_LIMIT_HOOKS_INTERNAL_NAME
+    private const val helperName: String = "getCompatibilityStackSize"
+    private const val helperDesc: String = "()I"
+
+    fun rewrite(vararg methods: String): Consumer<ClassNode> {
+        return Consumer { node ->
+            for (method in node.methods) {
+                if (!matchesAny(method.name, methods)) {
+                    continue
+                }
+
+                var patchesMade = 0
+                val iterator = method.instructions.iterator()
+                while (iterator.hasNext()) {
+                    val instruction = iterator.next()
+                    if (instruction.opcode != Opcodes.BIPUSH) {
+                        continue
+                    }
+
+                    val intInstruction = instruction as IntInsnNode
+                    if (intInstruction.operand != defaultStackLimit) {
+                        continue
+                    }
+
+                    iterator.set(
+                        MethodInsnNode(
+                            Opcodes.INVOKESTATIC,
+                            helperOwner,
+                            helperName,
+                            helperDesc,
+                            false
+                        )
+                    )
+                    patchesMade++
+                }
+            }
+        }
+    }
+
+    private fun matchesAny(name: String, candidates: Array<out String>): Boolean {
+        for (candidate in candidates) {
+            if (candidate == name) {
+                return true
+            }
+        }
+        return false
+    }
+}

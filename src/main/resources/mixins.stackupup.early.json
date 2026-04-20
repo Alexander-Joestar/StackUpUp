@@ -1,0 +1,31 @@
+{
+  "package": "io.alexjoest.stackupup.mixin.early",
+  "refmap": "mixins.StackUpUp.refmap.json",
+  "target": "@env(DEFAULT)",
+  "minVersion": "0.8",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "ContainerMixin",
+    "CommandGiveMixin",
+    "CommandReplaceItemMixin",
+    "ForgeItemHandlerLimitMixin",
+    "InventoryHelperMixin",
+    "ItemMixin",
+    "ItemStackNbtMixin",
+    "ItemStackMixin",
+    "NetHandlerPlayServerMixin",
+    "PacketBufferMixin",
+    "PacketUtilMixin",
+    "ServerRecipeBookHelperMixin",
+    "SlotLimitMixin",
+    "SlotItemHandlerMixin",
+    "VanillaInventoryLimitMixin",
+    "VanillaInventoryWriteMixin"
+  ],
+  "client": [
+    "RenderEntityItemMixin",
+    "RenderItemMixin"
+  ],
+  "server": []
+}
+

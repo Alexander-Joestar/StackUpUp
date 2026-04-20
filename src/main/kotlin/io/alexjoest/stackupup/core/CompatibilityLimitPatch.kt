@@ -6,6 +6,7 @@ import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.tree.IntInsnNode
 import org.objectweb.asm.tree.MethodInsnNode
+import java.util.Collections
 import java.util.function.Consumer
 
 internal object CompatibilityLimitPatch {
@@ -13,6 +14,24 @@ internal object CompatibilityLimitPatch {
     private const val helperOwner: String = StackUpUpIds.STACK_LIMIT_HOOKS_INTERNAL_NAME
     private const val helperName: String = "getCompatibilityStackSize"
     private const val helperDesc: String = "()I"
+
+    fun planFor(transformedName: String, basicClass: ByteArray? = null): List<Consumer<ClassNode>> {
+        val declaredProfiles = basicClass?.let(DynamicCompatMethodProbe::detectProfiles)
+        if (declaredProfiles == DynamicCompatTargetProfile.NONE) {
+            return Collections.emptyList()
+        }
+
+        val profile = if (declaredProfiles != null) {
+            DynamicCompatTargetClassifier.classify(transformedName, declaredProfiles)
+        } else {
+            DynamicCompatTargetClassifier.classify(transformedName)
+        }
+        val methods = DynamicCompatTargetProfile.methodsFor(profile) ?: return Collections.emptyList()
+
+        val patches = ArrayList<Consumer<ClassNode>>(1)
+        patches.add(rewrite(*methods))
+        return patches
+    }
 
     fun rewrite(vararg methods: String): Consumer<ClassNode> {
         return Consumer { node ->

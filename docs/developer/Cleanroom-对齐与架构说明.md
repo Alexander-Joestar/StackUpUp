@@ -188,6 +188,13 @@
 2. `refinedstorage_storage_monitor_extract`
    宸叉帴鍏ュ弽灏勬帰閽堬紝绛夊緟寮曞叆 `refinedstorage` 鎴?`MoreRefinedStorage` 鏍锋湰鍚庤嚜鍔ㄦ墽琛?
 
+## 2026-04-20 Core 收缩补充
+
+1. `DynamicCompatTransformer` 现已收敛为入口 adapter，不再单独持有补丁计划构建层。
+2. `CompatibilityLimitPatch.planFor(...)` 成为动态兼容补丁的唯一决策入口。
+3. `FixedCompatTargets` 采用单表声明，`contains`、`all`、`probeTargets` 均从同一张表派生。
+4. `ClassHierarchyRepository` 仅暴露父类与接口查询，层级元数据已私有化。
+
 ## 涓嬩竴姝ュ缓璁?
 
 1. 缁х画鍑忓皯 `DynamicCompatTransformer` 涓粛灞炲浐瀹氱洰鏍囩殑鍘嗗彶琛ヤ竵銆?

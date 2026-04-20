@@ -66,7 +66,7 @@ class DynamicCompatTargetClassifierTest {
         )
     }
     @Test
-    fun `fixed target 鎺㈤拡瀛愰泦搴旂敱鍗曚竴鍚嶅崟鎺ㄥ`() {
+    fun `fixed target 探测子集应由单一声明推导`() {
         assertArrayEquals(
             arrayOf(
                 "org.cyclops.cyclopscore.inventory.SimpleInventory",
@@ -78,5 +78,24 @@ class DynamicCompatTargetClassifierTest {
             ),
             FixedCompatTargets.probeTargets()
         )
+    }
+
+    @Test
+    fun `probe target 应保持 fixed target 声明顺序`() {
+        val allTargets = FixedCompatTargets.all()
+        val expected = ArrayList<String>()
+        for (target in allTargets) {
+            if (target == "org.cyclops.cyclopscore.inventory.SimpleInventory"
+                || target == "net.minecraftforge.items.SlotItemHandler"
+                || target == "net.minecraftforge.items.wrapper.InvWrapper"
+                || target == "net.minecraftforge.items.wrapper.SidedInvWrapper"
+                || target == "net.minecraftforge.items.wrapper.CombinedInvWrapper"
+                || target == "net.minecraftforge.items.wrapper.RangedWrapper"
+            ) {
+                expected += target
+            }
+        }
+
+        assertArrayEquals(expected.toTypedArray(), FixedCompatTargets.probeTargets())
     }
 }

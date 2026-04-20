@@ -92,9 +92,16 @@
 3. `ItemStackPatchTest`
 4. `MaxStackConstantPatchTest`
 5. `DynamicCompatTargetClassifierTest`
-6. `DynamicCompatPlanBuilderTest`
+6. `CompatibilityLimitPatchTest`
 7. `DynamicCompatTransformerTest`
 8. `ClassNameNormalizerTest`
+
+## 2026-04-20 Core 收缩补充
+
+1. `DynamicCompatPlanBuilder` 已删除，`DynamicCompatTransformer` 现在只负责过滤、类名归一化、委托补丁决策与应用补丁。
+2. 动态补丁决策入口已收口到 `CompatibilityLimitPatch.planFor(...)`。
+3. `FixedCompatTargets` 现在使用单表声明，并从同一张表派生 `all()` 与 `probeTargets()`。
+4. `ClassHierarchyMetadata` 已并回 `ClassHierarchyRepository` 私有实现，外部改为只读父类与接口查询。
 
 ## 鏈疆缁撴瀯鏀剁缉
 

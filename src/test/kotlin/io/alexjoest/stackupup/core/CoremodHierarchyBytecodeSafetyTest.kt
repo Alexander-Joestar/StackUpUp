@@ -70,7 +70,6 @@ class CoremodHierarchyBytecodeSafetyTest {
         return fileName.startsWith("ClassHierarchyRepository")
             || fileName.startsWith("TypeRelationshipResolver")
             || fileName.startsWith("FixedCompatTargets")
-            || fileName.startsWith("DynamicCompatPlanBuilder")
             || fileName.startsWith("DynamicCompatMethodProbe")
     }
 }

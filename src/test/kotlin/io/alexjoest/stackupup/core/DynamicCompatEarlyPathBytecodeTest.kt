@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 class DynamicCompatEarlyPathBytecodeTest {
     @Test
     fun `动态兼容早期路径不应引用 Kotlin when 异常`() {
-        assertFalse(classBytes(DynamicCompatPlanBuilder::class.java).containsAscii("kotlin/NoWhenBranchMatchedException"))
+        assertFalse(classBytes(CompatibilityLimitPatch::class.java).containsAscii("kotlin/NoWhenBranchMatchedException"))
         assertFalse(classBytes(DynamicCompatTargetClassifier::class.java).containsAscii("kotlin/NoWhenBranchMatchedException"))
     }
 
@@ -17,7 +17,7 @@ class DynamicCompatEarlyPathBytecodeTest {
 
     @Test
     fun `动态兼容早期路径不应生成 Kotlin when 映射辅助类`() {
-        assertFalse(hasSiblingClass(DynamicCompatPlanBuilder::class.java, "WhenMappings"))
+        assertFalse(hasSiblingClass(CompatibilityLimitPatch::class.java, "WhenMappings"))
         assertFalse(hasSiblingClass(DynamicCompatTargetClassifier::class.java, "WhenMappings"))
     }
 

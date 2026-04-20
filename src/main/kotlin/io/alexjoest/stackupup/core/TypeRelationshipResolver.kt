@@ -30,13 +30,12 @@ internal object TypeRelationshipResolver {
                 return true
             }
 
-            val metadata = ClassHierarchyRepository.get(current)
-            for (implementedInterface in metadata.interfaces) {
+            for (implementedInterface in ClassHierarchyRepository.interfacesOf(current)) {
                 if (implements(implementedInterface, targetType, visited)) {
                     return true
                 }
             }
-            current = metadata.superClass
+            current = ClassHierarchyRepository.superClassOf(current)
         }
 
         return false
@@ -62,7 +61,7 @@ internal object TypeRelationshipResolver {
                 return true
             }
 
-            current = ClassHierarchyRepository.get(current).superClass
+            current = ClassHierarchyRepository.superClassOf(current)
         }
 
         extendsCache.putIfAbsent(cacheKey, false)

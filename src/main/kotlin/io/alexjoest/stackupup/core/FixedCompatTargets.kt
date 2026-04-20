@@ -5,66 +5,81 @@ package io.alexjoest.stackupup.core
  * 这里避免使用 Kotlin 集合工厂，防止 coremod 早期再次拉起 stdlib。
  */
 internal object FixedCompatTargets {
-    private val names = arrayOf(
+    private class Entry(val className: String, val probeCovered: Boolean)
+
+    private val entries = arrayOf(
         // 原版 IInventory / 容器实现
-        "net.minecraft.tileentity.TileEntityDispenser",
-        "net.minecraft.tileentity.TileEntityChest",
-        "net.minecraft.tileentity.TileEntityFurnace",
-        "net.minecraft.tileentity.TileEntityBrewingStand",
-        "net.minecraft.tileentity.TileEntityHopper",
-        "net.minecraft.tileentity.TileEntityShulkerBox",
-        "net.minecraft.entity.item.EntityMinecartContainer",
-        "net.minecraft.entity.player.InventoryPlayer",
-        "net.minecraft.inventory.InventoryBasic",
-        "net.minecraft.inventory.InventoryEnderChest",
-        "net.minecraft.inventory.InventoryLargeChest",
-        "net.minecraft.inventory.InventoryMerchant",
-        "net.minecraft.inventory.InventoryCrafting",
-        "net.minecraft.inventory.InventoryCraftResult",
+        entry("net.minecraft.tileentity.TileEntityDispenser"),
+        entry("net.minecraft.tileentity.TileEntityChest"),
+        entry("net.minecraft.tileentity.TileEntityFurnace"),
+        entry("net.minecraft.tileentity.TileEntityBrewingStand"),
+        entry("net.minecraft.tileentity.TileEntityHopper"),
+        entry("net.minecraft.tileentity.TileEntityShulkerBox"),
+        entry("net.minecraft.entity.item.EntityMinecartContainer"),
+        entry("net.minecraft.entity.player.InventoryPlayer"),
+        entry("net.minecraft.inventory.InventoryBasic"),
+        entry("net.minecraft.inventory.InventoryEnderChest"),
+        entry("net.minecraft.inventory.InventoryLargeChest"),
+        entry("net.minecraft.inventory.InventoryMerchant"),
+        entry("net.minecraft.inventory.InventoryCrafting"),
+        entry("net.minecraft.inventory.InventoryCraftResult"),
 
         // 已由 late mixin 独占负责的第三方库存
-        "appeng.tile.inventory.AppEngInternalInventory",
-        "appeng.tile.inventory.AppEngInternalAEInventory",
-        "org.cyclops.cyclopscore.inventory.SimpleInventory",
+        entry("appeng.tile.inventory.AppEngInternalInventory"),
+        entry("appeng.tile.inventory.AppEngInternalAEInventory"),
+        entry("org.cyclops.cyclopscore.inventory.SimpleInventory", probeCovered = true),
 
         // Forge item handler / wrapper
-        "net.minecraftforge.items.SlotItemHandler",
-        "net.minecraftforge.items.ItemStackHandler",
-        "net.minecraftforge.items.VanillaDoubleChestItemHandler",
-        "net.minecraftforge.items.wrapper.EntityEquipmentInvWrapper",
-        "net.minecraftforge.items.wrapper.EmptyHandler",
-        "net.minecraftforge.items.wrapper.InvWrapper",
-        "net.minecraftforge.items.wrapper.SidedInvWrapper",
-        "net.minecraftforge.items.wrapper.CombinedInvWrapper",
-        "net.minecraftforge.items.wrapper.RangedWrapper"
+        entry("net.minecraftforge.items.SlotItemHandler", probeCovered = true),
+        entry("net.minecraftforge.items.ItemStackHandler"),
+        entry("net.minecraftforge.items.VanillaDoubleChestItemHandler"),
+        entry("net.minecraftforge.items.wrapper.EntityEquipmentInvWrapper"),
+        entry("net.minecraftforge.items.wrapper.EmptyHandler"),
+        entry("net.minecraftforge.items.wrapper.InvWrapper", probeCovered = true),
+        entry("net.minecraftforge.items.wrapper.SidedInvWrapper", probeCovered = true),
+        entry("net.minecraftforge.items.wrapper.CombinedInvWrapper", probeCovered = true),
+        entry("net.minecraftforge.items.wrapper.RangedWrapper", probeCovered = true)
     )
 
-    private val probeTargetIndexes = intArrayOf(
-        16,
-        17,
-        22,
-        23,
-        24,
-        25
-    )
+    private val allTargets = copyNames(entries.size, includeProbeCoveredOnly = false)
+    private val probeTargets = copyNames(countProbeTargets(), includeProbeCoveredOnly = true)
 
     fun contains(className: String): Boolean {
-        for (name in names) {
-            if (name == className) {
+        for (entry in entries) {
+            if (entry.className == className) {
                 return true
             }
         }
         return false
     }
 
-    fun all(): Array<String> = names.copyOf()
+    fun all(): Array<String> = allTargets.copyOf()
 
-    fun probeTargets(): Array<String> {
-        val selected = arrayOfNulls<String>(probeTargetIndexes.size)
-        for (index in probeTargetIndexes.indices) {
-            selected[index] = names[probeTargetIndexes[index]]
+    fun probeTargets(): Array<String> = probeTargets.copyOf()
+
+    private fun countProbeTargets(): Int {
+        var count = 0
+        for (entry in entries) {
+            if (entry.probeCovered) {
+                count++
+            }
+        }
+        return count
+    }
+
+    private fun copyNames(size: Int, includeProbeCoveredOnly: Boolean): Array<String> {
+        val selected = arrayOfNulls<String>(size)
+        var index = 0
+        for (entry in entries) {
+            if (includeProbeCoveredOnly && !entry.probeCovered) {
+                continue
+            }
+            selected[index++] = entry.className
         }
         @Suppress("UNCHECKED_CAST")
         return selected as Array<String>
     }
+
+    private fun entry(className: String, probeCovered: Boolean = false): Entry =
+        Entry(className = className, probeCovered = probeCovered)
 }

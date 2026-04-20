@@ -9,6 +9,47 @@ import kotlin.math.roundToInt
 object StackCountTextLayout {
     private const val FORMAT_CODE_MARKER: Char = '\u00A7'
     private const val DECIMAL_RADIX: Int = 10
+    private const val THOUSAND: Int = 1_000
+    private const val TEN_THOUSAND: Int = 10_000
+    private const val HUNDRED_THOUSAND: Int = 100_000
+    private const val MILLION: Int = 1_000_000
+    private const val TEN_MILLION: Int = 10_000_000
+    private const val HUNDRED_MILLION: Int = 100_000_000
+    private const val BILLION: Int = 1_000_000_000
+
+    private enum class CompactStyle {
+        INTEGER,
+        ONE_DECIMAL,
+        TWO_DECIMALS,
+        LEADING_DOT
+    }
+
+    private data class CompactSegment(
+        val minInclusive: Int,
+        val maxInclusive: Int,
+        val divisor: Int,
+        val suffix: Char,
+        val style: CompactStyle
+    )
+
+    private val shortCompactSegments = arrayOf(
+        CompactSegment(THOUSAND, TEN_THOUSAND - 1, 100, 'K', CompactStyle.ONE_DECIMAL),
+        CompactSegment(TEN_THOUSAND, HUNDRED_THOUSAND - 1, THOUSAND, 'K', CompactStyle.INTEGER),
+        CompactSegment(HUNDRED_THOUSAND, MILLION - 1, HUNDRED_THOUSAND, 'M', CompactStyle.LEADING_DOT),
+        CompactSegment(MILLION, HUNDRED_MILLION - 1, MILLION, 'M', CompactStyle.INTEGER),
+        CompactSegment(HUNDRED_MILLION, BILLION - 1, HUNDRED_MILLION, 'B', CompactStyle.LEADING_DOT),
+        CompactSegment(BILLION, Int.MAX_VALUE, BILLION, 'B', CompactStyle.INTEGER)
+    )
+
+    private val longCompactSegments = arrayOf(
+        CompactSegment(THOUSAND, TEN_THOUSAND - 1, DECIMAL_RADIX, 'K', CompactStyle.TWO_DECIMALS),
+        CompactSegment(TEN_THOUSAND, HUNDRED_THOUSAND - 1, 100, 'K', CompactStyle.ONE_DECIMAL),
+        CompactSegment(HUNDRED_THOUSAND, MILLION - 1, THOUSAND, 'K', CompactStyle.INTEGER),
+        CompactSegment(MILLION, TEN_MILLION - 1, 10_000, 'M', CompactStyle.TWO_DECIMALS),
+        CompactSegment(TEN_MILLION, HUNDRED_MILLION - 1, HUNDRED_THOUSAND, 'M', CompactStyle.ONE_DECIMAL),
+        CompactSegment(HUNDRED_MILLION, BILLION - 1, MILLION, 'M', CompactStyle.INTEGER),
+        CompactSegment(BILLION, Int.MAX_VALUE, TEN_MILLION, 'B', CompactStyle.TWO_DECIMALS)
+    )
 
     data class AbbreviationResult(
         val text: String,
@@ -124,8 +165,10 @@ object StackCountTextLayout {
             return AbbreviationResult(text, scaleFactor, fits, abbreviated)
         }
 
-        val cfgMinScaleFactor = (StackUpUpConfig.lowestScaleDown * maxScaleFactor).roundToInt().coerceIn(1, maxScaleFactor)
-        val cfgMaxScaleFactor = (StackUpUpConfig.highestScaleDown * maxScaleFactor).roundToInt().coerceIn(1, maxScaleFactor)
+        val cfgMinScaleFactor =
+            (StackUpUpConfig.lowestScaleDown * maxScaleFactor).roundToInt().coerceIn(1, maxScaleFactor)
+        val cfgMaxScaleFactor =
+            (StackUpUpConfig.highestScaleDown * maxScaleFactor).roundToInt().coerceIn(1, maxScaleFactor)
 
         if (cfgMinScaleFactor != cfgMaxScaleFactor) {
             for (currScaleFactor in cfgMaxScaleFactor downTo cfgMinScaleFactor) {
@@ -143,28 +186,11 @@ object StackCountTextLayout {
     }
 
     internal fun formatShortCompactCount(countI: Int): String {
-        return when {
-            countI in 1000..9999           -> formatSingleDecimalCompact(countI / 100, 'K')
-            countI in 10000..99999         -> "${countI / 1000}K"
-            countI in 100000..999999       -> ".${countI / 100000}M"
-            countI in 1000000..99999999    -> "${countI / 1000000}M"
-            countI in 100000000..999999999 -> ".${countI / 100000000}B"
-            countI >= 1000000000           -> "${countI / 1000000000}B"
-            else                           -> countI.toString()
-        }
+        return formatCompactCount(countI, shortCompactSegments)
     }
 
     internal fun formatLongCompactCount(countI: Int): String {
-        return when {
-            countI in 1000..9999           -> formatTwoDecimalCompact(countI / DECIMAL_RADIX, 'K')
-            countI in 10000..99999         -> formatSingleDecimalCompact(countI / 100, 'K')
-            countI in 100000..999999       -> "${countI / 1000}K"
-            countI in 1000000..9999999     -> formatTwoDecimalCompact(countI / 10000, 'M')
-            countI in 10000000..99999999   -> formatSingleDecimalCompact(countI / 100000, 'M')
-            countI in 100000000..999999999 -> "${countI / 1000000}M"
-            countI >= 1000000000           -> formatTwoDecimalCompact(countI / 10000000, 'B')
-            else                           -> countI.toString()
-        }
+        return formatCompactCount(countI, longCompactSegments)
     }
 
     internal fun formatGroupedCount(countI: Int): String =
@@ -205,10 +231,10 @@ object StackCountTextLayout {
 
     private fun shouldPreferAbbreviation(countI: Int, rawText: String, justCheckAbbreviation: Boolean): Boolean {
         if (justCheckAbbreviation) {
-            return countI >= 1000
+            return countI >= THOUSAND
         }
 
-        return countI >= 1000 && getStringLenWithoutFmtCodes(rawText) >= 5
+        return countI >= THOUSAND && getStringLenWithoutFmtCodes(rawText) >= 5
     }
 
     private fun splitLeadingFormatting(text: String): Pair<String, String> {
@@ -248,5 +274,22 @@ object StackCountTextLayout {
             append(suffix)
         }
     }
-}
 
+    private fun formatCompactCount(countI: Int, segments: Array<CompactSegment>): String {
+        for (segment in segments) {
+            if (countI < segment.minInclusive || countI > segment.maxInclusive) {
+                continue
+            }
+
+            val scaledValue = countI / segment.divisor
+            return when (segment.style) {
+                CompactStyle.INTEGER -> "${scaledValue}${segment.suffix}"
+                CompactStyle.ONE_DECIMAL -> formatSingleDecimalCompact(scaledValue, segment.suffix)
+                CompactStyle.TWO_DECIMALS -> formatTwoDecimalCompact(scaledValue, segment.suffix)
+                CompactStyle.LEADING_DOT -> ".${scaledValue}${segment.suffix}"
+            }
+        }
+
+        return countI.toString()
+    }
+}

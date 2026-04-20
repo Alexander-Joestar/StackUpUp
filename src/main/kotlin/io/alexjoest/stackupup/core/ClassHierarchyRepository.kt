@@ -26,9 +26,18 @@ private fun toDotName(name: String): String {
 }
 
 internal object ClassHierarchyRepository {
-    private val cache = ConcurrentHashMap<String, ClassHierarchyMetadata>()
+    private data class Metadata(
+        val superClass: String?,
+        val interfaces: Set<String>
+    )
 
-    fun get(className: String): ClassHierarchyMetadata {
+    private val cache = ConcurrentHashMap<String, Metadata>()
+
+    fun superClassOf(className: String): String? = get(className).superClass
+
+    fun interfacesOf(className: String): Set<String> = get(className).interfaces
+
+    private fun get(className: String): Metadata {
         val existing = cache[className]
         if (existing != null) {
             return existing
@@ -39,11 +48,11 @@ internal object ClassHierarchyRepository {
         return previous ?: loaded
     }
 
-    private fun loadMetadata(className: String): ClassHierarchyMetadata {
+    private fun loadMetadata(className: String): Metadata {
         var fileName = FMLDeobfuscatingRemapper.INSTANCE.unmap(toSlashName(className))
         fileName = toSlashName(fileName) + ".class"
         val stream: InputStream = ClassHierarchyRepository::class.java.classLoader.getResourceAsStream(fileName)
-            ?: return ClassHierarchyMetadata(superClass = null, interfaces = Collections.emptySet())
+            ?: return Metadata(superClass = null, interfaces = Collections.emptySet())
 
         try {
             val collector = HierarchySignatureCollector()
@@ -76,7 +85,7 @@ internal object ClassHierarchyRepository {
             rawInterfaces = interfaces
         }
 
-        fun toMetadata(): ClassHierarchyMetadata {
+        fun toMetadata(): Metadata {
             val superClass = rawSuperClass?.let {
                 toDotName(FMLDeobfuscatingRemapper.INSTANCE.map(it))
             }
@@ -84,7 +93,7 @@ internal object ClassHierarchyRepository {
             for (rawInterface in rawInterfaces) {
                 interfaces += toDotName(FMLDeobfuscatingRemapper.INSTANCE.map(rawInterface))
             }
-            return ClassHierarchyMetadata(superClass = superClass, interfaces = interfaces)
+            return Metadata(superClass = superClass, interfaces = interfaces)
         }
     }
 }

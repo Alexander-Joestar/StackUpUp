@@ -2,7 +2,7 @@
 
 ## Coremod Early Path
 
-1. `DynamicCompatTransformer -> DynamicCompatPlanBuilder -> TypeRelationshipResolver -> ClassHierarchyRepository` 属于 coremod 早期路径。
+1. `DynamicCompatTransformer -> CompatibilityLimitPatch.planFor(...) -> TypeRelationshipResolver -> ClassHierarchyRepository` 属于 coremod 早期路径。
 2. 这条路径禁止重新引入 `kotlin.collections`、`kotlin.sequences`、`kotlin.text`、`kotlin.io`、`kotlin.ranges`、lambda/function 引用，以及会生成 `WhenMappings` / `NoWhenBranchMatchedException` 的分支写法。
 3. 动态补丁先做“当前类是否声明任何候选上限方法”的探测；没有命中时，连层级分类都不做。
 4. 命中候选方法后，再做“当前类是否真的声明目标方法”的细分探测；只继承父类实现的目标直接跳过，不进入完整 ASM 改写。

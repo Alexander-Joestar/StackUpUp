@@ -2,7 +2,7 @@
 
 ## Coremod Early Path
 
-`DynamicCompatTransformer -> DynamicCompatPlanBuilder -> TypeRelationshipResolver -> ClassHierarchyRepository`
+`DynamicCompatTransformer -> CompatibilityLimitPatch.planFor(...) -> TypeRelationshipResolver -> ClassHierarchyRepository`
 这条链路已经实际踩到过 Kotlin stdlib 循环加载。
 
 当前约束：
@@ -13,8 +13,8 @@
 4. 命中候选方法后，再探测“当前类是否真的声明了目标方法”，未声明则直接跳过，避免把纯继承类也拖进 ASM 改写。
 5. 优先显式循环、JDK 集合、基础条件判断。
 6. 对应回归：`DynamicCompatEarlyPathBytecodeTest`
-7. `DynamicCompatTargetProfile` 现在同时承担目标类型名、候选方法名与补丁方法名的单一事实来源；新增动态目标规则时先改这里，不要再分散写到 `PlanBuilder`。
-8. `FixedCompatTargets` 是 dynamic ASM 固定跳过目标的唯一事实源；新增或移出固定目标时，必须同步让 `classifier / plan builder / transformer` 三层回归都遍历它。
+7. `DynamicCompatTargetProfile` 现在同时承担目标类型名、候选方法名与补丁方法名的单一事实来源；新增动态目标规则时先改这里，不要再分散写到多层中转对象。
+8. `FixedCompatTargets` 是 dynamic ASM 固定跳过目标的唯一事实源；新增或移出固定目标时，必须同步让 `classifier / patch planner / transformer` 三层回归都遍历它。
 9. `DynamicCompatPlan` 只保留补丁载荷，不再携带未消费的类名状态。
 10. slash/dot 类名归一化统一走同一个 helper，不要在 early path 再复制一份字符串转换实现。
 11. `ClassHierarchyRepository` 只允许读取父类与接口签名，不再为层级判断构建完整 `ClassNode`。

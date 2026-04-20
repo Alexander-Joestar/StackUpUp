@@ -11,7 +11,7 @@ import java.util.function.Consumer
  *
  * 这层只负责：
  * 1. 过滤显然无关的基础运行时类
- * 2. 为运行时发现目标生成补丁计划
+ * 2. 把类名与字节码交给补丁决策函数
  * 3. 把补丁计划应用到字节码
  */
 class DynamicCompatTransformer : IClassTransformer {
@@ -26,7 +26,7 @@ class DynamicCompatTransformer : IClassTransformer {
         }
 
         val transformedName = toDotName(internalName)
-        val patches = DynamicCompatPlanBuilder.build(transformedName, basicClass)
+        val patches = CompatibilityLimitPatch.planFor(transformedName, basicClass)
         return if (patches.isNotEmpty()) {
             applyPatches(basicClass, patches)
         } else {

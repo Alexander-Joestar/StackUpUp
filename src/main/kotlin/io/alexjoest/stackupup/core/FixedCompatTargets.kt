@@ -39,13 +39,13 @@ internal object FixedCompatTargets {
         "net.minecraftforge.items.wrapper.RangedWrapper"
     )
 
-    private val probeTargets = arrayOf(
-        "org.cyclops.cyclopscore.inventory.SimpleInventory",
-        "net.minecraftforge.items.SlotItemHandler",
-        "net.minecraftforge.items.wrapper.InvWrapper",
-        "net.minecraftforge.items.wrapper.SidedInvWrapper",
-        "net.minecraftforge.items.wrapper.CombinedInvWrapper",
-        "net.minecraftforge.items.wrapper.RangedWrapper"
+    private val probeTargetIndexes = intArrayOf(
+        16,
+        17,
+        22,
+        23,
+        24,
+        25
     )
 
     fun contains(className: String): Boolean {
@@ -59,5 +59,12 @@ internal object FixedCompatTargets {
 
     fun all(): Array<String> = names.copyOf()
 
-    fun probeTargets(): Array<String> = probeTargets.copyOf()
+    fun probeTargets(): Array<String> {
+        val selected = arrayOfNulls<String>(probeTargetIndexes.size)
+        for (index in probeTargetIndexes.indices) {
+            selected[index] = names[probeTargetIndexes[index]]
+        }
+        @Suppress("UNCHECKED_CAST")
+        return selected as Array<String>
+    }
 }

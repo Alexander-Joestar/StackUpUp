@@ -1,5 +1,6 @@
 package io.alexjoest.stackupup.core
 
+import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -62,6 +63,20 @@ class DynamicCompatTargetClassifierTest {
                 "net.minecraft.inventory.SlotCrafting",
                 DynamicCompatTargetProfile.ITEM_HANDLER
             )
+        )
+    }
+    @Test
+    fun `fixed target 鎺㈤拡瀛愰泦搴旂敱鍗曚竴鍚嶅崟鎺ㄥ`() {
+        assertArrayEquals(
+            arrayOf(
+                "org.cyclops.cyclopscore.inventory.SimpleInventory",
+                "net.minecraftforge.items.SlotItemHandler",
+                "net.minecraftforge.items.wrapper.InvWrapper",
+                "net.minecraftforge.items.wrapper.SidedInvWrapper",
+                "net.minecraftforge.items.wrapper.CombinedInvWrapper",
+                "net.minecraftforge.items.wrapper.RangedWrapper"
+            ),
+            FixedCompatTargets.probeTargets()
         )
     }
 }

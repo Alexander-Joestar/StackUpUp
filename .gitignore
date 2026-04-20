@@ -20,3 +20,12 @@ build
 # other
 eclipse
 run
+
+.kotlin
+.spec-workflow
+.codex
+.codex-test.log
+logs
+local-dev-mods
+scripts/runclient-graal25.cmd
+zone/**/*.class

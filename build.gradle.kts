@@ -420,6 +420,7 @@ tasks.withType<ProcessResources> {
 }
 
 tasks.withType<Jar> {
+    exclude("io/alexjoest/stackupup/dev/**")
     manifest {
         val attributeMap = mutableMapOf<String, String>()
         if (use_coremod.toBoolean()) {

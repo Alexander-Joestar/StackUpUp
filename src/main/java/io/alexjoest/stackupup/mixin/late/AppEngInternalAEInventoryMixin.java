@@ -14,7 +14,7 @@ abstract class AppEngInternalAEInventoryMixin {
     private static final int VANILLA_STACK_LIMIT = 64;
 
     @ModifyConstant(method = "<init>*", constant = @Constant(intValue = 64), require = 0)
-    private int replaceCompatibilityLimit(int original) {
+    private static int replaceCompatibilityLimit(int original) {
         return StackLimitHooks.getCompatibilityStackSize();
     }
 

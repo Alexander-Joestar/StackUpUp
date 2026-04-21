@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
 @Mixin(targets = "ic2.core.block.invslot.InvSlot", remap = false)
 abstract class InvSlotMixin {
     @ModifyConstant(method = "<init>*", constant = @Constant(intValue = 64), require = 0)
-    private int replaceCompatibilityLimit(int original) {
+    private static int replaceCompatibilityLimit(int original) {
         return StackLimitHooks.getCompatibilityStackSize();
     }
 }

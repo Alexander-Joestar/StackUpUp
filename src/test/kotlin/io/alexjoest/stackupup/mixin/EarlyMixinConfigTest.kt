@@ -20,6 +20,7 @@ class EarlyMixinConfigTest {
         assertTrue(content.contains("ForgeItemHandlerLimitMixin"))
         assertTrue(content.contains("SlotItemHandlerMixin"))
         assertTrue(content.contains("RenderItemMixin"))
+        assertTrue(!content.contains("ItemStackMixin"))
     }
 
     @Test

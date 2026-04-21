@@ -1,5 +1,6 @@
 package io.alexjoest.stackupup.mixin.early;
 
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import io.alexjoest.stackupup.StackLimitHooks;
 import net.minecraft.entity.item.EntityMinecartContainer;
 import net.minecraft.entity.player.InventoryPlayer;
@@ -16,8 +17,6 @@ import net.minecraft.tileentity.TileEntityHopper;
 import net.minecraft.tileentity.TileEntityShulkerBox;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin({
     TileEntityDispenser.class,
@@ -37,21 +36,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 abstract class VanillaInventoryLimitMixin {
     private static final int VANILLA_STACK_LIMIT = 64;
 
-    @Inject(
+    @ModifyReturnValue(
         method = "getInventoryStackLimit()I",
         at = @At("RETURN"),
-        cancellable = true,
         require = 0
     )
-    private void replaceCompatibilityLimit(CallbackInfoReturnable<Integer> cir) {
-        int limit = StackLimitHooks.resolveInventoryWriteLimit(cir.getReturnValue());
-        if (limit != cir.getReturnValue()) {
-            cir.setReturnValue(limit);
-            return;
+    private int stackupup$replaceCompatibilityLimit(int original) {
+        int limit = StackLimitHooks.resolveInventoryWriteLimit(original);
+        if (limit != original) {
+            return limit;
         }
 
-        if (cir.getReturnValue() == VANILLA_STACK_LIMIT) {
-            cir.setReturnValue(StackLimitHooks.getCompatibilityStackSize());
-        }
+        return original == VANILLA_STACK_LIMIT ? StackLimitHooks.getCompatibilityStackSize() : original;
     }
 }

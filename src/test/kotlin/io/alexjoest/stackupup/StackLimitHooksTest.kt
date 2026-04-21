@@ -104,16 +104,9 @@ class StackLimitHooksTest {
     @Test
     fun `普通槽位应允许规则上限突破兼容常量上限`() {
         Bootstrap.register()
-        RuleRuntime.replaceSnapshot(
-            RuleSnapshot(
-                version = 6L,
-                rules = listOf(
-                    RuleCompiler.compileLine("item = stackupup_test:dummy_item -> 10240", 1)
-                )
-            )
-        )
-        RuleRuntime.replaceOreDictIndex(OreDictIndex.fromStackLoader { emptySet() })
-        val item = Item().setRegistryName(ResourceLocation("stackupup_test", "dummy_item"))
+        val item = object : Item() {
+            override fun getItemStackLimit(stack: ItemStack): Int = 10240
+        }.setRegistryName(ResourceLocation("stackupup_test", "dummy_item"))
 
         val result = StackLimitHooks.resolveDynamicSlotLimit(
             stack = ItemStack(item, 1, 0),
@@ -172,16 +165,9 @@ class StackLimitHooksTest {
     @Test
     fun `当兼容上限与物品动态上限一致时不应重复放大`() {
         Bootstrap.register()
-        RuleRuntime.replaceSnapshot(
-            RuleSnapshot(
-                version = 9L,
-                rules = listOf(
-                    RuleCompiler.compileLine("item = stackupup_test:dummy_item -> 10240", 1)
-                )
-            )
-        )
-        RuleRuntime.replaceOreDictIndex(OreDictIndex.fromStackLoader { emptySet() })
-        val item = Item().setRegistryName(ResourceLocation("stackupup_test", "dummy_item"))
+        val item = object : Item() {
+            override fun getItemStackLimit(stack: ItemStack): Int = 10240
+        }.setRegistryName(ResourceLocation("stackupup_test", "dummy_item"))
         val stack = ItemStack(item, 1, 0)
 
         val result = StackLimitHooks.resolveDynamicSlotLimit(
@@ -320,16 +306,9 @@ class StackLimitHooksTest {
     @Test
     fun `创造模式发包校验应允许超过兼容常量的动态物品上限`() {
         Bootstrap.register()
-        RuleRuntime.replaceSnapshot(
-            RuleSnapshot(
-                version = 11L,
-                rules = listOf(
-                    RuleCompiler.compileLine("item = stackupup_test:creative_packet_item -> 80000", 1)
-                )
-            )
-        )
-        RuleRuntime.replaceOreDictIndex(OreDictIndex.fromStackLoader { emptySet() })
-        val item = Item().setRegistryName(ResourceLocation("stackupup_test", "creative_packet_item"))
+        val item = object : Item() {
+            override fun getItemStackLimit(stack: ItemStack): Int = 80000
+        }.setRegistryName(ResourceLocation("stackupup_test", "creative_packet_item"))
         val stack = ItemStack(item, 80000, 0)
 
         assertEquals(true, StackLimitHooks.isValidCreativeStackPacket(stack))
@@ -351,6 +330,34 @@ class StackLimitHooksTest {
         val stack = ItemStack(item, 256, 0)
 
         assertEquals(false, StackLimitHooks.isValidCreativeStackPacket(stack))
+    }
+
+    @Test
+    fun `创造模式上限不应对已动态化的物品再次应用相对动作`() {
+        Bootstrap.register()
+        val item = object : Item() {
+            override fun getItemStackLimit(stack: ItemStack): Int = 66
+        }.setRegistryName(ResourceLocation("stackupup_test", "creative_limit_item"))
+        val stack = ItemStack(item, 1, 0)
+
+        assertEquals(66, StackLimitHooks.resolveCreativeStackLimit(stack))
+    }
+
+    @Test
+    fun `普通槽位不应对已动态化的物品上限重复执行相对动作`() {
+        Bootstrap.register()
+        val item = object : Item() {
+            override fun getItemStackLimit(stack: ItemStack): Int = 66
+        }.setRegistryName(ResourceLocation("stackupup_test", "dynamic_slot_item"))
+        val stack = ItemStack(item, 1, 0)
+
+        assertEquals(
+            66,
+            StackLimitHooks.resolveDynamicSlotLimit(
+                stack = stack,
+                slotLimit = StackLimitHooks.getCompatibilityStackSize()
+            )
+        )
     }
 }
 

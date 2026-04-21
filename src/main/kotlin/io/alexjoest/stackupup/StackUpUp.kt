@@ -21,8 +21,6 @@ import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import io.alexjoest.stackupup.Tags
 import io.alexjoest.stackupup.config.LegacyConfigMigration
-import io.alexjoest.stackupup.dev.DevAutomationConfig
-import io.alexjoest.stackupup.dev.DevAutomationServerDriver
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import io.alexjoest.stackupup.rules.io.RuleFileLocator
 import io.alexjoest.stackupup.rules.io.RuleReloadReport
@@ -32,7 +30,7 @@ import io.alexjoest.stackupup.rules.io.RuleSourceLocator
     modid = StackUpUpIds.MOD_ID,
     name = StackUpUpIds.MOD_NAME,
     version = StackUpUp.VERSION,
-    dependencies = "required-after:mixinbooter;before:refinedstorage;before:mantle;before:ic2;before:appliedenergistics2;before:actuallyadditions",
+    dependencies = "required-after:mixinbooter@[10.0,);required-after:forgelin_continuous@[2.1.0.0,);before:refinedstorage;before:mantle;before:ic2;before:appliedenergistics2;before:actuallyadditions",
     guiFactory = StackUpUpIds.CONFIG_GUI_FACTORY_CLASS_NAME
 )
 class StackUpUp {
@@ -88,12 +86,8 @@ class StackUpUp {
 
     @Mod.EventHandler
     fun serverStarted(event: FMLServerStartedEvent) {
-        if (!DevAutomationConfig.serverEnabled) {
-            return
-        }
-
         val server = FMLCommonHandler.instance().minecraftServerInstance ?: return
-        DevAutomationServerDriver.run(server)
+        DevAutomationBridge.runServerAutomation(server)
     }
 
     companion object {

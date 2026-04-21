@@ -42,7 +42,6 @@ internal object ClassHierarchyRepository {
         if (existing != null) {
             return existing
         }
-
         val loaded = loadMetadata(className)
         val previous = cache.putIfAbsent(className, loaded)
         return previous ?: loaded

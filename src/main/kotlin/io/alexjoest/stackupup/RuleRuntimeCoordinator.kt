@@ -18,22 +18,22 @@ object RuleRuntimeCoordinator {
 
     fun reload(enableDslRules: Boolean = StackUpUpConfig.enableDslRules): RuleReloadReport {
         val primaryRulesFile = RuleFileLocator.resolve()
-        val state = if (enableDslRules) {
-            RuleReloadPipeline.loadDslRules(
-                primaryRulesFile = primaryRulesFile,
-                sourceFiles = RuleSourceLocator.resolveLoadOrder()
-            )
-        } else {
-            RuleReloadPipeline.disabled(primaryRulesFile)
-        }
-        val report = state.toReport()
+        val state =
+            if (enableDslRules) {
+                RuleReloadPipeline.loadDslRules(
+                    primaryRulesFile = primaryRulesFile,
+                    sourceFiles = RuleSourceLocator.resolveLoadOrder()
+                )
+            } else {
+                RuleReloadPipeline.disabled(primaryRulesFile)
+            }
+
         RuleRuntime.replaceSnapshot(state.snapshot)
-        if (enableDslRules) {
+        enableDslRules.takeIf { it }?.let {
             RuleRuntime.replaceOreDictIndex(OreDictIndex.createDefault())
         }
         StackSizeBackupRegistry.restoreAll()
-        lastReportState = report
-        return report
+        return state.toReport().also { lastReportState = it }
     }
 
     fun getRulesFile(): File = RuleFileLocator.resolve()
@@ -47,12 +47,11 @@ object RuleRuntimeCoordinator {
         return true
     }
 
-    private fun emptyReport(file: File): RuleReloadReport {
-        return RuleReloadReport(
+    private fun emptyReport(file: File): RuleReloadReport =
+        RuleReloadReport(
             file = file,
             snapshot = RuleSnapshot(version = 0L, rules = emptyList()),
             errors = emptyList(),
             warnings = emptyList()
         )
-    }
 }

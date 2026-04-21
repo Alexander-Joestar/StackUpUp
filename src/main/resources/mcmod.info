@@ -8,7 +8,8 @@
             "mcversion": "${mcversion}",
             "description": "Because 64 just wasn't enough",
             "requiredMods": [
-                "mixinbooter"
+                "mixinbooter",
+                "forgelin_continuous"
             ],
             "authorList": [
                 "Alex_Joest"

@@ -89,7 +89,8 @@ item in [minecraft:egg, minecraft:snowball] -> 128
 
 1. 适用游戏版本为 **Minecraft 1.12.2**。
 2. 当前开发与测试环境基于 **Forge 14.23.5.2847**。
-3. 运行时需要同时安装 `MixinBooter`。
+3. 运行时需要同时安装 [`MixinBooter`](https://www.curseforge.com/minecraft/mc-mods/mixin-booter) 与 [`Forgelin-Continuous`](https://www.curseforge.com/minecraft/mc-mods/forgelin-continuous)。
+4. 当前依赖下限为 `MixinBooter >= 10.0`、`Forgelin-Continuous >= 2.1.0.0`。
 
 ## 兼容性说明
 

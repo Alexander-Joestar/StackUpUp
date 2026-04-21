@@ -1,5 +1,6 @@
 package io.alexjoest.stackupup.mixin.early;
 
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import io.alexjoest.stackupup.client.StackRenderHooks;
 import net.minecraft.client.renderer.entity.RenderEntityItem;
 import net.minecraft.entity.item.EntityItem;
@@ -7,19 +8,16 @@ import net.minecraft.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Constant;
-import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(RenderEntityItem.class)
 abstract class RenderEntityItemMixin {
-    @Inject(
+    @ModifyReturnValue(
         method = "getModelCount(Lnet/minecraft/item/ItemStack;)I",
-        at = @At("HEAD"),
-        cancellable = true
+        at = @At("RETURN")
     )
-    private void useDynamicModelCount(ItemStack stack, CallbackInfoReturnable<Integer> cir) {
-        cir.setReturnValue(StackRenderHooks.getModelCount(stack));
+    private int stackupup$useDynamicModelCount(int original, ItemStack stack) {
+        return StackRenderHooks.getModelCount(stack);
     }
 
     @ModifyConstant(

@@ -9,8 +9,6 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
 import net.minecraftforge.fml.common.gameevent.TickEvent
 import io.alexjoest.stackupup.client.StackCountTextLayout
 import io.alexjoest.stackupup.client.StackRenderHooks
-import io.alexjoest.stackupup.dev.DevAutomationConfig
-import io.alexjoest.stackupup.dev.DevAutomationClientDriver
 import io.alexjoest.stackupup.rules.io.RuleFeedback
 
 class ProxyClient : ProxyCommon() {
@@ -69,12 +67,9 @@ class ProxyClient : ProxyCommon() {
     override fun getCurrentScaleFactor(): Int = ScaledResolution(Minecraft.getMinecraft()).scaleFactor
 
     override fun registerDevAutomation() {
-        if (!DevAutomationConfig.clientEnabled) {
-            return
+        if (DevAutomationBridge.registerClientAutomation()) {
+            StackUpUp.logger?.info("Enabled dev automation: client will automatically enter the test world and receive the target item.")
         }
-
-        MinecraftForge.EVENT_BUS.register(DevAutomationClientDriver())
-        StackUpUp.logger?.info("Enabled dev automation: client will automatically enter the test world and receive the target item.")
     }
 
     override fun markRuleStatusDirty() {

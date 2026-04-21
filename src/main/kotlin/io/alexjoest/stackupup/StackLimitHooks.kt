@@ -59,7 +59,7 @@ object StackLimitHooks {
         }
         // 创造模式发包必须看“该物品此刻的真实动态上限”，
         // 否则客户端能拿到的大堆叠会在服务端被当成非法包，形成幽灵物品。
-        return applyDynamicStackLimit(stack, stack.item.getItemStackLimit(stack))
+        return stack.maxStackSize
     }
 
     @JvmStatic
@@ -76,12 +76,12 @@ object StackLimitHooks {
             return slotLimit
         }
 
-        val resolvedItemLimit = applyDynamicStackLimit(stack, stack.item.getItemStackLimit(stack))
+        val resolvedItemLimit = stack.maxStackSize
         if (slotLimit >= resolvedItemLimit || !shouldTreatAsDefaultSlotLimit(slotLimit)) {
             return slotLimit
         }
 
-        return applyDynamicStackLimit(stack, slotLimit)
+        return resolvedItemLimit
     }
 
     @JvmStatic
@@ -157,4 +157,3 @@ object StackLimitHooks {
             minOf(requestedSize, maxItemSize)
         }
 }
-

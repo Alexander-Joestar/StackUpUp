@@ -1,5 +1,6 @@
 package io.alexjoest.stackupup.mixin.early;
 
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import io.alexjoest.stackupup.StackLimitHooks;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.items.SlotItemHandler;
@@ -7,8 +8,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(value = SlotItemHandler.class, remap = false)
 public abstract class SlotItemHandlerMixin {
@@ -17,21 +16,17 @@ public abstract class SlotItemHandlerMixin {
     @Shadow
     public abstract int getSlotStackLimit();
 
-    @Inject(method = "getSlotStackLimit", at = @At("RETURN"), cancellable = true)
-    private void stackupup$replaceCompatibilityLimit(CallbackInfoReturnable<Integer> cir) {
-        if (cir.getReturnValue() == VANILLA_STACK_LIMIT) {
-            cir.setReturnValue(StackLimitHooks.getCompatibilityStackSize());
-        }
+    @ModifyReturnValue(method = "getSlotStackLimit", at = @At("RETURN"))
+    private int stackupup$replaceCompatibilityLimit(int original) {
+        return original == VANILLA_STACK_LIMIT ? StackLimitHooks.getCompatibilityStackSize() : original;
     }
 
-    @Inject(method = "getItemStackLimit", at = @At("RETURN"), cancellable = true)
-    private void stackupup$resolveItemAwareLimit(ItemStack stack, CallbackInfoReturnable<Integer> cir) {
-        cir.setReturnValue(
-            StackLimitHooks.resolveItemHandlerSlotLimit(
-                stack,
-                cir.getReturnValue(),
-                this.getSlotStackLimit()
-            )
+    @ModifyReturnValue(method = "getItemStackLimit", at = @At("RETURN"))
+    private int stackupup$resolveItemAwareLimit(int original, ItemStack stack) {
+        return StackLimitHooks.resolveItemHandlerSlotLimit(
+            stack,
+            original,
+            this.getSlotStackLimit()
         );
     }
 }

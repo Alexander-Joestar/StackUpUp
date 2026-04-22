@@ -12,7 +12,7 @@ internal class DslTokenCursor(
     }
 
     fun match(type: DslTokenType): Boolean {
-        if (peek().type != type) {
+        if (peekType() != type) {
             return false
         }
         index++
@@ -20,14 +20,14 @@ internal class DslTokenCursor(
     }
 
     fun consume(type: DslTokenType, message: String): DslToken {
-        val token = peek()
+        val token = currentToken()
         require(token.type == type) { message }
         index++
         return token
     }
 
     fun tryConsume(type: DslTokenType): DslToken? {
-        if (peek().type != type) {
+        if (peekType() != type) {
             return null
         }
         index++
@@ -35,14 +35,14 @@ internal class DslTokenCursor(
     }
 
     fun consumeLiteral(message: String): String {
-        val token = peek()
+        val token = currentToken()
         require(token.type == DslTokenType.IDENTIFIER || token.type == DslTokenType.NUMBER) { message }
         index++
         return token.lexeme
     }
 
     fun tryConsumeLiteral(): String? {
-        val token = peek()
+        val token = currentToken()
         if (token.type != DslTokenType.IDENTIFIER && token.type != DslTokenType.NUMBER) {
             return null
         }
@@ -51,15 +51,15 @@ internal class DslTokenCursor(
     }
 
     fun consumeComparisonOperator(): DslToken {
-        val token = peek()
-        require(token.type in DslTokenType.comparisonOperators) { "条件缺少比较运算符" }
+        val token = currentToken()
+        require(token.type.isComparisonOperator) { "条件缺少比较运算符" }
         index++
         return token
     }
 
     fun tryConsumeComparisonOperator(): DslToken? {
-        val token = peek()
-        if (token.type !in DslTokenType.comparisonOperators) {
+        val token = currentToken()
+        if (!token.type.isComparisonOperator) {
             return null
         }
         index++
@@ -67,15 +67,15 @@ internal class DslTokenCursor(
     }
 
     fun consumeActionOperator(): DslToken {
-        val token = peek()
-        require(token.type in DslTokenType.actionOperators) { "规则必须包含动作运算符" }
+        val token = currentToken()
+        require(token.type.isActionOperator) { "规则必须包含动作运算符" }
         index++
         return token
     }
 
-    fun peekType(): DslTokenType = peek().type
+    fun peekType(): DslTokenType = currentToken().type
 
-    fun peekLexeme(): String = peek().lexeme
+    fun peekLexeme(): String = currentToken().lexeme
 
-    private fun peek(): DslToken = tokens.getOrElse(index) { tokens.last() }
+    private fun currentToken(): DslToken = tokens.getOrElse(index) { tokens.last() }
 }

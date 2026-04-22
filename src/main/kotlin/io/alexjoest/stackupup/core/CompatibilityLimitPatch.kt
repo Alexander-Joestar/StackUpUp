@@ -10,10 +10,10 @@ import java.util.Collections
 import java.util.function.Consumer
 
 internal object CompatibilityLimitPatch {
-    private const val defaultStackLimit: Int = Constants.VANILLA_STACK_LIMIT
-    private const val helperOwner: String = StackUpUpIds.STACK_LIMIT_HOOKS_INTERNAL_NAME
-    private const val helperName: String = "getCompatibilityStackSize"
-    private const val helperDesc: String = "()I"
+    private const val DEFAULT_STACK_LIMIT: Int = Constants.VANILLA_STACK_LIMIT
+    private const val HELPER_OWNER: String = StackUpUpIds.STACK_LIMIT_HOOKS_INTERNAL_NAME
+    private const val HELPER_NAME: String = "getCompatibilityStackSize"
+    private const val HELPER_DESC: String = "()I"
 
     fun planFor(transformedName: String, basicClass: ByteArray? = null): List<Consumer<ClassNode>> {
         val declaredProfiles = basicClass?.let(DynamicCompatMethodProbe::detectProfiles)
@@ -28,9 +28,7 @@ internal object CompatibilityLimitPatch {
         }
         val methods = DynamicCompatTargetProfile.methodsFor(profile) ?: return Collections.emptyList()
 
-        val patches = ArrayList<Consumer<ClassNode>>(1)
-        patches.add(rewrite(*methods))
-        return patches
+        return Collections.singletonList(rewrite(*methods))
     }
 
     fun rewrite(vararg methods: String): Consumer<ClassNode> {
@@ -49,16 +47,16 @@ internal object CompatibilityLimitPatch {
                     }
 
                     val intInstruction = instruction as IntInsnNode
-                    if (intInstruction.operand != defaultStackLimit) {
+                    if (intInstruction.operand != DEFAULT_STACK_LIMIT) {
                         continue
                     }
 
                     iterator.set(
                         MethodInsnNode(
                             Opcodes.INVOKESTATIC,
-                            helperOwner,
-                            helperName,
-                            helperDesc,
+                            HELPER_OWNER,
+                            HELPER_NAME,
+                            HELPER_DESC,
                             false
                         )
                     )

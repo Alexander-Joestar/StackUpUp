@@ -12,6 +12,7 @@
     "InventoryHelperMixin",
     "ItemMixin",
     "ItemStackNbtMixin",
+    "ItemStackMixin",
     "NetHandlerPlayServerMixin",
     "PacketBufferMixin",
     "PacketUtilMixin",

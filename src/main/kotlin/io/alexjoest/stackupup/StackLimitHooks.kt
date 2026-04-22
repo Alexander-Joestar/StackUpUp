@@ -6,11 +6,14 @@ import io.alexjoest.stackupup.limit.StackContextResolver
 import io.alexjoest.stackupup.limit.StackIdentity
 import io.alexjoest.stackupup.limit.RuleRuntime
 import java.util.ArrayDeque
+import java.util.IdentityHashMap
 import java.util.Random
 
 object StackLimitHooks {
     private const val VANILLA_STACK_LIMIT: Int = Constants.VANILLA_STACK_LIMIT
     private val inventoryWriteContext: ThreadLocal<ArrayDeque<ItemStack>> = ThreadLocal.withInitial(::ArrayDeque)
+    private val itemLimitResolutionMarkers: ThreadLocal<IdentityHashMap<ItemStack, Int>> =
+        ThreadLocal.withInitial(::IdentityHashMap)
 
     @JvmField
     val RANDOM: Random = Random()
@@ -50,6 +53,22 @@ object StackLimitHooks {
             includeOreNames = limitService.needsOreNames()
         ) ?: return baseLimit
         return limitService.resolve(context)
+    }
+
+    @JvmStatic
+    fun markResolvedItemLimit(stack: ItemStack, resolvedLimit: Int): Int {
+        itemLimitResolutionMarkers.get()[stack] = resolvedLimit
+        return resolvedLimit
+    }
+
+    @JvmStatic
+    fun shouldSkipNestedItemStackLimit(stack: ItemStack, currentLimit: Int): Boolean {
+        val markers = itemLimitResolutionMarkers.get()
+        val markedLimit = markers.remove(stack) ?: return false
+        if (markers.isEmpty()) {
+            itemLimitResolutionMarkers.remove()
+        }
+        return markedLimit == currentLimit
     }
 
     @JvmStatic

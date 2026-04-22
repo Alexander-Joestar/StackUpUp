@@ -6,33 +6,26 @@ import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 
 internal object RuleLineLoader {
     fun load(inputs: List<RuleLineInput>): RuleLoadResult {
-        val rules = ArrayList<CompiledRule>()
+        val rules = ArrayList<CompiledRule>(inputs.size)
         val errors = ArrayList<String>()
         var inBlockComment = false
 
-        inputs.forEachIndexed { index, input ->
+        for ((index, input) in inputs.withIndex()) {
             val sanitized = sanitizeLine(input.content, inBlockComment)
             inBlockComment = sanitized.inBlockComment
             val line = sanitized.content.trim()
             if (line.isEmpty()) {
-                return@forEachIndexed
+                continue
             }
 
             try {
                 rules += RuleCompiler.compileLine(line, index + 1)
             } catch (t: Throwable) {
-                val prefix = input.sourceName?.let { "[$it] " }.orEmpty()
-                errors += "${prefix}第 ${input.lineNumber} 行加载失败：${t.message ?: "未知错误"}"
+                errors += input.formatError(t)
             }
         }
 
-        return RuleLoadResult(
-            snapshot = RuleSnapshot(
-                version = System.nanoTime(),
-                rules = rules
-            ),
-            errors = errors
-        )
+        return RuleLoadResult.compiled(rules, errors)
     }
 
     private fun sanitizeLine(rawLine: String, initialInBlockComment: Boolean): SanitizedLine {
@@ -72,17 +65,19 @@ internal object RuleLineLoader {
             index++
         }
 
-        return SanitizedLine(
-            content = builder.toString(),
-            inBlockComment = inBlockComment
-        )
+        return SanitizedLine(builder.toString(), inBlockComment)
     }
 
     internal data class RuleLineInput(
         val content: String,
         val lineNumber: Int,
         val sourceName: String? = null
-    )
+    ) {
+        fun formatError(throwable: Throwable): String {
+            val prefix = sourceName?.let { "[$it] " }.orEmpty()
+            return "${prefix}第 $lineNumber 行加载失败：${throwable.message ?: "未知错误"}"
+        }
+    }
 
     private data class SanitizedLine(
         val content: String,

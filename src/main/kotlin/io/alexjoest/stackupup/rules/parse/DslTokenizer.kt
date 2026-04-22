@@ -7,6 +7,7 @@ object DslTokenizer {
 
         while (index < line.length) {
             val current = line[index]
+            val symbolType = DslTokenType.matchSymbol(line, index)
             when {
                 current.isWhitespace() -> index++
                 current.isDigit() -> {
@@ -16,10 +17,9 @@ object DslTokenizer {
                     }
                     tokens.add(DslToken(DslTokenType.NUMBER, line.substring(start, index)))
                 }
-                DslTokenType.matchSymbol(line, index) != null -> {
-                    val tokenType = requireNotNull(DslTokenType.matchSymbol(line, index))
-                    val symbol = requireNotNull(tokenType.lexeme)
-                    tokens.add(DslToken(tokenType, symbol))
+                symbolType != null -> {
+                    val symbol = requireNotNull(symbolType.lexeme)
+                    tokens.add(DslToken(symbolType, symbol))
                     index += symbol.length
                 }
                 else -> {

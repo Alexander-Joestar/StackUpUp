@@ -18,7 +18,7 @@ object DevRuleInjector {
             return DevRuleInjectionResult.Skipped
         }
 
-        val loaded = DslRuleSource.fromLines(listOf(ruleLine)).load()
+        val loaded = DslRuleSource.fromLines(listOf(ruleLine))
         if (loaded.errors.isNotEmpty()) {
             return DevRuleInjectionResult.Failed(loaded.errors)
         }

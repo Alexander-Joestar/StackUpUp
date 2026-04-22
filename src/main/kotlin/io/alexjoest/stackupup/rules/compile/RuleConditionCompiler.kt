@@ -13,39 +13,32 @@ internal object RuleConditionCompiler {
     fun compile(condition: ConditionAst): (RuleMatchContext) -> Boolean {
         return when (condition) {
             is FieldComparisonAst -> compileField(condition)
-            is ListConditionAst -> compileList(condition)
-            is AndConditionAst -> {
-                val compiled = condition.conditions.map(::compile)
-                ({ context -> compiled.all { predicate -> predicate(context) } })
-            }
-            is OrConditionAst -> {
-                val compiled = condition.conditions.map(::compile)
-                ({ context -> compiled.any { predicate -> predicate(context) } })
-            }
+            is ListConditionAst   -> compileList(condition)
+            is AndConditionAst    -> compileAll(compileNestedConditions(condition.conditions))
+            is OrConditionAst     -> compileAny(compileNestedConditions(condition.conditions))
         }
     }
 
     private fun compileList(condition: ListConditionAst): (RuleMatchContext) -> Boolean {
         return when (condition.field) {
             RuleField.ITEM -> compileItemList(condition.literals)
-            RuleField.MOD -> compileStringList(condition.literals) { it.modId }
-            RuleField.TYPE -> compileStringList(condition.literals) { it.type }
-            RuleField.ORE -> compileOreList(condition.literals)
-            else -> {
-                val predicates = condition.literals.map { literal ->
+            RuleField.MOD  -> compileSingleStringLiteralList(condition.literals) { it.modId }
+            RuleField.TYPE -> compileSingleStringLiteralList(condition.literals) { it.type }
+            RuleField.ORE  -> compileStringLiteralList(condition.literals) { it.oreNames }
+            else           -> compileAny(
+                condition.literals.map { literal ->
                     compileField(FieldComparisonAst(condition.field, ComparisonOperator.EQUALS, literal))
                 }
-                ({ context -> predicates.any { predicate -> predicate(context) } })
-            }
+            )
         }
     }
 
     private fun compileField(condition: FieldComparisonAst): (RuleMatchContext) -> Boolean {
         return when (condition.field) {
             RuleField.ITEM -> compileItemField(condition)
-            RuleField.MOD -> compileStringField(condition) { it.modId }
-            RuleField.TYPE -> compileStringField(condition) { it.type }
-            RuleField.ORE -> compileOreField(condition)
+            RuleField.MOD  -> compileSingleStringComparison(condition) { it.modId }
+            RuleField.TYPE -> compileSingleStringComparison(condition) { it.type }
+            RuleField.ORE  -> compileStringComparison(condition) { it.oreNames }
             RuleField.META -> compileNumericField(condition) { it.meta }
             RuleField.SIZE -> compileNumericField(condition) { it.baseSize }
         }
@@ -55,21 +48,31 @@ internal object RuleConditionCompiler {
         val matcher = RuleLiteralMatcherCompiler.compileItemMatcher(condition.literal)
         return { context ->
             when (condition.operator) {
-                ComparisonOperator.EQUALS -> matcher(context)
+                ComparisonOperator.EQUALS     -> matcher(context)
                 ComparisonOperator.NOT_EQUALS -> !matcher(context)
-                else -> false
+                else                          -> false
             }
         }
     }
 
     private fun compileItemList(literals: List<String>): (RuleMatchContext) -> Boolean {
-        val matchers = literals.map(RuleLiteralMatcherCompiler::compileItemMatcher)
+        return compileAny(literals.map(RuleLiteralMatcherCompiler::compileItemMatcher))
+    }
+
+    private fun compileStringLiteralList(
+        literals: List<String>,
+        candidatesSelector: (RuleMatchContext) -> Iterable<String>
+    ): (RuleMatchContext) -> Boolean {
+        val exactLiterals = literals.filterNot { '*' in it }.toHashSet()
+        val wildcardMatchers = literals.filter { '*' in it }.map(RuleLiteralMatcherCompiler::compileStringMatcher)
         return { context ->
-            matchers.any { matcher -> matcher(context) }
+            candidatesSelector(context).any { candidate ->
+                candidate in exactLiterals || wildcardMatchers.any { matcher -> matcher(candidate) }
+            }
         }
     }
 
-    private fun compileStringList(
+    private fun compileSingleStringLiteralList(
         literals: List<String>,
         selector: (RuleMatchContext) -> String
     ): (RuleMatchContext) -> Boolean {
@@ -81,38 +84,32 @@ internal object RuleConditionCompiler {
         }
     }
 
-    private fun compileOreList(literals: List<String>): (RuleMatchContext) -> Boolean {
-        val exactLiterals = literals.filterNot { '*' in it }.toHashSet()
-        val wildcardMatchers = literals.filter { '*' in it }.map(RuleLiteralMatcherCompiler::compileStringMatcher)
+    private fun compileStringComparison(
+        condition: FieldComparisonAst,
+        candidatesSelector: (RuleMatchContext) -> Iterable<String>
+    ): (RuleMatchContext) -> Boolean {
+        val matcher = RuleLiteralMatcherCompiler.compileStringMatcher(condition.literal)
         return { context ->
-            context.oreNames.any { oreName ->
-                oreName in exactLiterals || wildcardMatchers.any { matcher -> matcher(oreName) }
+            val matches = candidatesSelector(context).any(matcher)
+            when (condition.operator) {
+                ComparisonOperator.EQUALS     -> matches
+                ComparisonOperator.NOT_EQUALS -> !matches
+                else                          -> false
             }
         }
     }
 
-    private fun compileStringField(
+    private fun compileSingleStringComparison(
         condition: FieldComparisonAst,
         selector: (RuleMatchContext) -> String
     ): (RuleMatchContext) -> Boolean {
         val matcher = RuleLiteralMatcherCompiler.compileStringMatcher(condition.literal)
         return { context ->
-            val actual = selector(context)
+            val matches = matcher(selector(context))
             when (condition.operator) {
-                ComparisonOperator.EQUALS -> matcher(actual)
-                ComparisonOperator.NOT_EQUALS -> !matcher(actual)
-                else -> false
-            }
-        }
-    }
-
-    private fun compileOreField(condition: FieldComparisonAst): (RuleMatchContext) -> Boolean {
-        val matcher = RuleLiteralMatcherCompiler.compileStringMatcher(condition.literal)
-        return { context ->
-            when (condition.operator) {
-                ComparisonOperator.EQUALS -> context.oreNames.any(matcher)
-                ComparisonOperator.NOT_EQUALS -> context.oreNames.none(matcher)
-                else -> false
+                ComparisonOperator.EQUALS     -> matches
+                ComparisonOperator.NOT_EQUALS -> !matches
+                else                          -> false
             }
         }
     }
@@ -125,13 +122,27 @@ internal object RuleConditionCompiler {
         return { context ->
             val actual = selector(context)
             when (condition.operator) {
-                ComparisonOperator.EQUALS -> actual == expected
-                ComparisonOperator.NOT_EQUALS -> actual != expected
-                ComparisonOperator.GREATER -> actual > expected
+                ComparisonOperator.EQUALS         -> actual == expected
+                ComparisonOperator.NOT_EQUALS     -> actual != expected
+                ComparisonOperator.GREATER        -> actual > expected
                 ComparisonOperator.GREATER_EQUALS -> actual >= expected
-                ComparisonOperator.LESS -> actual < expected
-                ComparisonOperator.LESS_EQUALS -> actual <= expected
+                ComparisonOperator.LESS           -> actual < expected
+                ComparisonOperator.LESS_EQUALS    -> actual <= expected
             }
         }
     }
+
+    private fun compileNestedConditions(conditions: List<ConditionAst>): List<(RuleMatchContext) -> Boolean> {
+        val compiled = ArrayList<(RuleMatchContext) -> Boolean>(conditions.size)
+        for (nested in conditions) {
+            compiled += compile(nested)
+        }
+        return compiled
+    }
+
+    private fun compileAny(predicates: List<(RuleMatchContext) -> Boolean>): (RuleMatchContext) -> Boolean =
+        { context -> predicates.any { predicate -> predicate(context) } }
+
+    private fun compileAll(predicates: List<(RuleMatchContext) -> Boolean>): (RuleMatchContext) -> Boolean =
+        { context -> predicates.all { predicate -> predicate(context) } }
 }

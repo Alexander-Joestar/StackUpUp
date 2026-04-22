@@ -9,15 +9,7 @@ class RuleBlockFileStore(
 
     fun replaceBlock(block: RuleTextBlock) {
         val document = parseDocument()
-        val replaced = document.blocks.indexOfFirst { it.id == block.id }
-        val nextBlocks = document.blocks.toMutableList()
-        if (replaced >= 0) {
-            nextBlocks[replaced] = block
-        } else {
-            nextBlocks += block
-        }
-
-        writeDocument(document.copy(blocks = nextBlocks))
+        writeDocument(document.copy(blocks = document.blocks.replaced(block)))
     }
 
     private fun parseDocument(): RuleBlockDocument {
@@ -57,18 +49,17 @@ class RuleBlockFileStore(
 
     private fun writeDocument(document: RuleBlockDocument) {
         file.parentFile?.mkdirs()
-        val rendered = buildList {
-            addAll(document.prefixLines)
-            if (isNotEmpty() && last().isNotBlank()) {
-                add("")
-            }
-            document.blocks.forEachIndexed { index, block ->
-                add(beginMarker(block.id))
-                addAll(block.lines)
-                add(endMarker(block.id))
-                if (index != document.blocks.lastIndex) {
-                    add("")
-                }
+        val rendered = ArrayList<String>(document.prefixLines.size + document.blocks.size * 4)
+        rendered += document.prefixLines
+        if (rendered.isNotEmpty() && rendered.last().isNotBlank()) {
+            rendered += ""
+        }
+        for ((index, block) in document.blocks.withIndex()) {
+            rendered += beginMarker(block.id)
+            rendered += block.lines
+            rendered += endMarker(block.id)
+            if (index != document.blocks.lastIndex) {
+                rendered += ""
             }
         }
         file.writeText(rendered.joinToString(System.lineSeparator()) + System.lineSeparator(), Charsets.UTF_8)
@@ -92,6 +83,17 @@ class RuleBlockFileStore(
         val prefixLines: List<String>,
         val blocks: List<RuleTextBlock>
     )
+
+    private fun List<RuleTextBlock>.replaced(block: RuleTextBlock): List<RuleTextBlock> {
+        val replacedIndex = indexOfFirst { it.id == block.id }
+        val nextBlocks = toMutableList()
+        if (replacedIndex >= 0) {
+            nextBlocks[replacedIndex] = block
+        } else {
+            nextBlocks += block
+        }
+        return nextBlocks
+    }
 
     companion object {
         private const val BEGIN_PREFIX: String = "# BEGIN stackupup:block"

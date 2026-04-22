@@ -9,29 +9,27 @@ internal data class RuleReloadState(
     val errors: List<String>,
     val warnings: List<RuleReloadWarning>
 ) {
-    fun toReport(): RuleReloadReport {
-        return RuleReloadReport(
+    fun toReport(): RuleReloadReport =
+        RuleReloadReport(
             file = file,
             snapshot = snapshot,
             errors = errors,
             warnings = warnings
         )
-    }
 }
 
 internal object RuleReloadPipeline {
-    fun disabled(primaryRulesFile: File): RuleReloadState {
-        return RuleReloadState(
+    fun disabled(primaryRulesFile: File): RuleReloadState =
+        RuleReloadState(
             file = primaryRulesFile,
             snapshot = RuleSnapshot(0L, emptyList()),
             errors = emptyList(),
             warnings = emptyList()
         )
-    }
 
     fun loadDslRules(primaryRulesFile: File, sourceFiles: List<File>): RuleReloadState {
         RuleFileTemplate.ensureExists(primaryRulesFile)
-        val result = DslRuleSource.fromFiles(sourceFiles).load()
+        val result = DslRuleSource.fromFiles(sourceFiles)
         return RuleReloadState(
             file = primaryRulesFile,
             snapshot = result.snapshot,

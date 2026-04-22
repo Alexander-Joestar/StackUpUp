@@ -4,6 +4,7 @@ import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import io.alexjoest.stackupup.StackLimitHooks;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
@@ -11,6 +12,7 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
 @Pseudo
 @Mixin(targets = "appeng.tile.inventory.AppEngInternalAEInventory", remap = false)
 abstract class AppEngInternalAEInventoryMixin {
+    @Unique
     private static final int VANILLA_STACK_LIMIT = 64;
 
     @ModifyConstant(method = "<init>*", constant = @Constant(intValue = 64), require = 0)

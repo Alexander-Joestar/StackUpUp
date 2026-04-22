@@ -2,44 +2,50 @@ package io.alexjoest.stackupup.rules.parse
 
 enum class DslTokenType(
     val lexeme: String? = null,
-    val keyword: Boolean = false
+    val isComparisonOperator: Boolean = false,
+    val isActionOperator: Boolean = false
 ) {
     IDENTIFIER,
     NUMBER,
-    EQUALS("="),
+    EQUALS("=", isComparisonOperator = true),
     PLUS("+"),
     MINUS("-"),
     STAR("*"),
     SLASH("/"),
-    NOT_EQUALS("!="),
-    GREATER(">"),
-    GREATER_EQUALS(">="),
-    LESS("<"),
-    LESS_EQUALS("<="),
+    NOT_EQUALS("!=", isComparisonOperator = true),
+    GREATER(">", isComparisonOperator = true),
+    GREATER_EQUALS(">=", isComparisonOperator = true),
+    LESS("<", isComparisonOperator = true),
+    LESS_EQUALS("<=", isComparisonOperator = true),
     AND_AND("&&"),
     OR_OR("||"),
-    IN("in", keyword = true),
-    ARROW("->"),
+    IN("in"),
+    ARROW("->", isActionOperator = true),
     LEFT_BRACKET("["),
     RIGHT_BRACKET("]"),
     COMMA(","),
     EOF;
 
     companion object {
-        private val symbolTokens: List<DslTokenType> =
-            entries
-                .filter { token -> token.lexeme != null && !token.keyword }
-                .sortedByDescending { token -> token.lexeme!!.length }
-
-        private val keywordTokens: Map<String, DslTokenType> =
-            entries
-                .filter { token -> token.lexeme != null && token.keyword }
-                .associateBy { token -> token.lexeme!! }
-
-        val comparisonOperators: Set<DslTokenType> =
-            setOf(EQUALS, NOT_EQUALS, GREATER, GREATER_EQUALS, LESS, LESS_EQUALS)
-
-        val actionOperators: Set<DslTokenType> = setOf(ARROW)
+        // 显式维护匹配顺序，避免在类初始化时再次做 filter/sort/associate。
+        private val symbolTokens = arrayOf(
+            NOT_EQUALS,
+            GREATER_EQUALS,
+            LESS_EQUALS,
+            AND_AND,
+            OR_OR,
+            ARROW,
+            EQUALS,
+            PLUS,
+            MINUS,
+            STAR,
+            SLASH,
+            GREATER,
+            LESS,
+            LEFT_BRACKET,
+            RIGHT_BRACKET,
+            COMMA
+        )
 
         fun matchSymbol(text: String, startIndex: Int): DslTokenType? {
             for (token in symbolTokens) {
@@ -51,7 +57,8 @@ enum class DslTokenType(
             return null
         }
 
-        fun resolveKeyword(lexeme: String): DslTokenType? = keywordTokens[lexeme]
+        fun resolveKeyword(lexeme: String): DslTokenType? =
+            if (lexeme == IN.lexeme) IN else null
     }
 }
 

@@ -15,6 +15,9 @@ public abstract class ItemMixin {
         at = @At("RETURN")
     )
     private int stackupup$applyRules(int original, ItemStack stack) {
-        return StackLimitHooks.applyDynamicStackLimit(stack, original);
+        return StackLimitHooks.markResolvedItemLimit(
+            stack,
+            StackLimitHooks.applyDynamicStackLimit(stack, original)
+        );
     }
 }

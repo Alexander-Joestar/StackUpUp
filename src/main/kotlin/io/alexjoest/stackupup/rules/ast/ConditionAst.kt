@@ -2,6 +2,7 @@ package io.alexjoest.stackupup.rules.ast
 
 import io.alexjoest.stackupup.rules.ComparisonOperator
 import io.alexjoest.stackupup.rules.RuleField
+import java.util.LinkedHashSet
 
 sealed interface ConditionAst {
     fun debugFields(): List<String>
@@ -31,7 +32,7 @@ data class ListConditionAst(
 data class AndConditionAst(
     val conditions: List<ConditionAst>
 ) : ConditionAst {
-    override fun debugFields(): List<String> = conditions.flatMap(ConditionAst::debugFields).distinct()
+    override fun debugFields(): List<String> = collectDebugFields(conditions)
 
     override fun debugLiteralCount(): Int = conditions.sumOf(ConditionAst::debugLiteralCount)
 }
@@ -39,7 +40,15 @@ data class AndConditionAst(
 data class OrConditionAst(
     val conditions: List<ConditionAst>
 ) : ConditionAst {
-    override fun debugFields(): List<String> = conditions.flatMap(ConditionAst::debugFields).distinct()
+    override fun debugFields(): List<String> = collectDebugFields(conditions)
 
     override fun debugLiteralCount(): Int = conditions.sumOf(ConditionAst::debugLiteralCount)
+}
+
+private fun collectDebugFields(conditions: List<ConditionAst>): List<String> {
+    val fields = LinkedHashSet<String>()
+    for (condition in conditions) {
+        fields += condition.debugFields()
+    }
+    return fields.toList()
 }

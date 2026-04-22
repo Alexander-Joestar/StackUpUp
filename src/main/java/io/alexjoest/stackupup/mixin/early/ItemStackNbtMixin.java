@@ -22,7 +22,7 @@ public abstract class ItemStackNbtMixin {
     private int stackSize;
 
     @Shadow
-    private int itemDamage;
+    int itemDamage;
 
     @Shadow
     @Final

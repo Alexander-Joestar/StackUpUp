@@ -19,14 +19,14 @@ class ConfigGui(parentScreen: GuiScreen?) : GuiConfig(
     I18n.format("${StackUpUpIds.CONFIG_LANG_ROOT}.title")
 ) {
     companion object {
-        private fun collectConfigElements(): List<IConfigElement> {
-            val classes = ConfigManager.getModConfigClasses(StackUpUp.CONFIG_ID)
-            return if (classes.size == 1) {
-                ConfigElement.from(classes.single()).childElements
-            } else {
-                classes.map(ConfigElement::from)
+        private fun collectConfigElements(): List<IConfigElement> =
+            ConfigManager.getModConfigClasses(StackUpUp.CONFIG_ID).let { classes ->
+                if (classes.size == 1) {
+                    ConfigElement.from(classes.single()).childElements
+                } else {
+                    classes.map(ConfigElement::from)
+                }
             }
-        }
     }
 }
 

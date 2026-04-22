@@ -63,6 +63,13 @@ class RuleCompilerTest {
     }
 
     @Test
+    fun `应当兼容不带空格的 size 比较写法`() {
+        val compiled = RuleCompiler.compileLine("size >2 -> 1000000", 11)
+        assertEquals(true, compiled.matches(RuleMatchContext("minecraft:egg", "minecraft", 0, 64, "item", emptySet())))
+        assertEquals(false, compiled.matches(RuleMatchContext("minecraft:sword", "minecraft", 0, 1, "item", emptySet())))
+    }
+
+    @Test
     fun `应当支持 item 带 metadata 的语法糖`() {
         val compiled = RuleCompiler.compileLine("item = gregtech:gt.metaitem.01:11305 -> 1024", 12)
         val matched = RuleMatchContext("gregtech:gt.metaitem.01", "gregtech", 11305, 64, "item", emptySet())

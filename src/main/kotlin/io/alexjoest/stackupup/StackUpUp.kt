@@ -1,6 +1,5 @@
 package io.alexjoest.stackupup
 
-import java.io.File
 import net.minecraft.item.Item
 import net.minecraftforge.common.MinecraftForge
 import net.minecraftforge.common.config.Config
@@ -16,15 +15,11 @@ import net.minecraftforge.fml.common.event.FMLServerStartedEvent
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent
 import net.minecraftforge.fml.common.eventhandler.EventPriority
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
-import net.minecraftforge.fml.common.registry.ForgeRegistries
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
-import io.alexjoest.stackupup.Tags
 import io.alexjoest.stackupup.config.LegacyConfigMigration
-import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import io.alexjoest.stackupup.rules.io.RuleFileLocator
 import io.alexjoest.stackupup.rules.io.RuleReloadReport
-import io.alexjoest.stackupup.rules.io.RuleSourceLocator
 
 @Mod(
     modid = StackUpUpIds.MOD_ID,
@@ -36,7 +31,7 @@ import io.alexjoest.stackupup.rules.io.RuleSourceLocator
 class StackUpUp {
     private var hadPostInit: Boolean = false
 
-    private fun handleConfigChanged(runtime: Boolean) {
+    private fun handleConfigChanged() {
         ConfigManager.sync(CONFIG_ID, Config.Type.INSTANCE)
         StackUpUpConfig.applyRuntimeValues()
     }
@@ -44,7 +39,7 @@ class StackUpUp {
     @SubscribeEvent
     fun onConfigChanged(event: ConfigChangedEvent.OnConfigChangedEvent) {
         if (MOD_ID == event.modID && (event.configID == null || CONFIG_ID == event.configID)) {
-            handleConfigChanged(true)
+            handleConfigChanged()
         }
     }
 
@@ -58,7 +53,7 @@ class StackUpUp {
         logger = LogManager.getLogger()
         LegacyConfigMigration.migrate(event.modConfigurationDirectory)
         RuleFileLocator.setConfigDirectory(event.modConfigurationDirectory)
-        handleConfigChanged(false)
+        handleConfigChanged()
 
         MinecraftForge.EVENT_BUS.register(this)
         MinecraftForge.EVENT_BUS.register(proxy)
@@ -67,14 +62,14 @@ class StackUpUp {
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
-    fun onRegisterItems(event: RegistryEvent.Register<Item>) {
+    fun onRegisterItems(@Suppress("UNUSED_PARAMETER") event: RegistryEvent.Register<Item>) {
         if (hadPostInit) {
             reload()
         }
     }
 
     @Mod.EventHandler
-    fun postInit(event: FMLPostInitializationEvent) {
+    fun postInit(@Suppress("UNUSED_PARAMETER") event: FMLPostInitializationEvent) {
         reload()
         hadPostInit = true
     }
@@ -85,7 +80,7 @@ class StackUpUp {
     }
 
     @Mod.EventHandler
-    fun serverStarted(event: FMLServerStartedEvent) {
+    fun serverStarted(@Suppress("UNUSED_PARAMETER") event: FMLServerStartedEvent) {
         val server = FMLCommonHandler.instance().minecraftServerInstance ?: return
         DevAutomationBridge.runServerAutomation(server)
     }
@@ -109,41 +104,24 @@ class StackUpUp {
         var logger: Logger? = null
 
         @JvmStatic
-        fun backupStackSize(item: Item) {
-            StackSizeBackupRegistry.backup(item)
-        }
-
-        @JvmStatic
-        fun reload(): RuleReloadReport {
-            val report = RuleRuntimeCoordinator.reload()
-            proxy?.markRuleStatusDirty()
-            logReloadReport(report)
-            return report
-        }
-
-        @JvmStatic
-        fun getRulesFile(): File = RuleRuntimeCoordinator.getRulesFile()
-
-        @JvmStatic
-        fun getWorldRulesFile(): File? = RuleRuntimeCoordinator.getWorldRulesFile()
-
-        @JvmStatic
-        fun persistWorldRules(sourceId: String, lines: List<String>): Boolean = RuleRuntimeCoordinator.persistWorldRules(sourceId, lines)
+        fun reload(): RuleReloadReport =
+            RuleRuntimeCoordinator.reload().also { report ->
+                proxy?.markRuleStatusDirty()
+                logReloadReport(report)
+            }
 
         private fun logReloadReport(report: RuleReloadReport) {
-            requireNotNull(logger).info("Loaded {} DSL rules from {}", report.snapshot.rules.size, report.file.absolutePath)
-            report.errors.forEach(requireNotNull(logger)::error)
+            val activeLogger = requireNotNull(logger)
+            activeLogger.info("Loaded {} DSL rules from {}", report.snapshot.rules.size, report.file.absolutePath)
+            report.errors.forEach(activeLogger::error)
             for (warning in report.warnings) {
                 if (!StackUpUpConfig.ruleComplexityWarnings) {
                     continue
                 }
-                requireNotNull(logger).warn("[Rule Complexity] {} {}", warning.translationKey, warning.args.joinToString())
+                activeLogger.warn("[Rule Complexity] {} {}", warning.translationKey, warning.args.joinToString())
             }
         }
-
     }
 }
-
-
 
 

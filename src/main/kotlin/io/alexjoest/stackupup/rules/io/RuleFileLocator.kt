@@ -11,15 +11,16 @@ object RuleFileLocator {
         configDirectory = directory
     }
 
-    fun resolve(): File {
-        return File(resolveRulesDirectory(), StackUpUpIds.RULES_FILE_NAME)
-    }
+    fun resolve(): File = File(resolveRulesDirectory(), StackUpUpIds.RULES_FILE_NAME)
 
-    fun resolveRulesDirectory(): File = File(configDirectory ?: File("run/config"), StackUpUpIds.RULES_DIRECTORY_NAME)
+    fun resolveRulesDirectory(): File = File(currentConfigDirectory(), StackUpUpIds.RULES_DIRECTORY_NAME)
 
-    fun resolveLegacy(): File = File(configDirectory ?: File("run/config"), "${StackUpUpIds.PUBLIC_ID}-rules.${StackUpUpIds.RULE_FILE_EXTENSION}")
+    fun resolveLegacy(): File =
+        File(currentConfigDirectory(), "${StackUpUpIds.PUBLIC_ID}-rules.${StackUpUpIds.RULE_FILE_EXTENSION}")
 
     fun resetForTests() {
         configDirectory = null
     }
+
+    private fun currentConfigDirectory(): File = configDirectory ?: File("run/config")
 }

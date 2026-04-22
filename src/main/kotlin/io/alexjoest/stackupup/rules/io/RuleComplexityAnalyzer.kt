@@ -12,15 +12,15 @@ object RuleComplexityAnalyzer {
         val ruleCount = snapshot.rules.size
         val longestRuleLength = snapshot.rules.maxOfOrNull { it.sourceLine.length } ?: 0
         val totalRuleLength = snapshot.rules.sumOf { it.sourceLine.length }
-        val warnings = buildList {
+        val warnings = buildList(3) {
             if (ruleCount >= RULE_COUNT_WARNING_THRESHOLD) {
-                add(RuleComplexityWarning("${StackUpUpIds.MESSAGE_LANG_ROOT}.rule_complexity.rule_count", arrayOf(ruleCount)))
+                add(RuleComplexityWarning("${StackUpUpIds.MESSAGE_LANG_ROOT}.rule_complexity.rule_count", listOf(ruleCount)))
             }
             if (longestRuleLength >= RULE_LENGTH_WARNING_THRESHOLD) {
-                add(RuleComplexityWarning("${StackUpUpIds.MESSAGE_LANG_ROOT}.rule_complexity.rule_length", arrayOf(longestRuleLength)))
+                add(RuleComplexityWarning("${StackUpUpIds.MESSAGE_LANG_ROOT}.rule_complexity.rule_length", listOf(longestRuleLength)))
             }
             if (totalRuleLength >= RULE_TOTAL_LENGTH_WARNING_THRESHOLD) {
-                add(RuleComplexityWarning("${StackUpUpIds.MESSAGE_LANG_ROOT}.rule_complexity.total_length", arrayOf(totalRuleLength)))
+                add(RuleComplexityWarning("${StackUpUpIds.MESSAGE_LANG_ROOT}.rule_complexity.total_length", listOf(totalRuleLength)))
             }
         }
 
@@ -38,18 +38,11 @@ data class RuleComplexityReport(
     val longestRuleLength: Int,
     val totalRuleLength: Int,
     val warnings: List<RuleComplexityWarning>
-) {
-    val shouldWarn: Boolean
-        get() = warnings.isNotEmpty()
-
-    companion object {
-        fun empty(): RuleComplexityReport = RuleComplexityReport(0, 0, 0, emptyList())
-    }
-}
+)
 
 data class RuleReloadWarning(
     val translationKey: String,
-    val args: Array<Any>
+    val args: List<Any>
 )
 
 typealias RuleComplexityWarning = RuleReloadWarning

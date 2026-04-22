@@ -22,7 +22,8 @@ object DslParser {
     }
 
     private fun parseAction(stream: DslTokenCursor): RuleActionAst {
-        val steps = arrayListOf(parseActionStep(stream))
+        val steps = ArrayList<RuleStepAst>(4)
+        steps += parseActionStep(stream)
         while (stream.peekType() == DslTokenType.ARROW) {
             steps += parseActionStep(stream)
         }
@@ -56,7 +57,8 @@ object DslParser {
     private fun parseCondition(stream: DslTokenCursor): ConditionAst = parseOrCondition(stream)
 
     private fun parseOrCondition(stream: DslTokenCursor): ConditionAst {
-        val conditions = arrayListOf(parseAndCondition(stream))
+        val conditions = ArrayList<ConditionAst>(2)
+        conditions += parseAndCondition(stream)
         while (stream.match(DslTokenType.OR_OR)) {
             conditions += parseAndCondition(stream)
         }
@@ -64,7 +66,8 @@ object DslParser {
     }
 
     private fun parseAndCondition(stream: DslTokenCursor): ConditionAst {
-        val conditions = arrayListOf(parseAtomicCondition(stream))
+        val conditions = ArrayList<ConditionAst>(2)
+        conditions += parseAtomicCondition(stream)
         while (stream.match(DslTokenType.AND_AND)) {
             conditions += parseAtomicCondition(stream)
         }
@@ -90,7 +93,8 @@ object DslParser {
             return null
         }
 
-        val literals = arrayListOf(stream.consumeLiteral("列表条件不能为空"))
+        val literals = ArrayList<String>(4)
+        literals += stream.consumeLiteral("列表条件不能为空")
         while (stream.match(DslTokenType.COMMA)) {
             literals += stream.consumeLiteral("列表条件中存在空条目")
         }

@@ -19,7 +19,7 @@ class DslRuleSourceMultiFileTest {
             writeText("item = minecraft:egg -> 128" + System.lineSeparator(), Charsets.UTF_8)
         }
 
-        val result = DslRuleSource.fromFiles(listOf(pack, world)).load()
+        val result = DslRuleSource.fromFiles(listOf(pack, world))
         val service = StackLimitService(result.snapshot)
         val context = StackContext("minecraft:egg", "minecraft", 0, "item", 16, emptySet())
 
@@ -34,7 +34,7 @@ class DslRuleSourceMultiFileTest {
             writeText("item = minecraft:egg ??? 64" + System.lineSeparator(), Charsets.UTF_8)
         }
 
-        val result = DslRuleSource.fromFiles(listOf(broken)).load()
+        val result = DslRuleSource.fromFiles(listOf(broken))
 
         assertEquals(1, result.errors.size)
         assertTrue(result.errors.single().contains("broken.su"))

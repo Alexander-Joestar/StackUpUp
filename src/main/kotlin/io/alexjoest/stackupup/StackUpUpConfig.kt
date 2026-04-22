@@ -65,12 +65,6 @@ object StackUpUpConfig {
             client.fontScaleMaximum = value.toDouble()
         }
 
-    var compatChiselsBits: Boolean
-        get() = modPatches.chiselsAndBits
-        set(value) {
-            modPatches.chiselsAndBits = value
-        }
-
     var coremodPatchRefinedStorage: Boolean
         get() = modPatches.refinedStorage
         set(value) {
@@ -173,12 +167,6 @@ object StackUpUpConfig {
         @Config.RequiresMcRestart
         var cyclopsCore: Boolean = true
 
-        @JvmField
-        @Config.Comment("Adjust Chisels and Bits bit stacks to match their bag limit.")
-        @Config.Name("chiselsandbits")
-        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.modpatches.chiselsandbits.name")
-        @Config.RequiresMcRestart
-        var chiselsAndBits: Boolean = true
     }
 
     class Client {

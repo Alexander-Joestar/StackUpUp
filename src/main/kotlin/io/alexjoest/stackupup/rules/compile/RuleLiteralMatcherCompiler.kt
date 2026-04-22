@@ -34,25 +34,31 @@ internal object RuleLiteralMatcherCompiler {
     }
 
     private fun parseItemLiteral(literal: String): ItemLiteral {
-        val atIndex = literal.lastIndexOf('@')
-        if (atIndex > 0) {
-            val meta = literal.substring(atIndex + 1).toIntOrNull()
-                ?: return ItemLiteral(itemIdPattern = literal, meta = null)
-            return ItemLiteral(
-                itemIdPattern = literal.substring(0, atIndex),
-                meta = meta
-            )
-        }
+        extractMetaLiteral(literal, '@')?.let { return it }
 
         val lastColon = literal.lastIndexOf(':')
         if (lastColon <= literal.indexOf(':')) {
             return ItemLiteral(itemIdPattern = literal, meta = null)
         }
 
-        val metaLiteral = literal.substring(lastColon + 1)
-        val meta = metaLiteral.toIntOrNull() ?: return ItemLiteral(itemIdPattern = literal, meta = null)
+        val meta = literal.substring(lastColon + 1).toIntOrNull()
+            ?: return ItemLiteral(itemIdPattern = literal, meta = null)
         return ItemLiteral(
             itemIdPattern = literal.substring(0, lastColon),
+            meta = meta
+        )
+    }
+
+    private fun extractMetaLiteral(literal: String, separator: Char): ItemLiteral? {
+        val separatorIndex = literal.lastIndexOf(separator)
+        if (separatorIndex <= 0) {
+            return null
+        }
+
+        val meta = literal.substring(separatorIndex + 1).toIntOrNull()
+            ?: return ItemLiteral(itemIdPattern = literal, meta = null)
+        return ItemLiteral(
+            itemIdPattern = literal.substring(0, separatorIndex),
             meta = meta
         )
     }

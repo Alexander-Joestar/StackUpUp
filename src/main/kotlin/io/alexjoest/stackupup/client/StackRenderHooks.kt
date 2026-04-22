@@ -34,18 +34,14 @@ object StackRenderHooks {
             return fr.drawStringWithShadow(text, xIn, yIn, color)
         }
 
-        var x = xIn
-        var y = yIn
         val xOffset = 19 - 2 - fr.getStringWidth(text)
         val yOffset = 6 + 3
 
-        x -= xOffset.toFloat()
-        y -= yOffset.toFloat()
         val result = StackCountTextLayout.abbreviate(fr, text, SLOT_MAX_WIDTH, false)
         val scaleDiff = result.scaleFactor
 
-        x += 16 - (fr.getStringWidth(result.text) * scaleDiff)
-        y += 16 - (8 * scaleDiff)
+        val x = xIn - xOffset + 16 - (fr.getStringWidth(result.text) * scaleDiff)
+        val y = yIn - yOffset + 16 - (8 * scaleDiff)
 
         GlStateManager.pushMatrix()
         GlStateManager.translate(x, y, 0.0f)

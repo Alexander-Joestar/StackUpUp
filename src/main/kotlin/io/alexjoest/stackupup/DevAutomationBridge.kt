@@ -11,42 +11,36 @@ internal object DevAutomationBridge {
     private const val SERVER_ENABLED_GETTER = "getServerEnabled"
     private const val SERVER_RUN_METHOD = "run"
 
-    fun registerClientAutomation(): Boolean {
+    fun registerClientAutomation(): Boolean =
         if (!isEnabled(CLIENT_ENABLED_GETTER)) {
-            return false
-        }
-
-        return runCatching {
-            val driverClass = Class.forName(CLIENT_DRIVER_CLASS_NAME)
-            val driver = driverClass.getDeclaredConstructor().newInstance()
+            false
+        } else {
+            runCatching {
+            val driver = Class.forName(CLIENT_DRIVER_CLASS_NAME).getDeclaredConstructor().newInstance()
             MinecraftForge.EVENT_BUS.register(driver)
             true
         }.getOrElse {
             StackUpUp.logger?.error("开发自动验收客户端桥接失败。", it)
             false
         }
-    }
+        }
 
     fun runServerAutomation(server: MinecraftServer) {
-        if (!isEnabled(SERVER_ENABLED_GETTER)) {
-            return
+        if (isEnabled(SERVER_ENABLED_GETTER)) {
+            runCatching {
+                val driverClass = Class.forName(SERVER_DRIVER_CLASS_NAME)
+                driverClass
+                    .getMethod(SERVER_RUN_METHOD, MinecraftServer::class.java)
+                    .invoke(driverClass.getField("INSTANCE").get(null), server)
+            }.onFailure {
+                StackUpUp.logger?.error("开发自动验收服务端桥接失败。", it)
+            }
         }
+    }
 
+    private fun isEnabled(getterName: String): Boolean =
         runCatching {
-            val driverClass = Class.forName(SERVER_DRIVER_CLASS_NAME)
-            val instance = driverClass.getField("INSTANCE").get(null)
-            val runMethod = driverClass.getMethod(SERVER_RUN_METHOD, MinecraftServer::class.java)
-            runMethod.invoke(instance, server)
-        }.onFailure {
-            StackUpUp.logger?.error("开发自动验收服务端桥接失败。", it)
-        }
-    }
-
-    private fun isEnabled(getterName: String): Boolean {
-        return runCatching {
             val configClass = Class.forName(CONFIG_CLASS_NAME)
-            val instance = configClass.getField("INSTANCE").get(null)
-            configClass.getMethod(getterName).invoke(instance) as Boolean
+            configClass.getMethod(getterName).invoke(configClass.getField("INSTANCE").get(null)) as Boolean
         }.getOrDefault(false)
-    }
 }

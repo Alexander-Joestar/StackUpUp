@@ -11,6 +11,29 @@ import io.alexjoest.stackupup.rules.io.RuleSourceLocator
 
 class RuleRuntimeCoordinatorTest {
     @Test
+    fun `禁用 DSL 规则时应返回空快照并刷新最后报告`() {
+        val tempDir = createTempDirectory("stackupup-runtime-disabled").toFile()
+        val configDir = File(tempDir, "config").apply { mkdirs() }
+        val rulesDir = File(configDir, StackUpUpIds.RULES_DIRECTORY_NAME).apply { mkdirs() }
+        val rulesFile = File(rulesDir, StackUpUpIds.RULES_FILE_NAME).apply {
+            writeText("item = minecraft:egg -> 512", Charsets.UTF_8)
+        }
+
+        RuleFileLocator.setConfigDirectory(configDir)
+
+        try {
+            val report = RuleRuntimeCoordinator.reload(enableDslRules = false)
+
+            assertEquals(rulesFile.absolutePath, report.file.absolutePath)
+            assertEquals(0, report.snapshot.rules.size)
+            assertEquals(report, RuleRuntimeCoordinator.lastReport())
+            assertEquals(0, RuleRuntime.currentSnapshot().rules.size)
+        } finally {
+            RuleFileLocator.resetForTests()
+        }
+    }
+
+    @Test
     fun `写入世界规则后应立即重载并更新快照`() {
         val tempDir = createTempDirectory("stackupup-runtime-coordinator").toFile()
         val configDir = File(tempDir, "config").apply { mkdirs() }

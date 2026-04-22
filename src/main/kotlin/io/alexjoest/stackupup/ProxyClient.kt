@@ -3,7 +3,6 @@ package io.alexjoest.stackupup
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.ScaledResolution
 import net.minecraft.client.resources.I18n
-import net.minecraftforge.common.MinecraftForge
 import net.minecraftforge.event.entity.player.ItemTooltipEvent
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
 import net.minecraftforge.fml.common.gameevent.TickEvent
@@ -30,13 +29,8 @@ class ProxyClient : ProxyCommon() {
 
         when (StackUpUpConfig.tooltipStackDisplayMode) {
             TooltipStackDisplayMode.OFF -> return
-            TooltipStackDisplayMode.ADVANCED -> {
-                if (!event.flags.isAdvanced) {
-                    return
-                }
-            }
-            TooltipStackDisplayMode.ALWAYS -> {
-            }
+            TooltipStackDisplayMode.ADVANCED -> if (!event.flags.isAdvanced) return
+            TooltipStackDisplayMode.ALWAYS -> Unit
         }
 
         event.toolTip.add(
@@ -76,5 +70,3 @@ class ProxyClient : ProxyCommon() {
         pendingRuleStatusReminder = true
     }
 }
-
-

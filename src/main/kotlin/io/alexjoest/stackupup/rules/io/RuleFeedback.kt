@@ -13,17 +13,19 @@ object RuleFeedback {
         }
 
         send(TextComponentTranslation(StackUpUpIds.RULE_RELOAD_ERROR_PREFIX_KEY))
-        report.errors.forEach { send(TextComponentString(it)) }
+        for (error in report.errors) {
+            send(TextComponentString(error))
+        }
     }
 
     fun emitWarnings(report: RuleReloadReport, send: (ITextComponent) -> Unit) {
-        if (!StackUpUpConfig.ruleComplexityWarnings || !report.shouldWarn) {
+        if (!StackUpUpConfig.ruleComplexityWarnings || report.warnings.isEmpty()) {
             return
         }
 
         send(TextComponentTranslation(StackUpUpIds.RULE_COMPLEXITY_PREFIX_KEY))
-        report.warnings.forEach {
-            send(TextComponentTranslation(it.translationKey, *it.args))
+        for (warning in report.warnings) {
+            send(TextComponentTranslation(warning.translationKey, *warning.args.toTypedArray()))
         }
     }
 }

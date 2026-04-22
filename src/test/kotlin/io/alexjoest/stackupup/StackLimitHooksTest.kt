@@ -344,6 +344,29 @@ class StackLimitHooksTest {
     }
 
     @Test
+    fun `嵌套的 ItemStack 上限读取不应重复应用规则`() {
+        Bootstrap.register()
+        RuleRuntime.replaceSnapshot(
+            RuleSnapshot(
+                version = 13L,
+                rules = listOf(
+                    RuleCompiler.compileLine("size > 1 -> +2", 1)
+                )
+            )
+        )
+        RuleRuntime.replaceOreDictIndex(OreDictIndex.fromStackLoader { emptySet() })
+        val item = Item().setRegistryName(ResourceLocation("stackupup_test", "nested_item_limit"))
+        val stack = ItemStack(item, 1, 0)
+
+        val firstPass = StackLimitHooks.applyDynamicStackLimit(stack, 64)
+        val marked = StackLimitHooks.markResolvedItemLimit(stack, firstPass)
+
+        assertEquals(66, marked)
+        assertEquals(true, StackLimitHooks.shouldSkipNestedItemStackLimit(stack, 66))
+        assertEquals(false, StackLimitHooks.shouldSkipNestedItemStackLimit(stack, 66))
+    }
+
+    @Test
     fun `普通槽位不应对已动态化的物品上限重复执行相对动作`() {
         Bootstrap.register()
         val item = object : Item() {

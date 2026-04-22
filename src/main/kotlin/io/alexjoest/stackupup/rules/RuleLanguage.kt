@@ -11,8 +11,8 @@ enum class RuleField(
     SIZE("size");
 
     companion object {
-        fun fromIdentifier(identifier: String): RuleField? {
-            return when (identifier) {
+        fun fromIdentifier(identifier: String): RuleField? =
+            when (identifier) {
                 "item" -> ITEM
                 "mod" -> MOD
                 "type" -> TYPE
@@ -21,7 +21,6 @@ enum class RuleField(
                 "size" -> SIZE
                 else -> null
             }
-        }
     }
 }
 
@@ -35,19 +34,18 @@ enum class ComparisonOperator(
     LESS("<"),
     LESS_EQUALS("<=");
 
-    fun reverse(): ComparisonOperator {
-        return when (this) {
+    fun reverse(): ComparisonOperator =
+        when (this) {
             LESS -> GREATER
             LESS_EQUALS -> GREATER_EQUALS
             GREATER -> LESS
             GREATER_EQUALS -> LESS_EQUALS
             EQUALS, NOT_EQUALS -> error("不支持反转运算符: $symbol")
         }
-    }
 
     companion object {
-        fun fromSymbol(symbol: String): ComparisonOperator {
-            return when (symbol) {
+        fun fromSymbol(symbol: String): ComparisonOperator =
+            when (symbol) {
                 "=" -> EQUALS
                 "!=" -> NOT_EQUALS
                 ">" -> GREATER
@@ -56,7 +54,6 @@ enum class ComparisonOperator(
                 "<=" -> LESS_EQUALS
                 else -> error("不支持的比较运算符: $symbol")
             }
-        }
     }
 }
 

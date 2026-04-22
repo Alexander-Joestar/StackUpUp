@@ -27,7 +27,7 @@ class RuleReloadReportTest {
             file = File("run/config/stackupup/main.su"),
             snapshot = RuleSnapshot(version = 1L, rules = emptyList()),
             errors = listOf("第 1 行加载失败"),
-            warnings = listOf(RuleComplexityWarning("message.stackupup.rule_complexity.rule_count", emptyArray()))
+            warnings = listOf(RuleComplexityWarning("message.stackupup.rule_complexity.rule_count", emptyList()))
         )
 
         assertEquals(listOf("第 1 行加载失败"), report.errors)

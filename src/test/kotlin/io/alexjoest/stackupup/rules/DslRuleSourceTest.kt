@@ -11,7 +11,7 @@ import io.alexjoest.stackupup.rules.io.DslRuleSource
 class DslRuleSourceTest {
     @Test
     fun `应当忽略单行注释与空行`() {
-        val source = DslRuleSource.fromLines(
+        val result = DslRuleSource.fromLines(
             listOf(
                 "# 注释",
                 "// 注释",
@@ -20,14 +20,13 @@ class DslRuleSourceTest {
             )
         )
 
-        val result = source.load()
         assertEquals(1, result.snapshot.rules.size)
         assertTrue(result.errors.isEmpty())
     }
 
     @Test
     fun `应当忽略块注释与行尾注释`() {
-        val source = DslRuleSource.fromLines(
+        val result = DslRuleSource.fromLines(
             listOf(
                 "/* 整行块注释 */",
                 "item = minecraft:egg -> 64 // 行尾注释",
@@ -37,21 +36,19 @@ class DslRuleSourceTest {
             )
         )
 
-        val result = source.load()
         assertEquals(2, result.snapshot.rules.size)
         assertTrue(result.errors.isEmpty())
     }
 
     @Test
     fun `应当收集错误并保留有效规则`() {
-        val source = DslRuleSource.fromLines(
+        val result = DslRuleSource.fromLines(
             listOf(
                 "item = minecraft:egg -> 64",
                 "item = minecraft:stick ??? 32"
             )
         )
 
-        val result = source.load()
         assertEquals(1, result.snapshot.rules.size)
         assertEquals(1, result.errors.size)
     }
@@ -61,7 +58,7 @@ class DslRuleSourceTest {
         val tempDir = createTempDirectory("stackupup-rule-source").toFile()
         val file = File(tempDir, "main.su")
 
-        val result = DslRuleSource.fromFile(file).load()
+        val result = DslRuleSource.fromFile(file)
 
         assertTrue(file.exists())
         assertFalse(file.readText(Charsets.UTF_8).isBlank())

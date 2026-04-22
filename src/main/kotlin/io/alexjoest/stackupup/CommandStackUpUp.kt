@@ -10,10 +10,11 @@ import net.minecraft.command.WrongUsageException
 import net.minecraft.server.MinecraftServer
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.text.TextComponentTranslation
-import net.minecraftforge.fml.common.registry.ForgeRegistries
 import io.alexjoest.stackupup.rules.io.RuleFeedback
 
 class CommandStackUpUp : CommandBase() {
+    private val subcommands = arrayOf("reload", "edit")
+
     override fun getName(): String = StackUpUpIds.MOD_ID
 
     override fun getAliases(): MutableList<String> = mutableListOf()
@@ -22,20 +23,11 @@ class CommandStackUpUp : CommandBase() {
 
     @Throws(CommandException::class)
     override fun execute(server: MinecraftServer, sender: ICommandSender, args: Array<out String>) {
-        if (args.size == 1 && args[0] == "reload") {
-            val report = StackUpUp.reload()
-            sender.sendMessage(TextComponentTranslation("${StackUpUpIds.COMMAND_LANG_ROOT}.reload.success"))
-            RuleFeedback.emitReloadErrors(report, sender::sendMessage)
-            RuleFeedback.emitWarnings(RuleRuntimeCoordinator.lastReport(), sender::sendMessage)
-            return
+        when (args.singleOrNull()) {
+            "reload" -> emitReloadFeedback(sender)
+            "edit" -> openRulesFile(sender)
+            else -> throw WrongUsageException(getUsage(sender))
         }
-
-        if (args.size == 1 && args[0] == "edit") {
-            openRulesFile(sender)
-            return
-        }
-
-        throw WrongUsageException(getUsage(sender))
     }
 
     override fun getTabCompletions(
@@ -43,29 +35,35 @@ class CommandStackUpUp : CommandBase() {
         sender: ICommandSender,
         args: Array<out String>,
         @Nullable targetPos: BlockPos?
-    ): MutableList<String> {
-        return if (args.size == 1) {
-            getListOfStringsMatchingLastWord(args, "reload", "edit")
+    ): MutableList<String> =
+        if (args.size == 1) {
+            getListOfStringsMatchingLastWord(args, *subcommands)
         } else {
             mutableListOf()
         }
+
+    private fun emitReloadFeedback(sender: ICommandSender) {
+        val report = StackUpUp.reload()
+        sender.reply("${StackUpUpIds.COMMAND_LANG_ROOT}.reload.success")
+        RuleFeedback.emitReloadErrors(report, sender::sendMessage)
+        RuleFeedback.emitWarnings(report, sender::sendMessage)
     }
 
     private fun openRulesFile(sender: ICommandSender) {
         val file = RuleRuntimeCoordinator.getRulesFile()
         if (!file.exists()) {
-            sender.sendMessage(TextComponentTranslation("${StackUpUpIds.COMMAND_LANG_ROOT}.edit.missing", file.absolutePath))
+            sender.reply("${StackUpUpIds.COMMAND_LANG_ROOT}.edit.missing", file.absolutePath)
             return
         }
 
         if (!Desktop.isDesktopSupported()) {
-            sender.sendMessage(TextComponentTranslation("${StackUpUpIds.COMMAND_LANG_ROOT}.edit.unsupported"))
+            sender.replyUnsupportedOpen()
             return
         }
 
         val desktop = Desktop.getDesktop()
         if (!desktop.isSupported(Desktop.Action.OPEN)) {
-            sender.sendMessage(TextComponentTranslation("${StackUpUpIds.COMMAND_LANG_ROOT}.edit.unsupported"))
+            sender.replyUnsupportedOpen()
             return
         }
 
@@ -73,10 +71,18 @@ class CommandStackUpUp : CommandBase() {
             // 这里故意使用 OPEN，而不是 EDIT。
             // OPEN 会交给系统文件关联，尽量遵循用户自己的桌面默认行为，不强行指定编辑器。
             desktop.open(file)
-            sender.sendMessage(TextComponentTranslation("${StackUpUpIds.COMMAND_LANG_ROOT}.edit.success", file.absolutePath))
+            sender.reply("${StackUpUpIds.COMMAND_LANG_ROOT}.edit.success", file.absolutePath)
         } catch (e: IOException) {
-            sender.sendMessage(TextComponentTranslation("${StackUpUpIds.COMMAND_LANG_ROOT}.edit.failed", e.message ?: "unknown"))
+            sender.reply("${StackUpUpIds.COMMAND_LANG_ROOT}.edit.failed", e.message ?: "unknown")
         }
+    }
+
+    private fun ICommandSender.reply(key: String, vararg args: Any) {
+        sendMessage(TextComponentTranslation(key, *args))
+    }
+
+    private fun ICommandSender.replyUnsupportedOpen() {
+        reply("${StackUpUpIds.COMMAND_LANG_ROOT}.edit.unsupported")
     }
 }
 

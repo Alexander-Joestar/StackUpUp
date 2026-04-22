@@ -51,21 +51,28 @@ class OreDictIndex(
 
                     // 只构造最小栈做矿物辞典查询，避免把运行时对象状态混进缓存键。
                     val stack = ItemStack(item, 1, meta)
-                    OreDictionary.getOreIDs(stack)
-                        .map(OreDictionary::getOreName)
-                        .toSet()
+                    readOreNames(stack)
                 },
-                stackLoader = { stack ->
-                    OreDictionary.getOreIDs(stack)
-                        .map(OreDictionary::getOreName)
-                        .toSet()
-                }
+                stackLoader = ::readOreNames
             )
         }
 
         @JvmStatic
         fun fromStackLoader(loader: (ItemStack) -> Set<String>): OreDictIndex {
             return OreDictIndex({ _, _ -> emptySet() }, loader)
+        }
+
+        private fun readOreNames(stack: ItemStack): Set<String> {
+            val oreIds = OreDictionary.getOreIDs(stack)
+            if (oreIds.isEmpty()) {
+                return emptySet()
+            }
+
+            val oreNames = LinkedHashSet<String>(oreIds.size)
+            for (oreId in oreIds) {
+                oreNames += OreDictionary.getOreName(oreId)
+            }
+            return oreNames
         }
     }
 }

@@ -1,5 +1,6 @@
 package io.alexjoest.stackupup.rules.io
 
+import io.alexjoest.stackupup.rules.RuleMessageKey
 import io.alexjoest.stackupup.rules.RuleMessages
 import io.alexjoest.stackupup.rules.compile.CompiledRule
 import io.alexjoest.stackupup.rules.compile.RuleCompiler
@@ -74,7 +75,12 @@ internal object RuleLineLoader {
         val sourceName: String? = null
     ) {
         fun formatError(throwable: Throwable): String {
-            return RuleMessages.loadFailed(lineNumber, sourceName, throwable.message ?: RuleMessages.unknownError())
+            val message = throwable.message ?: RuleMessages.format(RuleMessageKey.UNKNOWN_ERROR)
+            return if (sourceName == null) {
+                RuleMessages.format(RuleMessageKey.LOAD_FAILED, lineNumber, message)
+            } else {
+                RuleMessages.format(RuleMessageKey.LOAD_FAILED_WITH_SOURCE, sourceName, lineNumber, message)
+            }
         }
     }
 

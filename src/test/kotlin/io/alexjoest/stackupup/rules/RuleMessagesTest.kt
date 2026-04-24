@@ -12,11 +12,11 @@ class RuleMessagesTest {
         try {
             assertEquals(
                 "Unsupported field: mystery",
-                RuleMessages.unsupportedField("mystery")
+                RuleMessages.format(RuleMessageKey.UNSUPPORTED_FIELD, "mystery")
             )
             assertEquals(
                 "[pack.su] Line 7 failed to load: broken",
-                RuleMessages.loadFailed(7, "pack.su", "broken")
+                RuleMessages.format(RuleMessageKey.LOAD_FAILED_WITH_SOURCE, "pack.su", 7, "broken")
             )
         } finally {
             Locale.setDefault(previous)

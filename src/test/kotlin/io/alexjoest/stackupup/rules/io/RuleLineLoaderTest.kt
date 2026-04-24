@@ -43,6 +43,6 @@ class RuleLineLoaderTest {
 
         assertEquals(1, result.errors.size)
         assertTrue(result.errors.single().contains("[pack.su]"))
-        assertTrue(result.errors.single().contains("第 7 行"))
+        assertTrue(result.errors.single().contains("7"))
     }
 }

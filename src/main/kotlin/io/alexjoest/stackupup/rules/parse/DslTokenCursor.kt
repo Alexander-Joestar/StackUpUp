@@ -1,5 +1,7 @@
 package io.alexjoest.stackupup.rules.parse
 
+import io.alexjoest.stackupup.rules.RuleMessages
+
 internal class DslTokenCursor(
     private val tokens: List<DslToken>
 ) {
@@ -52,7 +54,7 @@ internal class DslTokenCursor(
 
     fun consumeComparisonOperator(): DslToken {
         val token = currentToken()
-        require(token.type.isComparisonOperator) { "条件缺少比较运算符" }
+        require(token.type.isComparisonOperator) { RuleMessages.missingComparisonOperator() }
         index++
         return token
     }
@@ -68,7 +70,7 @@ internal class DslTokenCursor(
 
     fun consumeActionOperator(): DslToken {
         val token = currentToken()
-        require(token.type.isActionOperator) { "规则必须包含动作运算符" }
+        require(token.type.isActionOperator) { RuleMessages.missingActionOperator() }
         index++
         return token
     }

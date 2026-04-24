@@ -9,6 +9,7 @@ class RuleLanguageTest {
     fun `字段标识符应解析到统一枚举`() {
         assertEquals(RuleField.ITEM, RuleField.fromIdentifier("item"))
         assertEquals(RuleField.MOD, RuleField.fromIdentifier("mod"))
+        assertEquals(RuleField.TYPE, RuleField.fromIdentifier("type"))
         assertEquals(RuleField.META, RuleField.fromIdentifier("metadata"))
         assertEquals(RuleField.SIZE, RuleField.fromIdentifier("size"))
         assertNull(RuleField.fromIdentifier("unknown"))

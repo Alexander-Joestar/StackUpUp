@@ -40,7 +40,7 @@ enum class ComparisonOperator(
             LESS_EQUALS -> GREATER_EQUALS
             GREATER -> LESS
             GREATER_EQUALS -> LESS_EQUALS
-            EQUALS, NOT_EQUALS -> error("不支持反转运算符: $symbol")
+            EQUALS, NOT_EQUALS -> error(RuleMessages.unsupportedReverseOperator(symbol))
         }
 
     companion object {
@@ -52,7 +52,7 @@ enum class ComparisonOperator(
                 ">=" -> GREATER_EQUALS
                 "<" -> LESS
                 "<=" -> LESS_EQUALS
-                else -> error("不支持的比较运算符: $symbol")
+                else -> error(RuleMessages.unsupportedComparisonOperator(symbol))
             }
     }
 }

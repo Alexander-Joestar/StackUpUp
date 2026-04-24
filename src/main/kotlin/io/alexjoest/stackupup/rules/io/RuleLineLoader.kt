@@ -1,8 +1,8 @@
 package io.alexjoest.stackupup.rules.io
 
+import io.alexjoest.stackupup.rules.RuleMessages
 import io.alexjoest.stackupup.rules.compile.CompiledRule
 import io.alexjoest.stackupup.rules.compile.RuleCompiler
-import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 
 internal object RuleLineLoader {
     fun load(inputs: List<RuleLineInput>): RuleLoadResult {
@@ -74,8 +74,7 @@ internal object RuleLineLoader {
         val sourceName: String? = null
     ) {
         fun formatError(throwable: Throwable): String {
-            val prefix = sourceName?.let { "[$it] " }.orEmpty()
-            return "${prefix}第 $lineNumber 行加载失败：${throwable.message ?: "未知错误"}"
+            return RuleMessages.loadFailed(lineNumber, sourceName, throwable.message ?: RuleMessages.unknownError())
         }
     }
 

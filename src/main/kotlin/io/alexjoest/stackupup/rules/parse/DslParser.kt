@@ -2,6 +2,7 @@ package io.alexjoest.stackupup.rules.parse
 
 import io.alexjoest.stackupup.rules.ComparisonOperator
 import io.alexjoest.stackupup.rules.RuleField
+import io.alexjoest.stackupup.rules.RuleMessages
 import io.alexjoest.stackupup.rules.RuleStepKind
 import io.alexjoest.stackupup.rules.ast.AndConditionAst
 import io.alexjoest.stackupup.rules.ast.ConditionAst
@@ -17,7 +18,7 @@ object DslParser {
         val stream = DslTokenCursor(DslTokenizer.tokenize(line))
         val condition = parseCondition(stream)
         val action = parseAction(stream)
-        stream.consume(DslTokenType.EOF, "规则末尾存在无法识别的多余内容")
+        stream.consume(DslTokenType.EOF, RuleMessages.trailingContent())
         return RuleAst(condition, action)
     }
 
@@ -33,24 +34,24 @@ object DslParser {
     private fun parseActionStep(stream: DslTokenCursor): RuleStepAst {
         stream.consumeActionOperator()
         return when (stream.peekType()) {
-            DslTokenType.NUMBER -> RuleStepAst(RuleStepKind.SET, stream.consumeLiteral("动作值必须是整数").toInt())
+            DslTokenType.NUMBER -> RuleStepAst(RuleStepKind.SET, stream.consumeLiteral(RuleMessages.actionValueMustBeInteger()).toInt())
             DslTokenType.PLUS -> {
-                stream.consume(DslTokenType.PLUS, "加法动作缺少 +")
-                RuleStepAst(RuleStepKind.ADD, stream.consumeLiteral("加法动作缺少整数").toInt())
+                stream.consume(DslTokenType.PLUS, RuleMessages.addActionMissingSymbol())
+                RuleStepAst(RuleStepKind.ADD, stream.consumeLiteral(RuleMessages.addActionMissingInteger()).toInt())
             }
             DslTokenType.MINUS -> {
-                stream.consume(DslTokenType.MINUS, "减法动作缺少 -")
-                RuleStepAst(RuleStepKind.SUBTRACT, stream.consumeLiteral("减法动作缺少整数").toInt())
+                stream.consume(DslTokenType.MINUS, RuleMessages.subtractActionMissingSymbol())
+                RuleStepAst(RuleStepKind.SUBTRACT, stream.consumeLiteral(RuleMessages.subtractActionMissingInteger()).toInt())
             }
             DslTokenType.STAR -> {
-                stream.consume(DslTokenType.STAR, "乘法动作缺少 *")
-                RuleStepAst(RuleStepKind.MULTIPLY, stream.consumeLiteral("乘法动作缺少整数").toInt())
+                stream.consume(DslTokenType.STAR, RuleMessages.multiplyActionMissingSymbol())
+                RuleStepAst(RuleStepKind.MULTIPLY, stream.consumeLiteral(RuleMessages.multiplyActionMissingInteger()).toInt())
             }
             DslTokenType.SLASH -> {
-                stream.consume(DslTokenType.SLASH, "除法动作缺少 /")
-                RuleStepAst(RuleStepKind.DIVIDE, stream.consumeLiteral("除法动作缺少整数").toInt())
+                stream.consume(DslTokenType.SLASH, RuleMessages.divideActionMissingSymbol())
+                RuleStepAst(RuleStepKind.DIVIDE, stream.consumeLiteral(RuleMessages.divideActionMissingInteger()).toInt())
             }
-            else -> error("不支持的动作步骤: ${stream.peekLexeme()}")
+            else -> error(RuleMessages.unsupportedActionStep(stream.peekLexeme()))
         }
     }
 
@@ -94,11 +95,11 @@ object DslParser {
         }
 
         val literals = ArrayList<String>(4)
-        literals += stream.consumeLiteral("列表条件不能为空")
+        literals += stream.consumeLiteral(RuleMessages.listConditionCannotBeEmpty())
         while (stream.match(DslTokenType.COMMA)) {
-            literals += stream.consumeLiteral("列表条件中存在空条目")
+            literals += stream.consumeLiteral(RuleMessages.listConditionContainsEmptyEntry())
         }
-        stream.consume(DslTokenType.RIGHT_BRACKET, "列表条件缺少右中括号 ]")
+        stream.consume(DslTokenType.RIGHT_BRACKET, RuleMessages.listConditionMissingRightBracket())
         return ListConditionAst(field, literals)
     }
 
@@ -136,10 +137,10 @@ object DslParser {
     }
 
     private fun parseSingleCondition(stream: DslTokenCursor): ConditionAst {
-        val fieldToken = stream.consume(DslTokenType.IDENTIFIER, "条件必须以字段名开头").lexeme
-        val field = requireNotNull(RuleField.fromIdentifier(fieldToken)) { "不支持的字段: $fieldToken" }
+        val fieldToken = stream.consume(DslTokenType.IDENTIFIER, RuleMessages.conditionMustStartWithField()).lexeme
+        val field = requireNotNull(RuleField.fromIdentifier(fieldToken)) { RuleMessages.unsupportedField(fieldToken) }
         val operator = ComparisonOperator.fromSymbol(stream.consumeComparisonOperator().lexeme)
-        val literal = stream.consumeLiteral("条件缺少比较值")
+        val literal = stream.consumeLiteral(RuleMessages.conditionMissingValue())
         return FieldComparisonAst(field, operator, literal)
     }
 }

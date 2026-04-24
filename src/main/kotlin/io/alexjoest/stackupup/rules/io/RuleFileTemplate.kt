@@ -14,7 +14,11 @@ object RuleFileTemplate {
         #   /* block comment */
         #
         # Fields:
-        #   item, mod, ore, meta, metadata, size
+        #   item, mod, type, ore, meta, metadata, size
+        #
+        # Type values:
+        #   type = item
+        #   type = block
         #
         # Comparisons:
         #   =  !=  >  >=  <  <=
@@ -42,6 +46,7 @@ object RuleFileTemplate {
         #   item = gregtech:meta_dust:324
         #   item = gregtech:meta_dust@324
         #   item = gregtech:meta_dust && meta = 324
+        #   type = block && mod = minecraft
         #
         # OreDictionary examples:
         #   ore = ingotSteel -> 1024
@@ -59,6 +64,7 @@ object RuleFileTemplate {
         # item = minecraft:egg -> 64
         # item in [minecraft:egg, minecraft:snowball] -> 128
         # mod = thermal -> 1024
+        # type = block -> 1024
         # ore = ingotSteel -> *2
         # item = gregtech:meta_dust && meta = 324 -> 512
         # 2 < size < 64 -> 1024

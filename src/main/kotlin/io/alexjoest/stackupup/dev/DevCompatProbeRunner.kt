@@ -638,11 +638,6 @@ internal fun appendProbeFailureCause(summary: String, throwable: Throwable?): St
 
 internal val Method.safeNullValue: Any?
     get() = when (returnType) {
-        Boolean::class.javaPrimitiveType -> false
-        Int::class.javaPrimitiveType     -> 0
-        Long::class.javaPrimitiveType    -> 0L
-        Float::class.javaPrimitiveType   -> 0f
-        Double::class.javaPrimitiveType  -> 0.0
-        ItemStack::class.java            -> ItemStack.EMPTY
-        else                             -> null
+        ItemStack::class.java -> ItemStack.EMPTY
+        else                  -> defaultValue(returnType)
     }

@@ -1,7 +1,7 @@
 package io.alexjoest.stackupup.rules
 
 import io.alexjoest.stackupup.StackUpUpIds
-import net.minecraft.util.text.translation.I18n
+import net.minecraft.util.text.translation.LanguageMap
 
 internal enum class RuleMessageKey(
     val suffix: String
@@ -35,7 +35,13 @@ internal enum class RuleMessageKey(
 }
 
 internal object RuleMessages {
+    init {
+        RuleMessages::class.java.getResourceAsStream("/assets/${StackUpUpIds.MOD_ID}/lang/en_us.lang")?.use {
+            LanguageMap.inject(it)
+        }
+    }
+
     @Suppress("DEPRECATION")
     fun format(key: RuleMessageKey, vararg args: Any): String =
-        I18n.translateToLocalFormatted(key.translationKey, *args)
+        net.minecraft.util.text.translation.I18n.translateToLocalFormatted(key.translationKey, *args)
 }

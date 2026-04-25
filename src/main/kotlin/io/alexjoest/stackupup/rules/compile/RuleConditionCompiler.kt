@@ -46,13 +46,7 @@ internal object RuleConditionCompiler {
 
     private fun compileItemField(condition: FieldComparisonAst): (RuleMatchContext) -> Boolean {
         val matcher = RuleLiteralMatcherCompiler.compileItemMatcher(condition.literal)
-        return { context ->
-            when (condition.operator) {
-                ComparisonOperator.EQUALS     -> matcher(context)
-                ComparisonOperator.NOT_EQUALS -> !matcher(context)
-                else                          -> false
-            }
-        }
+        return compileEqualityComparison(condition.operator, matcher)
     }
 
     private fun compileItemList(literals: List<String>): (RuleMatchContext) -> Boolean {
@@ -63,25 +57,16 @@ internal object RuleConditionCompiler {
         literals: List<String>,
         candidatesSelector: (RuleMatchContext) -> Iterable<String>
     ): (RuleMatchContext) -> Boolean {
-        val exactLiterals = literals.filterNot { '*' in it }.toHashSet()
-        val wildcardMatchers = literals.filter { '*' in it }.map(RuleLiteralMatcherCompiler::compileStringMatcher)
-        return { context ->
-            candidatesSelector(context).any { candidate ->
-                candidate in exactLiterals || wildcardMatchers.any { matcher -> matcher(candidate) }
-            }
-        }
+        val matcher = compileStringLiteralListMatcher(literals)
+        return { context -> candidatesSelector(context).any(matcher) }
     }
 
     private fun compileSingleStringLiteralList(
         literals: List<String>,
         selector: (RuleMatchContext) -> String
     ): (RuleMatchContext) -> Boolean {
-        val exactLiterals = literals.filterNot { '*' in it }.toHashSet()
-        val wildcardMatchers = literals.filter { '*' in it }.map(RuleLiteralMatcherCompiler::compileStringMatcher)
-        return { context ->
-            val actual = selector(context)
-            actual in exactLiterals || wildcardMatchers.any { matcher -> matcher(actual) }
-        }
+        val matcher = compileStringLiteralListMatcher(literals)
+        return { context -> matcher(selector(context)) }
     }
 
     private fun compileStringComparison(
@@ -89,14 +74,7 @@ internal object RuleConditionCompiler {
         candidatesSelector: (RuleMatchContext) -> Iterable<String>
     ): (RuleMatchContext) -> Boolean {
         val matcher = RuleLiteralMatcherCompiler.compileStringMatcher(condition.literal)
-        return { context ->
-            val matches = candidatesSelector(context).any(matcher)
-            when (condition.operator) {
-                ComparisonOperator.EQUALS     -> matches
-                ComparisonOperator.NOT_EQUALS -> !matches
-                else                          -> false
-            }
-        }
+        return compileEqualityComparison(condition.operator) { context -> candidatesSelector(context).any(matcher) }
     }
 
     private fun compileSingleStringComparison(
@@ -104,14 +82,7 @@ internal object RuleConditionCompiler {
         selector: (RuleMatchContext) -> String
     ): (RuleMatchContext) -> Boolean {
         val matcher = RuleLiteralMatcherCompiler.compileStringMatcher(condition.literal)
-        return { context ->
-            val matches = matcher(selector(context))
-            when (condition.operator) {
-                ComparisonOperator.EQUALS     -> matches
-                ComparisonOperator.NOT_EQUALS -> !matches
-                else                          -> false
-            }
-        }
+        return compileEqualityComparison(condition.operator) { context -> matcher(selector(context)) }
     }
 
     private fun compileNumericField(
@@ -119,17 +90,7 @@ internal object RuleConditionCompiler {
         selector: (RuleMatchContext) -> Int
     ): (RuleMatchContext) -> Boolean {
         val expected = condition.literal.toInt()
-        return { context ->
-            val actual = selector(context)
-            when (condition.operator) {
-                ComparisonOperator.EQUALS         -> actual == expected
-                ComparisonOperator.NOT_EQUALS     -> actual != expected
-                ComparisonOperator.GREATER        -> actual > expected
-                ComparisonOperator.GREATER_EQUALS -> actual >= expected
-                ComparisonOperator.LESS           -> actual < expected
-                ComparisonOperator.LESS_EQUALS    -> actual <= expected
-            }
-        }
+        return { context -> matchesNumericComparison(condition.operator, selector(context), expected) }
     }
 
     private fun compileNestedConditions(conditions: List<ConditionAst>): List<(RuleMatchContext) -> Boolean> {
@@ -138,6 +99,38 @@ internal object RuleConditionCompiler {
             compiled += compile(nested)
         }
         return compiled
+    }
+
+    private fun compileStringLiteralListMatcher(literals: List<String>): (String) -> Boolean {
+        val exactLiterals = literals.filterNot { '*' in it }.toHashSet()
+        val wildcardMatchers = literals.filter { '*' in it }.map(RuleLiteralMatcherCompiler::compileStringMatcher)
+        return { actual -> actual in exactLiterals || wildcardMatchers.any { matcher -> matcher(actual) } }
+    }
+
+    private fun compileEqualityComparison(
+        operator: ComparisonOperator,
+        matcher: (RuleMatchContext) -> Boolean
+    ): (RuleMatchContext) -> Boolean = { context ->
+        applyEqualityOperator(operator, matcher(context))
+    }
+
+    private fun applyEqualityOperator(operator: ComparisonOperator, matches: Boolean): Boolean {
+        return when (operator) {
+            ComparisonOperator.EQUALS -> matches
+            ComparisonOperator.NOT_EQUALS -> !matches
+            else -> false
+        }
+    }
+
+    private fun matchesNumericComparison(operator: ComparisonOperator, actual: Int, expected: Int): Boolean {
+        return when (operator) {
+            ComparisonOperator.EQUALS -> actual == expected
+            ComparisonOperator.NOT_EQUALS -> actual != expected
+            ComparisonOperator.GREATER -> actual > expected
+            ComparisonOperator.GREATER_EQUALS -> actual >= expected
+            ComparisonOperator.LESS -> actual < expected
+            ComparisonOperator.LESS_EQUALS -> actual <= expected
+        }
     }
 
     private fun compileAny(predicates: List<(RuleMatchContext) -> Boolean>): (RuleMatchContext) -> Boolean =

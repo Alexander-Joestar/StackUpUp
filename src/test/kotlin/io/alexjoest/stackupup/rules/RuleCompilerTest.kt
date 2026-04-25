@@ -41,6 +41,18 @@ class RuleCompilerTest {
     }
 
     @Test
+    fun `应当支持 mod 列表中的通配匹配`() {
+        val compiled = RuleCompiler.compileLine("mod in [therm*, ic2] -> 512", 8)
+        val thermal = RuleMatchContext("thermal:foo", "thermalexpansion", 0, 16, "item", emptySet())
+        val ic2 = RuleMatchContext("ic2:bar", "ic2", 0, 16, "item", emptySet())
+        val vanilla = RuleMatchContext("minecraft:egg", "minecraft", 0, 16, "item", emptySet())
+
+        assertEquals(true, compiled.matches(thermal))
+        assertEquals(true, compiled.matches(ic2))
+        assertEquals(false, compiled.matches(vanilla))
+    }
+
+    @Test
     fun `应当按顺序保留乘法动作`() {
         val compiled = RuleCompiler.compileLine("ore = ingotSteel -> *2", 9)
         assertEquals(1, compiled.action.steps.size)
@@ -77,6 +89,16 @@ class RuleCompilerTest {
 
         assertEquals(true, compiled.matches(matched))
         assertEquals(false, compiled.matches(otherMeta))
+    }
+
+    @Test
+    fun `应当支持 ore 的非等值通配匹配`() {
+        val compiled = RuleCompiler.compileLine("ore != ingot* -> 64", 12)
+        val ingot = RuleMatchContext("minecraft:iron_ingot", "minecraft", 0, 64, "item", setOf("ingotIron"))
+        val dust = RuleMatchContext("minecraft:gunpowder", "minecraft", 0, 64, "item", setOf("dustSulfur"))
+
+        assertEquals(false, compiled.matches(ingot))
+        assertEquals(true, compiled.matches(dust))
     }
 
     @Test

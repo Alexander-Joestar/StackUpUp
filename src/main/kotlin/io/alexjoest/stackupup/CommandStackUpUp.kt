@@ -19,14 +19,14 @@ class CommandStackUpUp : CommandBase() {
 
     override fun getAliases(): MutableList<String> = mutableListOf()
 
-    override fun getUsage(sender: ICommandSender): String = "${StackUpUpIds.COMMAND_LANG_ROOT}.usage"
+    override fun getUsage(sender: ICommandSender): String = StackUpUpIds.COMMAND_USAGE_KEY
 
     @Throws(CommandException::class)
     override fun execute(server: MinecraftServer, sender: ICommandSender, args: Array<out String>) {
         when (args.singleOrNull()) {
             "reload" -> emitReloadFeedback(sender)
-            "edit" -> openRulesFile(sender)
-            else -> throw WrongUsageException(getUsage(sender))
+            "edit"   -> openRulesFile(sender)
+            else     -> throw WrongUsageException(getUsage(sender))
         }
     }
 
@@ -44,7 +44,7 @@ class CommandStackUpUp : CommandBase() {
 
     private fun emitReloadFeedback(sender: ICommandSender) {
         val report = StackUpUp.reload()
-        sender.reply("${StackUpUpIds.COMMAND_LANG_ROOT}.reload.success")
+        sender.reply(StackUpUpIds.COMMAND_RELOAD_SUCCESS_KEY)
         RuleFeedback.emitReloadErrors(report, sender::sendMessage)
         RuleFeedback.emitWarnings(report, sender::sendMessage)
     }
@@ -52,7 +52,7 @@ class CommandStackUpUp : CommandBase() {
     private fun openRulesFile(sender: ICommandSender) {
         val file = RuleRuntimeCoordinator.getRulesFile()
         if (!file.exists()) {
-            sender.reply("${StackUpUpIds.COMMAND_LANG_ROOT}.edit.missing", file.absolutePath)
+            sender.reply(StackUpUpIds.COMMAND_EDIT_MISSING_KEY, file.absolutePath)
             return
         }
 
@@ -71,9 +71,9 @@ class CommandStackUpUp : CommandBase() {
             // 这里故意使用 OPEN，而不是 EDIT。
             // OPEN 会交给系统文件关联，尽量遵循用户自己的桌面默认行为，不强行指定编辑器。
             desktop.open(file)
-            sender.reply("${StackUpUpIds.COMMAND_LANG_ROOT}.edit.success", file.absolutePath)
+            sender.reply(StackUpUpIds.COMMAND_EDIT_SUCCESS_KEY, file.absolutePath)
         } catch (e: IOException) {
-            sender.reply("${StackUpUpIds.COMMAND_LANG_ROOT}.edit.failed", e.message ?: "unknown")
+            sender.reply(StackUpUpIds.COMMAND_EDIT_FAILED_KEY, e.message ?: "unknown")
         }
     }
 
@@ -82,8 +82,7 @@ class CommandStackUpUp : CommandBase() {
     }
 
     private fun ICommandSender.replyUnsupportedOpen() {
-        reply("${StackUpUpIds.COMMAND_LANG_ROOT}.edit.unsupported")
+        reply(StackUpUpIds.COMMAND_EDIT_UNSUPPORTED_KEY)
     }
 }
-
 

@@ -39,6 +39,12 @@ class StackUpUpConfigTest {
         assertEquals("config.stackupup", StackUpUpIds.CONFIG_LANG_ROOT)
         assertEquals("commands.stackupup", StackUpUpIds.COMMAND_LANG_ROOT)
         assertEquals("message.stackupup", StackUpUpIds.MESSAGE_LANG_ROOT)
+        assertEquals("config.stackupup.title", StackUpUpIds.CONFIG_TITLE_KEY)
+        assertEquals("commands.stackupup.reload.success", StackUpUpIds.COMMAND_RELOAD_SUCCESS_KEY)
+        assertEquals("message.stackupup.rule_complexity.rule_count", StackUpUpIds.RULE_COMPLEXITY_RULE_COUNT_KEY)
+        assertEquals("message.stackupup.rule_complexity.rule_length", StackUpUpIds.RULE_COMPLEXITY_RULE_LENGTH_KEY)
+        assertEquals("message.stackupup.rule_complexity.total_length", StackUpUpIds.RULE_COMPLEXITY_TOTAL_LENGTH_KEY)
+        assertEquals("tooltip.stackupup.current_max", StackUpUpIds.TOOLTIP_CURRENT_MAX_KEY)
         assertEquals("io/alexjoest/stackupup/StackLimitHooks", StackUpUpIds.STACK_LIMIT_HOOKS_INTERNAL_NAME)
     }
 

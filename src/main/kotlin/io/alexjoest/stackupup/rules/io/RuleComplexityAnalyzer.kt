@@ -14,13 +14,13 @@ object RuleComplexityAnalyzer {
         val totalRuleLength = snapshot.rules.sumOf { it.sourceLine.length }
         val warnings = buildList(3) {
             if (ruleCount >= RULE_COUNT_WARNING_THRESHOLD) {
-                add(RuleComplexityWarning("${StackUpUpIds.MESSAGE_LANG_ROOT}.rule_complexity.rule_count", listOf(ruleCount)))
+                add(RuleComplexityWarning(StackUpUpIds.RULE_COMPLEXITY_RULE_COUNT_KEY, listOf(ruleCount)))
             }
             if (longestRuleLength >= RULE_LENGTH_WARNING_THRESHOLD) {
-                add(RuleComplexityWarning("${StackUpUpIds.MESSAGE_LANG_ROOT}.rule_complexity.rule_length", listOf(longestRuleLength)))
+                add(RuleComplexityWarning(StackUpUpIds.RULE_COMPLEXITY_RULE_LENGTH_KEY, listOf(longestRuleLength)))
             }
             if (totalRuleLength >= RULE_TOTAL_LENGTH_WARNING_THRESHOLD) {
-                add(RuleComplexityWarning("${StackUpUpIds.MESSAGE_LANG_ROOT}.rule_complexity.total_length", listOf(totalRuleLength)))
+                add(RuleComplexityWarning(StackUpUpIds.RULE_COMPLEXITY_TOTAL_LENGTH_KEY, listOf(totalRuleLength)))
             }
         }
 

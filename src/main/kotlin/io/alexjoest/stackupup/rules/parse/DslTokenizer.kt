@@ -9,22 +9,28 @@ object DslTokenizer {
             val current = line[index]
             val symbolType = DslTokenType.matchSymbol(line, index)
             when {
-                current.isWhitespace() -> index++
-                current.isDigit() -> {
+                current.isWhitespace()                                     -> index++
+                current.isDigit()                                          -> {
                     val start = index
                     while (index < line.length && line[index].isDigit()) {
                         index++
                     }
                     tokens.add(DslToken(DslTokenType.NUMBER, line.substring(start, index)))
                 }
-                symbolType != null -> {
+
+                symbolType != null && shouldEmitSymbol(symbolType, tokens) -> {
                     val symbol = requireNotNull(symbolType.lexeme)
                     tokens.add(DslToken(symbolType, symbol))
                     index += symbol.length
                 }
-                else -> {
+
+                else                                                       -> {
                     val start = index
-                    while (index < line.length && !line[index].isWhitespace() && DslTokenType.matchSymbol(line, index) == null) {
+                    while (
+                        index < line.length &&
+                        !line[index].isWhitespace() &&
+                        DslTokenType.matchSymbol(line, index)?.let { shouldEmitSymbol(it, tokens) } != true
+                    ) {
                         index++
                     }
                     val lexeme = line.substring(start, index)
@@ -36,6 +42,17 @@ object DslTokenizer {
 
         tokens.add(DslToken(DslTokenType.EOF, ""))
         return tokens
+    }
+
+    private fun shouldEmitSymbol(type: DslTokenType, tokens: List<DslToken>): Boolean {
+        return when (type) {
+            DslTokenType.PLUS,
+            DslTokenType.MINUS,
+            DslTokenType.STAR,
+            DslTokenType.SLASH -> tokens.lastOrNull()?.type == DslTokenType.ARROW
+
+            else               -> true
+        }
     }
 }
 

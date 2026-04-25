@@ -41,7 +41,7 @@ class DevProbeEvaluatorTest {
     }
 
     @Test
-    fun `当容器上限低于物品实际上限时应判定失败`() {
+    fun `当容器上限低于物品实际上限但插入结果符合槽位能力时应判定成功`() {
         val result = evaluateProbeResult(
             requestedCount = 128,
             resolvedLimit = 512,
@@ -51,13 +51,8 @@ class DevProbeEvaluatorTest {
             remainderCount = 64
         )
 
-        assertEquals(false, result.passed)
-        assertEquals(
-            listOf(
-                "容器插槽上限 64 低于目标物品的实际上限 512。"
-            ),
-            result.reasons
-        )
+        assertEquals(true, result.passed)
+        assertEquals(emptyList<String>(), result.reasons)
     }
 }
 

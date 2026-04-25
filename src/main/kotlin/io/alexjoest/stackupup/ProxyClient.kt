@@ -28,9 +28,9 @@ class ProxyClient : ProxyCommon() {
         }
 
         when (StackUpUpConfig.tooltipStackDisplayMode) {
-            TooltipStackDisplayMode.OFF -> return
+            TooltipStackDisplayMode.OFF      -> return
             TooltipStackDisplayMode.ADVANCED -> if (!event.flags.isAdvanced) return
-            TooltipStackDisplayMode.ALWAYS -> Unit
+            TooltipStackDisplayMode.ALWAYS   -> Unit
         }
 
         event.toolTip.add(

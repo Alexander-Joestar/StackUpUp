@@ -1,6 +1,7 @@
 package io.alexjoest.stackupup.dev
 
 import io.alexjoest.stackupup.StackUpUp
+import io.alexjoest.stackupup.limit.StackContext
 import io.alexjoest.stackupup.limit.StackContextResolver
 import io.alexjoest.stackupup.limit.RuleRuntime
 import net.minecraft.server.MinecraftServer
@@ -26,7 +27,8 @@ object DevAutomationServerDriver {
                     injection.newRuleCount
                 )
             }
-            is DevRuleInjectionResult.Failed -> {
+
+            is DevRuleInjectionResult.Failed  -> {
                 StackUpUp.logger?.error(
                     "开发自动验收[服务端]：临时规则注入失败：{}",
                     injection.errors.joinToString("；")
@@ -34,7 +36,8 @@ object DevAutomationServerDriver {
                 shutdownIfRequested(server)
                 return
             }
-            DevRuleInjectionResult.Skipped -> Unit
+
+            DevRuleInjectionResult.Skipped    -> Unit
         }
 
         val target = DevTargetRuntimeResolver.resolve()
@@ -49,42 +52,23 @@ object DevAutomationServerDriver {
             return
         }
 
-        val probeStack = target.stack.copy()
-        val baseLimit = probeStack.item.getItemStackLimit(probeStack)
-        val context = StackContextResolver.fromStack(probeStack, baseLimit)
-            ?: error("开发自动验收[服务端]：目标物品无法解析为统一堆叠上下文。")
-        val resolvedLimit = RuleRuntime.limitService().resolve(context)
-
-        val insertionStack = probeStack.copy().also { it.count = DevAutomationConfig.itemCount }
-        val handler = ItemStackHandler(1)
-        val remainder = handler.insertItem(0, insertionStack, false)
-        val stored = handler.getStackInSlot(0)
-        val actualLimit = probeStack.maxStackSize
-        val slotLimit = handler.getSlotLimit(0)
-        val evaluation = evaluateProbeResult(
-            requestedCount = DevAutomationConfig.itemCount,
-            resolvedLimit = resolvedLimit,
-            actualLimit = actualLimit,
-            slotLimit = slotLimit,
-            storedCount = stored.count,
-            remainderCount = remainder.count
-        )
+        val probeResult = probeTarget(target)
 
         StackUpUp.logger?.info(
             "开发自动验收[服务端]：目标 {}@{}，矿辞={}，原版基线={}，规则解析={}，实际上限={}，插槽上限={}，请求数量={}，存入数量={}，剩余数量={}。",
             target.itemId,
             target.meta,
-            context.oreNames.joinToString(prefix = "[", postfix = "]"),
-            baseLimit,
-            resolvedLimit,
-            actualLimit,
-            slotLimit,
+            probeResult.context.oreNames.joinToString(prefix = "[", postfix = "]"),
+            probeResult.baseLimit,
+            probeResult.resolvedLimit,
+            probeResult.actualLimit,
+            probeResult.slotLimit,
             DevAutomationConfig.itemCount,
-            stored.count,
-            remainder.count
+            probeResult.stored.count,
+            probeResult.remainder.count
         )
-        if (!evaluation.passed) {
-            val message = evaluation.reasons.joinToString("；")
+        if (!probeResult.evaluation.passed) {
+            val message = probeResult.evaluation.reasons.joinToString("；")
             StackUpUp.logger?.error("开发自动验收[服务端]：验证失败：{}", message)
             if (DevAutomationConfig.failFast) {
                 throw IllegalStateException("堆叠突破自动验收失败：$message")
@@ -140,11 +124,31 @@ object DevAutomationServerDriver {
     private fun evaluateTarget(spec: DevProbeTargetSpec): DevProbeRunResult {
         val target = DevTargetRuntimeResolver.resolve(spec)
             ?: return DevProbeRunResult.failed(UNRESOLVED_TARGET_SUMMARY)
+        val probeResult = probeTarget(target)
 
+        return DevProbeRunResult(
+            passed = probeResult.evaluation.passed,
+            summary = buildString {
+                append("目标=${target.itemId}@${target.meta}")
+                append(" 矿辞=${probeResult.context.oreNames.joinToString(prefix = "[", postfix = "]")}")
+                append(" 原版基线=${probeResult.baseLimit}")
+                append(" 解析=${probeResult.resolvedLimit}")
+                append(" 实际=${probeResult.actualLimit}")
+                append(" 插槽=${probeResult.slotLimit}")
+                append(" 存入=${probeResult.stored.count}")
+                append(" 剩余=${probeResult.remainder.count}")
+                if (probeResult.evaluation.reasons.isNotEmpty()) {
+                    append(" 原因=${probeResult.evaluation.reasons.joinToString("；")}")
+                }
+            }
+        )
+    }
+
+    private fun probeTarget(target: ResolvedDevTarget): ProbedTarget {
         val probeStack = target.stack.copy()
         val baseLimit = probeStack.item.getItemStackLimit(probeStack)
         val context = StackContextResolver.fromStack(probeStack, baseLimit)
-            ?: return DevProbeRunResult.failed("未生成统一堆叠上下文。")
+            ?: error("开发自动验收[服务端]：目标物品无法解析为统一堆叠上下文。")
         val resolvedLimit = RuleRuntime.limitService().resolve(context)
         val insertionStack = probeStack.copy().also { it.count = DevAutomationConfig.itemCount }
         val handler = ItemStackHandler(1)
@@ -160,22 +164,15 @@ object DevAutomationServerDriver {
             storedCount = stored.count,
             remainderCount = remainder.count
         )
-
-        return DevProbeRunResult(
-            passed = evaluation.passed,
-            summary = buildString {
-                append("目标=${target.itemId}@${target.meta}")
-                append(" 矿辞=${context.oreNames.joinToString(prefix = "[", postfix = "]")}")
-                append(" 原版基线=$baseLimit")
-                append(" 解析=$resolvedLimit")
-                append(" 实际=$actualLimit")
-                append(" 插槽=$slotLimit")
-                append(" 存入=${stored.count}")
-                append(" 剩余=${remainder.count}")
-                if (evaluation.reasons.isNotEmpty()) {
-                    append(" 原因=${evaluation.reasons.joinToString("；")}")
-                }
-            }
+        return ProbedTarget(
+            context = context,
+            baseLimit = baseLimit,
+            resolvedLimit = resolvedLimit,
+            actualLimit = actualLimit,
+            slotLimit = slotLimit,
+            stored = stored,
+            remainder = remainder,
+            evaluation = evaluation
         )
     }
 
@@ -229,9 +226,6 @@ internal fun evaluateProbeResult(
         if (actualLimit <= 64) {
             add("目标物品的实际上限仍未突破 64。")
         }
-        if (slotLimit < actualLimit) {
-            add("容器插槽上限 $slotLimit 低于目标物品的实际上限 $actualLimit。")
-        }
         if (storedCount != expectedStoredCount) {
             add("请求插入 $requestedCount 个物品时，期望存入 $expectedStoredCount 个，实际仅存入 $storedCount 个。")
         }
@@ -258,5 +252,16 @@ private data class DevProbeRunResult(
 internal data class DevProbeEvaluation(
     val passed: Boolean,
     val reasons: List<String>
+)
+
+private data class ProbedTarget(
+    val context: StackContext,
+    val baseLimit: Int,
+    val resolvedLimit: Int,
+    val actualLimit: Int,
+    val slotLimit: Int,
+    val stored: net.minecraft.item.ItemStack,
+    val remainder: net.minecraft.item.ItemStack,
+    val evaluation: DevProbeEvaluation
 )
 

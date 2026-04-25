@@ -1,58 +1,38 @@
-# runServer 鑷姩鍖栧洖褰?
-## 鐩爣
+# runServer 自动化回归
 
-鏈」鐩綋鍓嶉粯璁や互 `runServer` 鑷姩鍖栧洖褰掍綔涓轰富楠岃瘉鍏ュ彛銆?
-杩欐牱鍋氱殑鍘熷洜鏄細
+## 目标
 
-1. 涓嶄緷璧栨覆鏌撲笌 GUI锛岀粨鏋滄洿绋冲畾銆?2. 鑳界洿鎺ラ獙璇?`ItemStack`銆乣metadata`銆佺熆鐗╄緸鍏镐笌瀹瑰櫒鎻掓Ы涓婇檺銆?3. 鏇撮€傚悎浣滀负鍚庣画閲嶆瀯 ASM/Mixin 鐨勫洖褰掑熀绾裤€?
-## 榛樿瑙勫垯鍏ュ彛
+当前项目默认以 `runServer` 自动化回归作为主验证入口。
 
-涓昏鍒欐枃浠讹細
+原因：
 
-```text
-config/stackupup/main.su
-```
+1. 不依赖渲染与 GUI，结果更稳定
+2. 直接验证 `ItemStack` / `metadata` / 矿辞 / 插槽上限
+3. 更适合作为 Mixin / ASM 收缩时的主回归基线
 
-## 鑷姩鍖栦换鍔?
-鏍稿績鐭╅樀锛?
+## 主入口
+
 ```powershell
 .\gradlew.bat runServerAutoTestMatrix
 ```
 
-IntelliJ 瀵煎叆 Gradle 鍚庯紝涔熷彲浠ョ洿鎺ヨ繍琛岋細
+IntelliJ 导入 Gradle 后，也可以直接运行：
 
 ```text
 2a. Run Server AutoTest Matrix
 ```
 
-鍗曢」鏍蜂緥锛?
-```powershell
-.\gradlew.bat runServerAutoTestIngotSteel
-.\gradlew.bat runServerAutoTestPlateSteel
-.\gradlew.bat runServerAutoTestDustSteel
-.\gradlew.bat runServerAutoTestVacuumTube
-```
+## 当前覆盖
 
-## 褰撳墠瑕嗙洊
+### GT / metadata 样例
 
-`runServerAutoTestMatrix` 褰撳墠瑕嗙洊涓ょ被鐗╁搧锛?
-1. 鏉愯川鍓嶇紑鐗╁搧锛?   `gregtech:meta_ingot`
-   `gregtech:meta_plate`
-   `gregtech:meta_dust`
-2. 鏅€?metadata 鐗╁搧锛?   `gregtech:meta_item_1@516`
+1. `gregtech:meta_ingot@324`
+2. `gregtech:meta_plate@324`
+3. `gregtech:meta_dust@324`
+4. `gregtech:meta_item_1@516`
 
-鐭╅樀鍚嶇О涓庣洰鏍囧搴斿叧绯伙細
+### 外部兼容探针
 
-```text
-IngotSteel  -> gregtech:meta_ingot@324
-PlateSteel  -> gregtech:meta_plate@324
-DustSteel   -> gregtech:meta_dust@324
-VacuumTube  -> gregtech:meta_item_1@516
-```
-
-楠岃瘉鐩爣鍖呮嫭锛?
-1. 瑙勫垯瑙ｆ瀽鍚庣殑鍫嗗彔涓婇檺銆?2. 鐪熷疄 `ItemStack` 鏍堜笂闄愩€?3. `ItemStackHandler` 鎻掓Ы涓婇檺銆?4. 鎻掑叆 `128` 涓洰鏍囩墿鍝佹椂鏄惁鑳藉鏁存壒瀛樺叆鍗曟Ы銆?5. 澶栭儴鍏煎鎺㈤拡鐨勬彁鍙栦笌妲戒綅涓婇檺銆?
-褰撳墠宸叉帴鍏ョ殑澶栭儴鍏煎鎺㈤拡锛?
 1. `refinedstorage_grid_extract`
 2. `refinedstorage_portable_grid_extract`
 3. `refinedstorage_storage_monitor_extract`
@@ -64,14 +44,38 @@ VacuumTube  -> gregtech:meta_item_1@516
 9. `sided_inv_wrapper_limit`
 10. `slot_item_handler_limit`
 
-鍏朵腑涓?`FixedCompatTargets` 瀵归綈鐨勫浐瀹氱洰鏍囨帰閽堢洰褰曪紝褰撳墠鐢?`FixedCompatTargets.probeTargets()` 缁熶竴澹版槑锛岄伩鍏?fixed target 璺宠繃琛ㄤ笌 dev probe 鐩綍缁х画鎵嬪啓涓や唤鍚嶅崟銆?
-## 璇存槑
+## 验证维度
 
-瀹㈡埛绔?`runClient` 浠嶇劧淇濈暀锛岀敤浜庢鏌ヤ腑閿鍒躲€佹墜鎸佹樉绀恒€丟UI 浜や簰绛夊鎴风琛屼负銆?浣嗛粯璁や富鍥炲綊搴斿綋棣栧厛鐪?`runServerAutoTestMatrix`銆?
-濡傛灉闇€瑕佸湪寮€鍙戠幆澧冩寕鍏ョ涓夋柟妯＄粍寮€鍙戝寘锛屾帹鑽愭斁杩涳細
+1. 规则解析上限
+2. 真实 `ItemStack.maxStackSize`
+3. 插槽上限
+4. 插入大于 `64` 数量后的存入与剩余
+5. 外部模组的提取 / 库存限制路径
+
+## 相关实现
+
+1. `DevAutomationServerDriver`
+2. `DevTargetRuntimeResolver`
+3. `DevCompatProbeRunner`
+4. `DevInventoryCompatProbes`
+5. `DevRefinedStorageCompatProbes`
+6. `DevWrapperCompatProbes`
+
+## 开发期模组建议
+
+推荐把开发期联调 jar 放到：
 
 ```text
 local-dev-mods/
 ```
 
-鏋勫缓鑴氭湰涔熷吋瀹?`run/mods/*.jar.disable`锛屼絾閭ｆ潯璺緞鏇撮€傚悎涓存椂鍏煎锛屼笉鍐嶆帹鑽愪綔涓洪暱鏈熷紑鍙戝叆鍙ｃ€?
+说明：
+
+1. `run/mods/*.jar` 更适合临时运行验证
+2. `local-dev-mods/*.jar` 更适合长期开发联调
+
+## 当前判断
+
+1. `runClient` 仍然有价值，主要用于 GUI / tooltip / 客户端交互验证
+2. 但默认主回归应优先看 `runServerAutoTestMatrix`
+3. 若 server matrix 先失败，不应先去怀疑客户端显示链

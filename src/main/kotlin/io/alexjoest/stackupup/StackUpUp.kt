@@ -110,6 +110,7 @@ class StackUpUp {
                 logReloadReport(report)
             }
 
+        @Suppress("DEPRECATION")
         private fun logReloadReport(report: RuleReloadReport) {
             val activeLogger = requireNotNull(logger)
             activeLogger.info("Loaded {} DSL rules from {}", report.snapshot.rules.size, report.file.absolutePath)
@@ -118,10 +119,13 @@ class StackUpUp {
                 if (!StackUpUpConfig.ruleComplexityWarnings) {
                     continue
                 }
-                activeLogger.warn("[Rule Complexity] {} {}", warning.translationKey, warning.args.joinToString())
+                activeLogger.warn(
+                    net.minecraft.util.text.translation.I18n.translateToLocalFormatted(
+                        warning.translationKey,
+                        *warning.args.toTypedArray()
+                    )
+                )
             }
         }
     }
 }
-
-

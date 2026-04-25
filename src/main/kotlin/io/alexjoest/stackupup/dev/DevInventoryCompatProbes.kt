@@ -4,7 +4,6 @@ import io.alexjoest.stackupup.StackLimitHooks
 import net.minecraft.init.Items
 import net.minecraft.item.ItemStack
 import net.minecraft.server.MinecraftServer
-import net.minecraft.util.EnumFacing
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Proxy
 
@@ -26,11 +25,12 @@ internal object CyclopsCoreSimpleInventoryLimitProbe : DevCompatProbe {
             .invoke(inventory, 0, stack)
         val stored = inventoryClass.getMethod("getStackInSlot", Int::class.javaPrimitiveType)
             .invoke(inventory, 0) as ItemStack
+        val expectedStored = minOf(128, expected)
 
-        return if (limit == expected && stored.count == 128) {
+        return if (limit == expected && stored.count == expectedStored) {
             DevCompatProbeResult.passed("上限=$limit 存入=${stored.count}")
         } else {
-            DevCompatProbeResult.failed("上限=$limit 预期=$expected 存入=${stored.count}")
+            DevCompatProbeResult.failed("上限=$limit 预期=$expected 预期存入=$expectedStored 存入=${stored.count}")
         }
     }
 }
@@ -55,18 +55,19 @@ internal object ColossalChestsInventoryLimitProbe : DevCompatProbe {
             .invoke(inventory, 0, stack)
         val stored =
             inventoryClass.getMethod("getStackInSlot", Int::class.javaPrimitiveType).invoke(inventory, 0) as ItemStack
+        val expectedStored = minOf(128, expected)
 
-        return if (limit == expected && stored.count == 128) {
+        return if (limit == expected && stored.count == expectedStored) {
             DevCompatProbeResult.passed("上限=$limit 存入=${stored.count}")
         } else {
-            DevCompatProbeResult.failed("上限=$limit 预期=$expected 存入=${stored.count}")
+            DevCompatProbeResult.failed("上限=$limit 预期=$expected 预期存入=$expectedStored 存入=${stored.count}")
         }
     }
 }
 
 internal fun createInventoryProxy(): Any {
     val inventoryClass = loadClass("net.minecraft.inventory.IInventory")
-    val handler = InvocationHandler { _, method, args ->
+    val handler = InvocationHandler { _, method, _ ->
         when (method.name) {
             "func_70302_i_", "getSizeInventory" -> 1
             "func_70301_a", "getStackInSlot" -> ItemStack.EMPTY
@@ -97,7 +98,7 @@ internal fun createInventoryProxy(): Any {
 internal fun createSidedInventoryProxy(): Any {
     val sidedInventoryClass = loadClass("net.minecraft.inventory.ISidedInventory")
     val inventoryClass = loadClass("net.minecraft.inventory.IInventory")
-    val handler = InvocationHandler { _, method, args ->
+    val handler = InvocationHandler { _, method, _ ->
         when (method.name) {
             "func_180463_a", "getSlotsForFace" -> intArrayOf(0)
             "func_180462_a", "canInsertItem" -> true

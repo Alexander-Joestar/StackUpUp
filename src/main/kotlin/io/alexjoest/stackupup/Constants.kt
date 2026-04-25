@@ -38,7 +38,17 @@ object StackUpUpIds {
     const val LATE_MANTLE_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.mantle.json"
     const val LATE_REFINED_STORAGE_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.refinedstorage.json"
 
+    const val CONFIG_TITLE_KEY: String = "$CONFIG_LANG_ROOT.title"
+    const val COMMAND_USAGE_KEY: String = "$COMMAND_LANG_ROOT.usage"
+    const val COMMAND_RELOAD_SUCCESS_KEY: String = "$COMMAND_LANG_ROOT.reload.success"
+    const val COMMAND_EDIT_SUCCESS_KEY: String = "$COMMAND_LANG_ROOT.edit.success"
+    const val COMMAND_EDIT_MISSING_KEY: String = "$COMMAND_LANG_ROOT.edit.missing"
+    const val COMMAND_EDIT_UNSUPPORTED_KEY: String = "$COMMAND_LANG_ROOT.edit.unsupported"
+    const val COMMAND_EDIT_FAILED_KEY: String = "$COMMAND_LANG_ROOT.edit.failed"
     const val RULE_COMPLEXITY_PREFIX_KEY: String = "$MESSAGE_LANG_ROOT.rule_complexity.prefix"
+    const val RULE_COMPLEXITY_RULE_COUNT_KEY: String = "$MESSAGE_LANG_ROOT.rule_complexity.rule_count"
+    const val RULE_COMPLEXITY_RULE_LENGTH_KEY: String = "$MESSAGE_LANG_ROOT.rule_complexity.rule_length"
+    const val RULE_COMPLEXITY_TOTAL_LENGTH_KEY: String = "$MESSAGE_LANG_ROOT.rule_complexity.total_length"
     const val RULE_RELOAD_ERROR_PREFIX_KEY: String = "$MESSAGE_LANG_ROOT.rule_reload_error.prefix"
     const val TOOLTIP_CURRENT_MAX_KEY: String = "$TOOLTIP_LANG_ROOT.current_max"
 }

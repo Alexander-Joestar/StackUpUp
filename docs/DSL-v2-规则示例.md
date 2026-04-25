@@ -20,6 +20,9 @@ item = minecraft:*_ball -> 128
 # 按模组匹配
 mod = thermal -> 1024
 
+# 按物品类型匹配
+type = block -> 1024
+
 # 按矿物辞典匹配
 ore = ingotSteel -> 2048
 ```
@@ -54,6 +57,7 @@ size in [2, 16, 64] -> 1024
 ```text
 size > 2 && size < 64 -> 1024
 2 < size < 64 -> 1024
+type = block && mod = minecraft -> 256
 
 item = gregtech:gt.metaitem.01 && meta in [11305, 11306] -> 2048
 ore = ingotSteel || ore = ingotIron -> 1024
@@ -90,7 +94,7 @@ ore = ingotSteel -> *2
 
 上面的结果等价于把 `ingotSteel` 先设为 `512`，再翻倍到 `1024`。
 
-以及申必等价写法
+等价写法：
 ```text
 ore = ingotSteel -> 512 -> *2
 ```
@@ -106,5 +110,6 @@ ore = ingotSteel -> 512 -> *2
 
 1. 能用 `ore = ...` 的地方，优先用矿物辞典。
 2. 需要精确指定某个 `metadata` 变体时，再写 `item + meta`。
-3. 规则尽量短、尽量直，不要把一条规则写成很长的逻辑表达式。
-4. 如果多条规则都命中，后面的规则优先级更高。
+3. `type` 当前只支持 `item` 和 `block`。
+4. 规则尽量短、尽量直，不要把一条规则写成很长的逻辑表达式。
+5. 如果多条规则都命中，后面的规则优先级更高。

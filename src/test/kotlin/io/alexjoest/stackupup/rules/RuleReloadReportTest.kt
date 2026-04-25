@@ -4,6 +4,7 @@ import java.io.File
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import io.alexjoest.stackupup.StackUpUpIds
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import io.alexjoest.stackupup.rules.io.RuleComplexityWarning
 import io.alexjoest.stackupup.rules.io.RuleReloadReport
@@ -27,10 +28,10 @@ class RuleReloadReportTest {
             file = File("run/config/stackupup/main.su"),
             snapshot = RuleSnapshot(version = 1L, rules = emptyList()),
             errors = listOf("第 1 行加载失败"),
-            warnings = listOf(RuleComplexityWarning("message.stackupup.rule_complexity.rule_count", emptyList()))
+            warnings = listOf(RuleComplexityWarning(StackUpUpIds.RULE_COMPLEXITY_RULE_COUNT_KEY, emptyList()))
         )
 
         assertEquals(listOf("第 1 行加载失败"), report.errors)
-        assertEquals(listOf("message.stackupup.rule_complexity.rule_count"), report.complexityWarnings)
+        assertEquals(listOf(StackUpUpIds.RULE_COMPLEXITY_RULE_COUNT_KEY), report.complexityWarnings)
     }
 }

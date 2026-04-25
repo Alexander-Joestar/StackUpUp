@@ -16,7 +16,7 @@ class ConfigGui(parentScreen: GuiScreen?) : GuiConfig(
     StackUpUp.CONFIG_ID,
     false,
     false,
-    I18n.format("${StackUpUpIds.CONFIG_LANG_ROOT}.title")
+    I18n.format(StackUpUpIds.CONFIG_TITLE_KEY)
 ) {
     companion object {
         private fun collectConfigElements(): List<IConfigElement> =

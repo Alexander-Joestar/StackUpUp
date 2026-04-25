@@ -4,7 +4,9 @@ import net.minecraft.init.Bootstrap
 import net.minecraft.item.Item
 import net.minecraft.item.ItemStack
 import net.minecraft.util.ResourceLocation
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import io.alexjoest.stackupup.limit.OreDictIndex
 import io.alexjoest.stackupup.limit.RuleRuntime
@@ -12,9 +14,23 @@ import io.alexjoest.stackupup.rules.compile.RuleCompiler
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 
 class StackLimitHooksTest {
+    private var previousMaxStackSize: Int = 10240
+
+    @BeforeEach
+    fun setUpMaxStackSize() {
+        previousMaxStackSize = StackUpUpConfig.maxStackSize
+        StackUpUpConfig.maxStackSize = 10240
+    }
+
+    @AfterEach
+    fun restoreMaxStackSize() {
+        StackUpUpConfig.maxStackSize = previousMaxStackSize
+    }
+
     @Test
-    fun `兼容上限入口应固定返回原版常量`() {
-        assertEquals(Constants.VANILLA_STACK_LIMIT, StackLimitHooks.getCompatibilityStackSize())
+    fun `兼容上限入口应返回全局兼容最大堆叠上限`() {
+        StackUpUpConfig.maxStackSize = 10240
+        assertEquals(10240, StackLimitHooks.getCompatibilityStackSize())
     }
 
     @Test
@@ -62,6 +78,46 @@ class StackLimitHooksTest {
         )
 
         assertEquals(1024, result)
+    }
+
+    @Test
+    fun `原始基线解析不应被规则后的上限污染`() {
+        Bootstrap.register()
+        RuleRuntime.replaceSnapshot(
+            RuleSnapshot(
+                version = 14L,
+                rules = listOf(
+                    RuleCompiler.compileLine("item = stackupup_test:baseline_item -> 128", 1)
+                )
+            )
+        )
+        RuleRuntime.replaceOreDictIndex(OreDictIndex.fromStackLoader { emptySet() })
+        val item = Item().setRegistryName(ResourceLocation("stackupup_test", "baseline_item"))
+        val stack = ItemStack(item, 1, 0)
+
+        assertEquals(64, StackLimitHooks.resolveOriginalBaseline(stack))
+        assertEquals(128, StackLimitHooks.applyDynamicStackLimit(stack, 64))
+    }
+
+    @Test
+    fun `动态规则求值应始终从原始基线开始而不是从当前上限开始`() {
+        Bootstrap.register()
+        RuleRuntime.replaceSnapshot(
+            RuleSnapshot(
+                version = 15L,
+                rules = listOf(
+                    RuleCompiler.compileLine("size > 1 -> +2", 1)
+                )
+            )
+        )
+        RuleRuntime.replaceOreDictIndex(OreDictIndex.fromStackLoader { emptySet() })
+        val item = object : Item() {
+            override fun getItemStackLimit(stack: ItemStack): Int = 64
+        }.setRegistryName(ResourceLocation("stackupup_test", "baseline_rule_item"))
+        val stack = ItemStack(item, 1, 0)
+
+        assertEquals(64, StackLimitHooks.resolveOriginalBaseline(stack))
+        assertEquals(66, StackLimitHooks.applyDynamicStackLimit(stack, 1024))
     }
 
     @Test
@@ -378,7 +434,7 @@ class StackLimitHooksTest {
             66,
             StackLimitHooks.resolveDynamicSlotLimit(
                 stack = stack,
-                slotLimit = StackLimitHooks.getCompatibilityStackSize()
+                slotLimit = 66
             )
         )
     }

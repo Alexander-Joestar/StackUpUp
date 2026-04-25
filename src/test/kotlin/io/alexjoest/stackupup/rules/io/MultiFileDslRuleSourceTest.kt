@@ -2,13 +2,29 @@ package io.alexjoest.stackupup.rules.io
 
 import java.io.File
 import kotlin.io.path.createTempDirectory
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import io.alexjoest.stackupup.StackUpUpConfig
 import io.alexjoest.stackupup.limit.StackContext
 import io.alexjoest.stackupup.limit.StackLimitService
 
 class DslRuleSourceMultiFileTest {
+    private var previousMaxStackSize: Int = 10240
+
+    @BeforeEach
+    fun setUpMaxStackSize() {
+        previousMaxStackSize = StackUpUpConfig.maxStackSize
+        StackUpUpConfig.maxStackSize = 10240
+    }
+
+    @AfterEach
+    fun restoreMaxStackSize() {
+        StackUpUpConfig.maxStackSize = previousMaxStackSize
+    }
+
     @Test
     fun `应当按给定顺序聚合多个规则文件`() {
         val tempDir = createTempDirectory("stackupup-multi-source").toFile()

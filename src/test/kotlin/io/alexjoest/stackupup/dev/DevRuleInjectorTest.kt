@@ -1,7 +1,10 @@
 package io.alexjoest.stackupup.dev
 
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import io.alexjoest.stackupup.StackUpUpConfig
 import io.alexjoest.stackupup.limit.StackIdentity
 import io.alexjoest.stackupup.limit.StackLimitService
 import io.alexjoest.stackupup.limit.RuleRuntime
@@ -9,6 +12,19 @@ import io.alexjoest.stackupup.rules.compile.RuleCompiler
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 
 class DevRuleInjectorTest {
+    private var previousMaxStackSize: Int = 10240
+
+    @BeforeEach
+    fun setUpMaxStackSize() {
+        previousMaxStackSize = StackUpUpConfig.maxStackSize
+        StackUpUpConfig.maxStackSize = 10240
+    }
+
+    @AfterEach
+    fun restoreMaxStackSize() {
+        StackUpUpConfig.maxStackSize = previousMaxStackSize
+    }
+
     @Test
     fun `应当把开发规则追加到当前快照末尾`() {
         RuleRuntime.replaceSnapshot(

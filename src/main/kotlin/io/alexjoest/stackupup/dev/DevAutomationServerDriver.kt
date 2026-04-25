@@ -1,6 +1,7 @@
 package io.alexjoest.stackupup.dev
 
 import io.alexjoest.stackupup.StackUpUp
+import io.alexjoest.stackupup.StackLimitHooks
 import io.alexjoest.stackupup.limit.StackContext
 import io.alexjoest.stackupup.limit.StackContextResolver
 import io.alexjoest.stackupup.limit.RuleRuntime
@@ -146,7 +147,7 @@ object DevAutomationServerDriver {
 
     private fun probeTarget(target: ResolvedDevTarget): ProbedTarget {
         val probeStack = target.stack.copy()
-        val baseLimit = probeStack.item.getItemStackLimit(probeStack)
+        val baseLimit = StackLimitHooks.resolveOriginalBaseline(probeStack)
         val context = StackContextResolver.fromStack(probeStack, baseLimit)
             ?: error("开发自动验收[服务端]：目标物品无法解析为统一堆叠上下文。")
         val resolvedLimit = RuleRuntime.limitService().resolve(context)
@@ -264,4 +265,3 @@ private data class ProbedTarget(
     val remainder: net.minecraft.item.ItemStack,
     val evaluation: DevProbeEvaluation
 )
-

@@ -9,11 +9,15 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(ItemStack.class)
 public abstract class ItemStackMixin {
     @ModifyReturnValue(
-        method = "getMaxStackSize()I",
-        at = @At("RETURN")
+            method = "getMaxStackSize()I",
+            at = @At("RETURN")
     )
     private int stackupup$applyRules(int original) {
         final ItemStack stack = (ItemStack) (Object) this;
+
+        if (StackLimitHooks.shouldBypassDynamicItemRules()) {
+            return original;
+        }
 
         // 普通物品会先经过 Item#getItemStackLimit(ItemStack) 的动态规则入口；
         // 这里仅在“物品类自己覆写了上限逻辑、绕开 ItemMixin”时补一次规则，

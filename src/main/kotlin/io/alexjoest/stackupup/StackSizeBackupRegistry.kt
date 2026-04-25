@@ -10,7 +10,7 @@ internal object StackSizeBackupRegistry {
 
     fun backup(item: Item) {
         if (!values.containsKey(item)) {
-            values.put(item, item.getItemStackLimit(ItemStack(item)))
+            values.put(item, StackLimitHooks.resolveOriginalBaseline(ItemStack(item)))
         }
     }
 

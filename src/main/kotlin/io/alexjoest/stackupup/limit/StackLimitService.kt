@@ -1,5 +1,6 @@
 package io.alexjoest.stackupup.limit
 
+import io.alexjoest.stackupup.StackUpUpConfig
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import io.alexjoest.stackupup.rules.model.RuleMatchContext
 import java.util.concurrent.ConcurrentHashMap
@@ -31,7 +32,7 @@ class StackLimitService(
                 }
             }
 
-            result
+            result.coerceIn(1, StackUpUpConfig.maxStackSize)
         }
     }
 

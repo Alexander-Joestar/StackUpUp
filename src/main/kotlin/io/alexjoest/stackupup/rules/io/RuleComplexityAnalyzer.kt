@@ -1,7 +1,9 @@
 package io.alexjoest.stackupup.rules.io
 
 import io.alexjoest.stackupup.StackUpUpIds
+import io.alexjoest.stackupup.StackUpUpConfig
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
+import io.alexjoest.stackupup.rules.RuleStepKind
 
 object RuleComplexityAnalyzer {
     private const val RULE_COUNT_WARNING_THRESHOLD: Int = 80
@@ -22,6 +24,7 @@ object RuleComplexityAnalyzer {
             if (totalRuleLength >= RULE_TOTAL_LENGTH_WARNING_THRESHOLD) {
                 add(RuleComplexityWarning(StackUpUpIds.RULE_COMPLEXITY_TOTAL_LENGTH_KEY, listOf(totalRuleLength)))
             }
+            addAll(analyzeExplicitClampWarnings(snapshot))
         }
 
         return RuleComplexityReport(
@@ -30,6 +33,25 @@ object RuleComplexityAnalyzer {
             totalRuleLength = totalRuleLength,
             warnings = warnings
         )
+    }
+
+    private fun analyzeExplicitClampWarnings(snapshot: RuleSnapshot): List<RuleComplexityWarning> {
+        val maxStackSize = StackUpUpConfig.maxStackSize
+        return snapshot.rules.mapNotNull { rule ->
+            val explicitSetValue = rule.action.steps
+                .firstOrNull { step -> step.kind == RuleStepKind.SET }
+                ?.value
+                ?: return@mapNotNull null
+
+            if (explicitSetValue <= maxStackSize) {
+                return@mapNotNull null
+            }
+
+            RuleComplexityWarning(
+                StackUpUpIds.RULE_LIMIT_CLAMP_KEY,
+                listOf(rule.lineNumber, maxStackSize)
+            )
+        }
     }
 }
 

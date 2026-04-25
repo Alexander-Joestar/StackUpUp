@@ -14,12 +14,13 @@ object StackLimitHooks {
     private val inventoryWriteContext: ThreadLocal<ArrayDeque<ItemStack>> = ThreadLocal.withInitial(::ArrayDeque)
     private val itemLimitResolutionMarkers: ThreadLocal<IdentityHashMap<ItemStack, Int>> =
         ThreadLocal.withInitial(::IdentityHashMap)
+    private val originalBaselineBypassDepth: ThreadLocal<Int> = ThreadLocal.withInitial { 0 }
 
     @JvmField
     val RANDOM: Random = Random()
 
     @JvmStatic
-    fun getCompatibilityStackSize(): Int = VANILLA_STACK_LIMIT
+    fun getCompatibilityStackSize(): Int = StackUpUpConfig.maxStackSize
 
     @JvmStatic
     @Deprecated(
@@ -44,15 +45,44 @@ object StackLimitHooks {
     fun applyDynamicStackLimit(stack: ItemStack, baseLimit: Int): Int {
         val limitService = RuleRuntime.limitService()
         if (!limitService.hasRules()) {
-            return baseLimit
+            return resolveOriginalBaseline(stack, baseLimit)
         }
 
+        val originalBaseline = resolveOriginalBaseline(stack, baseLimit)
         val context = StackContextResolver.fromStack(
             stack = stack,
-            baseLimit = baseLimit,
+            baseLimit = originalBaseline,
             includeOreNames = limitService.needsOreNames()
-        ) ?: return baseLimit
+        ) ?: return originalBaseline
         return limitService.resolve(context)
+    }
+
+    @JvmStatic
+    fun shouldBypassDynamicItemRules(): Boolean = originalBaselineBypassDepth.get() > 0
+
+    @JvmStatic
+    fun resolveOriginalBaseline(stack: ItemStack, fallbackLimit: Int = VANILLA_STACK_LIMIT): Int {
+        if (stack.isEmpty) {
+            return fallbackLimit
+        }
+
+        return withOriginalBaselineBypass {
+            stack.item.getItemStackLimit(stack)
+        }
+    }
+
+    private inline fun <T> withOriginalBaselineBypass(block: () -> T): T {
+        val depth = originalBaselineBypassDepth.get()
+        originalBaselineBypassDepth.set(depth + 1)
+        try {
+            return block()
+        } finally {
+            if (depth == 0) {
+                originalBaselineBypassDepth.remove()
+            } else {
+                originalBaselineBypassDepth.set(depth)
+            }
+        }
     }
 
     @JvmStatic

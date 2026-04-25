@@ -1,11 +1,27 @@
 package io.alexjoest.stackupup.limit
 
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import io.alexjoest.stackupup.StackUpUpConfig
 import io.alexjoest.stackupup.rules.compile.RuleCompiler
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 
 class StackLimitServiceTest {
+    private var previousMaxStackSize: Int = 10240
+
+    @BeforeEach
+    fun setUpMaxStackSize() {
+        previousMaxStackSize = StackUpUpConfig.maxStackSize
+        StackUpUpConfig.maxStackSize = 10240
+    }
+
+    @AfterEach
+    fun restoreMaxStackSize() {
+        StackUpUpConfig.maxStackSize = previousMaxStackSize
+    }
+
     @Test
     fun `应当按文件顺序执行规则`() {
         val snapshot = RuleSnapshot(
@@ -96,6 +112,32 @@ class StackLimitServiceTest {
                 oreNames = setOf("ingotSteel")
             )
         )
+    }
+
+    @Test
+    fun `运行时结果应被全局最大堆叠上限钳制`() {
+        val previous = StackUpUpConfig.maxStackSize
+        StackUpUpConfig.maxStackSize = 256
+        try {
+            val snapshot = RuleSnapshot(
+                version = 5L,
+                rules = listOf(
+                    RuleCompiler.compileLine("item = minecraft:egg -> 999999", 1)
+                )
+            )
+            val service = StackLimitService(snapshot)
+
+            assertEquals(
+                256,
+                service.resolve(
+                    StackIdentity("minecraft:egg", "minecraft", 0, "item"),
+                    baseLimit = 16,
+                    oreNames = emptySet()
+                )
+            )
+        } finally {
+            StackUpUpConfig.maxStackSize = previous
+        }
     }
 }
 

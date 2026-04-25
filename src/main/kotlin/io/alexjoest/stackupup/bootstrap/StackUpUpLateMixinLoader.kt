@@ -44,6 +44,11 @@ class StackUpUpLateMixinLoader : ILateMixinLoader {
                 StackUpUpConfig::coremodPatchCyclopsCore
             ),
             LateMixinModule(
+                StackUpUpIds.LATE_ENDERIO_MIXIN_CONFIG,
+                "enderio",
+                StackUpUpConfig::coremodPatchEnderIO
+            ),
+            LateMixinModule(
                 StackUpUpIds.LATE_IC2_MIXIN_CONFIG,
                 "ic2",
                 StackUpUpConfig::coremodPatchIc2

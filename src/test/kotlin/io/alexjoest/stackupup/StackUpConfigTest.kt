@@ -9,20 +9,49 @@ import org.junit.jupiter.api.Test
 class StackUpUpConfigTest {
     @Test
     fun `配置门面应继续暴露扁平运行时访问`() {
-        StackUpUpConfig.general.enableDslRules = false
-        StackUpUpConfig.general.tooltipStackDisplayMode = TooltipStackDisplayMode.ALWAYS
-        StackUpUpConfig.modPatches.cyclopsCore = false
-        StackUpUpConfig.client.fontScaleMinimum = 0.4
-        StackUpUpConfig.client.fontScaleMaximum = 0.4
+        val previousEnableDslRules = StackUpUpConfig.general.enableDslRules
+        val previousTooltipStackDisplayMode = StackUpUpConfig.general.tooltipStackDisplayMode
+        val previousMaxStackSize = StackUpUpConfig.general.maxStackSize
+        val previousActiveMaxStackSize = StackUpUpConfig.activeMaxStackSize
+        val previousCyclopsCore = StackUpUpConfig.modPatches.cyclopsCore
+        val previousEnderIO = StackUpUpConfig.modPatches.enderIO
+        val previousFontScaleMinimum = StackUpUpConfig.client.fontScaleMinimum
+        val previousFontScaleMaximum = StackUpUpConfig.client.fontScaleMaximum
 
-        StackUpUpConfig.applyRuntimeValues()
+        try {
+            StackUpUpConfig.general.enableDslRules = false
+            StackUpUpConfig.general.tooltipStackDisplayMode = TooltipStackDisplayMode.ALWAYS
+            StackUpUpConfig.general.maxStackSize = 65536
+            StackUpUpConfig.modPatches.cyclopsCore = false
+            StackUpUpConfig.modPatches.enderIO = false
+            StackUpUpConfig.client.fontScaleMinimum = 0.4
+            StackUpUpConfig.client.fontScaleMaximum = 0.4
 
-        assertFalse(StackUpUpConfig.enableDslRules)
-        assertEquals(TooltipStackDisplayMode.ALWAYS, StackUpUpConfig.tooltipStackDisplayMode)
-        assertFalse(StackUpUpConfig.coremodPatchCyclopsCore)
-        assertEquals(0.4f, StackUpUpConfig.lowestScaleDown)
-        assertEquals(0.4f, StackUpUpConfig.highestScaleDown)
-        assertTrue(StackUpUpConfig.equalScaleDown)
+            StackUpUpConfig.applyRuntimeValues()
+
+            assertFalse(StackUpUpConfig.enableDslRules)
+            assertEquals(TooltipStackDisplayMode.ALWAYS, StackUpUpConfig.tooltipStackDisplayMode)
+            assertEquals(previousActiveMaxStackSize, StackUpUpConfig.maxStackSize)
+            assertFalse(StackUpUpConfig.coremodPatchCyclopsCore)
+            assertFalse(StackUpUpConfig.coremodPatchEnderIO)
+            assertEquals(0.4f, StackUpUpConfig.lowestScaleDown)
+            assertEquals(0.4f, StackUpUpConfig.highestScaleDown)
+            assertTrue(StackUpUpConfig.equalScaleDown)
+
+            StackUpUpConfig.applyReloadControlledValues()
+
+            assertEquals(65536, StackUpUpConfig.maxStackSize)
+        } finally {
+            StackUpUpConfig.general.enableDslRules = previousEnableDslRules
+            StackUpUpConfig.general.tooltipStackDisplayMode = previousTooltipStackDisplayMode
+            StackUpUpConfig.general.maxStackSize = previousMaxStackSize
+            StackUpUpConfig.modPatches.cyclopsCore = previousCyclopsCore
+            StackUpUpConfig.modPatches.enderIO = previousEnderIO
+            StackUpUpConfig.client.fontScaleMinimum = previousFontScaleMinimum
+            StackUpUpConfig.client.fontScaleMaximum = previousFontScaleMaximum
+            StackUpUpConfig.activeMaxStackSize = previousActiveMaxStackSize
+            StackUpUpConfig.applyRuntimeValues()
+        }
     }
 
     @Test
@@ -31,6 +60,9 @@ class StackUpUpConfigTest {
         assertEquals(StackUpUpIds.PUBLIC_ID, StackUpUp.PUBLIC_ID)
         assertEquals(StackUpUpIds.CONFIG_ID, StackUpUp.CONFIG_ID)
         assertEquals(StackUpUpIds.RULES_FILE_NAME, StackUpUp.RULES_FILE_NAME_PUBLIC)
+        assertEquals(Tags.MOD_ID, StackUpUpIds.MOD_ID)
+        assertEquals(Tags.MOD_NAME, StackUpUpIds.MOD_NAME)
+        assertEquals(Tags.VERSION, StackUpUp.VERSION)
     }
 
     @Test
@@ -44,6 +76,7 @@ class StackUpUpConfigTest {
         assertEquals("message.stackupup.rule_complexity.rule_count", StackUpUpIds.RULE_COMPLEXITY_RULE_COUNT_KEY)
         assertEquals("message.stackupup.rule_complexity.rule_length", StackUpUpIds.RULE_COMPLEXITY_RULE_LENGTH_KEY)
         assertEquals("message.stackupup.rule_complexity.total_length", StackUpUpIds.RULE_COMPLEXITY_TOTAL_LENGTH_KEY)
+        assertEquals("message.stackupup.rule_limit.clamp", StackUpUpIds.RULE_LIMIT_CLAMP_KEY)
         assertEquals("tooltip.stackupup.current_max", StackUpUpIds.TOOLTIP_CURRENT_MAX_KEY)
         assertEquals("io/alexjoest/stackupup/StackLimitHooks", StackUpUpIds.STACK_LIMIT_HOOKS_INTERNAL_NAME)
     }
@@ -58,5 +91,3 @@ class StackUpUpConfigTest {
         }
     }
 }
-
-

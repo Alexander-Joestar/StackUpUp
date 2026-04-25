@@ -31,9 +31,12 @@ import io.alexjoest.stackupup.rules.io.RuleReloadReport
 class StackUpUp {
     private var hadPostInit: Boolean = false
 
-    private fun handleConfigChanged() {
+    private fun handleConfigChanged(activateReloadControlledValues: Boolean = false) {
         ConfigManager.sync(CONFIG_ID, Config.Type.INSTANCE)
         StackUpUpConfig.applyRuntimeValues()
+        if (activateReloadControlledValues) {
+            StackUpUpConfig.applyReloadControlledValues()
+        }
     }
 
     @SubscribeEvent
@@ -53,7 +56,7 @@ class StackUpUp {
         logger = LogManager.getLogger()
         LegacyConfigMigration.migrate(event.modConfigurationDirectory)
         RuleFileLocator.setConfigDirectory(event.modConfigurationDirectory)
-        handleConfigChanged()
+        handleConfigChanged(activateReloadControlledValues = true)
 
         MinecraftForge.EVENT_BUS.register(this)
         MinecraftForge.EVENT_BUS.register(proxy)
@@ -105,7 +108,10 @@ class StackUpUp {
 
         @JvmStatic
         fun reload(): RuleReloadReport =
-            RuleRuntimeCoordinator.reload().also { report ->
+            RuleRuntimeCoordinator.run {
+                StackUpUpConfig.applyReloadControlledValues()
+                reload()
+            }.also { report ->
                 proxy?.markRuleStatusDirty()
                 logReloadReport(report)
             }

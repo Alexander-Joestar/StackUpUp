@@ -22,6 +22,7 @@ class MixinBooterIntegrationTest {
                 "mixins.stackupup.late.ae2.json",
                 "mixins.stackupup.late.actuallyadditions.json",
                 "mixins.stackupup.late.cyclopscore.json",
+                "mixins.stackupup.late.enderio.json",
                 "mixins.stackupup.late.ic2.json",
                 "mixins.stackupup.late.mantle.json",
                 "mixins.stackupup.late.refinedstorage.json"
@@ -36,13 +37,21 @@ class MixinBooterIntegrationTest {
         val oldAe2 = StackUpUpConfig.coremodPatchAppliedEnergistics2
         val oldActuallyAdditions = StackUpUpConfig.coremodPatchActuallyAdditions
         val oldCyclopsCore = StackUpUpConfig.coremodPatchCyclopsCore
+        val oldEnderIO = StackUpUpConfig.coremodPatchEnderIO
         val oldMantle = StackUpUpConfig.coremodPatchMantle
         val oldIc2 = StackUpUpConfig.coremodPatchIc2
         val oldRs = StackUpUpConfig.coremodPatchRefinedStorage
 
         try {
             StackUpUpConfig.coremodPatchAppliedEnergistics2 = true
-            assertTrue(loader.shouldMixinConfigQueue(Context("mixins.stackupup.late.ae2.json", listOf("appliedenergistics2"))))
+            assertTrue(
+                loader.shouldMixinConfigQueue(
+                    Context(
+                        "mixins.stackupup.late.ae2.json",
+                        listOf("appliedenergistics2")
+                    )
+                )
+            )
             assertFalse(loader.shouldMixinConfigQueue(Context("mixins.stackupup.late.ae2.json", emptyList())))
 
             StackUpUpConfig.coremodPatchActuallyAdditions = true
@@ -51,7 +60,14 @@ class MixinBooterIntegrationTest {
                     Context("mixins.stackupup.late.actuallyadditions.json", listOf("actuallyadditions"))
                 )
             )
-            assertFalse(loader.shouldMixinConfigQueue(Context("mixins.stackupup.late.actuallyadditions.json", emptyList())))
+            assertFalse(
+                loader.shouldMixinConfigQueue(
+                    Context(
+                        "mixins.stackupup.late.actuallyadditions.json",
+                        emptyList()
+                    )
+                )
+            )
 
             StackUpUpConfig.coremodPatchMantle = false
             assertFalse(loader.shouldMixinConfigQueue(Context("mixins.stackupup.late.mantle.json", listOf("mantle"))))
@@ -61,16 +77,42 @@ class MixinBooterIntegrationTest {
             assertTrue(loader.shouldMixinConfigQueue(Context("mixins.stackupup.late.ic2.json", listOf("ic2"))))
 
             StackUpUpConfig.coremodPatchCyclopsCore = true
-            assertTrue(loader.shouldMixinConfigQueue(Context("mixins.stackupup.late.cyclopscore.json", listOf("cyclopscore"))))
+            assertTrue(
+                loader.shouldMixinConfigQueue(
+                    Context(
+                        "mixins.stackupup.late.cyclopscore.json",
+                        listOf("cyclopscore")
+                    )
+                )
+            )
             assertFalse(loader.shouldMixinConfigQueue(Context("mixins.stackupup.late.cyclopscore.json", emptyList())))
 
+            StackUpUpConfig.coremodPatchEnderIO = true
+            assertTrue(loader.shouldMixinConfigQueue(Context("mixins.stackupup.late.enderio.json", listOf("enderio"))))
+            assertFalse(loader.shouldMixinConfigQueue(Context("mixins.stackupup.late.enderio.json", emptyList())))
+
             StackUpUpConfig.coremodPatchRefinedStorage = true
-            assertTrue(loader.shouldMixinConfigQueue(Context("mixins.stackupup.late.refinedstorage.json", listOf("refinedstorage"))))
-            assertFalse(loader.shouldMixinConfigQueue(Context("mixins.stackupup.late.refinedstorage.json", emptyList())))
+            assertTrue(
+                loader.shouldMixinConfigQueue(
+                    Context(
+                        "mixins.stackupup.late.refinedstorage.json",
+                        listOf("refinedstorage")
+                    )
+                )
+            )
+            assertFalse(
+                loader.shouldMixinConfigQueue(
+                    Context(
+                        "mixins.stackupup.late.refinedstorage.json",
+                        emptyList()
+                    )
+                )
+            )
         } finally {
             StackUpUpConfig.coremodPatchAppliedEnergistics2 = oldAe2
             StackUpUpConfig.coremodPatchActuallyAdditions = oldActuallyAdditions
             StackUpUpConfig.coremodPatchCyclopsCore = oldCyclopsCore
+            StackUpUpConfig.coremodPatchEnderIO = oldEnderIO
             StackUpUpConfig.coremodPatchMantle = oldMantle
             StackUpUpConfig.coremodPatchIc2 = oldIc2
             StackUpUpConfig.coremodPatchRefinedStorage = oldRs

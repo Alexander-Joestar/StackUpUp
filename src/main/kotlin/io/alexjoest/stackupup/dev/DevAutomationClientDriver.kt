@@ -44,7 +44,7 @@ class DevAutomationClientDriver(
 
         for (action in controller.advance(snapshot)) {
             when (action) {
-                DevAutomationAction.LaunchWorld -> launchTestWorld(minecraft)
+                DevAutomationAction.LaunchWorld    -> launchTestWorld(minecraft)
                 DevAutomationAction.GiveTargetItem -> giveTargetItem(minecraft)
             }
         }
@@ -82,12 +82,14 @@ class DevAutomationClientDriver(
                     injection.newRuleCount
                 )
             }
-            is DevRuleInjectionResult.Failed -> {
+
+            is DevRuleInjectionResult.Failed  -> {
                 StackUpUp.logger?.error("开发自动验收：临时规则注入失败：{}", injection.errors.joinToString("；"))
                 controller.abort()
                 return
             }
-            DevRuleInjectionResult.Skipped -> Unit
+
+            DevRuleInjectionResult.Skipped    -> Unit
         }
 
         if (DevAutomationConfig.clearInventoryBeforeGive && !inventoryCleared) {
@@ -109,7 +111,10 @@ class DevAutomationClientDriver(
         }
         val resolvedTarget = target ?: return
 
-        val context = StackContextResolver.fromStack(probeStack, probeStack.maxStackSize) ?: return
+        val context = StackContextResolver.fromStack(
+            probeStack,
+            StackLimitHooks.resolveOriginalBaseline(probeStack)
+        ) ?: return
         val resolvedLimit = RuleRuntime.limitService().resolve(context)
 
         StackUpUp.logger?.info(

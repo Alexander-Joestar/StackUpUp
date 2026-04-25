@@ -15,6 +15,10 @@ object StackUpUpConfig {
     var equalScaleDown: Boolean = false
 
     @JvmField
+    @Config.Ignore
+    var activeMaxStackSize: Int = 64
+
+    @JvmField
     @Config.Name("general")
     @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.general.name")
     val general: General = General()
@@ -45,6 +49,13 @@ object StackUpUpConfig {
         get() = general.ruleComplexityWarnings
         set(value) {
             general.ruleComplexityWarnings = value
+        }
+
+    var maxStackSize: Int
+        get() = activeMaxStackSize
+        set(value) {
+            general.maxStackSize = value
+            activeMaxStackSize = value
         }
 
     var scaleTextLinearly: Boolean
@@ -101,9 +112,20 @@ object StackUpUpConfig {
             modPatches.cyclopsCore = value
         }
 
+    var coremodPatchEnderIO: Boolean
+        get() = modPatches.enderIO
+        set(value) {
+            modPatches.enderIO = value
+        }
+
     @JvmStatic
     fun applyRuntimeValues() {
         equalScaleDown = abs(client.fontScaleMinimum - client.fontScaleMaximum) <= 0.001
+    }
+
+    @JvmStatic
+    fun applyReloadControlledValues() {
+        activeMaxStackSize = general.maxStackSize
     }
 
     class General {
@@ -122,6 +144,12 @@ object StackUpUpConfig {
         @Config.Comment("Warn when the ruleset becomes unusually large or long.")
         @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.general.ruleComplexityWarnings.name")
         var ruleComplexityWarnings: Boolean = true
+
+        @JvmField
+        @Config.Comment("Global compatibility upper bound used when a code path has no item stack context.")
+        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.general.maxStackSize.name")
+        @Config.RangeInt(min = 1, max = Int.MAX_VALUE)
+        var maxStackSize: Int = 64
     }
 
     class ModPatches {
@@ -167,6 +195,13 @@ object StackUpUpConfig {
         @Config.RequiresMcRestart
         var cyclopsCore: Boolean = true
 
+        @JvmField
+        @Config.Comment("Patch Ender IO machine inventories for large-stack compatibility.")
+        @Config.Name("enderio")
+        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.modpatches.enderio.name")
+        @Config.RequiresMcRestart
+        var enderIO: Boolean = true
+
     }
 
     class Client {
@@ -194,5 +229,3 @@ enum class TooltipStackDisplayMode {
     ALWAYS,
     ADVANCED
 }
-
-

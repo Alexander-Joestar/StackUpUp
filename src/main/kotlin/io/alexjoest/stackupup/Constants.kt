@@ -1,10 +1,10 @@
 package io.alexjoest.stackupup
 
 object StackUpUpIds {
-    const val MOD_ID: String = "stackupup"
+    const val MOD_ID: String = Tags.MOD_ID
     const val CONFIG_ID: String = MOD_ID
     const val PUBLIC_ID: String = MOD_ID
-    const val MOD_NAME: String = "StackUpUp"
+    const val MOD_NAME: String = Tags.MOD_NAME
     const val RULE_FILE_EXTENSION: String = "su"
     const val RULES_DIRECTORY_NAME: String = MOD_ID
     const val RULES_FILE_NAME: String = "main.$RULE_FILE_EXTENSION"
@@ -34,6 +34,7 @@ object StackUpUpIds {
     const val LATE_AE2_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.ae2.json"
     const val LATE_ACTUALLY_ADDITIONS_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.actuallyadditions.json"
     const val LATE_CYCLOPSCORE_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.cyclopscore.json"
+    const val LATE_ENDERIO_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.enderio.json"
     const val LATE_IC2_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.ic2.json"
     const val LATE_MANTLE_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.mantle.json"
     const val LATE_REFINED_STORAGE_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.refinedstorage.json"
@@ -49,6 +50,7 @@ object StackUpUpIds {
     const val RULE_COMPLEXITY_RULE_COUNT_KEY: String = "$MESSAGE_LANG_ROOT.rule_complexity.rule_count"
     const val RULE_COMPLEXITY_RULE_LENGTH_KEY: String = "$MESSAGE_LANG_ROOT.rule_complexity.rule_length"
     const val RULE_COMPLEXITY_TOTAL_LENGTH_KEY: String = "$MESSAGE_LANG_ROOT.rule_complexity.total_length"
+    const val RULE_LIMIT_CLAMP_KEY: String = "$MESSAGE_LANG_ROOT.rule_limit.clamp"
     const val RULE_RELOAD_ERROR_PREFIX_KEY: String = "$MESSAGE_LANG_ROOT.rule_reload_error.prefix"
     const val TOOLTIP_CURRENT_MAX_KEY: String = "$TOOLTIP_LANG_ROOT.current_max"
 }

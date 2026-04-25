@@ -17,6 +17,7 @@ class EarlyMixinConfigTest {
         assertTrue(content.contains("ItemStackNbtMixin"))
         assertTrue(content.contains("SlotLimitMixin"))
         assertTrue(content.contains("VanillaInventoryLimitMixin"))
+        assertTrue(content.contains("EntityItemMergeMixin"))
         assertTrue(content.contains("InventoryPlayerAddResourceMixin"))
         assertTrue(content.contains("ForgeItemHandlerLimitMixin"))
         assertTrue(content.contains("SlotItemHandlerMixin"))
@@ -47,10 +48,26 @@ class EarlyMixinConfigTest {
             StandardCharsets.UTF_8
         )
 
+        assertTrue(source.contains("method = \"canMergeStacks(Lnet/minecraft/item/ItemStack;Lnet/minecraft/item/ItemStack;)Z\""))
         assertTrue(source.contains("method = \"addResource(ILnet/minecraft/item/ItemStack;)I\""))
         assertTrue(source.contains("target = \"Lnet/minecraft/item/ItemStack;getMaxStackSize()I\""))
         assertTrue(source.contains("target = \"Lnet/minecraft/entity/player/InventoryPlayer;getInventoryStackLimit()I\""))
+        assertTrue(source.contains("resolveInventoryClampLimit(incoming, inventory.getInventoryStackLimit())"))
         assertTrue(source.contains("return source.getMaxStackSize()"))
         assertTrue(source.contains("resolveInventoryClampLimit(source, inventory.getInventoryStackLimit())"))
+    }
+
+    @Test
+    fun `地面物品合并应按两侧较大的动态上限判定`() {
+        val source = String(
+            Files.readAllBytes(
+                Paths.get("src/main/java/io/alexjoest/stackupup/mixin/early/EntityItemMergeMixin.java")
+            ),
+            StandardCharsets.UTF_8
+        )
+
+        assertTrue(source.contains("method = \"combineItems(Lnet/minecraft/entity/item/EntityItem;)Z\""))
+        assertTrue(source.contains("target = \"Lnet/minecraft/item/ItemStack;getMaxStackSize()I\""))
+        assertTrue(source.contains("Math.max(candidate.getMaxStackSize(), current.getMaxStackSize())"))
     }
 }

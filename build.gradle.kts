@@ -1,4 +1,5 @@
 import java.io.File
+import java.util.jar.JarFile
 import org.gradle.api.internal.artifacts.dsl.dependencies.DependenciesExtensionModule.module
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.compile.AbstractCompile
@@ -93,6 +94,21 @@ fun localDevModRuntimeName(file: File): String =
         file.name
     }
 
+fun jarManifestAttribute(file: File, attributeName: String): String? {
+    if (!file.name.endsWith(".jar")) {
+        return null
+    }
+
+    return runCatching {
+        JarFile(file).use { jar ->
+            jar.manifest?.mainAttributes?.getValue(attributeName)
+        }
+    }.getOrNull()
+}
+
+fun requiresFmlDirectoryScan(file: File): Boolean =
+    !jarManifestAttribute(file, "ContainedDeps").isNullOrBlank()
+
 val localDevModSourceFiles =
     buildList {
         addAll(
@@ -123,8 +139,10 @@ val runtimeLocalDevModSourceFiles =
     localDevModSourceFiles.filter { sourceFile ->
         sourceFile.name.endsWith(".jar") && sourceFile.parentFile?.name == "local-dev-mods"
     }
+val scanOnlyLocalDevModSourceFiles = runtimeLocalDevModSourceFiles.filter(::requiresFmlDirectoryScan)
+val runtimeClasspathLocalDevModSourceFiles = runtimeLocalDevModSourceFiles - scanOnlyLocalDevModSourceFiles
 val copiedRuntimeLocalDevModFiles =
-    runtimeLocalDevModSourceFiles.map { sourceFile ->
+    runtimeClasspathLocalDevModSourceFiles.map { sourceFile ->
         preparedLocalDevModDirectory.get().file(localDevModRuntimeName(sourceFile)).asFile
     }
 
@@ -190,6 +208,26 @@ val prepareLocalDevMods =
         duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     }
 
+val prepareScanOnlyLocalDevMods =
+    tasks.register("prepareScanOnlyLocalDevMods") {
+        group = "build setup"
+        description = "把带 ContainedDeps 的本地开发模组复制到 run/mods，确保 FML 按目录扫描装载。"
+        onlyIf { scanOnlyLocalDevModSourceFiles.isNotEmpty() }
+        doLast {
+            val runModsDirectory = file("run/mods")
+            if (!runModsDirectory.exists()) {
+                runModsDirectory.mkdirs()
+            }
+
+            for (sourceFile in scanOnlyLocalDevModSourceFiles) {
+                sourceFile.copyTo(
+                    target = runModsDirectory.resolve(localDevModRuntimeName(sourceFile)),
+                    overwrite = true
+                )
+            }
+        }
+    }
+
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(8))
@@ -239,6 +277,13 @@ if (localDevModSourceFiles.isNotEmpty()) {
     listOf("processResources", "runClient", "runServer", "runObfClient", "runObfServer").forEach { taskName ->
         tasks.named(taskName).configure {
             dependsOn(prepareLocalDevMods)
+        }
+    }
+    if (scanOnlyLocalDevModSourceFiles.isNotEmpty()) {
+        listOf("runClient", "runServer", "runObfClient", "runObfServer").forEach { taskName ->
+            tasks.named(taskName).configure {
+                dependsOn(prepareScanOnlyLocalDevMods)
+            }
         }
     }
 }
@@ -360,7 +405,9 @@ dependencies {
         add("devOnlyNonPublishable", rfg.deobf(project.files(localDevMod)))
     }
 
-    // 只有 local-dev-mods 下的模组才需要额外注入运行时；
+    // 只有 local-dev-mods 下、且不依赖 FML 目录扫描语义的模组才额外注入运行时。
+    // 带 ContainedDeps 的 jar（如 EnderCore）必须交给 run/mods 目录扫描装载，
+    // 否则内嵌依赖不会展开，coremod/plugin 类会在运行时缺失。
     // run/mods 里的 jar 会被 FML 目录扫描发现，不能再走 classpath，避免重复装载。
     for (localDevMod in copiedRuntimeLocalDevModFiles) {
         add("runtimeOnlyNonPublishable", rfg.deobf(project.files(localDevMod)))

@@ -2,7 +2,9 @@ package io.alexjoest.stackupup
 
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.ScaledResolution
+import net.minecraft.client.gui.toasts.SystemToast
 import net.minecraft.client.resources.I18n
+import net.minecraft.util.text.TextComponentString
 import net.minecraftforge.event.entity.player.ItemTooltipEvent
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
 import net.minecraftforge.fml.common.gameevent.TickEvent
@@ -12,6 +14,8 @@ import io.alexjoest.stackupup.rules.io.RuleFeedback
 
 class ProxyClient : ProxyCommon() {
     private var pendingRuleStatusReminder: Boolean = true
+    private var pendingConflictToast: List<String> = emptyList()
+    private var lastSyncedLanguageCode: String? = null
 
     @SubscribeEvent
     fun onTooltip(event: ItemTooltipEvent) {
@@ -44,18 +48,37 @@ class ProxyClient : ProxyCommon() {
 
     @SubscribeEvent
     fun onClientTick(event: TickEvent.ClientTickEvent) {
-        if (event.phase != TickEvent.Phase.END || !pendingRuleStatusReminder) {
+        if (event.phase != TickEvent.Phase.END) {
+            syncRuleLanguage()
             return
         }
 
+        syncRuleLanguage()
         val minecraft = Minecraft.getMinecraft()
-        val player = minecraft.player ?: return
-        minecraft.world ?: return
+        if (pendingConflictToast.isNotEmpty()) {
+            val title = TextComponentString("StackUpUp disabled itself")
+            val detail = TextComponentString("Conflicting stacking mod: ${pendingConflictToast.joinToString(", ")}")
+            SystemToast.addOrUpdate(
+                minecraft.toastGui,
+                SystemToast.Type.TUTORIAL_HINT,
+                title,
+                detail
+            )
+            pendingConflictToast = emptyList()
+        }
 
-        val report = RuleRuntimeCoordinator.lastReport()
-        RuleFeedback.emitReloadErrors(report, player::sendMessage)
-        RuleFeedback.emitWarnings(report, player::sendMessage)
-        pendingRuleStatusReminder = false
+        val player = minecraft.player
+        if (player == null || minecraft.world == null) {
+            return
+        }
+
+        if (pendingRuleStatusReminder) {
+            val report = RuleRuntimeCoordinator.lastReport()
+            RuleFeedback.emitReloadErrors(report, player::sendMessage)
+            RuleFeedback.emitWarnings(report, player::sendMessage)
+            pendingRuleStatusReminder = false
+        }
+
     }
 
     override fun getCurrentScaleFactor(): Int = ScaledResolution(Minecraft.getMinecraft()).scaleFactor
@@ -68,5 +91,18 @@ class ProxyClient : ProxyCommon() {
 
     override fun markRuleStatusDirty() {
         pendingRuleStatusReminder = true
+    }
+
+    override fun markConflictDisabled(modNames: List<String>) {
+        pendingConflictToast = modNames
+    }
+
+    private fun syncRuleLanguage() {
+        val languageCode = Minecraft.getMinecraft().languageManager.currentLanguage.languageCode
+        if (languageCode == lastSyncedLanguageCode) {
+            return
+        }
+        io.alexjoest.stackupup.rules.RuleMessages.syncLanguage(languageCode)
+        lastSyncedLanguageCode = languageCode
     }
 }

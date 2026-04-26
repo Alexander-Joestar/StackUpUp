@@ -24,11 +24,6 @@ object StackUpUpConfig {
     val general: General = General()
 
     @JvmField
-    @Config.Name("modpatches")
-    @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.modpatches.name")
-    val modPatches: ModPatches = ModPatches()
-
-    @JvmField
     @Config.Name("client")
     @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.client.name")
     val client: Client = Client()
@@ -76,48 +71,6 @@ object StackUpUpConfig {
             client.fontScaleMaximum = value.toDouble()
         }
 
-    var coremodPatchRefinedStorage: Boolean
-        get() = modPatches.refinedStorage
-        set(value) {
-            modPatches.refinedStorage = value
-        }
-
-    var coremodPatchMantle: Boolean
-        get() = modPatches.mantle
-        set(value) {
-            modPatches.mantle = value
-        }
-
-    var coremodPatchIc2: Boolean
-        get() = modPatches.industrialCraft2
-        set(value) {
-            modPatches.industrialCraft2 = value
-        }
-
-    var coremodPatchAppliedEnergistics2: Boolean
-        get() = modPatches.appliedEnergistics2
-        set(value) {
-            modPatches.appliedEnergistics2 = value
-        }
-
-    var coremodPatchActuallyAdditions: Boolean
-        get() = modPatches.actuallyAdditions
-        set(value) {
-            modPatches.actuallyAdditions = value
-        }
-
-    var coremodPatchCyclopsCore: Boolean
-        get() = modPatches.cyclopsCore
-        set(value) {
-            modPatches.cyclopsCore = value
-        }
-
-    var coremodPatchEnderIO: Boolean
-        get() = modPatches.enderIO
-        set(value) {
-            modPatches.enderIO = value
-        }
-
     @JvmStatic
     fun applyRuntimeValues() {
         equalScaleDown = abs(client.fontScaleMinimum - client.fontScaleMaximum) <= 0.001
@@ -150,58 +103,6 @@ object StackUpUpConfig {
         @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.general.maxStackSize.name")
         @Config.RangeInt(min = 1, max = Int.MAX_VALUE)
         var maxStackSize: Int = 64
-    }
-
-    class ModPatches {
-        @JvmField
-        @Config.Comment("Patch Refined Storage inventories for large-stack compatibility.")
-        @Config.Name("refinedstorage")
-        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.modpatches.refinedstorage.name")
-        @Config.RequiresMcRestart
-        var refinedStorage: Boolean = true
-
-        @JvmField
-        @Config.Comment("Patch Mantle and Tinkers Construct inventories for large-stack compatibility.")
-        @Config.Name("mantle")
-        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.modpatches.mantle.name")
-        @Config.RequiresMcRestart
-        var mantle: Boolean = true
-
-        @JvmField
-        @Config.Comment("Patch IndustrialCraft 2 inventories for large-stack compatibility.")
-        @Config.Name("industrialcraft2")
-        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.modpatches.industrialcraft2.name")
-        @Config.RequiresMcRestart
-        var industrialCraft2: Boolean = true
-
-        @JvmField
-        @Config.Comment("Patch Applied Energistics 2 inventories for large-stack compatibility.")
-        @Config.Name("appliedenergistics2")
-        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.modpatches.appliedenergistics2.name")
-        @Config.RequiresMcRestart
-        var appliedEnergistics2: Boolean = true
-
-        @JvmField
-        @Config.Comment("Patch Actually Additions inventories for large-stack compatibility.")
-        @Config.Name("actuallyadditions")
-        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.modpatches.actuallyadditions.name")
-        @Config.RequiresMcRestart
-        var actuallyAdditions: Boolean = true
-
-        @JvmField
-        @Config.Comment("Patch CyclopsCore inventories for large-stack compatibility.")
-        @Config.Name("cyclopscore")
-        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.modpatches.cyclopscore.name")
-        @Config.RequiresMcRestart
-        var cyclopsCore: Boolean = true
-
-        @JvmField
-        @Config.Comment("Patch Ender IO machine inventories for large-stack compatibility.")
-        @Config.Name("enderio")
-        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.modpatches.enderio.name")
-        @Config.RequiresMcRestart
-        var enderIO: Boolean = true
-
     }
 
     class Client {

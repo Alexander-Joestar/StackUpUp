@@ -35,13 +35,41 @@ internal enum class RuleMessageKey(
 }
 
 internal object RuleMessages {
+    private var loadedLanguageCode: String = ""
+
     init {
-        RuleMessages::class.java.getResourceAsStream("/assets/${StackUpUpIds.MOD_ID}/lang/en_us.lang")?.use {
-            LanguageMap.inject(it)
-        }
+        injectLanguage("en_us")
+        loadedLanguageCode = "en_us"
     }
 
+    // 这里只保留“消息定义与格式化辅助”职责。
+    // 玩家可见文本应尽量传递 LocalizedMessage，到客户端边界再转组件。
+    fun message(key: RuleMessageKey, vararg args: Any): LocalizedMessage =
+        LocalizedMessage(key.translationKey, args.toList())
+
+    fun exception(key: RuleMessageKey, vararg args: Any): LocalizedRuleException =
+        LocalizedRuleException(message(key, *args))
+
     @Suppress("DEPRECATION")
-    fun format(key: RuleMessageKey, vararg args: Any): String =
-        net.minecraft.util.text.translation.I18n.translateToLocalFormatted(key.translationKey, *args)
+    fun formatRaw(translationKey: String, vararg args: Any): String =
+        net.minecraft.util.text.translation.I18n.translateToLocalFormatted(translationKey, *args)
+
+    fun syncLanguage(languageCode: String) {
+        val normalizedCode = languageCode.lowercase()
+        if (normalizedCode == loadedLanguageCode) {
+            return
+        }
+
+        injectLanguage("en_us")
+        if (normalizedCode != "en_us") {
+            injectLanguage(normalizedCode)
+        }
+        loadedLanguageCode = normalizedCode
+    }
+
+    private fun injectLanguage(languageCode: String) {
+        RuleMessages::class.java
+            .getResourceAsStream("/assets/${StackUpUpIds.MOD_ID}/lang/$languageCode.lang")
+            ?.use(LanguageMap::inject)
+    }
 }

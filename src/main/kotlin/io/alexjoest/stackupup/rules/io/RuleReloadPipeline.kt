@@ -3,34 +3,19 @@ package io.alexjoest.stackupup.rules.io
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import java.io.File
 
-internal data class RuleReloadState(
-    val file: File,
-    val snapshot: RuleSnapshot,
-    val errors: List<String>,
-    val warnings: List<RuleReloadWarning>
-) {
-    fun toReport(): RuleReloadReport =
-        RuleReloadReport(
-            file = file,
-            snapshot = snapshot,
-            errors = errors,
-            warnings = warnings
-        )
-}
-
 internal object RuleReloadPipeline {
-    fun disabled(primaryRulesFile: File): RuleReloadState =
-        RuleReloadState(
+    fun disabled(primaryRulesFile: File): RuleReloadReport =
+        RuleReloadReport(
             file = primaryRulesFile,
             snapshot = RuleSnapshot(0L, emptyList()),
             errors = emptyList(),
             warnings = emptyList()
         )
 
-    fun loadDslRules(primaryRulesFile: File, sourceFiles: List<File>): RuleReloadState {
+    fun loadDslRules(primaryRulesFile: File, sourceFiles: List<File>): RuleReloadReport {
         RuleFileTemplate.ensureExists(primaryRulesFile)
         val result = DslRuleSource.fromFiles(sourceFiles)
-        return RuleReloadState(
+        return RuleReloadReport(
             file = primaryRulesFile,
             snapshot = result.snapshot,
             errors = result.errors,

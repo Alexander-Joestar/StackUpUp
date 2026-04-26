@@ -13,8 +13,6 @@ class StackUpUpConfigTest {
         val previousTooltipStackDisplayMode = StackUpUpConfig.general.tooltipStackDisplayMode
         val previousMaxStackSize = StackUpUpConfig.general.maxStackSize
         val previousActiveMaxStackSize = StackUpUpConfig.activeMaxStackSize
-        val previousCyclopsCore = StackUpUpConfig.modPatches.cyclopsCore
-        val previousEnderIO = StackUpUpConfig.modPatches.enderIO
         val previousFontScaleMinimum = StackUpUpConfig.client.fontScaleMinimum
         val previousFontScaleMaximum = StackUpUpConfig.client.fontScaleMaximum
 
@@ -22,8 +20,6 @@ class StackUpUpConfigTest {
             StackUpUpConfig.general.enableDslRules = false
             StackUpUpConfig.general.tooltipStackDisplayMode = TooltipStackDisplayMode.ALWAYS
             StackUpUpConfig.general.maxStackSize = 65536
-            StackUpUpConfig.modPatches.cyclopsCore = false
-            StackUpUpConfig.modPatches.enderIO = false
             StackUpUpConfig.client.fontScaleMinimum = 0.4
             StackUpUpConfig.client.fontScaleMaximum = 0.4
 
@@ -32,8 +28,6 @@ class StackUpUpConfigTest {
             assertFalse(StackUpUpConfig.enableDslRules)
             assertEquals(TooltipStackDisplayMode.ALWAYS, StackUpUpConfig.tooltipStackDisplayMode)
             assertEquals(previousActiveMaxStackSize, StackUpUpConfig.maxStackSize)
-            assertFalse(StackUpUpConfig.coremodPatchCyclopsCore)
-            assertFalse(StackUpUpConfig.coremodPatchEnderIO)
             assertEquals(0.4f, StackUpUpConfig.lowestScaleDown)
             assertEquals(0.4f, StackUpUpConfig.highestScaleDown)
             assertTrue(StackUpUpConfig.equalScaleDown)
@@ -45,8 +39,6 @@ class StackUpUpConfigTest {
             StackUpUpConfig.general.enableDslRules = previousEnableDslRules
             StackUpUpConfig.general.tooltipStackDisplayMode = previousTooltipStackDisplayMode
             StackUpUpConfig.general.maxStackSize = previousMaxStackSize
-            StackUpUpConfig.modPatches.cyclopsCore = previousCyclopsCore
-            StackUpUpConfig.modPatches.enderIO = previousEnderIO
             StackUpUpConfig.client.fontScaleMinimum = previousFontScaleMinimum
             StackUpUpConfig.client.fontScaleMaximum = previousFontScaleMaximum
             StackUpUpConfig.activeMaxStackSize = previousActiveMaxStackSize

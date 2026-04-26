@@ -1,5 +1,7 @@
 package io.alexjoest.stackupup.rules.parse
 
+import io.alexjoest.stackupup.rules.LocalizedMessage
+import io.alexjoest.stackupup.rules.LocalizedRuleException
 import io.alexjoest.stackupup.rules.RuleMessages
 import io.alexjoest.stackupup.rules.RuleMessageKey
 
@@ -22,9 +24,11 @@ internal class DslTokenCursor(
         return true
     }
 
-    fun consume(type: DslTokenType, message: String): DslToken {
+    fun consume(type: DslTokenType, message: LocalizedMessage): DslToken {
         val token = currentToken()
-        require(token.type == type) { message }
+        if (token.type != type) {
+            throw LocalizedRuleException(message)
+        }
         index++
         return token
     }
@@ -37,9 +41,11 @@ internal class DslTokenCursor(
         return tokens[index - 1]
     }
 
-    fun consumeLiteral(message: String): String {
+    fun consumeLiteral(message: LocalizedMessage): String {
         val token = currentToken()
-        require(token.type == DslTokenType.IDENTIFIER || token.type == DslTokenType.NUMBER) { message }
+        if (token.type != DslTokenType.IDENTIFIER && token.type != DslTokenType.NUMBER) {
+            throw LocalizedRuleException(message)
+        }
         index++
         return token.lexeme
     }
@@ -55,7 +61,9 @@ internal class DslTokenCursor(
 
     fun consumeComparisonOperator(): DslToken {
         val token = currentToken()
-        require(token.type.isComparisonOperator) { RuleMessages.format(RuleMessageKey.MISSING_COMPARISON_OPERATOR) }
+        if (!token.type.isComparisonOperator) {
+            throw RuleMessages.exception(RuleMessageKey.MISSING_COMPARISON_OPERATOR)
+        }
         index++
         return token
     }
@@ -71,7 +79,9 @@ internal class DslTokenCursor(
 
     fun consumeActionOperator(): DslToken {
         val token = currentToken()
-        require(token.type.isActionOperator) { RuleMessages.format(RuleMessageKey.MISSING_ACTION_OPERATOR) }
+        if (!token.type.isActionOperator) {
+            throw RuleMessages.exception(RuleMessageKey.MISSING_ACTION_OPERATOR)
+        }
         index++
         return token
     }

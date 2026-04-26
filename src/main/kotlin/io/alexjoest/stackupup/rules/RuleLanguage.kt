@@ -40,7 +40,7 @@ enum class ComparisonOperator(
             LESS_EQUALS -> GREATER_EQUALS
             GREATER -> LESS
             GREATER_EQUALS -> LESS_EQUALS
-            EQUALS, NOT_EQUALS -> error(RuleMessages.format(RuleMessageKey.UNSUPPORTED_REVERSE_OPERATOR, symbol))
+            EQUALS, NOT_EQUALS -> throw RuleMessages.exception(RuleMessageKey.UNSUPPORTED_REVERSE_OPERATOR, symbol)
         }
 
     companion object {
@@ -52,7 +52,7 @@ enum class ComparisonOperator(
                 ">=" -> GREATER_EQUALS
                 "<" -> LESS
                 "<=" -> LESS_EQUALS
-                else -> error(RuleMessages.format(RuleMessageKey.UNSUPPORTED_COMPARISON_OPERATOR, symbol))
+                else -> throw RuleMessages.exception(RuleMessageKey.UNSUPPORTED_COMPARISON_OPERATOR, symbol)
             }
     }
 }

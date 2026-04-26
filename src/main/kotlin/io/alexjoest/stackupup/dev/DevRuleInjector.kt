@@ -1,6 +1,7 @@
 package io.alexjoest.stackupup.dev
 
 import io.alexjoest.stackupup.limit.RuleRuntime
+import io.alexjoest.stackupup.rules.LocalizedMessage
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import io.alexjoest.stackupup.rules.io.DslRuleSource
 
@@ -38,7 +39,7 @@ object DevRuleInjector {
 sealed class DevRuleInjectionResult {
     data object Skipped : DevRuleInjectionResult()
     data class Applied(val ruleLine: String, val previousRuleCount: Int, val newRuleCount: Int) : DevRuleInjectionResult()
-    data class Failed(val errors: List<String>) : DevRuleInjectionResult()
+    data class Failed(val errors: List<LocalizedMessage>) : DevRuleInjectionResult()
 }
 
 

@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import io.alexjoest.stackupup.StackUpUpIds
+import io.alexjoest.stackupup.rules.LocalizedMessage
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import io.alexjoest.stackupup.rules.io.RuleComplexityWarning
 import io.alexjoest.stackupup.rules.io.RuleReloadReport
@@ -27,11 +28,11 @@ class RuleReloadReportTest {
         val report = RuleReloadReport(
             file = File("run/config/stackupup/main.su"),
             snapshot = RuleSnapshot(version = 1L, rules = emptyList()),
-            errors = listOf("第 1 行加载失败"),
+            errors = listOf(LocalizedMessage("message.stackupup.rule_error.load_failed", listOf(1, "broken"))),
             warnings = listOf(RuleComplexityWarning(StackUpUpIds.RULE_COMPLEXITY_RULE_COUNT_KEY, emptyList()))
         )
 
-        assertEquals(listOf("第 1 行加载失败"), report.errors)
-        assertEquals(listOf(StackUpUpIds.RULE_COMPLEXITY_RULE_COUNT_KEY), report.complexityWarnings)
+        assertEquals(listOf("Line 1 failed to load: broken"), report.errors.map { it.format() })
+        assertEquals(listOf(StackUpUpIds.RULE_COMPLEXITY_RULE_COUNT_KEY), report.warnings.map { it.translationKey })
     }
 }

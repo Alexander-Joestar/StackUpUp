@@ -34,6 +34,7 @@ object StackUpUpIds {
     const val LATE_AE2_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.ae2.json"
     const val LATE_ACTUALLY_ADDITIONS_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.actuallyadditions.json"
     const val LATE_CYCLOPSCORE_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.cyclopscore.json"
+    const val LATE_BRANDONSCORE_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.brandonscore.json"
     const val LATE_ENDERIO_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.enderio.json"
     const val LATE_IC2_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.ic2.json"
     const val LATE_MANTLE_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.mantle.json"

@@ -6,23 +6,27 @@ import io.alexjoest.stackupup.limit.RuleRuntime
 import io.alexjoest.stackupup.rules.io.RuleFileLocator
 import io.alexjoest.stackupup.rules.io.RuleReloadPipeline
 import io.alexjoest.stackupup.rules.io.RuleReloadReport
-import io.alexjoest.stackupup.rules.io.RuleReloadState
 import io.alexjoest.stackupup.rules.io.RuleSourceLocator
 import io.alexjoest.stackupup.rules.persist.RuleBlockFileStore
 import io.alexjoest.stackupup.rules.persist.RuleTextBlock
 
 object RuleRuntimeCoordinator {
     @Volatile
-    private var lastReportState: RuleReloadReport = RuleReloadReport.empty(RuleFileLocator.resolve())
+    private var lastReportState: RuleReloadReport = RuleReloadReport(
+        file = RuleFileLocator.resolve(),
+        snapshot = io.alexjoest.stackupup.rules.compile.RuleSnapshot(version = 0L, rules = emptyList()),
+        errors = emptyList(),
+        warnings = emptyList()
+    )
 
     fun lastReport(): RuleReloadReport = lastReportState
 
     fun reload(enableDslRules: Boolean = StackUpUpConfig.enableDslRules): RuleReloadReport {
         val primaryRulesFile = RuleFileLocator.resolve()
-        val state = loadState(primaryRulesFile, enableDslRules)
-        refreshRuntime(state, enableDslRules)
+        val report = loadState(primaryRulesFile, enableDslRules)
+        refreshRuntime(report, enableDslRules)
         StackSizeBackupRegistry.restoreAll()
-        return state.toReport().also { lastReportState = it }
+        return report.also { lastReportState = it }
     }
 
     fun getRulesFile(): File = RuleFileLocator.resolve()
@@ -36,7 +40,7 @@ object RuleRuntimeCoordinator {
         return true
     }
 
-    private fun loadState(primaryRulesFile: File, enableDslRules: Boolean): RuleReloadState =
+    private fun loadState(primaryRulesFile: File, enableDslRules: Boolean): RuleReloadReport =
         if (enableDslRules) {
             RuleReloadPipeline.loadDslRules(
                 primaryRulesFile = primaryRulesFile,
@@ -46,8 +50,8 @@ object RuleRuntimeCoordinator {
             RuleReloadPipeline.disabled(primaryRulesFile)
         }
 
-    private fun refreshRuntime(state: RuleReloadState, enableDslRules: Boolean) {
-        RuleRuntime.replaceSnapshot(state.snapshot)
+    private fun refreshRuntime(report: RuleReloadReport, enableDslRules: Boolean) {
+        RuleRuntime.replaceSnapshot(report.snapshot)
         if (enableDslRules) {
             RuleRuntime.replaceOreDictIndex(OreDictIndex.createDefault())
         }

@@ -42,7 +42,8 @@ class RuleLineLoaderTest {
         )
 
         assertEquals(1, result.errors.size)
-        assertTrue(result.errors.single().contains("[pack.su]"))
-        assertTrue(result.errors.single().contains("7"))
+        val formatted = result.errors.single().format()
+        assertTrue(formatted.contains("[pack.su]"))
+        assertTrue(formatted.contains("7"))
     }
 }

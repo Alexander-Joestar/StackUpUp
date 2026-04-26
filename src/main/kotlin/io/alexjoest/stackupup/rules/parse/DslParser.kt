@@ -19,7 +19,7 @@ object DslParser {
         val stream = DslTokenCursor(DslTokenizer.tokenize(line))
         val condition = parseCondition(stream)
         val action = parseAction(stream)
-        stream.consume(DslTokenType.EOF, RuleMessages.format(RuleMessageKey.TRAILING_CONTENT))
+        stream.consume(DslTokenType.EOF, RuleMessages.message(RuleMessageKey.TRAILING_CONTENT))
         return RuleAst(condition, action)
     }
 
@@ -37,34 +37,34 @@ object DslParser {
         return when (stream.peekType()) {
             DslTokenType.NUMBER -> RuleStepAst(
                 RuleStepKind.SET,
-                stream.consumeLiteral(RuleMessages.format(RuleMessageKey.ACTION_VALUE_MUST_BE_INTEGER)).toInt()
+                stream.consumeLiteral(RuleMessages.message(RuleMessageKey.ACTION_VALUE_MUST_BE_INTEGER)).toInt()
             )
             DslTokenType.PLUS -> {
-                stream.consume(DslTokenType.PLUS, RuleMessages.format(RuleMessageKey.ADD_ACTION_MISSING_SYMBOL))
-                RuleStepAst(RuleStepKind.ADD, stream.consumeLiteral(RuleMessages.format(RuleMessageKey.ADD_ACTION_MISSING_INTEGER)).toInt())
+                stream.consume(DslTokenType.PLUS, RuleMessages.message(RuleMessageKey.ADD_ACTION_MISSING_SYMBOL))
+                RuleStepAst(RuleStepKind.ADD, stream.consumeLiteral(RuleMessages.message(RuleMessageKey.ADD_ACTION_MISSING_INTEGER)).toInt())
             }
             DslTokenType.MINUS -> {
-                stream.consume(DslTokenType.MINUS, RuleMessages.format(RuleMessageKey.SUBTRACT_ACTION_MISSING_SYMBOL))
+                stream.consume(DslTokenType.MINUS, RuleMessages.message(RuleMessageKey.SUBTRACT_ACTION_MISSING_SYMBOL))
                 RuleStepAst(
                     RuleStepKind.SUBTRACT,
-                    stream.consumeLiteral(RuleMessages.format(RuleMessageKey.SUBTRACT_ACTION_MISSING_INTEGER)).toInt()
+                    stream.consumeLiteral(RuleMessages.message(RuleMessageKey.SUBTRACT_ACTION_MISSING_INTEGER)).toInt()
                 )
             }
             DslTokenType.STAR -> {
-                stream.consume(DslTokenType.STAR, RuleMessages.format(RuleMessageKey.MULTIPLY_ACTION_MISSING_SYMBOL))
+                stream.consume(DslTokenType.STAR, RuleMessages.message(RuleMessageKey.MULTIPLY_ACTION_MISSING_SYMBOL))
                 RuleStepAst(
                     RuleStepKind.MULTIPLY,
-                    stream.consumeLiteral(RuleMessages.format(RuleMessageKey.MULTIPLY_ACTION_MISSING_INTEGER)).toInt()
+                    stream.consumeLiteral(RuleMessages.message(RuleMessageKey.MULTIPLY_ACTION_MISSING_INTEGER)).toInt()
                 )
             }
             DslTokenType.SLASH -> {
-                stream.consume(DslTokenType.SLASH, RuleMessages.format(RuleMessageKey.DIVIDE_ACTION_MISSING_SYMBOL))
+                stream.consume(DslTokenType.SLASH, RuleMessages.message(RuleMessageKey.DIVIDE_ACTION_MISSING_SYMBOL))
                 RuleStepAst(
                     RuleStepKind.DIVIDE,
-                    stream.consumeLiteral(RuleMessages.format(RuleMessageKey.DIVIDE_ACTION_MISSING_INTEGER)).toInt()
+                    stream.consumeLiteral(RuleMessages.message(RuleMessageKey.DIVIDE_ACTION_MISSING_INTEGER)).toInt()
                 )
             }
-            else -> error(RuleMessages.format(RuleMessageKey.UNSUPPORTED_ACTION_STEP, stream.peekLexeme()))
+            else -> throw RuleMessages.exception(RuleMessageKey.UNSUPPORTED_ACTION_STEP, stream.peekLexeme())
         }
     }
 
@@ -108,11 +108,11 @@ object DslParser {
         }
 
         val literals = ArrayList<String>(4)
-        literals += stream.consumeLiteral(RuleMessages.format(RuleMessageKey.LIST_CONDITION_CANNOT_BE_EMPTY))
+        literals += stream.consumeLiteral(RuleMessages.message(RuleMessageKey.LIST_CONDITION_CANNOT_BE_EMPTY))
         while (stream.match(DslTokenType.COMMA)) {
-            literals += stream.consumeLiteral(RuleMessages.format(RuleMessageKey.LIST_CONDITION_CONTAINS_EMPTY_ENTRY))
+            literals += stream.consumeLiteral(RuleMessages.message(RuleMessageKey.LIST_CONDITION_CONTAINS_EMPTY_ENTRY))
         }
-        stream.consume(DslTokenType.RIGHT_BRACKET, RuleMessages.format(RuleMessageKey.LIST_CONDITION_MISSING_RIGHT_BRACKET))
+        stream.consume(DslTokenType.RIGHT_BRACKET, RuleMessages.message(RuleMessageKey.LIST_CONDITION_MISSING_RIGHT_BRACKET))
         return ListConditionAst(field, literals)
     }
 
@@ -150,12 +150,11 @@ object DslParser {
     }
 
     private fun parseSingleCondition(stream: DslTokenCursor): ConditionAst {
-        val fieldToken = stream.consume(DslTokenType.IDENTIFIER, RuleMessages.format(RuleMessageKey.CONDITION_MUST_START_WITH_FIELD)).lexeme
-        val field = requireNotNull(RuleField.fromIdentifier(fieldToken)) {
-            RuleMessages.format(RuleMessageKey.UNSUPPORTED_FIELD, fieldToken)
-        }
+        val fieldToken = stream.consume(DslTokenType.IDENTIFIER, RuleMessages.message(RuleMessageKey.CONDITION_MUST_START_WITH_FIELD)).lexeme
+        val field = RuleField.fromIdentifier(fieldToken)
+            ?: throw RuleMessages.exception(RuleMessageKey.UNSUPPORTED_FIELD, fieldToken)
         val operator = ComparisonOperator.fromSymbol(stream.consumeComparisonOperator().lexeme)
-        val literal = stream.consumeLiteral(RuleMessages.format(RuleMessageKey.CONDITION_MISSING_VALUE))
+        val literal = stream.consumeLiteral(RuleMessages.message(RuleMessageKey.CONDITION_MISSING_VALUE))
         return FieldComparisonAst(field, operator, literal)
     }
 }

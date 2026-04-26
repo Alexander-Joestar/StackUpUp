@@ -1,14 +1,17 @@
 package io.alexjoest.stackupup.rules.io
 
+import io.alexjoest.stackupup.rules.LocalizedMessage
+import io.alexjoest.stackupup.rules.LocalizedRuleException
 import io.alexjoest.stackupup.rules.RuleMessageKey
 import io.alexjoest.stackupup.rules.RuleMessages
 import io.alexjoest.stackupup.rules.compile.CompiledRule
 import io.alexjoest.stackupup.rules.compile.RuleCompiler
+import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 
 internal object RuleLineLoader {
     fun load(inputs: List<RuleLineInput>): RuleLoadResult {
         val rules = ArrayList<CompiledRule>(inputs.size)
-        val errors = ArrayList<String>()
+        val errors = ArrayList<LocalizedMessage>()
         var inBlockComment = false
 
         for ((index, input) in inputs.withIndex()) {
@@ -26,7 +29,13 @@ internal object RuleLineLoader {
             }
         }
 
-        return RuleLoadResult.compiled(rules, errors)
+        return RuleLoadResult(
+            snapshot = RuleSnapshot(
+                version = System.nanoTime(),
+                rules = rules
+            ),
+            errors = errors
+        )
     }
 
     private fun sanitizeLine(rawLine: String, initialInBlockComment: Boolean): SanitizedLine {
@@ -74,12 +83,15 @@ internal object RuleLineLoader {
         val lineNumber: Int,
         val sourceName: String? = null
     ) {
-        fun formatError(throwable: Throwable): String {
-            val message = throwable.message ?: RuleMessages.format(RuleMessageKey.UNKNOWN_ERROR)
+        fun formatError(throwable: Throwable): LocalizedMessage {
+            val message = when (throwable) {
+                is LocalizedRuleException -> throwable.messageData
+                else                      -> RuleMessages.message(RuleMessageKey.UNKNOWN_ERROR)
+            }
             return if (sourceName == null) {
-                RuleMessages.format(RuleMessageKey.LOAD_FAILED, lineNumber, message)
+                RuleMessages.message(RuleMessageKey.LOAD_FAILED, lineNumber, message)
             } else {
-                RuleMessages.format(RuleMessageKey.LOAD_FAILED_WITH_SOURCE, sourceName, lineNumber, message)
+                RuleMessages.message(RuleMessageKey.LOAD_FAILED_WITH_SOURCE, sourceName, lineNumber, message)
             }
         }
     }

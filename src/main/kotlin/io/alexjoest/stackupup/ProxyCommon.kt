@@ -6,5 +6,6 @@ open class ProxyCommon {
     open fun registerDevAutomation() = Unit
 
     open fun markRuleStatusDirty() = Unit
-}
 
+    open fun markConflictDisabled(modNames: List<String>) = Unit
+}

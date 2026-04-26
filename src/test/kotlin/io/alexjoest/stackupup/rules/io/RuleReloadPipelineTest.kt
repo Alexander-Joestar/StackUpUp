@@ -18,7 +18,7 @@ class RuleReloadPipelineTest {
         val previous = StackUpUpConfig.maxStackSize
         StackUpUpConfig.maxStackSize = 10240
         val report = try {
-            RuleReloadPipeline.loadDslRules(rulesFile, listOf(rulesFile)).toReport()
+            RuleReloadPipeline.loadDslRules(rulesFile, listOf(rulesFile))
         } finally {
             StackUpUpConfig.maxStackSize = previous
         }
@@ -36,7 +36,7 @@ class RuleReloadPipelineTest {
         val previous = StackUpUpConfig.maxStackSize
         StackUpUpConfig.maxStackSize = 10240
         val report = try {
-            RuleReloadPipeline.loadDslRules(rulesFile, listOf(rulesFile)).toReport()
+            RuleReloadPipeline.loadDslRules(rulesFile, listOf(rulesFile))
         } finally {
             StackUpUpConfig.maxStackSize = previous
         }

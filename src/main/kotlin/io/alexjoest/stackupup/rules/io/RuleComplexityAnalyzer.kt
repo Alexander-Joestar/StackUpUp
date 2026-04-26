@@ -2,6 +2,7 @@ package io.alexjoest.stackupup.rules.io
 
 import io.alexjoest.stackupup.StackUpUpIds
 import io.alexjoest.stackupup.StackUpUpConfig
+import io.alexjoest.stackupup.rules.LocalizedMessage
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import io.alexjoest.stackupup.rules.RuleStepKind
 
@@ -62,10 +63,6 @@ data class RuleComplexityReport(
     val warnings: List<RuleComplexityWarning>
 )
 
-data class RuleReloadWarning(
-    val translationKey: String,
-    val args: List<Any>
-)
-
-typealias RuleComplexityWarning = RuleReloadWarning
+typealias RuleReloadWarning = LocalizedMessage
+typealias RuleComplexityWarning = LocalizedMessage
 

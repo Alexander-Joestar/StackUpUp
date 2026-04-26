@@ -20,23 +20,6 @@ config.stackupup.general.enableDslRules.tooltip=从 config/stackupup/*.su 加载
 config.stackupup.general.tooltipStackDisplayMode.tooltip=选择何时在 Tooltip 中显示当前数量与最大堆叠上限。
 config.stackupup.general.ruleComplexityWarnings.tooltip=当规则条目过多或规则过长时给出提醒。
 
-config.stackupup.modpatches.name=模组兼容补丁
-config.stackupup.modpatches.name.tooltip=启用或禁用可选兼容补丁。
-config.stackupup.modpatches.actuallyadditions.name=实用拓展
-config.stackupup.modpatches.appliedenergistics2.name=应用能源2
-config.stackupup.modpatches.cyclopscore.name=Cyclops Core
-config.stackupup.modpatches.enderio.name=末影接口
-config.stackupup.modpatches.industrialcraft2.name=工业2
-config.stackupup.modpatches.mantle.name=匠魂
-config.stackupup.modpatches.refinedstorage.name=精致存储
-config.stackupup.modpatches.actuallyadditions.tooltip=为实用拓展容器启用大堆叠兼容。
-config.stackupup.modpatches.appliedenergistics2.tooltip=为应用能源2容器启用大堆叠兼容。
-config.stackupup.modpatches.cyclopscore.tooltip=为 CyclopsCore 库存实现启用大堆叠兼容。
-config.stackupup.modpatches.enderio.tooltip=为 Ender IO 机器库存启用大堆叠兼容。
-config.stackupup.modpatches.industrialcraft2.tooltip=为工业2容器启用大堆叠兼容。
-config.stackupup.modpatches.mantle.tooltip=为匠魂容器启用大堆叠兼容。
-config.stackupup.modpatches.refinedstorage.tooltip=为精致存储容器启用大堆叠兼容。
-
 commands.stackupup.usage=/stackupup <reload|edit>
 commands.stackupup.reload.success=已重新加载 StackUpUp 规则。
 commands.stackupup.edit.success=已打开规则文件：%s

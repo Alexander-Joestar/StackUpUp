@@ -53,6 +53,6 @@ class DslRuleSourceMultiFileTest {
         val result = DslRuleSource.fromFiles(listOf(broken))
 
         assertEquals(1, result.errors.size)
-        assertTrue(result.errors.single().contains("broken.su"))
+        assertTrue(result.errors.single().format().contains("broken.su"))
     }
 }

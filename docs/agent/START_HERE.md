@@ -9,6 +9,10 @@
 3. `docs/ASM-迁移状态.md`
 4. `docs/runServer-自动化回归.md`
 
+需要分派子代理时再读：
+
+1. `docs/agent/parent-dispatch-manual.md`
+
 需要用户面 DSL 时再读：
 
 1. `docs/DSL-v2-规则示例.md`

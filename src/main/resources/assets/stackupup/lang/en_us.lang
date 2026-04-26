@@ -20,23 +20,6 @@ config.stackupup.general.enableDslRules.tooltip=Load DSL v2 rules from config/st
 config.stackupup.general.tooltipStackDisplayMode.tooltip=Choose when to show current stack size and max stack size in tooltips.
 config.stackupup.general.ruleComplexityWarnings.tooltip=Warn when the ruleset becomes unusually large or long.
 
-config.stackupup.modpatches.name=Mod Patches
-config.stackupup.modpatches.name.tooltip=Enable or disable optional compatibility patches.
-config.stackupup.modpatches.actuallyadditions.name=Actually Additions
-config.stackupup.modpatches.appliedenergistics2.name=Applied Energistics 2
-config.stackupup.modpatches.cyclopscore.name=Cyclops Core
-config.stackupup.modpatches.enderio.name=Ender IO
-config.stackupup.modpatches.industrialcraft2.name=IndustrialCraft 2
-config.stackupup.modpatches.mantle.name=Mantle or Tinkers Construct
-config.stackupup.modpatches.refinedstorage.name=Refined Storage
-config.stackupup.modpatches.actuallyadditions.tooltip=Patch Actually Additions inventories for large-stack compatibility.
-config.stackupup.modpatches.appliedenergistics2.tooltip=Patch Applied Energistics 2 inventories for large-stack compatibility.
-config.stackupup.modpatches.cyclopscore.tooltip=Patch CyclopsCore inventories for large-stack compatibility.
-config.stackupup.modpatches.enderio.tooltip=Patch Ender IO machine inventories for large-stack compatibility.
-config.stackupup.modpatches.industrialcraft2.tooltip=Patch IndustrialCraft 2 inventories for large-stack compatibility.
-config.stackupup.modpatches.mantle.tooltip=Patch Mantle or Tinkers Construct inventories for large-stack compatibility.
-config.stackupup.modpatches.refinedstorage.tooltip=Patch Refined Storage inventories for large-stack compatibility.
-
 commands.stackupup.usage=/stackupup <reload|edit>
 commands.stackupup.reload.success=Reloaded StackUpUp rules.
 commands.stackupup.edit.success=Opened rules file: %s

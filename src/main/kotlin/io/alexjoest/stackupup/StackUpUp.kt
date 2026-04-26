@@ -7,6 +7,7 @@ import net.minecraftforge.common.config.ConfigManager
 import net.minecraftforge.event.RegistryEvent
 import net.minecraftforge.fml.client.event.ConfigChangedEvent
 import net.minecraftforge.fml.common.FMLCommonHandler
+import net.minecraftforge.fml.common.Loader
 import net.minecraftforge.fml.common.Mod
 import net.minecraftforge.fml.common.SidedProxy
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent
@@ -17,7 +18,7 @@ import net.minecraftforge.fml.common.eventhandler.EventPriority
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
-import io.alexjoest.stackupup.config.LegacyConfigMigration
+import io.alexjoest.stackupup.config.ConfigFileSanitizer
 import io.alexjoest.stackupup.rules.io.RuleFileLocator
 import io.alexjoest.stackupup.rules.io.RuleReloadReport
 
@@ -25,7 +26,7 @@ import io.alexjoest.stackupup.rules.io.RuleReloadReport
     modid = StackUpUpIds.MOD_ID,
     name = StackUpUpIds.MOD_NAME,
     version = StackUpUp.VERSION,
-    dependencies = "required-after:mixinbooter@[10.0,);required-after:forgelin_continuous@[2.1.0.0,);before:refinedstorage;before:mantle;before:ic2;before:appliedenergistics2;before:actuallyadditions",
+    dependencies = "required-after:mixinbooter@[10.0,);required-after:forgelin_continuous@[2.1.0.0,);before:stackup;before:refinedstorage;before:mantle;before:ic2;before:appliedenergistics2;before:actuallyadditions",
     guiFactory = StackUpUpIds.CONFIG_GUI_FACTORY_CLASS_NAME
 )
 class StackUpUp {
@@ -43,20 +44,31 @@ class StackUpUp {
     fun onConfigChanged(event: ConfigChangedEvent.OnConfigChangedEvent) {
         if (MOD_ID == event.modID && (event.configID == null || CONFIG_ID == event.configID)) {
             handleConfigChanged()
+            ConfigFileSanitizer.sanitize(Loader.instance().configDir)
         }
     }
 
     @Mod.EventHandler
     fun preInit(event: FMLPreInitializationEvent) {
+        logger = LogManager.getLogger()
+        if (StackUpUpCore.isDisabledForConflict()) {
+            MinecraftForge.EVENT_BUS.register(proxy)
+            proxy?.markConflictDisabled(StackUpUpCore.conflictingMods())
+            logger?.warn(
+                "StackUpUp disabled itself early because conflicting stacking mods were detected: {}",
+                StackUpUpCore.conflictingMods().joinToString(", ")
+            )
+            return
+        }
+
         StackUpUpConfig.coremodActive = StackUpUpCore.isCoremodInjected()
         if (!StackUpUpConfig.coremodActive) {
             throw RuntimeException("Cannot load StackUpUp - coremod not present!")
         }
 
-        logger = LogManager.getLogger()
-        LegacyConfigMigration.migrate(event.modConfigurationDirectory)
         RuleFileLocator.setConfigDirectory(event.modConfigurationDirectory)
         handleConfigChanged(activateReloadControlledValues = true)
+        ConfigFileSanitizer.sanitize(event.modConfigurationDirectory)
 
         MinecraftForge.EVENT_BUS.register(this)
         MinecraftForge.EVENT_BUS.register(proxy)
@@ -73,17 +85,26 @@ class StackUpUp {
 
     @Mod.EventHandler
     fun postInit(@Suppress("UNUSED_PARAMETER") event: FMLPostInitializationEvent) {
+        if (StackUpUpCore.isDisabledForConflict()) {
+            return
+        }
         reload()
         hadPostInit = true
     }
 
     @Mod.EventHandler
     fun serverStarting(event: FMLServerStartingEvent) {
+        if (StackUpUpCore.isDisabledForConflict()) {
+            return
+        }
         event.registerServerCommand(CommandStackUpUp())
     }
 
     @Mod.EventHandler
     fun serverStarted(@Suppress("UNUSED_PARAMETER") event: FMLServerStartedEvent) {
+        if (StackUpUpCore.isDisabledForConflict()) {
+            return
+        }
         val server = FMLCommonHandler.instance().minecraftServerInstance ?: return
         DevAutomationBridge.runServerAutomation(server)
     }
@@ -116,21 +137,15 @@ class StackUpUp {
                 logReloadReport(report)
             }
 
-        @Suppress("DEPRECATION")
         private fun logReloadReport(report: RuleReloadReport) {
             val activeLogger = requireNotNull(logger)
             activeLogger.info("Loaded {} DSL rules from {}", report.snapshot.rules.size, report.file.absolutePath)
-            report.errors.forEach(activeLogger::error)
+            report.errors.map { it.format() }.forEach(activeLogger::error)
             for (warning in report.warnings) {
                 if (!StackUpUpConfig.ruleComplexityWarnings) {
                     continue
                 }
-                activeLogger.warn(
-                    net.minecraft.util.text.translation.I18n.translateToLocalFormatted(
-                        warning.translationKey,
-                        *warning.args.toTypedArray()
-                    )
-                )
+                activeLogger.warn(warning.format())
             }
         }
     }

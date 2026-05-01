@@ -1,17 +1,17 @@
 package io.alexjoest.stackupup
 
-import java.io.File
-import kotlin.io.path.createTempDirectory
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Test
 import io.alexjoest.stackupup.limit.RuleRuntime
 import io.alexjoest.stackupup.rules.io.RuleFileLocator
 import io.alexjoest.stackupup.rules.io.RuleSourceLocator
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Test
+import java.io.File
+import kotlin.io.path.createTempDirectory
 
 class RuleRuntimeCoordinatorTest {
     @Test
-    fun `禁用 DSL 规则时应返回空快照并刷新最后报告`() {
+    fun `dslDisabled_shouldReturnEmptySnapshotAndRefresh`() {
         val tempDir = createTempDirectory("stackupup-runtime-disabled").toFile()
         val configDir = File(tempDir, "config").apply { mkdirs() }
         val rulesDir = File(configDir, StackUpUpIds.RULES_DIRECTORY_NAME).apply { mkdirs() }
@@ -34,7 +34,7 @@ class RuleRuntimeCoordinatorTest {
     }
 
     @Test
-    fun `写入世界规则后应立即重载并更新快照`() {
+    fun `worldRuleWrite_shouldReloadAndUpdateSnapshot`() {
         val tempDir = createTempDirectory("stackupup-runtime-coordinator").toFile()
         val configDir = File(tempDir, "config").apply { mkdirs() }
         val rulesDir = File(configDir, StackUpUpIds.RULES_DIRECTORY_NAME).apply { mkdirs() }
@@ -49,8 +49,8 @@ class RuleRuntimeCoordinatorTest {
                 true,
                 RuleRuntimeCoordinator.persistWorldRules(
                     sourceId = "tests.runtime",
-                    lines = listOf("item = minecraft:egg -> 512")
-                )
+                    lines = listOf("item = minecraft:egg -> 512"),
+                ),
             )
 
             val worldFile = RuleRuntimeCoordinator.getWorldRulesFile()
@@ -60,7 +60,7 @@ class RuleRuntimeCoordinatorTest {
             assertEquals(
                 listOf("item = minecraft:egg -> 512"),
                 requireNotNull(worldFile).readLines(Charsets.UTF_8)
-                    .filter { line -> line.isNotBlank() && !line.startsWith("#") }
+                    .filter { line -> line.isNotBlank() && !line.startsWith("#") },
             )
         } finally {
             RuleFileLocator.resetForTests()

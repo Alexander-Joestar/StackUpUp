@@ -69,8 +69,8 @@
 
 ## 当前主回归入口
 
-```powershell
-.\gradlew.bat runServerAutoTestMatrix
+```bash
+./gradlew runServerAutoTestMatrix
 ```
 
 当前重点样例：

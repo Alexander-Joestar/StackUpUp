@@ -32,9 +32,9 @@ internal object RuleLineLoader {
         return RuleLoadResult(
             snapshot = RuleSnapshot(
                 version = System.nanoTime(),
-                rules = rules
+                rules = rules,
             ),
-            errors = errors
+            errors = errors,
         )
     }
 
@@ -78,15 +78,11 @@ internal object RuleLineLoader {
         return SanitizedLine(builder.toString(), inBlockComment)
     }
 
-    internal data class RuleLineInput(
-        val content: String,
-        val lineNumber: Int,
-        val sourceName: String? = null
-    ) {
+    internal data class RuleLineInput(val content: String, val lineNumber: Int, val sourceName: String? = null) {
         fun formatError(throwable: Throwable): LocalizedMessage {
             val message = when (throwable) {
                 is LocalizedRuleException -> throwable.messageData
-                else                      -> RuleMessages.message(RuleMessageKey.UNKNOWN_ERROR)
+                else -> RuleMessages.message(RuleMessageKey.UNKNOWN_ERROR)
             }
             return if (sourceName == null) {
                 RuleMessages.message(RuleMessageKey.LOAD_FAILED, lineNumber, message)
@@ -96,8 +92,5 @@ internal object RuleLineLoader {
         }
     }
 
-    private data class SanitizedLine(
-        val content: String,
-        val inBlockComment: Boolean
-    )
+    private data class SanitizedLine(val content: String, val inBlockComment: Boolean)
 }

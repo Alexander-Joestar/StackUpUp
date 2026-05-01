@@ -45,7 +45,7 @@ internal object RuleLiteralMatcherCompiler {
             ?: return ItemLiteral(itemIdPattern = literal, meta = null)
         return ItemLiteral(
             itemIdPattern = literal.substring(0, lastColon),
-            meta = meta
+            meta = meta,
         )
     }
 
@@ -59,12 +59,9 @@ internal object RuleLiteralMatcherCompiler {
             ?: return ItemLiteral(itemIdPattern = literal, meta = null)
         return ItemLiteral(
             itemIdPattern = literal.substring(0, separatorIndex),
-            meta = meta
+            meta = meta,
         )
     }
 
-    private data class ItemLiteral(
-        val itemIdPattern: String,
-        val meta: Int?
-    )
+    private data class ItemLiteral(val itemIdPattern: String, val meta: Int?)
 }

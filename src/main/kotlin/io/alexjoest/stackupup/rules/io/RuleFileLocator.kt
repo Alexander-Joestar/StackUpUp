@@ -1,7 +1,7 @@
 package io.alexjoest.stackupup.rules.io
 
-import java.io.File
 import io.alexjoest.stackupup.StackUpUpIds
+import java.io.File
 
 object RuleFileLocator {
     @Volatile
@@ -15,8 +15,7 @@ object RuleFileLocator {
 
     fun resolveRulesDirectory(): File = File(currentConfigDirectory(), StackUpUpIds.RULES_DIRECTORY_NAME)
 
-    fun resolveLegacy(): File =
-        File(currentConfigDirectory(), "${StackUpUpIds.PUBLIC_ID}-rules.${StackUpUpIds.RULE_FILE_EXTENSION}")
+    fun resolveLegacy(): File = File(currentConfigDirectory(), "${StackUpUpIds.PUBLIC_ID}-rules.${StackUpUpIds.RULE_FILE_EXTENSION}")
 
     fun resetForTests() {
         configDirectory = null

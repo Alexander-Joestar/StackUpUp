@@ -1,7 +1,7 @@
 package io.alexjoest.stackupup.network
 
-import net.minecraft.network.PacketBuffer
 import io.alexjoest.stackupup.Constants
+import net.minecraft.network.PacketBuffer
 
 object StackCountCodec {
     // 数量小于等于 64 时保持原版单字节编码，避免无意义放大网络包。
@@ -22,4 +22,3 @@ object StackCountCodec {
         return if (marker == Constants.COUNT_MAGIC) buffer.readInt() else marker
     }
 }
-

@@ -2,9 +2,7 @@ package io.alexjoest.stackupup.rules.persist
 
 import java.io.File
 
-class RuleBlockFileStore(
-    private val file: File
-) {
+class RuleBlockFileStore(private val file: File) {
     fun readBlocks(): List<RuleTextBlock> = parseDocument().blocks
 
     fun replaceBlock(block: RuleTextBlock) {
@@ -16,7 +14,7 @@ class RuleBlockFileStore(
         if (!file.exists()) {
             return RuleBlockDocument(
                 prefixLines = emptyList(),
-                blocks = emptyList()
+                blocks = emptyList(),
             )
         }
 
@@ -79,10 +77,7 @@ class RuleBlockFileStore(
 
     private fun endMarker(id: String): String = "$END_PREFIX $id"
 
-    private data class RuleBlockDocument(
-        val prefixLines: List<String>,
-        val blocks: List<RuleTextBlock>
-    )
+    private data class RuleBlockDocument(val prefixLines: List<String>, val blocks: List<RuleTextBlock>)
 
     private fun List<RuleTextBlock>.replaced(block: RuleTextBlock): List<RuleTextBlock> {
         val replacedIndex = indexOfFirst { it.id == block.id }

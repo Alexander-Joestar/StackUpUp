@@ -1,14 +1,14 @@
 package io.alexjoest.stackupup.mixin
 
-import java.nio.file.Files
-import java.nio.file.Paths
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.nio.file.Files
+import java.nio.file.Paths
 
 class RefinedStorageMixinSourceTest {
     @Test
-    fun `RS 提取 mixin 应优先使用 WrapOperation`() {
+    fun `rsExtractMixin_shouldPreferWrapOperation`() {
         assertUsesWrapOperation("src/main/java/io/alexjoest/stackupup/mixin/late/ItemGridHandlerMixin.java")
         assertUsesWrapOperation("src/main/java/io/alexjoest/stackupup/mixin/late/ItemGridHandlerPortableMixin.java")
     }

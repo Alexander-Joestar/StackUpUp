@@ -60,7 +60,11 @@ internal object RangedWrapperLimitProbe : DevCompatProbe {
         val handlerClass = loadClass("net.minecraftforge.items.ItemStackHandler")
         val handler = handlerClass.getDeclaredConstructor(Int::class.javaPrimitiveType).newInstance(3)
         return verifyPairSlotLimit(primaryTargetClass) { wrapperClass ->
-            wrapperClass.getDeclaredConstructor(loadClass("net.minecraftforge.items.IItemHandlerModifiable"), Int::class.javaPrimitiveType, Int::class.javaPrimitiveType)
+            wrapperClass.getDeclaredConstructor(
+                loadClass("net.minecraftforge.items.IItemHandlerModifiable"),
+                Int::class.javaPrimitiveType,
+                Int::class.javaPrimitiveType,
+            )
                 .newInstance(handler, 1, 3)
         }
     }
@@ -76,7 +80,12 @@ internal object SlotItemHandlerLimitProbe : DevCompatProbe {
         val handler = handlerClass.getDeclaredConstructor(Int::class.javaPrimitiveType).newInstance(1)
         val slotClass = loadClass(primaryTargetClass)
         val slot = slotClass
-            .getDeclaredConstructor(loadClass("net.minecraftforge.items.IItemHandler"), Int::class.javaPrimitiveType, Int::class.javaPrimitiveType, Int::class.javaPrimitiveType)
+            .getDeclaredConstructor(
+                loadClass("net.minecraftforge.items.IItemHandler"),
+                Int::class.javaPrimitiveType,
+                Int::class.javaPrimitiveType,
+                Int::class.javaPrimitiveType,
+            )
             .newInstance(handler, 0, 0, 0)
 
         val expected = StackLimitHooks.getCompatibilityStackSize()
@@ -92,40 +101,26 @@ internal object SlotItemHandlerLimitProbe : DevCompatProbe {
     }
 }
 
-private fun verifySingleSlotLimit(
-    className: String,
-    createTarget: (Class<*>) -> Any
-): DevCompatProbeResult {
+private fun verifySingleSlotLimit(className: String, createTarget: (Class<*>) -> Any): DevCompatProbeResult {
     val wrapperClass = loadClass(className)
     val expected = StackLimitHooks.getCompatibilityStackSize()
     val slotLimit = wrapperClass.getMethod("getSlotLimit", Int::class.javaPrimitiveType).invoke(createTarget(wrapperClass), 0) as Int
-    return compareSingleLimit(slotLimit, expected)
+    return if (slotLimit == expected) {
+        DevCompatProbeResult.passed("槽位上限=$slotLimit")
+    } else {
+        DevCompatProbeResult.failed("槽位上限=$slotLimit 预期=$expected")
+    }
 }
 
-private fun verifyPairSlotLimit(
-    className: String,
-    createTarget: (Class<*>) -> Any
-): DevCompatProbeResult {
+private fun verifyPairSlotLimit(className: String, createTarget: (Class<*>) -> Any): DevCompatProbeResult {
     val wrapperClass = loadClass(className)
     val wrapper = createTarget(wrapperClass)
     val expected = StackLimitHooks.getCompatibilityStackSize()
     val firstLimit = wrapperClass.getMethod("getSlotLimit", Int::class.javaPrimitiveType).invoke(wrapper, 0) as Int
     val secondLimit = wrapperClass.getMethod("getSlotLimit", Int::class.javaPrimitiveType).invoke(wrapper, 1) as Int
-    return comparePairLimit(firstLimit, secondLimit, expected)
-}
-
-private fun compareSingleLimit(actual: Int, expected: Int): DevCompatProbeResult {
-    return if (actual == expected) {
-        DevCompatProbeResult.passed("槽位上限=$actual")
+    return if (firstLimit == expected && secondLimit == expected) {
+        DevCompatProbeResult.passed("槽位上限=[$firstLimit,$secondLimit]")
     } else {
-        DevCompatProbeResult.failed("槽位上限=$actual 预期=$expected")
-    }
-}
-
-private fun comparePairLimit(first: Int, second: Int, expected: Int): DevCompatProbeResult {
-    return if (first == expected && second == expected) {
-        DevCompatProbeResult.passed("槽位上限=[$first,$second]")
-    } else {
-        DevCompatProbeResult.failed("槽位上限=[$first,$second] 预期=$expected")
+        DevCompatProbeResult.failed("槽位上限=[$firstLimit,$secondLimit] 预期=$expected")
     }
 }

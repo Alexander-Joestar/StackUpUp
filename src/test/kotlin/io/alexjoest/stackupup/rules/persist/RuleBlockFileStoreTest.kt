@@ -1,14 +1,14 @@
 package io.alexjoest.stackupup.rules.persist
 
-import java.io.File
-import kotlin.io.path.createTempDirectory
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.io.File
+import kotlin.io.path.createTempDirectory
 
 class RuleBlockFileStoreTest {
     @Test
-    fun `应当新增并替换命名块`() {
+    fun `shouldInsertAndReplaceNamedBlock`() {
         val tempDir = createTempDirectory("stackupup-rule-block-store").toFile()
         val file = File(tempDir, "world.su")
         val store = RuleBlockFileStore(file)
@@ -16,14 +16,14 @@ class RuleBlockFileStoreTest {
         store.replaceBlock(
             RuleTextBlock(
                 id = "ftbquests.reward_sizes",
-                lines = listOf("item = minecraft:egg -> 64")
-            )
+                lines = listOf("item = minecraft:egg -> 64"),
+            ),
         )
         store.replaceBlock(
             RuleTextBlock(
                 id = "ftbquests.reward_sizes",
-                lines = listOf("item = minecraft:snowball -> 16")
-            )
+                lines = listOf("item = minecraft:snowball -> 16"),
+            ),
         )
 
         val blocks = store.readBlocks()
@@ -33,7 +33,7 @@ class RuleBlockFileStoreTest {
     }
 
     @Test
-    fun `应当保留块外文本`() {
+    fun `shouldPreserveTextOutsideBlocks`() {
         val tempDir = createTempDirectory("stackupup-rule-block-store").toFile()
         val file = File(tempDir, "world.su")
         file.writeText(
@@ -43,15 +43,15 @@ class RuleBlockFileStoreTest {
             item = minecraft:egg -> 64
             # END stackupup:block old.block
             """.trimIndent() + System.lineSeparator(),
-            Charsets.UTF_8
+            Charsets.UTF_8,
         )
         val store = RuleBlockFileStore(file)
 
         store.replaceBlock(
             RuleTextBlock(
                 id = "new.block",
-                lines = listOf("item = minecraft:snowball -> 16")
-            )
+                lines = listOf("item = minecraft:snowball -> 16"),
+            ),
         )
 
         val text = file.readText(Charsets.UTF_8)

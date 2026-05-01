@@ -1,14 +1,14 @@
 package io.alexjoest.stackupup.rules.io
 
-import java.io.File
-import kotlin.io.path.createTempDirectory
+import io.alexjoest.stackupup.StackUpUpIds
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import io.alexjoest.stackupup.StackUpUpIds
+import java.io.File
+import kotlin.io.path.createTempDirectory
 
 class RuleSourceLocatorTest {
     @Test
-    fun `应当按全局 世界 用户顺序返回规则文件`() {
+    fun `shouldReturnGlobalWorldUserInOrder`() {
         val tempDir = createTempDirectory("stackupup-source-locator").toFile()
         val configDir = File(tempDir, "config").apply { mkdirs() }
         val rulesDir = File(configDir, StackUpUpIds.MOD_ID).apply { mkdirs() }
@@ -27,9 +27,9 @@ class RuleSourceLocatorTest {
                 File(rulesDir, "a-pack.su").absolutePath,
                 File(rulesDir, "z-pack.su").absolutePath,
                 File(worldDir, "world.su").absolutePath,
-                File(rulesDir, "user.su").absolutePath
+                File(rulesDir, "user.su").absolutePath,
             ),
-            RuleSourceLocator.resolveLoadOrder().map(File::getAbsolutePath)
+            RuleSourceLocator.resolveLoadOrder().map(File::getAbsolutePath),
         )
     }
 }

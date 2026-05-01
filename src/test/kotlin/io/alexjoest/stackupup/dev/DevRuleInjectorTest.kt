@@ -1,15 +1,15 @@
 package io.alexjoest.stackupup.dev
 
+import io.alexjoest.stackupup.StackUpUpConfig
+import io.alexjoest.stackupup.limit.RuleRuntime
+import io.alexjoest.stackupup.limit.StackIdentity
+import io.alexjoest.stackupup.limit.StackLimitService
+import io.alexjoest.stackupup.rules.compile.RuleCompiler
+import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import io.alexjoest.stackupup.StackUpUpConfig
-import io.alexjoest.stackupup.limit.StackIdentity
-import io.alexjoest.stackupup.limit.StackLimitService
-import io.alexjoest.stackupup.limit.RuleRuntime
-import io.alexjoest.stackupup.rules.compile.RuleCompiler
-import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 
 class DevRuleInjectorTest {
     private var previousMaxStackSize: Int = 10240
@@ -26,14 +26,14 @@ class DevRuleInjectorTest {
     }
 
     @Test
-    fun `应当把开发规则追加到当前快照末尾`() {
+    fun `shouldAppendDevRuleToCurrentSnapshot`() {
         RuleRuntime.replaceSnapshot(
             RuleSnapshot(
                 version = 1L,
                 rules = listOf(
-                    RuleCompiler.compileLine("ore = ingotSteel -> 512", 1)
-                )
-            )
+                    RuleCompiler.compileLine("ore = ingotSteel -> 512", 1),
+                ),
+            ),
         )
 
         val result = DevRuleInjector.ensureInjected("ore = ingotSteel -> *2")
@@ -41,7 +41,7 @@ class DevRuleInjectorTest {
         val resolved = StackLimitService(snapshot).resolve(
             StackIdentity("gregtech:meta_ingot", "gregtech", 324, "item"),
             baseLimit = 64,
-            oreNames = setOf("ingotSteel")
+            oreNames = setOf("ingotSteel"),
         )
 
         assertEquals(2, snapshot.rules.size)
@@ -49,5 +49,3 @@ class DevRuleInjectorTest {
         assertEquals(DevRuleInjectionResult.Applied("ore = ingotSteel -> *2", 1, 2), result)
     }
 }
-
-

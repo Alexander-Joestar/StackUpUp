@@ -7,17 +7,14 @@ import java.lang.reflect.Field
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 
-internal fun hasClass(name: String): Boolean {
-    return try {
-        loadClass(name)
-        true
-    } catch (_: Throwable) {
-        false
-    }
+internal fun hasClass(name: String): Boolean = try {
+    loadClass(name)
+    true
+} catch (_: Throwable) {
+    false
 }
 
-internal fun loadClass(name: String): Class<*> =
-    Class.forName(name, false, DevCompatProbeRunner::class.java.classLoader)
+internal fun loadClass(name: String): Class<*> = Class.forName(name, false, DevCompatProbeRunner::class.java.classLoader)
 
 internal fun findField(type: Class<*>, name: String): Field {
     var current: Class<*>? = type
@@ -59,12 +56,10 @@ internal fun formatProbeThrowable(throwable: Throwable): String {
     return if (message == null) unwrapped.javaClass.simpleName else "${unwrapped.javaClass.simpleName}: $message"
 }
 
-internal fun evaluateProbeAvailability(check: () -> Boolean): ProbeAvailability {
-    return try {
-        if (check()) ProbeAvailability.available() else ProbeAvailability.missing()
-    } catch (throwable: Throwable) {
-        ProbeAvailability.failed(formatProbeThrowable(throwable))
-    }
+internal fun evaluateProbeAvailability(check: () -> Boolean): ProbeAvailability = try {
+    if (check()) ProbeAvailability.available() else ProbeAvailability.missing()
+} catch (throwable: Throwable) {
+    ProbeAvailability.failed(formatProbeThrowable(throwable))
 }
 
 internal fun expectedFixedTargetProbeCoverage(): Set<String> = FixedCompatTargets.probeTargets().toSet()

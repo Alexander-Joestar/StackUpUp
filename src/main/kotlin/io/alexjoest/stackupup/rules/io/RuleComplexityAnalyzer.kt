@@ -1,10 +1,10 @@
 package io.alexjoest.stackupup.rules.io
 
-import io.alexjoest.stackupup.StackUpUpIds
 import io.alexjoest.stackupup.StackUpUpConfig
+import io.alexjoest.stackupup.StackUpUpIds
 import io.alexjoest.stackupup.rules.LocalizedMessage
-import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import io.alexjoest.stackupup.rules.RuleStepKind
+import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 
 object RuleComplexityAnalyzer {
     private const val RULE_COUNT_WARNING_THRESHOLD: Int = 80
@@ -32,7 +32,7 @@ object RuleComplexityAnalyzer {
             ruleCount = ruleCount,
             longestRuleLength = longestRuleLength,
             totalRuleLength = totalRuleLength,
-            warnings = warnings
+            warnings = warnings,
         )
     }
 
@@ -50,19 +50,13 @@ object RuleComplexityAnalyzer {
 
             RuleComplexityWarning(
                 StackUpUpIds.RULE_LIMIT_CLAMP_KEY,
-                listOf(rule.lineNumber, maxStackSize)
+                listOf(rule.lineNumber, maxStackSize),
             )
         }
     }
 }
 
-data class RuleComplexityReport(
-    val ruleCount: Int,
-    val longestRuleLength: Int,
-    val totalRuleLength: Int,
-    val warnings: List<RuleComplexityWarning>
-)
+data class RuleComplexityReport(val ruleCount: Int, val longestRuleLength: Int, val totalRuleLength: Int, val warnings: List<RuleComplexityWarning>)
 
 typealias RuleReloadWarning = LocalizedMessage
 typealias RuleComplexityWarning = LocalizedMessage
-

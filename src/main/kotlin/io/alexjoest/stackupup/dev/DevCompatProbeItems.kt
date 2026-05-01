@@ -1,8 +1,8 @@
 package io.alexjoest.stackupup.dev
 
+import io.alexjoest.stackupup.StackLimitHooks
 import net.minecraft.item.Item
 import net.minecraft.item.ItemStack
-import io.alexjoest.stackupup.StackLimitHooks
 
 object DevCompatProbeItems {
     private val gridExtractProbeItem: Item =
@@ -13,5 +13,3 @@ object DevCompatProbeItems {
     @JvmStatic
     fun createGridExtractProbeStack(count: Int = 1): ItemStack = ItemStack(gridExtractProbeItem, count, 0)
 }
-
-

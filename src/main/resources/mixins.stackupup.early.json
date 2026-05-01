@@ -25,6 +25,7 @@
     "VanillaInventoryWriteMixin"
   ],
   "client": [
+    "NetHandlerPlayClientMixin",
     "RenderEntityItemMixin",
     "RenderItemMixin"
   ],

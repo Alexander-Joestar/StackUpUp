@@ -35,5 +35,3 @@ object RuleRuntime {
         limitServiceRef.set(StackLimitService(snapshotRef.get()))
     }
 }
-
-

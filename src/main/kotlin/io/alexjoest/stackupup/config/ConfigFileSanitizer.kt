@@ -1,13 +1,13 @@
 package io.alexjoest.stackupup.config
 
 import io.alexjoest.stackupup.StackUpUp
-import net.minecraftforge.common.config.Configuration
 import java.io.File
 
 internal object ConfigFileSanitizer {
     private val allowedRootCategories = linkedSetOf(
-        Configuration.CATEGORY_GENERAL,
-        Configuration.CATEGORY_CLIENT
+        "general",
+        "client",
+        "compatibility",
     )
 
     fun sanitize(configDirectory: File) {
@@ -16,26 +16,19 @@ internal object ConfigFileSanitizer {
             return
         }
 
-        val configuration = Configuration(configFile)
-        val removedRootCategories = ArrayList<String>()
-        for (categoryName in configuration.categoryNames.toList()) {
-            if (categoryName in allowedRootCategories) {
-                continue
-            }
-            configuration.removeCategory(configuration.getCategory(categoryName))
-            removedRootCategories += categoryName
+        val originalText = configFile.readText(Charsets.UTF_8)
+        val sanitized = RawConfigFileScanner.sanitizeRootCategories(originalText, allowedRootCategories)
+        if (sanitized.removedRootCategories.isEmpty()) {
+            return
         }
 
-        if (removedRootCategories.isNotEmpty()) {
+        configFile.writeText(sanitized.text, Charsets.UTF_8)
+        if (sanitized.removedRootCategories.isNotEmpty()) {
             StackUpUp.logger?.info(
                 "Sanitized {} by removing unsupported root categories: {}",
                 configFile.name,
-                removedRootCategories.joinToString(", ")
+                sanitized.removedRootCategories.joinToString(", "),
             )
-        }
-
-        if (removedRootCategories.isNotEmpty() || configuration.hasChanged()) {
-            configuration.save()
         }
     }
 }

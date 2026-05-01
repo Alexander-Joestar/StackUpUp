@@ -17,7 +17,7 @@ object RuleCompiler {
             sourceLine = line,
             action = RuleAction(steps),
             referencedFields = ast.condition.debugFields().toSet(),
-            predicate = RuleConditionCompiler.compile(ast.condition)
+            predicate = RuleConditionCompiler.compile(ast.condition),
         )
     }
 

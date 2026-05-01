@@ -1,10 +1,10 @@
 package io.alexjoest.stackupup.dev
 
-import io.alexjoest.stackupup.StackUpUp
 import io.alexjoest.stackupup.StackLimitHooks
+import io.alexjoest.stackupup.StackUpUp
+import io.alexjoest.stackupup.limit.RuleRuntime
 import io.alexjoest.stackupup.limit.StackContext
 import io.alexjoest.stackupup.limit.StackContextResolver
-import io.alexjoest.stackupup.limit.RuleRuntime
 import net.minecraft.server.MinecraftServer
 import net.minecraftforge.fml.common.Loader
 import net.minecraftforge.items.ItemStackHandler
@@ -25,20 +25,20 @@ object DevAutomationServerDriver {
                     "开发自动验收[服务端]：已注入临时规则 `{}`，规则数 {} -> {}。",
                     injection.ruleLine,
                     injection.previousRuleCount,
-                    injection.newRuleCount
+                    injection.newRuleCount,
                 )
             }
 
-            is DevRuleInjectionResult.Failed  -> {
+            is DevRuleInjectionResult.Failed -> {
                 StackUpUp.logger?.error(
                     "开发自动验收[服务端]：临时规则注入失败：{}",
-                    injection.errors.joinToString("；")
+                    injection.errors.joinToString("；"),
                 )
                 shutdownIfRequested(server)
                 return
             }
 
-            DevRuleInjectionResult.Skipped    -> Unit
+            DevRuleInjectionResult.Skipped -> Unit
         }
 
         val target = DevTargetRuntimeResolver.resolve()
@@ -47,7 +47,7 @@ object DevAutomationServerDriver {
                 "开发自动验收[服务端]：未找到目标物品 item={} meta={} ore={}。",
                 DevAutomationConfig.itemId.ifBlank { "<未指定>" },
                 DevAutomationConfig.itemMeta,
-                DevAutomationConfig.oreName
+                DevAutomationConfig.oreName,
             )
             shutdownIfRequested(server)
             return
@@ -66,7 +66,7 @@ object DevAutomationServerDriver {
             probeResult.slotLimit,
             DevAutomationConfig.itemCount,
             probeResult.stored.count,
-            probeResult.remainder.count
+            probeResult.remainder.count,
         )
         if (!probeResult.evaluation.passed) {
             val message = probeResult.evaluation.reasons.joinToString("；")
@@ -105,7 +105,7 @@ object DevAutomationServerDriver {
         val builtInMatrixFailure = unresolvedBuiltInMatrixFailure(
             unresolvedCount = unresolvedBuiltInTargets,
             totalCount = DevAutomationConfig.builtInMatrix.size,
-            gregTechLoaded = Loader.isModLoaded("gregtech")
+            gregTechLoaded = Loader.isModLoaded("gregtech"),
         )
         if (unresolvedBuiltInTargets == DevAutomationConfig.builtInMatrix.size && builtInMatrixFailure == null) {
             StackUpUp.logger?.warn("开发自动验收[服务端]：内建 GT/metadata 矩阵未解析到目标物品，已跳过该专项回归。")
@@ -141,7 +141,7 @@ object DevAutomationServerDriver {
                 if (probeResult.evaluation.reasons.isNotEmpty()) {
                     append(" 原因=${probeResult.evaluation.reasons.joinToString("；")}")
                 }
-            }
+            },
         )
     }
 
@@ -163,7 +163,7 @@ object DevAutomationServerDriver {
             actualLimit = actualLimit,
             slotLimit = slotLimit,
             storedCount = stored.count,
-            remainderCount = remainder.count
+            remainderCount = remainder.count,
         )
         return ProbedTarget(
             context = context,
@@ -173,7 +173,7 @@ object DevAutomationServerDriver {
             slotLimit = slotLimit,
             stored = stored,
             remainder = remainder,
-            evaluation = evaluation
+            evaluation = evaluation,
         )
     }
 
@@ -189,11 +189,7 @@ object DevAutomationServerDriver {
     private const val UNRESOLVED_TARGET_SUMMARY: String = "未解析到目标物品。"
 }
 
-internal fun unresolvedBuiltInMatrixFailure(
-    unresolvedCount: Int,
-    totalCount: Int,
-    gregTechLoaded: Boolean
-): String? {
+internal fun unresolvedBuiltInMatrixFailure(unresolvedCount: Int, totalCount: Int, gregTechLoaded: Boolean): String? {
     if (unresolvedCount <= 0 || totalCount <= 0) {
         return null
     }
@@ -213,7 +209,7 @@ internal fun evaluateProbeResult(
     actualLimit: Int,
     slotLimit: Int,
     storedCount: Int,
-    remainderCount: Int
+    remainderCount: Int,
 ): DevProbeEvaluation {
     val expectedStoredCount = minOf(requestedCount, actualLimit, slotLimit)
     val expectedRemainderCount = requestedCount - expectedStoredCount
@@ -237,23 +233,17 @@ internal fun evaluateProbeResult(
 
     return DevProbeEvaluation(
         passed = reasons.isEmpty(),
-        reasons = reasons
+        reasons = reasons,
     )
 }
 
-private data class DevProbeRunResult(
-    val passed: Boolean,
-    val summary: String
-) {
+private data class DevProbeRunResult(val passed: Boolean, val summary: String) {
     companion object {
         fun failed(summary: String): DevProbeRunResult = DevProbeRunResult(false, summary)
     }
 }
 
-internal data class DevProbeEvaluation(
-    val passed: Boolean,
-    val reasons: List<String>
-)
+internal data class DevProbeEvaluation(val passed: Boolean, val reasons: List<String>)
 
 private data class ProbedTarget(
     val context: StackContext,
@@ -263,5 +253,5 @@ private data class ProbedTarget(
     val slotLimit: Int,
     val stored: net.minecraft.item.ItemStack,
     val remainder: net.minecraft.item.ItemStack,
-    val evaluation: DevProbeEvaluation
+    val evaluation: DevProbeEvaluation,
 )

@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test
 
 class StackUpUpConfigTest {
     @Test
-    fun `配置门面应继续暴露扁平运行时访问`() {
+    fun `configFacade_shouldExposeFlatRuntimeAccess`() {
         val previousEnableDslRules = StackUpUpConfig.general.enableDslRules
         val previousTooltipStackDisplayMode = StackUpUpConfig.general.tooltipStackDisplayMode
         val previousMaxStackSize = StackUpUpConfig.general.maxStackSize
@@ -47,7 +47,7 @@ class StackUpUpConfigTest {
     }
 
     @Test
-    fun `公开标识应使用 stackupup`() {
+    fun `publicIds_shouldUseStackupup`() {
         assertEquals(StackUpUpIds.MOD_ID, StackUpUp.MOD_ID)
         assertEquals(StackUpUpIds.PUBLIC_ID, StackUpUp.PUBLIC_ID)
         assertEquals(StackUpUpIds.CONFIG_ID, StackUpUp.CONFIG_ID)
@@ -58,12 +58,13 @@ class StackUpUpConfigTest {
     }
 
     @Test
-    fun `标识常量应集中在单一入口`() {
+    fun `idConstants_shouldBeCentralized`() {
         assertEquals("stackupup", StackUpUpIds.MOD_ID)
         assertEquals("config.stackupup", StackUpUpIds.CONFIG_LANG_ROOT)
         assertEquals("commands.stackupup", StackUpUpIds.COMMAND_LANG_ROOT)
         assertEquals("message.stackupup", StackUpUpIds.MESSAGE_LANG_ROOT)
         assertEquals("config.stackupup.title", StackUpUpIds.CONFIG_TITLE_KEY)
+        assertEquals("io.alexjoest.stackupup.config.ConfigGuiFactory", StackUpUpIds.CONFIG_GUI_FACTORY_CLASS_NAME)
         assertEquals("commands.stackupup.reload.success", StackUpUpIds.COMMAND_RELOAD_SUCCESS_KEY)
         assertEquals("message.stackupup.rule_complexity.rule_count", StackUpUpIds.RULE_COMPLEXITY_RULE_COUNT_KEY)
         assertEquals("message.stackupup.rule_complexity.rule_length", StackUpUpIds.RULE_COMPLEXITY_RULE_LENGTH_KEY)
@@ -74,7 +75,7 @@ class StackUpUpConfigTest {
     }
 
     @Test
-    fun `不应再暴露 DSL v1 旧脚本配置入口`() {
+    fun `shouldNotExposeLegacyDslV1`() {
         assertThrows(NoSuchMethodException::class.java) {
             StackUpUpConfig::class.java.getMethod("getScriptingActive")
         }

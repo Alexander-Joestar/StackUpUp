@@ -51,7 +51,7 @@ internal object RefinedStorageStorageMonitorExtractProbe : DevCompatProbe {
 
         val securityManager = Proxy.newProxyInstance(
             securityManagerClass.classLoader,
-            arrayOf(securityManagerClass)
+            arrayOf(securityManagerClass),
         ) { _, method, _ ->
             when (method.name) {
                 "hasPermission" -> true
@@ -84,8 +84,7 @@ internal object RefinedStorageStorageMonitorExtractProbe : DevCompatProbe {
 internal object RefinedStorageGridExtractProbe : DevCompatProbe {
     override val id: String = "refinedstorage_grid_extract"
 
-    override fun isAvailable(): Boolean =
-        hasClass("com.raoulvdberge.refinedstorage.apiimpl.network.grid.handler.ItemGridHandler")
+    override fun isAvailable(): Boolean = hasClass("com.raoulvdberge.refinedstorage.apiimpl.network.grid.handler.ItemGridHandler")
 
     override fun run(server: MinecraftServer): DevCompatProbeResult {
         val world = server.getWorld(0)
@@ -109,7 +108,7 @@ internal object RefinedStorageGridExtractProbe : DevCompatProbe {
             net.minecraft.entity.player.EntityPlayerMP::class.java,
             UUID::class.java,
             Int::class.javaPrimitiveType,
-            Int::class.javaPrimitiveType
+            Int::class.javaPrimitiveType,
         )
         var extractFailure: Throwable? = null
         try {
@@ -125,17 +124,12 @@ internal object RefinedStorageGridExtractProbe : DevCompatProbe {
         } else {
             val summary = "左键提取请求=$leftClickRequest 预期=$expected"
             DevCompatProbeResult.failed(
-                if (leftClickRequest >= 0L) summary else appendProbeFailureCause(summary, extractFailure)
+                if (leftClickRequest >= 0L) summary else appendProbeFailureCause(summary, extractFailure),
             )
         }
     }
 
-    private fun createGridNetworkProxy(
-        itemStack: ItemStack,
-        entry: Any,
-        entryCount: Long,
-        requestSizes: MutableList<Long>
-    ): Any {
+    private fun createGridNetworkProxy(itemStack: ItemStack, entry: Any, entryCount: Long, requestSizes: MutableList<Long>): Any {
         val networkClass = loadClass("com.raoulvdberge.refinedstorage.api.network.INetwork")
         val securityManagerClass = loadClass("com.raoulvdberge.refinedstorage.api.network.security.ISecurityManager")
         val storageCacheClass = loadClass("com.raoulvdberge.refinedstorage.api.storage.IStorageCache")
@@ -149,7 +143,7 @@ internal object RefinedStorageGridExtractProbe : DevCompatProbe {
 
         val securityManager = Proxy.newProxyInstance(
             securityManagerClass.classLoader,
-            arrayOf(securityManagerClass)
+            arrayOf(securityManagerClass),
         ) { _, method, _ ->
             when (method.name) {
                 "hasPermission" -> true
@@ -161,7 +155,7 @@ internal object RefinedStorageGridExtractProbe : DevCompatProbe {
 
         val networkItemHandler = Proxy.newProxyInstance(
             networkItemHandlerClass.classLoader,
-            arrayOf(networkItemHandlerClass)
+            arrayOf(networkItemHandlerClass),
         ) { _, method, _ ->
             when (method.name) {
                 "drainEnergy" -> null
@@ -193,8 +187,7 @@ internal object RefinedStorageGridExtractProbe : DevCompatProbe {
 internal object RefinedStoragePortableGridExtractProbe : DevCompatProbe {
     override val id: String = "refinedstorage_portable_grid_extract"
 
-    override fun isAvailable(): Boolean =
-        hasClass("com.raoulvdberge.refinedstorage.apiimpl.network.grid.handler.ItemGridHandlerPortable")
+    override fun isAvailable(): Boolean = hasClass("com.raoulvdberge.refinedstorage.apiimpl.network.grid.handler.ItemGridHandlerPortable")
 
     override fun run(server: MinecraftServer): DevCompatProbeResult {
         val world = server.getWorld(0)
@@ -214,7 +207,7 @@ internal object RefinedStoragePortableGridExtractProbe : DevCompatProbe {
             .getDeclaredConstructor(portableGridClass, gridClass)
             .newInstance(
                 createPortableGridProxy(itemStack, entry, entryCount, requestSizes),
-                createPortableGridStateProxy()
+                createPortableGridStateProxy(),
             )
         val idValue = entryClass.getMethod("getId").invoke(entry) as UUID
 
@@ -223,7 +216,7 @@ internal object RefinedStoragePortableGridExtractProbe : DevCompatProbe {
             net.minecraft.entity.player.EntityPlayerMP::class.java,
             UUID::class.java,
             Int::class.javaPrimitiveType,
-            Int::class.javaPrimitiveType
+            Int::class.javaPrimitiveType,
         )
         var extractFailure: Throwable? = null
         try {
@@ -239,17 +232,12 @@ internal object RefinedStoragePortableGridExtractProbe : DevCompatProbe {
         } else {
             val summary = "左键提取请求=$leftClickRequest 预期=$expected"
             DevCompatProbeResult.failed(
-                if (leftClickRequest >= 0L) summary else appendProbeFailureCause(summary, extractFailure)
+                if (leftClickRequest >= 0L) summary else appendProbeFailureCause(summary, extractFailure),
             )
         }
     }
 
-    private fun createPortableGridProxy(
-        itemStack: ItemStack,
-        entry: Any,
-        entryCount: Long,
-        requestSizes: MutableList<Long>
-    ): Any {
+    private fun createPortableGridProxy(itemStack: ItemStack, entry: Any, entryCount: Long, requestSizes: MutableList<Long>): Any {
         val portableGridClass = loadClass("com.raoulvdberge.refinedstorage.tile.grid.portable.IPortableGrid")
         val storageCacheClass = loadClass("com.raoulvdberge.refinedstorage.api.storage.IStorageCache")
         val stackListClass = loadClass("com.raoulvdberge.refinedstorage.api.util.IStackList")
@@ -315,8 +303,12 @@ private fun createStackListProxy(stackListClass: Class<*>, entry: Any, entryCoun
     }
 }
 
-private fun createStorageCacheProxy(storageCacheClass: Class<*>, stackList: Any): Any {
-    return Proxy.newProxyInstance(storageCacheClass.classLoader, arrayOf(storageCacheClass)) { _, method, _ ->
+private fun createStorageCacheProxy(storageCacheClass: Class<*>, stackList: Any): Any =
+    Proxy.newProxyInstance(storageCacheClass.classLoader, arrayOf(storageCacheClass)) {
+            _,
+            method,
+            _,
+        ->
         when (method.name) {
             "getList" -> stackList
             "getCraftablesList" -> stackList
@@ -324,13 +316,15 @@ private fun createStorageCacheProxy(storageCacheClass: Class<*>, stackList: Any)
             else -> method.safeNullValue
         }
     }
-}
 
-private fun createStorageTrackerProxy(storageTrackerClass: Class<*>): Any {
-    return Proxy.newProxyInstance(storageTrackerClass.classLoader, arrayOf(storageTrackerClass)) { _, method, _ ->
+private fun createStorageTrackerProxy(storageTrackerClass: Class<*>): Any =
+    Proxy.newProxyInstance(storageTrackerClass.classLoader, arrayOf(storageTrackerClass)) {
+            _,
+            method,
+            _,
+        ->
         when (method.name) {
             "changed" -> null
             else -> method.safeNullValue
         }
     }
-}

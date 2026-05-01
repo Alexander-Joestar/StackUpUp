@@ -10,38 +10,32 @@ import io.alexjoest.stackupup.rules.ast.OrConditionAst
 import io.alexjoest.stackupup.rules.model.RuleMatchContext
 
 internal object RuleConditionCompiler {
-    fun compile(condition: ConditionAst): (RuleMatchContext) -> Boolean {
-        return when (condition) {
-            is FieldComparisonAst -> compileField(condition)
-            is ListConditionAst   -> compileList(condition)
-            is AndConditionAst    -> compileAll(compileNestedConditions(condition.conditions))
-            is OrConditionAst     -> compileAny(compileNestedConditions(condition.conditions))
-        }
+    fun compile(condition: ConditionAst): (RuleMatchContext) -> Boolean = when (condition) {
+        is FieldComparisonAst -> compileField(condition)
+        is ListConditionAst -> compileList(condition)
+        is AndConditionAst -> compileAll(compileNestedConditions(condition.conditions))
+        is OrConditionAst -> compileAny(compileNestedConditions(condition.conditions))
     }
 
-    private fun compileList(condition: ListConditionAst): (RuleMatchContext) -> Boolean {
-        return when (condition.field) {
-            RuleField.ITEM -> compileItemList(condition.literals)
-            RuleField.MOD  -> compileSingleStringLiteralList(condition.literals) { it.modId }
-            RuleField.TYPE -> compileSingleStringLiteralList(condition.literals) { it.type }
-            RuleField.ORE  -> compileStringLiteralList(condition.literals) { it.oreNames }
-            else           -> compileAny(
-                condition.literals.map { literal ->
-                    compileField(FieldComparisonAst(condition.field, ComparisonOperator.EQUALS, literal))
-                }
-            )
-        }
+    private fun compileList(condition: ListConditionAst): (RuleMatchContext) -> Boolean = when (condition.field) {
+        RuleField.ITEM -> compileItemList(condition.literals)
+        RuleField.MOD -> compileSingleStringLiteralList(condition.literals) { it.modId }
+        RuleField.TYPE -> compileSingleStringLiteralList(condition.literals) { it.type }
+        RuleField.ORE -> compileStringLiteralList(condition.literals) { it.oreNames }
+        else -> compileAny(
+            condition.literals.map { literal ->
+                compileField(FieldComparisonAst(condition.field, ComparisonOperator.EQUALS, literal))
+            },
+        )
     }
 
-    private fun compileField(condition: FieldComparisonAst): (RuleMatchContext) -> Boolean {
-        return when (condition.field) {
-            RuleField.ITEM -> compileItemField(condition)
-            RuleField.MOD  -> compileSingleStringComparison(condition) { it.modId }
-            RuleField.TYPE -> compileSingleStringComparison(condition) { it.type }
-            RuleField.ORE  -> compileStringComparison(condition) { it.oreNames }
-            RuleField.META -> compileNumericField(condition) { it.meta }
-            RuleField.SIZE -> compileNumericField(condition) { it.baseSize }
-        }
+    private fun compileField(condition: FieldComparisonAst): (RuleMatchContext) -> Boolean = when (condition.field) {
+        RuleField.ITEM -> compileItemField(condition)
+        RuleField.MOD -> compileSingleStringComparison(condition) { it.modId }
+        RuleField.TYPE -> compileSingleStringComparison(condition) { it.type }
+        RuleField.ORE -> compileStringComparison(condition) { it.oreNames }
+        RuleField.META -> compileNumericField(condition) { it.meta }
+        RuleField.SIZE -> compileNumericField(condition) { it.baseSize }
     }
 
     private fun compileItemField(condition: FieldComparisonAst): (RuleMatchContext) -> Boolean {
@@ -49,46 +43,33 @@ internal object RuleConditionCompiler {
         return compileEqualityComparison(condition.operator, matcher)
     }
 
-    private fun compileItemList(literals: List<String>): (RuleMatchContext) -> Boolean {
-        return compileAny(literals.map(RuleLiteralMatcherCompiler::compileItemMatcher))
-    }
+    private fun compileItemList(literals: List<String>): (RuleMatchContext) -> Boolean =
+        compileAny(literals.map(RuleLiteralMatcherCompiler::compileItemMatcher))
 
-    private fun compileStringLiteralList(
-        literals: List<String>,
-        candidatesSelector: (RuleMatchContext) -> Iterable<String>
-    ): (RuleMatchContext) -> Boolean {
+    private fun compileStringLiteralList(literals: List<String>, candidatesSelector: (RuleMatchContext) -> Iterable<String>): (RuleMatchContext) -> Boolean {
         val matcher = compileStringLiteralListMatcher(literals)
         return { context -> candidatesSelector(context).any(matcher) }
     }
 
-    private fun compileSingleStringLiteralList(
-        literals: List<String>,
-        selector: (RuleMatchContext) -> String
-    ): (RuleMatchContext) -> Boolean {
+    private fun compileSingleStringLiteralList(literals: List<String>, selector: (RuleMatchContext) -> String): (RuleMatchContext) -> Boolean {
         val matcher = compileStringLiteralListMatcher(literals)
         return { context -> matcher(selector(context)) }
     }
 
     private fun compileStringComparison(
         condition: FieldComparisonAst,
-        candidatesSelector: (RuleMatchContext) -> Iterable<String>
+        candidatesSelector: (RuleMatchContext) -> Iterable<String>,
     ): (RuleMatchContext) -> Boolean {
         val matcher = RuleLiteralMatcherCompiler.compileStringMatcher(condition.literal)
         return compileEqualityComparison(condition.operator) { context -> candidatesSelector(context).any(matcher) }
     }
 
-    private fun compileSingleStringComparison(
-        condition: FieldComparisonAst,
-        selector: (RuleMatchContext) -> String
-    ): (RuleMatchContext) -> Boolean {
+    private fun compileSingleStringComparison(condition: FieldComparisonAst, selector: (RuleMatchContext) -> String): (RuleMatchContext) -> Boolean {
         val matcher = RuleLiteralMatcherCompiler.compileStringMatcher(condition.literal)
         return compileEqualityComparison(condition.operator) { context -> matcher(selector(context)) }
     }
 
-    private fun compileNumericField(
-        condition: FieldComparisonAst,
-        selector: (RuleMatchContext) -> Int
-    ): (RuleMatchContext) -> Boolean {
+    private fun compileNumericField(condition: FieldComparisonAst, selector: (RuleMatchContext) -> Int): (RuleMatchContext) -> Boolean {
         val expected = condition.literal.toInt()
         return { context -> matchesNumericComparison(condition.operator, selector(context), expected) }
     }
@@ -107,30 +88,23 @@ internal object RuleConditionCompiler {
         return { actual -> actual in exactLiterals || wildcardMatchers.any { matcher -> matcher(actual) } }
     }
 
-    private fun compileEqualityComparison(
-        operator: ComparisonOperator,
-        matcher: (RuleMatchContext) -> Boolean
-    ): (RuleMatchContext) -> Boolean = { context ->
+    private fun compileEqualityComparison(operator: ComparisonOperator, matcher: (RuleMatchContext) -> Boolean): (RuleMatchContext) -> Boolean = { context ->
         applyEqualityOperator(operator, matcher(context))
     }
 
-    private fun applyEqualityOperator(operator: ComparisonOperator, matches: Boolean): Boolean {
-        return when (operator) {
-            ComparisonOperator.EQUALS -> matches
-            ComparisonOperator.NOT_EQUALS -> !matches
-            else -> false
-        }
+    private fun applyEqualityOperator(operator: ComparisonOperator, matches: Boolean): Boolean = when (operator) {
+        ComparisonOperator.EQUALS -> matches
+        ComparisonOperator.NOT_EQUALS -> !matches
+        else -> false
     }
 
-    private fun matchesNumericComparison(operator: ComparisonOperator, actual: Int, expected: Int): Boolean {
-        return when (operator) {
-            ComparisonOperator.EQUALS -> actual == expected
-            ComparisonOperator.NOT_EQUALS -> actual != expected
-            ComparisonOperator.GREATER -> actual > expected
-            ComparisonOperator.GREATER_EQUALS -> actual >= expected
-            ComparisonOperator.LESS -> actual < expected
-            ComparisonOperator.LESS_EQUALS -> actual <= expected
-        }
+    private fun matchesNumericComparison(operator: ComparisonOperator, actual: Int, expected: Int): Boolean = when (operator) {
+        ComparisonOperator.EQUALS -> actual == expected
+        ComparisonOperator.NOT_EQUALS -> actual != expected
+        ComparisonOperator.GREATER -> actual > expected
+        ComparisonOperator.GREATER_EQUALS -> actual >= expected
+        ComparisonOperator.LESS -> actual < expected
+        ComparisonOperator.LESS_EQUALS -> actual <= expected
     }
 
     private fun compileAny(predicates: List<(RuleMatchContext) -> Boolean>): (RuleMatchContext) -> Boolean =

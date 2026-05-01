@@ -6,13 +6,13 @@ import org.junit.jupiter.api.Test
 
 class RuleLineLoaderTest {
     @Test
-    fun `应忽略空行与行注释`() {
+    fun `shouldSkipEmptyAndCommentLines`() {
         val result = RuleLineLoader.load(
             listOf(
                 RuleLineLoader.RuleLineInput("# comment", 1, "main.su"),
                 RuleLineLoader.RuleLineInput("   ", 2, "main.su"),
-                RuleLineLoader.RuleLineInput("item = minecraft:egg -> 64 // tail", 3, "main.su")
-            )
+                RuleLineLoader.RuleLineInput("item = minecraft:egg -> 64 // tail", 3, "main.su"),
+            ),
         )
 
         assertTrue(result.errors.isEmpty())
@@ -20,13 +20,13 @@ class RuleLineLoaderTest {
     }
 
     @Test
-    fun `应跨行处理块注释`() {
+    fun `shouldHandleMultilineBlockComments`() {
         val result = RuleLineLoader.load(
             listOf(
                 RuleLineLoader.RuleLineInput("/* begin", 1, "main.su"),
                 RuleLineLoader.RuleLineInput("still comment", 2, "main.su"),
-                RuleLineLoader.RuleLineInput("end */ item = minecraft:egg -> 64", 3, "main.su")
-            )
+                RuleLineLoader.RuleLineInput("end */ item = minecraft:egg -> 64", 3, "main.su"),
+            ),
         )
 
         assertTrue(result.errors.isEmpty())
@@ -34,11 +34,11 @@ class RuleLineLoaderTest {
     }
 
     @Test
-    fun `错误消息应包含来源文件与真实行号`() {
+    fun `errors_shouldIncludeSourceFileAndLine`() {
         val result = RuleLineLoader.load(
             listOf(
-                RuleLineLoader.RuleLineInput("item = minecraft:egg -> /", 7, "pack.su")
-            )
+                RuleLineLoader.RuleLineInput("item = minecraft:egg -> /", 7, "pack.su"),
+            ),
         )
 
         assertEquals(1, result.errors.size)

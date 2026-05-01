@@ -1,35 +1,35 @@
 package io.alexjoest.stackupup.rules
 
-import java.io.File
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Test
 import io.alexjoest.stackupup.StackUpUpIds
 import io.alexjoest.stackupup.rules.LocalizedMessage
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import io.alexjoest.stackupup.rules.io.RuleComplexityWarning
 import io.alexjoest.stackupup.rules.io.RuleReloadReport
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+import java.io.File
 
 class RuleReloadReportTest {
     @Test
-    fun `无错误且无复杂度提醒时应视为干净重载`() {
+    fun `noErrorsNoWarnings_shouldBeClean`() {
         val report = RuleReloadReport(
             file = File("run/config/stackupup/main.su"),
             snapshot = RuleSnapshot(version = 1L, rules = emptyList()),
             errors = emptyList(),
-            warnings = emptyList()
+            warnings = emptyList(),
         )
 
         assertTrue(report.isClean)
     }
 
     @Test
-    fun `应当保留加载错误与复杂度提醒`() {
+    fun `shouldPreserveErrorsAndWarnings`() {
         val report = RuleReloadReport(
             file = File("run/config/stackupup/main.su"),
             snapshot = RuleSnapshot(version = 1L, rules = emptyList()),
             errors = listOf(LocalizedMessage("message.stackupup.rule_error.load_failed", listOf(1, "broken"))),
-            warnings = listOf(RuleComplexityWarning(StackUpUpIds.RULE_COMPLEXITY_RULE_COUNT_KEY, emptyList()))
+            warnings = listOf(RuleComplexityWarning(StackUpUpIds.RULE_COMPLEXITY_RULE_COUNT_KEY, emptyList())),
         )
 
         assertEquals(listOf("Line 1 failed to load: broken"), report.errors.map { it.format() })

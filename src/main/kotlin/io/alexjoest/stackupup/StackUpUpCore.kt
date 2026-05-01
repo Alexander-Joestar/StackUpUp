@@ -8,13 +8,15 @@ import zone.rong.mixinbooter.IEarlyMixinLoader
 @IFMLLoadingPlugin.SortingIndex(1001)
 // 只排除 core 包，避免把 mixin 包一起挡在 LaunchClassLoader 的变换链外。
 @IFMLLoadingPlugin.TransformerExclusions(StackUpUpIds.CORE_PACKAGE_NAME, StackUpUpIds.CONFIG_CLASS_NAME)
-class StackUpUpCore : IFMLLoadingPlugin, IEarlyMixinLoader {
+class StackUpUpCore :
+    IFMLLoadingPlugin,
+    IEarlyMixinLoader {
     companion object {
         private const val COREMOD_ACTIVE_PROPERTY: String = "${StackUpUpIds.MOD_ID}.coremod.active"
         private const val CONFLICT_DISABLED_PROPERTY: String = "${StackUpUpIds.MOD_ID}.conflict.disabled"
         private const val CONFLICT_MODS_PROPERTY: String = "${StackUpUpIds.MOD_ID}.conflict.mods"
         private val conflictingCoremodNames: Map<String, String> = mapOf(
-            "StackUpCore" to "StackUp"
+            "StackUpCore" to "StackUp",
         )
 
         @JvmStatic
@@ -24,12 +26,11 @@ class StackUpUpCore : IFMLLoadingPlugin, IEarlyMixinLoader {
         fun isDisabledForConflict(): Boolean = java.lang.Boolean.getBoolean(CONFLICT_DISABLED_PROPERTY)
 
         @JvmStatic
-        fun conflictingMods(): List<String> =
-            System.getProperty(CONFLICT_MODS_PROPERTY)
-                ?.split(';')
-                ?.map(String::trim)
-                ?.filter(String::isNotEmpty)
-                .orEmpty()
+        fun conflictingMods(): List<String> = System.getProperty(CONFLICT_MODS_PROPERTY)
+            ?.split(';')
+            ?.map(String::trim)
+            ?.filter(String::isNotEmpty)
+            .orEmpty()
 
         private fun detectConflictingCoremods(): List<String> {
             return try {
@@ -64,12 +65,11 @@ class StackUpUpCore : IFMLLoadingPlugin, IEarlyMixinLoader {
         }
     }
 
-    override fun getASMTransformerClass(): Array<String> =
-        if (ensureConflictState().isEmpty()) {
-            arrayOf(StackUpUpIds.DYNAMIC_COMPAT_TRANSFORMER_CLASS_NAME)
-        } else {
-            emptyArray()
-        }
+    override fun getASMTransformerClass(): Array<String> = if (ensureConflictState().isEmpty()) {
+        arrayOf(StackUpUpIds.DYNAMIC_COMPAT_TRANSFORMER_CLASS_NAME)
+    } else {
+        emptyArray()
+    }
 
     override fun getModContainerClass(): String? = null
 
@@ -85,14 +85,9 @@ class StackUpUpCore : IFMLLoadingPlugin, IEarlyMixinLoader {
 
     override fun getAccessTransformerClass(): String? = null
 
-    override fun getMixinConfigs(): List<String> =
-        if (ensureConflictState().isEmpty()) {
-            listOf(StackUpUpIds.EARLY_MIXIN_CONFIG)
-        } else {
-            emptyList()
-        }
+    override fun getMixinConfigs(): List<String> = if (ensureConflictState().isEmpty()) {
+        listOf(StackUpUpIds.EARLY_MIXIN_CONFIG)
+    } else {
+        emptyList()
+    }
 }
-
-
-
-

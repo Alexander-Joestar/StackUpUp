@@ -70,4 +70,3 @@ public abstract class ItemStackNbtMixin {
         cir.setReturnValue(nbt);
     }
 }
-

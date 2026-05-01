@@ -1,5 +1,3 @@
-import java.io.File
-import java.util.jar.JarFile
 import org.gradle.api.internal.artifacts.dsl.dependencies.DependenciesExtensionModule.module
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.compile.AbstractCompile
@@ -7,14 +5,16 @@ import org.jetbrains.gradle.ext.Gradle
 import org.jetbrains.gradle.ext.compiler
 import org.jetbrains.gradle.ext.runConfigurations
 import org.jetbrains.gradle.ext.settings
+import java.io.File
 import java.util.Locale
 import java.util.Locale.getDefault
+import java.util.jar.JarFile
 
-buildscript { 
+buildscript {
     repositories {
         mavenCentral()
     }
-    
+
     dependencies {
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${libs.versions.kotlinVersion.get()}")
     }
@@ -29,14 +29,18 @@ plugins {
     id("eclipse")
     id("com.gtnewhorizons.retrofuturagradle") version "2.0.2"
     id("com.matthewprenger.cursegradle") version "1.4.0"
+    id("com.diffplug.spotless") version "7.0.3"
 }
 
 @Suppress("PropertyName")
 val mod_version: String by project
+
 @Suppress("PropertyName")
 val maven_group: String by project
+
 @Suppress("PropertyName")
 val mod_id: String by project
+
 @Suppress("PropertyName")
 val archives_base_name: String by project
 group = maven_group
@@ -50,28 +54,34 @@ val use_access_transformer: String by project
 
 @Suppress("PropertyName")
 val use_mixins: String by project
+
 @Suppress("PropertyName")
 val use_coremod: String by project
+
 @Suppress("PropertyName")
 val use_assetmover: String by project
 
 @Suppress("PropertyName")
 val include_mod: String by project
+
 @Suppress("PropertyName")
 val coremod_plugin_class_name: String by project
 
-fun compatibleGradleProperty(newName: String, legacyName: String): String? =
-    providers.gradleProperty(newName).orNull ?: providers.gradleProperty(legacyName).orNull
+fun compatibleGradleProperty(
+    newName: String,
+    legacyName: String,
+): String? = providers.gradleProperty(newName).orNull ?: providers.gradleProperty(legacyName).orNull
 
 val autoTestRequestedTasks = setOf("runClientAutoTest", "runServerAutoTest")
 val autoTestRequestedByTask = gradle.startParameter.taskNames.any { it in autoTestRequestedTasks }
 val autoTestRequestedByProperty =
     compatibleGradleProperty("stackupupDevAutoTest", "stackupDevAutoTest")?.toBoolean() == true
-val autoTestMode = when {
-    gradle.startParameter.taskNames.any { it == "runServerAutoTest" } -> "server"
-    gradle.startParameter.taskNames.any { it == "runClientAutoTest" } -> "client"
-    else -> compatibleGradleProperty("stackupupDevAutoTestMode", "stackupDevAutoTestMode")
-}
+val autoTestMode =
+    when {
+        gradle.startParameter.taskNames.any { it == "runServerAutoTest" } -> "server"
+        gradle.startParameter.taskNames.any { it == "runClientAutoTest" } -> "client"
+        else -> compatibleGradleProperty("stackupupDevAutoTestMode", "stackupDevAutoTestMode")
+    }
 val enableDevAutoTest = autoTestRequestedByTask || autoTestRequestedByProperty
 val autoTestOre = compatibleGradleProperty("stackupupDevAutoTestOre", "stackupDevAutoTestOre") ?: "ingotSteel"
 val autoTestRule =
@@ -94,7 +104,10 @@ fun localDevModRuntimeName(file: File): String =
         file.name
     }
 
-fun jarManifestAttribute(file: File, attributeName: String): String? {
+fun jarManifestAttribute(
+    file: File,
+    attributeName: String,
+): String? {
     if (!file.name.endsWith(".jar")) {
         return null
     }
@@ -106,25 +119,24 @@ fun jarManifestAttribute(file: File, attributeName: String): String? {
     }.getOrNull()
 }
 
-fun requiresFmlDirectoryScan(file: File): Boolean =
-    !jarManifestAttribute(file, "ContainedDeps").isNullOrBlank()
+fun requiresFmlDirectoryScan(file: File): Boolean = !jarManifestAttribute(file, "ContainedDeps").isNullOrBlank()
 
 val localDevModSourceFiles =
     buildList {
         addAll(
             fileTree("local-dev-mods") {
                 include("*.jar")
-            }.files
+            }.files,
         )
         addAll(
             fileTree("run/mods") {
                 include("*.jar")
-            }.files
+            }.files,
         )
         addAll(
             fileTree("run/mods") {
                 include("*.jar.disable")
-            }.files
+            }.files,
         )
     }.sortedBy { it.name }
 
@@ -162,7 +174,7 @@ val prepareAutoTestServerFiles =
                 # 自动生成：仅用于本地开发自动验收
                 eula=true
                 """.trimIndent() + System.lineSeparator(),
-                Charsets.UTF_8
+                Charsets.UTF_8,
             )
 
             val serverPropertiesFile = runDirectory.resolve("server.properties")
@@ -173,18 +185,21 @@ val prepareAutoTestServerFiles =
                     emptyList()
                 }
 
-            val filteredLines = existingLines.filterNot { it.startsWith("online-mode=") }
-                .filterNot { it.startsWith("server-port=") }
-                .filterNot { it.startsWith("level-name=") }
-            val finalLines = buildList {
-                add("online-mode=false")
-                add("server-port=$autoTestServerPort")
-                add("level-name=$autoTestWorldFolder")
-                addAll(filteredLines)
-            }
+            val filteredLines =
+                existingLines
+                    .filterNot { it.startsWith("online-mode=") }
+                    .filterNot { it.startsWith("server-port=") }
+                    .filterNot { it.startsWith("level-name=") }
+            val finalLines =
+                buildList {
+                    add("online-mode=false")
+                    add("server-port=$autoTestServerPort")
+                    add("level-name=$autoTestWorldFolder")
+                    addAll(filteredLines)
+                }
             serverPropertiesFile.writeText(
                 finalLines.joinToString(separator = System.lineSeparator(), postfix = System.lineSeparator()),
-                Charsets.UTF_8
+                Charsets.UTF_8,
             )
         }
     }
@@ -222,7 +237,7 @@ val prepareScanOnlyLocalDevMods =
             for (sourceFile in scanOnlyLocalDevModSourceFiles) {
                 sourceFile.copyTo(
                     target = runModsDirectory.resolve(localDevModRuntimeName(sourceFile)),
-                    overwrite = true
+                    overwrite = true,
                 )
             }
         }
@@ -308,7 +323,7 @@ minecraft {
     // extraTweakClasses.add("org.spongepowered.asm.launch.MixinTweaker")
 
     // Add various JVM arguments here for runtime
-    val args = mutableListOf("-ea:${group}")
+    val args = mutableListOf("-ea:$group")
     if (use_coremod.toBoolean()) {
         args += "-Dfml.coreMods.load=$coremod_plugin_class_name"
     }
@@ -389,7 +404,7 @@ dependencies {
     implementation("io.github.chaosunity.forgelin:Forgelin-Continuous:${forgelin_continuous_version}") {
         exclude("net.minecraftforge")
     }
-    
+
     if (use_assetmover.toBoolean()) {
         implementation("com.cleanroommc:assetmover:2.5")
     }
@@ -441,8 +456,14 @@ dependencies {
 if (use_access_transformer.toBoolean()) {
     for (at in sourceSets.getByName("main").resources.files) {
         if (at.name.lowercase(getDefault()).endsWith("_at.cfg")) {
-            tasks.deobfuscateMergedJarToSrg.get().accessTransformerFiles.from(at)
-            tasks.srgifyBinpatchedJar.get().accessTransformerFiles.from(at)
+            tasks.deobfuscateMergedJarToSrg
+                .get()
+                .accessTransformerFiles
+                .from(at)
+            tasks.srgifyBinpatchedJar
+                .get()
+                .accessTransformerFiles
+                .from(at)
         }
     }
 }
@@ -457,7 +478,7 @@ tasks.withType<ProcessResources> {
     filesMatching(arrayListOf("mcmod.info", "pack.mcmeta")) {
         expand(
             "version" to mod_version,
-            "mcversion" to minecraft.mcVersion
+            "mcversion" to minecraft.mcVersion,
         )
     }
 
@@ -473,7 +494,10 @@ tasks.withType<Jar> {
             attributeMap["FMLCorePlugin"] = coremod_plugin_class_name
             if (include_mod.toBoolean()) {
                 attributeMap["FMLCorePluginContainsFMLMod"] = true.toString()
-                attributeMap["ForceLoadAsMod"] = project.gradle.startParameter.taskNames.any { it == "build" }.toString()
+                attributeMap["ForceLoadAsMod"] =
+                    project.gradle.startParameter.taskNames
+                        .any { it == "build" }
+                        .toString()
             }
         }
         if (use_access_transformer.toBoolean()) {
@@ -482,11 +506,13 @@ tasks.withType<Jar> {
         attributes(attributeMap)
     }
     // Add all embedded dependencies into the jar
-    from(provider {
-        configurations.getByName("embed").map {
-            if (it.isDirectory()) it else zipTree(it)
-        }
-    })
+    from(
+        provider {
+            configurations.getByName("embed").map {
+                if (it.isDirectory()) it else zipTree(it)
+            }
+        },
+    )
 }
 
 idea {
@@ -496,28 +522,43 @@ idea {
     project {
         settings {
             runConfigurations {
-                add(Gradle("1. Run Client").apply {
-                    setProperty("taskNames", listOf("runClient"))
-                })
-                add(Gradle("2. Run Server").apply {
-                    setProperty("taskNames", listOf("runServer"))
-                })
-                add(Gradle("2a. Run Server AutoTest Matrix").apply {
-                    setProperty("taskNames", listOf("runServerAutoTestMatrix"))
-                })
-                add(Gradle("3. Run Obfuscated Client").apply {
-                    setProperty("taskNames", listOf("runObfClient"))
-                })
-                add(Gradle("4. Run Obfuscated Server").apply {
-                    setProperty("taskNames", listOf("runObfServer"))
-                })
+                add(
+                    Gradle("1. Run Client").apply {
+                        setProperty("taskNames", listOf("runClient"))
+                    },
+                )
+                add(
+                    Gradle("2. Run Server").apply {
+                        setProperty("taskNames", listOf("runServer"))
+                    },
+                )
+                add(
+                    Gradle("2a. Run Server AutoTest Matrix").apply {
+                        setProperty("taskNames", listOf("runServerAutoTestMatrix"))
+                    },
+                )
+                add(
+                    Gradle("3. Run Obfuscated Client").apply {
+                        setProperty("taskNames", listOf("runObfClient"))
+                    },
+                )
+                add(
+                    Gradle("4. Run Obfuscated Server").apply {
+                        setProperty("taskNames", listOf("runObfServer"))
+                    },
+                )
             }
             compiler.javac {
                 afterEvaluate {
                     javacAdditionalOptions = "-encoding utf8"
-                    moduleJavacAdditionalOptions = mutableMapOf(
-                        (project.name + ".main") to tasks.compileJava.get().options.compilerArgs.joinToString(" ") { "\"$it\"" }
-                    )
+                    moduleJavacAdditionalOptions =
+                        mutableMapOf(
+                            (project.name + ".main") to
+                                tasks.compileJava
+                                    .get()
+                                    .options.compilerArgs
+                                    .joinToString(" ") { "\"$it\"" },
+                        )
                 }
             }
         }
@@ -527,6 +568,17 @@ idea {
 tasks.named("processIdeaSettings").configure {
     dependsOn("injectTags")
 }
+
+val isWindows: Boolean = System.getProperty("os.name").lowercase(Locale.ROOT).contains("windows")
+
+fun gradlew(vararg args: String): List<String> =
+    if (isWindows) {
+        listOf("cmd", "/c", ".\\gradlew.bat", *args)
+    } else {
+        listOf("./gradlew", *args)
+    }
+
+// ...existing code...
 
 tasks.register("runClientAutoTest") {
     group = "modded minecraft"
@@ -545,20 +597,19 @@ tasks.register<Exec>("runServerAutoTestMatrix") {
     description = "在单次服务端启动中运行核心自动验收矩阵。"
     workingDir = project.projectDir
     commandLine(
-        "cmd",
-        "/c",
-        ".\\gradlew.bat",
-        "--no-daemon",
-        "runServerAutoTest",
-        "-PstackupupDevAutoTest=true",
-        "-PstackupupDevAutoTestMode=server",
-        "-PstackupupDevAutoTestMatrix=true",
-        "-PstackupupDevAutoTestRule=",
-        "-PstackupupDevAutoTestServerPort=0",
-        "-PstackupupDevAutoTestWorldFolder=stackupup_dev_autotest_matrix",
-        "-PstackupupDevAutoTestWorldName=StackUpUp 自动测试 Matrix",
-        "-PstackupupDevAutoTestCount=128",
-        "--stacktrace"
+        gradlew(
+            "--no-daemon",
+            "runServerAutoTest",
+            "-PstackupupDevAutoTest=true",
+            "-PstackupupDevAutoTestMode=server",
+            "-PstackupupDevAutoTestMatrix=true",
+            "-PstackupupDevAutoTestRule=",
+            "-PstackupupDevAutoTestServerPort=0",
+            "-PstackupupDevAutoTestWorldFolder=stackupup_dev_autotest_matrix",
+            "-PstackupupDevAutoTestWorldName=StackUpUp 自动测试 Matrix",
+            "-PstackupupDevAutoTestCount=128",
+            "--stacktrace",
+        ),
     )
 }
 
@@ -567,20 +618,19 @@ tasks.register<Exec>("runServerAutoTestIngotSteel") {
     description = "运行 IngotSteel 服务端自动验收样例。"
     workingDir = project.projectDir
     commandLine(
-        "cmd",
-        "/c",
-        ".\\gradlew.bat",
-        "--no-daemon",
-        "runServerAutoTest",
-        "-PstackupupDevAutoTest=true",
-        "-PstackupupDevAutoTestMode=server",
-        "-PstackupupDevAutoTestOre=ingotSteel",
-        "-PstackupupDevAutoTestRule=ore = ingotSteel -> 1024",
-        "-PstackupupDevAutoTestServerPort=0",
-        "-PstackupupDevAutoTestWorldFolder=stackupup_dev_autotest_ingotsteel",
-        "-PstackupupDevAutoTestWorldName=StackUpUp 自动测试 IngotSteel",
-        "-PstackupupDevAutoTestCount=128",
-        "--stacktrace"
+        gradlew(
+            "--no-daemon",
+            "runServerAutoTest",
+            "-PstackupupDevAutoTest=true",
+            "-PstackupupDevAutoTestMode=server",
+            "-PstackupupDevAutoTestOre=ingotSteel",
+            "-PstackupupDevAutoTestRule=ore = ingotSteel -> 1024",
+            "-PstackupupDevAutoTestServerPort=0",
+            "-PstackupupDevAutoTestWorldFolder=stackupup_dev_autotest_ingotsteel",
+            "-PstackupupDevAutoTestWorldName=StackUpUp 自动测试 IngotSteel",
+            "-PstackupupDevAutoTestCount=128",
+            "--stacktrace",
+        ),
     )
 }
 
@@ -589,20 +639,19 @@ tasks.register<Exec>("runServerAutoTestPlateSteel") {
     description = "运行 PlateSteel 服务端自动验收样例。"
     workingDir = project.projectDir
     commandLine(
-        "cmd",
-        "/c",
-        ".\\gradlew.bat",
-        "--no-daemon",
-        "runServerAutoTest",
-        "-PstackupupDevAutoTest=true",
-        "-PstackupupDevAutoTestMode=server",
-        "-PstackupupDevAutoTestOre=plateSteel",
-        "-PstackupupDevAutoTestRule=ore = plateSteel -> 1024",
-        "-PstackupupDevAutoTestServerPort=0",
-        "-PstackupupDevAutoTestWorldFolder=stackupup_dev_autotest_platesteel",
-        "-PstackupupDevAutoTestWorldName=StackUpUp 自动测试 PlateSteel",
-        "-PstackupupDevAutoTestCount=128",
-        "--stacktrace"
+        gradlew(
+            "--no-daemon",
+            "runServerAutoTest",
+            "-PstackupupDevAutoTest=true",
+            "-PstackupupDevAutoTestMode=server",
+            "-PstackupupDevAutoTestOre=plateSteel",
+            "-PstackupupDevAutoTestRule=ore = plateSteel -> 1024",
+            "-PstackupupDevAutoTestServerPort=0",
+            "-PstackupupDevAutoTestWorldFolder=stackupup_dev_autotest_platesteel",
+            "-PstackupupDevAutoTestWorldName=StackUpUp 自动测试 PlateSteel",
+            "-PstackupupDevAutoTestCount=128",
+            "--stacktrace",
+        ),
     )
 }
 
@@ -611,20 +660,19 @@ tasks.register<Exec>("runServerAutoTestDustSteel") {
     description = "运行 DustSteel 服务端自动验收样例。"
     workingDir = project.projectDir
     commandLine(
-        "cmd",
-        "/c",
-        ".\\gradlew.bat",
-        "--no-daemon",
-        "runServerAutoTest",
-        "-PstackupupDevAutoTest=true",
-        "-PstackupupDevAutoTestMode=server",
-        "-PstackupupDevAutoTestOre=dustSteel",
-        "-PstackupupDevAutoTestRule=ore = dustSteel -> 1024",
-        "-PstackupupDevAutoTestServerPort=0",
-        "-PstackupupDevAutoTestWorldFolder=stackupup_dev_autotest_duststeel",
-        "-PstackupupDevAutoTestWorldName=StackUpUp 自动测试 DustSteel",
-        "-PstackupupDevAutoTestCount=128",
-        "--stacktrace"
+        gradlew(
+            "--no-daemon",
+            "runServerAutoTest",
+            "-PstackupupDevAutoTest=true",
+            "-PstackupupDevAutoTestMode=server",
+            "-PstackupupDevAutoTestOre=dustSteel",
+            "-PstackupupDevAutoTestRule=ore = dustSteel -> 1024",
+            "-PstackupupDevAutoTestServerPort=0",
+            "-PstackupupDevAutoTestWorldFolder=stackupup_dev_autotest_duststeel",
+            "-PstackupupDevAutoTestWorldName=StackUpUp 自动测试 DustSteel",
+            "-PstackupupDevAutoTestCount=128",
+            "--stacktrace",
+        ),
     )
 }
 
@@ -633,24 +681,61 @@ tasks.register<Exec>("runServerAutoTestVacuumTube") {
     description = "运行 VacuumTube 服务端自动验收样例。"
     workingDir = project.projectDir
     commandLine(
-        "cmd",
-        "/c",
-        ".\\gradlew.bat",
-        "--no-daemon",
-        "runServerAutoTest",
-        "-PstackupupDevAutoTest=true",
-        "-PstackupupDevAutoTestMode=server",
-        "-PstackupupDevAutoTestItem=gregtech:meta_item_1",
-        "-PstackupupDevAutoTestMeta=516",
-        "-PstackupupDevAutoTestRule=item = gregtech:meta_item_1 && meta = 516 -> 512",
-        "-PstackupupDevAutoTestServerPort=0",
-        "-PstackupupDevAutoTestWorldFolder=stackupup_dev_autotest_vacuumtube",
-        "-PstackupupDevAutoTestWorldName=StackUpUp 自动测试 VacuumTube",
-        "-PstackupupDevAutoTestCount=128",
-        "--stacktrace"
+        gradlew(
+            "--no-daemon",
+            "runServerAutoTest",
+            "-PstackupupDevAutoTest=true",
+            "-PstackupupDevAutoTestMode=server",
+            "-PstackupupDevAutoTestItem=gregtech:meta_item_1",
+            "-PstackupupDevAutoTestMeta=516",
+            "-PstackupupDevAutoTestRule=item = gregtech:meta_item_1 && meta = 516 -> 512",
+            "-PstackupupDevAutoTestServerPort=0",
+            "-PstackupupDevAutoTestWorldFolder=stackupup_dev_autotest_vacuumtube",
+            "-PstackupupDevAutoTestWorldName=StackUpUp 自动测试 VacuumTube",
+            "-PstackupupDevAutoTestCount=128",
+            "--stacktrace",
+        ),
     )
 }
 
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
 }
+
+// ── formatting & line ending enforcement ─────────────────────────
+spotless {
+    kotlin {
+        target("src/**/*.kt")
+        ktlint()
+            .editorConfigOverride(
+                mapOf(
+                    "indent_size" to "4",
+                    "max_line_length" to "160",
+                    "ktlint_code_style" to "intellij_idea",
+                ),
+            )
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+
+    java {
+        target("src/**/*.java")
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+
+    kotlinGradle {
+        target("*.gradle.kts")
+        ktlint()
+    }
+
+    format("misc") {
+        target(".gitattributes", ".gitignore", ".editorconfig")
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+}
+
+// 安装 git pre-push hook → 推送前自动检查格式
+// ./gradlew spotlessInstallGitPrePushHook

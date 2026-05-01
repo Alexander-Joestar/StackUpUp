@@ -27,16 +27,11 @@ object DevAutomationConfig {
             DevProbeTargetSpec(name = "IngotSteel", oreName = "ingotSteel"),
             DevProbeTargetSpec(name = "PlateSteel", oreName = "plateSteel"),
             DevProbeTargetSpec(name = "DustSteel", oreName = "dustSteel"),
-            DevProbeTargetSpec(name = "VacuumTube", itemId = "gregtech:meta_item_1", metadata = 516)
+            DevProbeTargetSpec(name = "VacuumTube", itemId = "gregtech:meta_item_1", metadata = 516),
         )
 }
 
-data class DevProbeTargetSpec(
-    val name: String,
-    val oreName: String? = null,
-    val itemId: String? = null,
-    val metadata: Int? = null
-)
+data class DevProbeTargetSpec(val name: String, val oreName: String? = null, val itemId: String? = null, val metadata: Int? = null)
 
 internal data class DevAutomationSettings(
     val enabled: Boolean,
@@ -52,22 +47,18 @@ internal data class DevAutomationSettings(
     val oreName: String,
     val tempRule: String,
     val itemCount: Int,
-    val compatProbeIds: Set<String>
+    val compatProbeIds: Set<String>,
 )
 
 internal fun readSettings(getProperty: (String) -> String?): DevAutomationSettings {
-    fun readSetting(key: String, defaultValue: String): String {
-        return getProperty("${StackUpUpIds.DEV_AUTOMATION_PREFIX}.$key")
-            ?: getProperty("${StackUpUpIds.DEV_AUTOMATION_LEGACY_PREFIX}.$key")
-            ?: defaultValue
-    }
+    fun readSetting(key: String, defaultValue: String): String = getProperty("${StackUpUpIds.DEV_AUTOMATION_PREFIX}.$key")
+        ?: getProperty("${StackUpUpIds.DEV_AUTOMATION_LEGACY_PREFIX}.$key")
+        ?: defaultValue
 
-    fun readEnabled(defaultValue: String): String {
-        return getProperty("${StackUpUpIds.DEV_AUTOMATION_PREFIX}.enabled")
-            ?: getProperty(StackUpUpIds.DEV_AUTOMATION_PREFIX)
-            ?: getProperty(StackUpUpIds.DEV_AUTOMATION_LEGACY_PREFIX)
-            ?: defaultValue
-    }
+    fun readEnabled(defaultValue: String): String = getProperty("${StackUpUpIds.DEV_AUTOMATION_PREFIX}.enabled")
+        ?: getProperty(StackUpUpIds.DEV_AUTOMATION_PREFIX)
+        ?: getProperty(StackUpUpIds.DEV_AUTOMATION_LEGACY_PREFIX)
+        ?: defaultValue
 
     return DevAutomationSettings(
         enabled = readEnabled("false").toBoolean(),
@@ -83,17 +74,15 @@ internal fun readSettings(getProperty: (String) -> String?): DevAutomationSettin
         oreName = readSetting("ore", "ingotSteel"),
         tempRule = readSetting("rule", "ore = ingotSteel -> 1024"),
         itemCount = readSetting("count", "128").toIntOrNull() ?: 128,
-        compatProbeIds = parseRequestedProbeIds(readSetting("compat", ""))
+        compatProbeIds = parseRequestedProbeIds(readSetting("compat", "")),
     )
 }
 
-internal fun parseRequestedProbeIds(raw: String): Set<String> {
-    return raw.split(',')
-        .map(String::trim)
-        .map(String::lowercase)
-        .filter(String::isNotEmpty)
-        .toCollection(LinkedHashSet())
-}
+internal fun parseRequestedProbeIds(raw: String): Set<String> = raw.split(',')
+    .map(String::trim)
+    .map(String::lowercase)
+    .filter(String::isNotEmpty)
+    .toCollection(LinkedHashSet())
 
 internal fun selectRequestedProbeIds(requestedIds: Set<String>, availableIds: List<String>): List<String> {
     if (requestedIds.isEmpty()) {

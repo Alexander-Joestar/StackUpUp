@@ -1,10 +1,10 @@
 package io.alexjoest.stackupup.dev
 
+import io.alexjoest.stackupup.limit.RuleRuntime
 import net.minecraft.item.ItemStack
 import net.minecraft.util.ResourceLocation
 import net.minecraftforge.fml.common.registry.ForgeRegistries
 import net.minecraftforge.oredict.OreDictionary
-import io.alexjoest.stackupup.limit.RuleRuntime
 
 /**
  * 运行时目标栈解析器。
@@ -13,16 +13,14 @@ import io.alexjoest.stackupup.limit.RuleRuntime
  * 供客户端自动验收和服务端自动探针共用。
  */
 object DevTargetRuntimeResolver {
-    fun resolve(): ResolvedDevTarget? {
-        return resolve(
-            DevProbeTargetSpec(
-                name = "Default",
-                oreName = DevAutomationConfig.oreName,
-                itemId = DevAutomationConfig.itemId.ifBlank { null },
-                metadata = DevAutomationConfig.itemMeta
-            )
-        )
-    }
+    fun resolve(): ResolvedDevTarget? = resolve(
+        DevProbeTargetSpec(
+            name = "Default",
+            oreName = DevAutomationConfig.oreName,
+            itemId = DevAutomationConfig.itemId.ifBlank { null },
+            metadata = DevAutomationConfig.itemMeta,
+        ),
+    )
 
     fun resolve(spec: DevProbeTargetSpec): ResolvedDevTarget? {
         val explicitCandidate = resolveExplicitCandidate(spec)
@@ -34,7 +32,7 @@ object DevTargetRuntimeResolver {
             candidates = buildList {
                 explicitCandidate?.let { add(it.toCandidate()) }
                 addAll(oreCandidates.map { it.toCandidate() })
-            }
+            },
         ) ?: return null
 
         return sequenceOf(explicitCandidate)
@@ -59,7 +57,7 @@ object DevTargetRuntimeResolver {
         return ResolvedDevTarget(
             itemId = itemId,
             meta = metadata,
-            stack = ItemStack(item, 1, metadata)
+            stack = ItemStack(item, 1, metadata),
         )
     }
 
@@ -76,13 +74,11 @@ object DevTargetRuntimeResolver {
             .toList()
     }
 
-    private fun ResolvedDevTarget.toCandidate(): DevTargetCandidate {
-        return DevTargetCandidate(
-            itemId = itemId,
-            meta = meta,
-            oreNames = RuleRuntime.oreDictIndex().getOreNames(stack)
-        )
-    }
+    private fun ResolvedDevTarget.toCandidate(): DevTargetCandidate = DevTargetCandidate(
+        itemId = itemId,
+        meta = meta,
+        oreNames = RuleRuntime.oreDictIndex().getOreNames(stack),
+    )
 
     /**
      * 开发期目标选择策略只服务自动验收，
@@ -92,7 +88,7 @@ object DevTargetRuntimeResolver {
         explicitItemId: String?,
         explicitMeta: Int,
         preferredOreName: String,
-        candidates: List<DevTargetCandidate>
+        candidates: List<DevTargetCandidate>,
     ): DevTargetCandidate? {
         val normalizedItemId = explicitItemId?.takeIf(String::isNotBlank)
         if (normalizedItemId != null) {
@@ -105,16 +101,6 @@ object DevTargetRuntimeResolver {
     }
 }
 
-data class ResolvedDevTarget(
-    val itemId: String,
-    val meta: Int,
-    val stack: ItemStack
-)
+data class ResolvedDevTarget(val itemId: String, val meta: Int, val stack: ItemStack)
 
-internal data class DevTargetCandidate(
-    val itemId: String,
-    val meta: Int,
-    val oreNames: Set<String>
-)
-
-
+internal data class DevTargetCandidate(val itemId: String, val meta: Int, val oreNames: Set<String>)

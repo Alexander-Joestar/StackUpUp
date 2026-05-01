@@ -1,15 +1,15 @@
 package io.alexjoest.stackupup.rules.io
 
-import java.nio.file.Files
+import io.alexjoest.stackupup.StackUpUpConfig
+import io.alexjoest.stackupup.StackUpUpIds
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import io.alexjoest.stackupup.StackUpUpConfig
-import io.alexjoest.stackupup.StackUpUpIds
+import java.nio.file.Files
 
 class RuleReloadPipelineTest {
     @Test
-    fun `规则重载不应对合法堆叠上限产生额外告警`() {
+    fun `reload_shouldNotWarnOnValidLimits`() {
         val tempDir = Files.createTempDirectory("stackupup-rule-reload-test")
         val rulesFile = tempDir.resolve("main.su").toFile().apply {
             writeText("item = minecraft:egg -> 2048\n")
@@ -27,7 +27,7 @@ class RuleReloadPipelineTest {
     }
 
     @Test
-    fun `规则重载应警告明确超出全局最大堆叠上限的 set 规则`() {
+    fun `reload_shouldWarnOnExcessiveSetRule`() {
         val tempDir = Files.createTempDirectory("stackupup-rule-reload-clamp-test")
         val rulesFile = tempDir.resolve("main.su").toFile().apply {
             writeText("item = minecraft:egg -> 500000\n")

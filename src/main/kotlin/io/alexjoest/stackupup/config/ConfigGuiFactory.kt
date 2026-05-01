@@ -14,4 +14,3 @@ class ConfigGuiFactory : IModGuiFactory {
 
     override fun runtimeGuiCategories(): MutableSet<IModGuiFactory.RuntimeOptionCategoryElement>? = null
 }
-

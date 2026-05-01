@@ -3,9 +3,7 @@ package io.alexjoest.stackupup.rules
 import io.alexjoest.stackupup.StackUpUpIds
 import net.minecraft.util.text.translation.LanguageMap
 
-internal enum class RuleMessageKey(
-    val suffix: String
-) {
+internal enum class RuleMessageKey(val suffix: String) {
     UNSUPPORTED_REVERSE_OPERATOR("unsupported_reverse_operator"),
     UNSUPPORTED_COMPARISON_OPERATOR("unsupported_comparison_operator"),
     MISSING_COMPARISON_OPERATOR("missing_comparison_operator"),
@@ -29,7 +27,8 @@ internal enum class RuleMessageKey(
     CONDITION_MISSING_VALUE("condition_missing_value"),
     LOAD_FAILED("load_failed"),
     LOAD_FAILED_WITH_SOURCE("load_failed_with_source"),
-    UNKNOWN_ERROR("unknown_error");
+    UNKNOWN_ERROR("unknown_error"),
+    ;
 
     val translationKey: String = "${StackUpUpIds.MESSAGE_LANG_ROOT}.rule_error.$suffix"
 }
@@ -44,15 +43,12 @@ internal object RuleMessages {
 
     // 这里只保留“消息定义与格式化辅助”职责。
     // 玩家可见文本应尽量传递 LocalizedMessage，到客户端边界再转组件。
-    fun message(key: RuleMessageKey, vararg args: Any): LocalizedMessage =
-        LocalizedMessage(key.translationKey, args.toList())
+    fun message(key: RuleMessageKey, vararg args: Any): LocalizedMessage = LocalizedMessage(key.translationKey, args.toList())
 
-    fun exception(key: RuleMessageKey, vararg args: Any): LocalizedRuleException =
-        LocalizedRuleException(message(key, *args))
+    fun exception(key: RuleMessageKey, vararg args: Any): LocalizedRuleException = LocalizedRuleException(message(key, *args))
 
     @Suppress("DEPRECATION")
-    fun formatRaw(translationKey: String, vararg args: Any): String =
-        net.minecraft.util.text.translation.I18n.translateToLocalFormatted(translationKey, *args)
+    fun formatRaw(translationKey: String, vararg args: Any): String = net.minecraft.util.text.translation.I18n.translateToLocalFormatted(translationKey, *args)
 
     fun syncLanguage(languageCode: String) {
         val normalizedCode = languageCode.lowercase()

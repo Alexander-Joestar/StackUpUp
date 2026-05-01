@@ -9,8 +9,8 @@ object DslTokenizer {
             val current = line[index]
             val symbolType = DslTokenType.matchSymbol(line, index)
             when {
-                current.isWhitespace()                                     -> index++
-                current.isDigit()                                          -> {
+                current.isWhitespace() -> index++
+                current.isDigit() -> {
                     val start = index
                     while (index < line.length && line[index].isDigit()) {
                         index++
@@ -24,7 +24,7 @@ object DslTokenizer {
                     index += symbol.length
                 }
 
-                else                                                       -> {
+                else -> {
                     val start = index
                     while (
                         index < line.length &&
@@ -44,15 +44,13 @@ object DslTokenizer {
         return tokens
     }
 
-    private fun shouldEmitSymbol(type: DslTokenType, tokens: List<DslToken>): Boolean {
-        return when (type) {
-            DslTokenType.PLUS,
-            DslTokenType.MINUS,
-            DslTokenType.STAR,
-            DslTokenType.SLASH -> tokens.lastOrNull()?.type == DslTokenType.ARROW
+    private fun shouldEmitSymbol(type: DslTokenType, tokens: List<DslToken>): Boolean = when (type) {
+        DslTokenType.PLUS,
+        DslTokenType.MINUS,
+        DslTokenType.STAR,
+        DslTokenType.SLASH,
+        -> tokens.lastOrNull()?.type == DslTokenType.ARROW
 
-            else               -> true
-        }
+        else -> true
     }
 }
-

@@ -8,6 +8,7 @@ object StackUpUpIds {
     const val RULE_FILE_EXTENSION: String = "su"
     const val RULES_DIRECTORY_NAME: String = MOD_ID
     const val RULES_FILE_NAME: String = "main.$RULE_FILE_EXTENSION"
+    const val EXAMPLE_RULES_FILE_NAME: String = "example.su"
     const val USER_RULES_FILE_NAME: String = "user.$RULE_FILE_EXTENSION"
     const val WORLD_RULES_FILE_NAME: String = "world.$RULE_FILE_EXTENSION"
 

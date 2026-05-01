@@ -7,7 +7,7 @@ import java.nio.file.Paths
 
 class Ae2MixinSourceTest {
     @Test
-    fun `AE2 inventory mixin 应同时覆盖构造期常量与返回值限制`() {
+    fun `ae2Mixin_shouldCoverConstructorConstantAndReturnLimit`() {
         assertCoversConstructorAndReturnLimit("src/main/java/io/alexjoest/stackupup/mixin/late/AppEngInternalInventoryMixin.java")
         assertCoversConstructorAndReturnLimit("src/main/java/io/alexjoest/stackupup/mixin/late/AppEngInternalAEInventoryMixin.java")
     }

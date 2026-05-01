@@ -20,8 +20,8 @@ plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
-dependencyResolutionManagement { 
-    versionCatalogs { 
+dependencyResolutionManagement {
+    versionCatalogs {
         create("libs") {
             version("kotlinVersion", settings.extra.properties["kotlin_version"].toString())
         }

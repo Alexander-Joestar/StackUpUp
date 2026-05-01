@@ -1,5 +1,8 @@
 package io.alexjoest.stackupup
 
+import io.alexjoest.stackupup.client.StackCountTextLayout
+import io.alexjoest.stackupup.client.StackRenderHooks
+import io.alexjoest.stackupup.rules.io.RuleFeedback
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.ScaledResolution
 import net.minecraft.client.gui.toasts.SystemToast
@@ -8,9 +11,6 @@ import net.minecraft.util.text.TextComponentString
 import net.minecraftforge.event.entity.player.ItemTooltipEvent
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
 import net.minecraftforge.fml.common.gameevent.TickEvent
-import io.alexjoest.stackupup.client.StackCountTextLayout
-import io.alexjoest.stackupup.client.StackRenderHooks
-import io.alexjoest.stackupup.rules.io.RuleFeedback
 
 class ProxyClient : ProxyCommon() {
     private var pendingRuleStatusReminder: Boolean = true
@@ -32,17 +32,17 @@ class ProxyClient : ProxyCommon() {
         }
 
         when (StackUpUpConfig.tooltipStackDisplayMode) {
-            TooltipStackDisplayMode.OFF      -> return
+            TooltipStackDisplayMode.OFF -> return
             TooltipStackDisplayMode.ADVANCED -> if (!event.flags.isAdvanced) return
-            TooltipStackDisplayMode.ALWAYS   -> Unit
+            TooltipStackDisplayMode.ALWAYS -> Unit
         }
 
         event.toolTip.add(
             I18n.format(
                 StackUpUpIds.TOOLTIP_CURRENT_MAX_KEY,
                 StackCountTextLayout.formatGroupedCount(event.itemStack.count),
-                StackCountTextLayout.formatGroupedCount(event.itemStack.maxStackSize)
-            )
+                StackCountTextLayout.formatGroupedCount(event.itemStack.maxStackSize),
+            ),
         )
     }
 
@@ -62,7 +62,7 @@ class ProxyClient : ProxyCommon() {
                 minecraft.toastGui,
                 SystemToast.Type.TUTORIAL_HINT,
                 title,
-                detail
+                detail,
             )
             pendingConflictToast = emptyList()
         }
@@ -78,7 +78,6 @@ class ProxyClient : ProxyCommon() {
             RuleFeedback.emitWarnings(report, player::sendMessage)
             pendingRuleStatusReminder = false
         }
-
     }
 
     override fun getCurrentScaleFactor(): Int = ScaledResolution(Minecraft.getMinecraft()).scaleFactor

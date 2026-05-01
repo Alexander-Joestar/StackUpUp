@@ -2,12 +2,10 @@ package io.alexjoest.stackupup.rules.parse
 
 import io.alexjoest.stackupup.rules.LocalizedMessage
 import io.alexjoest.stackupup.rules.LocalizedRuleException
-import io.alexjoest.stackupup.rules.RuleMessages
 import io.alexjoest.stackupup.rules.RuleMessageKey
+import io.alexjoest.stackupup.rules.RuleMessages
 
-internal class DslTokenCursor(
-    private val tokens: List<DslToken>
-) {
+internal class DslTokenCursor(private val tokens: List<DslToken>) {
     private var index: Int = 0
 
     fun mark(): Int = index

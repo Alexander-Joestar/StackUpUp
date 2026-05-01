@@ -1,13 +1,13 @@
 package io.alexjoest.stackupup.rules
 
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Test
 import io.alexjoest.stackupup.rules.parse.DslTokenType
 import io.alexjoest.stackupup.rules.parse.DslTokenizer
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 
 class DslTokenizerTest {
     @Test
-    fun `应当识别 item 与 metadata 规则`() {
+    fun `shouldRecognizeItemAndMetadata`() {
         val tokens = DslTokenizer.tokenize("item = gregtech:gt.metaitem.01 && meta = 11305 -> 512")
         assertEquals(
             listOf(
@@ -20,14 +20,14 @@ class DslTokenizerTest {
                 DslTokenType.NUMBER,
                 DslTokenType.ARROW,
                 DslTokenType.NUMBER,
-                DslTokenType.EOF
+                DslTokenType.EOF,
             ),
-            tokens.map { it.type }
+            tokens.map { it.type },
         )
     }
 
     @Test
-    fun `应当统一识别全部核心运算符`() {
+    fun `shouldRecognizeAllCoreOperators`() {
         val tokens = DslTokenizer.tokenize("size >= 2 && size <= 64 || meta != 1 -> +4 -> -3 -> *2 -> /1 item in [a, b]")
         assertEquals(
             listOf(
@@ -61,10 +61,9 @@ class DslTokenizerTest {
                 DslTokenType.COMMA,
                 DslTokenType.IDENTIFIER,
                 DslTokenType.RIGHT_BRACKET,
-                DslTokenType.EOF
+                DslTokenType.EOF,
             ),
-            tokens.map { it.type }
+            tokens.map { it.type },
         )
     }
 }
-

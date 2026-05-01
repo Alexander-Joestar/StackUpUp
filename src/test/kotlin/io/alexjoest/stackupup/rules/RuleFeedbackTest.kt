@@ -1,10 +1,5 @@
 package io.alexjoest.stackupup.rules
 
-import java.io.File
-import net.minecraft.util.text.TextComponentTranslation
-import org.junit.jupiter.api.Assertions.assertArrayEquals
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Test
 import io.alexjoest.stackupup.StackUpUpConfig
 import io.alexjoest.stackupup.StackUpUpIds
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
@@ -12,10 +7,15 @@ import io.alexjoest.stackupup.rules.io.RuleComplexityWarning
 import io.alexjoest.stackupup.rules.io.RuleFeedback
 import io.alexjoest.stackupup.rules.io.RuleLineLoader
 import io.alexjoest.stackupup.rules.io.RuleReloadReport
+import net.minecraft.util.text.TextComponentTranslation
+import org.junit.jupiter.api.Assertions.assertArrayEquals
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
+import java.io.File
 
 class RuleFeedbackTest {
     @Test
-    fun `规则加载错误应保留翻译键与嵌套参数到聊天组件边界`() {
+    fun `error_shouldPreserveTranslationKeyAndArgs`() {
         val report = RuleReloadReport(
             file = File("run/config/stackupup/main.su"),
             snapshot = RuleSnapshot(version = 1L, rules = emptyList()),
@@ -25,12 +25,12 @@ class RuleFeedbackTest {
                         LocalizedRuleException(
                             RuleMessages.message(
                                 RuleMessageKey.UNSUPPORTED_FIELD,
-                                "mystery"
-                            )
-                        )
-                    )
+                                "mystery",
+                            ),
+                        ),
+                    ),
             ),
-            warnings = emptyList()
+            warnings = emptyList(),
         )
         val emitted = mutableListOf<TextComponentTranslation>()
 
@@ -49,7 +49,7 @@ class RuleFeedbackTest {
     }
 
     @Test
-    fun `复杂度提醒应保留翻译键与参数`() {
+    fun `complexityWarning_shouldPreserveTranslationKey`() {
         val previous = StackUpUpConfig.ruleComplexityWarnings
         StackUpUpConfig.ruleComplexityWarnings = true
         try {
@@ -57,7 +57,7 @@ class RuleFeedbackTest {
                 file = File("run/config/stackupup/main.su"),
                 snapshot = RuleSnapshot(version = 1L, rules = emptyList()),
                 errors = emptyList(),
-                warnings = listOf(RuleComplexityWarning(StackUpUpIds.RULE_COMPLEXITY_RULE_COUNT_KEY, listOf(80)))
+                warnings = listOf(RuleComplexityWarning(StackUpUpIds.RULE_COMPLEXITY_RULE_COUNT_KEY, listOf(80))),
             )
             val emitted = mutableListOf<TextComponentTranslation>()
 

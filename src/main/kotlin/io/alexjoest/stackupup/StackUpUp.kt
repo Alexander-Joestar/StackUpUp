@@ -1,5 +1,8 @@
 package io.alexjoest.stackupup
 
+import io.alexjoest.stackupup.config.ConfigFileSanitizer
+import io.alexjoest.stackupup.rules.io.RuleFileLocator
+import io.alexjoest.stackupup.rules.io.RuleReloadReport
 import net.minecraft.item.Item
 import net.minecraftforge.common.MinecraftForge
 import net.minecraftforge.common.config.Config
@@ -18,16 +21,17 @@ import net.minecraftforge.fml.common.eventhandler.EventPriority
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
-import io.alexjoest.stackupup.config.ConfigFileSanitizer
-import io.alexjoest.stackupup.rules.io.RuleFileLocator
-import io.alexjoest.stackupup.rules.io.RuleReloadReport
 
 @Mod(
     modid = StackUpUpIds.MOD_ID,
     name = StackUpUpIds.MOD_NAME,
     version = StackUpUp.VERSION,
-    dependencies = "required-after:mixinbooter@[10.0,);required-after:forgelin_continuous@[2.1.0.0,);before:stackup;before:refinedstorage;before:mantle;before:ic2;before:appliedenergistics2;before:actuallyadditions",
-    guiFactory = StackUpUpIds.CONFIG_GUI_FACTORY_CLASS_NAME
+    dependencies = (
+        "required-after:mixinbooter@[10.0,);required-after:forgelin_continuous@[2.1.0.0,);" +
+            "before:stackup;before:refinedstorage;before:mantle;before:ic2;" +
+            "before:appliedenergistics2;before:actuallyadditions"
+        ),
+    guiFactory = StackUpUpIds.CONFIG_GUI_FACTORY_CLASS_NAME,
 )
 class StackUpUp {
     private var hadPostInit: Boolean = false
@@ -56,7 +60,7 @@ class StackUpUp {
             proxy?.markConflictDisabled(StackUpUpCore.conflictingMods())
             logger?.warn(
                 "StackUpUp disabled itself early because conflicting stacking mods were detected: {}",
-                StackUpUpCore.conflictingMods().joinToString(", ")
+                StackUpUpCore.conflictingMods().joinToString(", "),
             )
             return
         }
@@ -73,7 +77,6 @@ class StackUpUp {
         MinecraftForge.EVENT_BUS.register(this)
         MinecraftForge.EVENT_BUS.register(proxy)
         proxy?.registerDevAutomation()
-
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
@@ -119,7 +122,7 @@ class StackUpUp {
         @SidedProxy(
             modId = MOD_ID,
             clientSide = StackUpUpIds.PROXY_CLIENT_CLASS_NAME,
-            serverSide = StackUpUpIds.PROXY_COMMON_CLASS_NAME
+            serverSide = StackUpUpIds.PROXY_COMMON_CLASS_NAME,
         )
         @JvmField
         var proxy: ProxyCommon? = null
@@ -128,14 +131,13 @@ class StackUpUp {
         var logger: Logger? = null
 
         @JvmStatic
-        fun reload(): RuleReloadReport =
-            RuleRuntimeCoordinator.run {
-                StackUpUpConfig.applyReloadControlledValues()
-                reload()
-            }.also { report ->
-                proxy?.markRuleStatusDirty()
-                logReloadReport(report)
-            }
+        fun reload(): RuleReloadReport = RuleRuntimeCoordinator.run {
+            StackUpUpConfig.applyReloadControlledValues()
+            reload()
+        }.also { report ->
+            proxy?.markRuleStatusDirty()
+            logReloadReport(report)
+        }
 
         private fun logReloadReport(report: RuleReloadReport) {
             val activeLogger = requireNotNull(logger)

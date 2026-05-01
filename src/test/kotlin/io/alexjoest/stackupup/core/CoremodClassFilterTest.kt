@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test
 
 class CoremodClassFilterTest {
     @Test
-    fun `应当跳过明显无关的基础运行时类`() {
+    fun `shouldSkipUnrelatedRuntimeClasses`() {
         assertEquals(true, CoremodClassFilter.shouldSkip("kotlin/jvm/internal/Intrinsics"))
         assertEquals(true, CoremodClassFilter.shouldSkip("java/lang/String"))
         assertEquals(true, CoremodClassFilter.shouldSkip("javax/annotation/Nullable"))
@@ -14,14 +14,13 @@ class CoremodClassFilterTest {
     }
 
     @Test
-    fun `不应跳过可能需要补丁的游戏与模组类`() {
+    fun `shouldNotSkipGameAndModClasses`() {
         assertEquals(false, CoremodClassFilter.shouldSkip("net/minecraft/item/ItemStack"))
         assertEquals(false, CoremodClassFilter.shouldSkip("net/minecraft/tileentity/TileEntityChest"))
         assertEquals(
             false,
-            CoremodClassFilter.shouldSkip("com/raoulvdberge/refinedstorage/apiimpl/network/node/NetworkNodeStorageMonitor")
+            CoremodClassFilter.shouldSkip("com/raoulvdberge/refinedstorage/apiimpl/network/node/NetworkNodeStorageMonitor"),
         )
         assertEquals(false, CoremodClassFilter.shouldSkip("gregtech/api/items/metaitem/MetaItem"))
     }
 }
-

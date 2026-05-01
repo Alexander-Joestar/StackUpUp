@@ -12,8 +12,8 @@
 
 ## 主入口
 
-```powershell
-.\gradlew.bat runServerAutoTestMatrix
+```bash
+./gradlew runServerAutoTestMatrix
 ```
 
 IntelliJ 导入 Gradle 后，也可以直接运行：

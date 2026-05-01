@@ -1,22 +1,21 @@
 package io.alexjoest.stackupup.mixin
 
+import io.alexjoest.stackupup.StackUpUpCore
+import io.alexjoest.stackupup.bootstrap.StackUpUpLateMixinLoader
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import io.alexjoest.stackupup.StackUpUpConfig
-import io.alexjoest.stackupup.StackUpUpCore
-import io.alexjoest.stackupup.bootstrap.StackUpUpLateMixinLoader
 import zone.rong.mixinbooter.Context
 
 class MixinBooterIntegrationTest {
     @Test
-    fun `早期配置文件名应稳定`() {
+    fun `earlyConfigFileName_shouldBeStable`() {
         assertEquals(listOf("mixins.stackupup.early.json"), StackUpUpCore().getMixinConfigs())
     }
 
     @Test
-    fun `后期配置文件名应稳定`() {
+    fun `lateConfigFileName_shouldBeStable`() {
         assertEquals(
             listOf(
                 "mixins.stackupup.late.ae2.json",
@@ -26,37 +25,37 @@ class MixinBooterIntegrationTest {
                 "mixins.stackupup.late.enderio.json",
                 "mixins.stackupup.late.ic2.json",
                 "mixins.stackupup.late.mantle.json",
-                "mixins.stackupup.late.refinedstorage.json"
+                "mixins.stackupup.late.refinedstorage.json",
             ),
-            StackUpUpLateMixinLoader().getMixinConfigs()
+            StackUpUpLateMixinLoader().getMixinConfigs(),
         )
     }
 
     @Test
-    fun `后期配置应按模组存在排队`() {
+    fun `lateConfig_shouldQueueByModPresence`() {
         val loader = StackUpUpLateMixinLoader()
         assertTrue(
             loader.shouldMixinConfigQueue(
                 Context(
                     "mixins.stackupup.late.ae2.json",
-                    listOf("appliedenergistics2")
-                )
-            )
+                    listOf("appliedenergistics2"),
+                ),
+            ),
         )
         assertFalse(loader.shouldMixinConfigQueue(Context("mixins.stackupup.late.ae2.json", emptyList())))
 
         assertTrue(
             loader.shouldMixinConfigQueue(
-                Context("mixins.stackupup.late.actuallyadditions.json", listOf("actuallyadditions"))
-            )
+                Context("mixins.stackupup.late.actuallyadditions.json", listOf("actuallyadditions")),
+            ),
         )
         assertFalse(
             loader.shouldMixinConfigQueue(
                 Context(
                     "mixins.stackupup.late.actuallyadditions.json",
-                    emptyList()
-                )
-            )
+                    emptyList(),
+                ),
+            ),
         )
 
         assertTrue(loader.shouldMixinConfigQueue(Context("mixins.stackupup.late.brandonscore.json", listOf("brandonscore"))))
@@ -70,9 +69,9 @@ class MixinBooterIntegrationTest {
             loader.shouldMixinConfigQueue(
                 Context(
                     "mixins.stackupup.late.cyclopscore.json",
-                    listOf("cyclopscore")
-                )
-            )
+                    listOf("cyclopscore"),
+                ),
+            ),
         )
         assertFalse(loader.shouldMixinConfigQueue(Context("mixins.stackupup.late.cyclopscore.json", emptyList())))
 
@@ -83,17 +82,17 @@ class MixinBooterIntegrationTest {
             loader.shouldMixinConfigQueue(
                 Context(
                     "mixins.stackupup.late.refinedstorage.json",
-                    listOf("refinedstorage")
-                )
-            )
+                    listOf("refinedstorage"),
+                ),
+            ),
         )
         assertFalse(
             loader.shouldMixinConfigQueue(
                 Context(
                     "mixins.stackupup.late.refinedstorage.json",
-                    emptyList()
-                )
-            )
+                    emptyList(),
+                ),
+            ),
         )
     }
 }

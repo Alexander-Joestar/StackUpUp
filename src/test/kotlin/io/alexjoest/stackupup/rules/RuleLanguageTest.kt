@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 
 class RuleLanguageTest {
     @Test
-    fun `字段标识符应解析到统一枚举`() {
+    fun `fieldIdentifier_shouldResolveToUnifiedEnum`() {
         assertEquals(RuleField.ITEM, RuleField.fromIdentifier("item"))
         assertEquals(RuleField.MOD, RuleField.fromIdentifier("mod"))
         assertEquals(RuleField.TYPE, RuleField.fromIdentifier("type"))
@@ -16,7 +16,7 @@ class RuleLanguageTest {
     }
 
     @Test
-    fun `比较运算符应支持反转链式比较方向`() {
+    fun `comparisonOperator_shouldSupportReverseChaining`() {
         assertEquals(ComparisonOperator.GREATER, ComparisonOperator.LESS.reverse())
         assertEquals(ComparisonOperator.GREATER_EQUALS, ComparisonOperator.LESS_EQUALS.reverse())
         assertEquals(ComparisonOperator.LESS, ComparisonOperator.GREATER.reverse())
@@ -24,7 +24,7 @@ class RuleLanguageTest {
     }
 
     @Test
-    fun `比较符号应解析到统一枚举`() {
+    fun `comparisonSymbols_shouldResolveToEnum`() {
         assertEquals(ComparisonOperator.EQUALS, ComparisonOperator.fromSymbol("="))
         assertEquals(ComparisonOperator.NOT_EQUALS, ComparisonOperator.fromSymbol("!="))
         assertEquals(ComparisonOperator.GREATER_EQUALS, ComparisonOperator.fromSymbol(">="))

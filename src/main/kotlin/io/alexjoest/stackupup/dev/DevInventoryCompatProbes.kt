@@ -129,6 +129,6 @@ internal fun createSidedInventoryProxy(): Any {
     return Proxy.newProxyInstance(
         sidedInventoryClass.classLoader,
         arrayOf(sidedInventoryClass, inventoryClass),
-        handler
+        handler,
     )
 }

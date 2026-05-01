@@ -14,6 +14,16 @@ public abstract class SlotLimitMixin {
         at = @At("RETURN")
     )
     private int stackupup$applyDynamicSlotLimit(int original, ItemStack stack) {
-        return StackLimitHooks.resolveDynamicSlotLimit(stack, original);
+        int dynamic = StackLimitHooks.resolveDynamicSlotLimit(stack, original);
+        // 动态上限不能超过库存的实际承受能力。
+        // 若模组的 getInventoryStackLimit() 仍是 64（late mixin 未装载），
+        // 则返还上限为 min(dynamic, 64)，不让 vanilla 投入超过库存容量的物品。
+        // 这样也避免了 remainder 在"模组自行处理溢出"时造成重复。
+        Slot self = (Slot) (Object) this;
+        int invLimit = self.inventory.getInventoryStackLimit();
+        if (invLimit > 0) {
+            dynamic = Math.min(dynamic, invLimit);
+        }
+        return dynamic;
     }
 }

@@ -1,9 +1,9 @@
 package io.alexjoest.stackupup.rules.io
 
-import net.minecraft.util.text.ITextComponent
-import net.minecraft.util.text.TextComponentTranslation
 import io.alexjoest.stackupup.StackUpUpConfig
 import io.alexjoest.stackupup.StackUpUpIds
+import net.minecraft.util.text.ITextComponent
+import net.minecraft.util.text.TextComponentTranslation
 
 object RuleFeedback {
     fun emitReloadErrors(report: RuleReloadReport, send: (ITextComponent) -> Unit) {

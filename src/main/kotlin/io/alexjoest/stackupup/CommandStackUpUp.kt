@@ -1,8 +1,6 @@
 package io.alexjoest.stackupup
 
-import java.awt.Desktop
-import java.io.IOException
-import javax.annotation.Nullable
+import io.alexjoest.stackupup.rules.io.RuleFeedback
 import net.minecraft.command.CommandBase
 import net.minecraft.command.CommandException
 import net.minecraft.command.ICommandSender
@@ -10,7 +8,9 @@ import net.minecraft.command.WrongUsageException
 import net.minecraft.server.MinecraftServer
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.text.TextComponentTranslation
-import io.alexjoest.stackupup.rules.io.RuleFeedback
+import java.awt.Desktop
+import java.io.IOException
+import javax.annotation.Nullable
 
 class CommandStackUpUp : CommandBase() {
     private val subcommands = arrayOf("reload", "edit")
@@ -25,8 +25,8 @@ class CommandStackUpUp : CommandBase() {
     override fun execute(server: MinecraftServer, sender: ICommandSender, args: Array<out String>) {
         when (args.singleOrNull()) {
             "reload" -> emitReloadFeedback(sender)
-            "edit"   -> openRulesFile(sender)
-            else     -> throw WrongUsageException(getUsage(sender))
+            "edit" -> openRulesFile(sender)
+            else -> throw WrongUsageException(getUsage(sender))
         }
     }
 
@@ -34,13 +34,12 @@ class CommandStackUpUp : CommandBase() {
         server: MinecraftServer,
         sender: ICommandSender,
         args: Array<out String>,
-        @Nullable targetPos: BlockPos?
-    ): MutableList<String> =
-        if (args.size == 1) {
-            getListOfStringsMatchingLastWord(args, *subcommands)
-        } else {
-            mutableListOf()
-        }
+        @Nullable targetPos: BlockPos?,
+    ): MutableList<String> = if (args.size == 1) {
+        getListOfStringsMatchingLastWord(args, *subcommands)
+    } else {
+        mutableListOf()
+    }
 
     private fun emitReloadFeedback(sender: ICommandSender) {
         val report = StackUpUp.reload()
@@ -85,4 +84,3 @@ class CommandStackUpUp : CommandBase() {
         reply(StackUpUpIds.COMMAND_EDIT_UNSUPPORTED_KEY)
     }
 }
-

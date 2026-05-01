@@ -9,25 +9,16 @@ import net.minecraft.util.text.TextComponentTranslation
  * 规则层、重载报告和聊天提示都只传递 key + args，
  * 到最终边界再决定是落成日志字符串还是聊天组件。
  */
-data class LocalizedMessage(
-    val translationKey: String,
-    val args: List<Any> = emptyList()
-) {
+data class LocalizedMessage(val translationKey: String, val args: List<Any> = emptyList()) {
     fun format(): String = RuleMessages.formatRaw(translationKey, *mapArgs(::formatArgument))
 
-    fun toTextComponent(): ITextComponent =
-        TextComponentTranslation(translationKey, *mapArgs(::componentArgument))
+    fun toTextComponent(): ITextComponent = TextComponentTranslation(translationKey, *mapArgs(::componentArgument))
 
-    private fun mapArgs(transform: (Any) -> Any): Array<Any> =
-        args.map(transform).toTypedArray()
+    private fun mapArgs(transform: (Any) -> Any): Array<Any> = args.map(transform).toTypedArray()
 
-    private fun formatArgument(value: Any): Any =
-        if (value is LocalizedMessage) value.format() else value
+    private fun formatArgument(value: Any): Any = if (value is LocalizedMessage) value.format() else value
 
-    private fun componentArgument(value: Any): Any =
-        if (value is LocalizedMessage) value.toTextComponent() else value
+    private fun componentArgument(value: Any): Any = if (value is LocalizedMessage) value.toTextComponent() else value
 }
 
-class LocalizedRuleException(
-    val messageData: LocalizedMessage
-) : IllegalArgumentException(messageData.format())
+class LocalizedRuleException(val messageData: LocalizedMessage) : IllegalArgumentException(messageData.format())

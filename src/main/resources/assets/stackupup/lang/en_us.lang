@@ -61,3 +61,15 @@ message.stackupup.rule_error.unknown_error=unknown error
 tooltip.stackupup.current_max=Stack: %s/%s
 
 
+
+config.stackupup.compatibility.name=Compatibility
+config.stackupup.compatibility.name.tooltip=Toggle per-mod late-mixin compatibility patches. Requires Minecraft restart.
+
+config.stackupup.compatibility.ae2.name=Applied Energistics 2
+config.stackupup.compatibility.brandonscore.name=Brandon's Core
+config.stackupup.compatibility.actuallyadditions.name=Actually Additions
+config.stackupup.compatibility.cyclopscore.name=Cyclops Core
+config.stackupup.compatibility.enderio.name=Ender IO
+config.stackupup.compatibility.ic2.name=IndustrialCraft 2
+config.stackupup.compatibility.mantle.name=Mantle
+config.stackupup.compatibility.refinedstorage.name=Refined Storage

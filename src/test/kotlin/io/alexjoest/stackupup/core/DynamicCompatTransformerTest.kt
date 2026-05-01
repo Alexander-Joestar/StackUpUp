@@ -8,33 +8,33 @@ class DynamicCompatTransformerTest {
     private val transformer = DynamicCompatTransformer()
 
     @Test
-    fun `basicClass 为空时应直接返回空而不是抛异常`() {
+    fun `nullBasicClass_shouldReturnNullNotThrow`() {
         assertNull(transformer.transform(null, "net/minecraft/inventory/Slot", null))
     }
 
     @Test
-    fun `transformedName 为空时应回退使用 name`() {
+    fun `nullTransformedName_shouldFallbackToName`() {
         val bytes = classBytes("io.alexjoest.stackupup.core.DynamicCompatTransformerTest")
         assertArrayEquals(
             bytes,
             transformer.transform(
                 "io/alexjoest/stackupup/core/DynamicCompatTransformerTest",
                 null,
-                bytes
-            )
+                bytes,
+            ),
         )
     }
 
     @Test
-    fun `固定目标不应被 dynamic ASM 改写`() {
+    fun `fixedTarget_shouldNotBePatchedByDynamicAsm`() {
         val bytes = classBytes("net.minecraftforge.items.ItemStackHandler")
         assertArrayEquals(
             bytes,
             transformer.transform(
                 null,
                 "net/minecraftforge/items/ItemStackHandler",
-                bytes
-            )
+                bytes,
+            ),
         )
     }
 

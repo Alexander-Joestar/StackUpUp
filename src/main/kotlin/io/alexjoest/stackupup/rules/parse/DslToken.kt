@@ -1,10 +1,6 @@
 package io.alexjoest.stackupup.rules.parse
 
-enum class DslTokenType(
-    val lexeme: String? = null,
-    val isComparisonOperator: Boolean = false,
-    val isActionOperator: Boolean = false
-) {
+enum class DslTokenType(val lexeme: String? = null, val isComparisonOperator: Boolean = false, val isActionOperator: Boolean = false) {
     IDENTIFIER,
     NUMBER,
     EQUALS("=", isComparisonOperator = true),
@@ -24,7 +20,8 @@ enum class DslTokenType(
     LEFT_BRACKET("["),
     RIGHT_BRACKET("]"),
     COMMA(","),
-    EOF;
+    EOF,
+    ;
 
     companion object {
         // 显式维护匹配顺序，避免在类初始化时再次做 filter/sort/associate。
@@ -44,7 +41,7 @@ enum class DslTokenType(
             LESS,
             LEFT_BRACKET,
             RIGHT_BRACKET,
-            COMMA
+            COMMA,
         )
 
         fun matchSymbol(text: String, startIndex: Int): DslTokenType? {
@@ -57,13 +54,8 @@ enum class DslTokenType(
             return null
         }
 
-        fun resolveKeyword(lexeme: String): DslTokenType? =
-            if (lexeme == IN.lexeme) IN else null
+        fun resolveKeyword(lexeme: String): DslTokenType? = if (lexeme == IN.lexeme) IN else null
     }
 }
 
-data class DslToken(
-    val type: DslTokenType,
-    val lexeme: String
-)
-
+data class DslToken(val type: DslTokenType, val lexeme: String)

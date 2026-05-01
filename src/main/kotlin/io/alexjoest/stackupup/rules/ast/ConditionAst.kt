@@ -10,36 +10,25 @@ sealed interface ConditionAst {
     fun debugLiteralCount(): Int
 }
 
-data class FieldComparisonAst(
-    val field: RuleField,
-    val operator: ComparisonOperator,
-    val literal: String
-) : ConditionAst {
+data class FieldComparisonAst(val field: RuleField, val operator: ComparisonOperator, val literal: String) : ConditionAst {
     override fun debugFields(): List<String> = listOf(field.id)
 
     override fun debugLiteralCount(): Int = 1
 }
 
-data class ListConditionAst(
-    val field: RuleField,
-    val literals: List<String>
-) : ConditionAst {
+data class ListConditionAst(val field: RuleField, val literals: List<String>) : ConditionAst {
     override fun debugFields(): List<String> = listOf(field.id)
 
     override fun debugLiteralCount(): Int = literals.size
 }
 
-data class AndConditionAst(
-    val conditions: List<ConditionAst>
-) : ConditionAst {
+data class AndConditionAst(val conditions: List<ConditionAst>) : ConditionAst {
     override fun debugFields(): List<String> = collectDebugFields(conditions)
 
     override fun debugLiteralCount(): Int = conditions.sumOf(ConditionAst::debugLiteralCount)
 }
 
-data class OrConditionAst(
-    val conditions: List<ConditionAst>
-) : ConditionAst {
+data class OrConditionAst(val conditions: List<ConditionAst>) : ConditionAst {
     override fun debugFields(): List<String> = collectDebugFields(conditions)
 
     override fun debugLiteralCount(): Int = conditions.sumOf(ConditionAst::debugLiteralCount)

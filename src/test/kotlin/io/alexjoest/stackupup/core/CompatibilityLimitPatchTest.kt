@@ -6,55 +6,55 @@ import org.junit.jupiter.api.Test
 
 class CompatibilityLimitPatchTest {
     @Test
-    fun `明显无关的类不应生成补丁计划`() {
+    fun `unrelatedClass_shouldNotGeneratePlan`() {
         val patches = CompatibilityLimitPatch.planFor("java.lang.String")
         assertTrue(patches.isEmpty())
     }
 
     @Test
-    fun `补丁列表应正确反映是否包含补丁`() {
+    fun `patchList_shouldCorrectlyReflectEmptiness`() {
         val emptyPatches = emptyList<Any>()
         val nonEmptyPatches = CompatibilityLimitPatch.planFor(
             "io.alexjoest.stackupup.core.TestInventoryOverride",
-            classBytes("io.alexjoest.stackupup.core.TestInventoryOverride")
+            classBytes("io.alexjoest.stackupup.core.TestInventoryOverride"),
         )
         assertTrue(emptyPatches.isEmpty())
         assertTrue(nonEmptyPatches.isNotEmpty())
     }
 
     @Test
-    fun `已迁入固定 mixin 的库存目标不应继续生成动态补丁`() {
+    fun `fixedMixinTarget_shouldNotGenerateDynamicPatch`() {
         for (target in FixedCompatTargets.all()) {
             assertFalse(
                 CompatibilityLimitPatch.planFor(target).isNotEmpty(),
-                "固定目标不应继续生成动态补丁: $target"
+                "固定目标不应继续生成动态补丁: $target",
             )
         }
     }
 
     @Test
-    fun `声明了目标方法的动态 inventory 目标仍应生成补丁`() {
+    fun `declaredDynamicTarget_shouldStillGeneratePatch`() {
         assertTrue(
             CompatibilityLimitPatch.planFor(
                 "io.alexjoest.stackupup.core.TestInventoryOverride",
-                classBytes("io.alexjoest.stackupup.core.TestInventoryOverride")
-            ).isNotEmpty()
+                classBytes("io.alexjoest.stackupup.core.TestInventoryOverride"),
+            ).isNotEmpty(),
         )
     }
 
     @Test
-    fun `未声明目标方法的继承类不应生成动态补丁计划`() {
+    fun `inheritedNoMethod_shouldNotGeneratePlan`() {
         assertFalse(
             CompatibilityLimitPatch.planFor(
                 "net.minecraftforge.items.wrapper.PlayerInvWrapper",
-                classBytes("net.minecraftforge.items.wrapper.PlayerInvWrapper")
-            ).isNotEmpty()
+                classBytes("net.minecraftforge.items.wrapper.PlayerInvWrapper"),
+            ).isNotEmpty(),
         )
         assertFalse(
             CompatibilityLimitPatch.planFor(
                 "net.minecraft.inventory.SlotCrafting",
-                classBytes("net.minecraft.inventory.SlotCrafting")
-            ).isNotEmpty()
+                classBytes("net.minecraft.inventory.SlotCrafting"),
+            ).isNotEmpty(),
         )
     }
 

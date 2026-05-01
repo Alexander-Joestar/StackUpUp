@@ -1,8 +1,8 @@
 package io.alexjoest.stackupup.client
 
-import net.minecraft.client.gui.FontRenderer
 import io.alexjoest.stackupup.StackUpUp
 import io.alexjoest.stackupup.StackUpUpConfig
+import net.minecraft.client.gui.FontRenderer
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -21,16 +21,10 @@ object StackCountTextLayout {
         INTEGER,
         ONE_DECIMAL,
         TWO_DECIMALS,
-        LEADING_DOT
+        LEADING_DOT,
     }
 
-    private data class CompactSegment(
-        val minInclusive: Int,
-        val maxInclusive: Int,
-        val divisor: Int,
-        val suffix: Char,
-        val style: CompactStyle
-    )
+    private data class CompactSegment(val minInclusive: Int, val maxInclusive: Int, val divisor: Int, val suffix: Char, val style: CompactStyle)
 
     private val shortCompactSegments = arrayOf(
         CompactSegment(THOUSAND, TEN_THOUSAND - 1, 100, 'K', CompactStyle.ONE_DECIMAL),
@@ -38,7 +32,7 @@ object StackCountTextLayout {
         CompactSegment(HUNDRED_THOUSAND, MILLION - 1, HUNDRED_THOUSAND, 'M', CompactStyle.LEADING_DOT),
         CompactSegment(MILLION, HUNDRED_MILLION - 1, MILLION, 'M', CompactStyle.INTEGER),
         CompactSegment(HUNDRED_MILLION, BILLION - 1, HUNDRED_MILLION, 'B', CompactStyle.LEADING_DOT),
-        CompactSegment(BILLION, Int.MAX_VALUE, BILLION, 'B', CompactStyle.INTEGER)
+        CompactSegment(BILLION, Int.MAX_VALUE, BILLION, 'B', CompactStyle.INTEGER),
     )
 
     private val longCompactSegments = arrayOf(
@@ -48,15 +42,10 @@ object StackCountTextLayout {
         CompactSegment(MILLION, TEN_MILLION - 1, 10_000, 'M', CompactStyle.TWO_DECIMALS),
         CompactSegment(TEN_MILLION, HUNDRED_MILLION - 1, HUNDRED_THOUSAND, 'M', CompactStyle.ONE_DECIMAL),
         CompactSegment(HUNDRED_MILLION, BILLION - 1, MILLION, 'M', CompactStyle.INTEGER),
-        CompactSegment(BILLION, Int.MAX_VALUE, TEN_MILLION, 'B', CompactStyle.TWO_DECIMALS)
+        CompactSegment(BILLION, Int.MAX_VALUE, TEN_MILLION, 'B', CompactStyle.TWO_DECIMALS),
     )
 
-    data class AbbreviationResult(
-        val text: String,
-        val scaleFactor: Float,
-        val fits: Boolean,
-        val abbreviated: Boolean
-    )
+    data class AbbreviationResult(val text: String, val scaleFactor: Float, val fits: Boolean, val abbreviated: Boolean)
 
     @JvmStatic
     fun getStringLenWithoutFmtCodes(count: String): Int {
@@ -75,12 +64,7 @@ object StackCountTextLayout {
     }
 
     @JvmStatic
-    fun abbreviate(
-        fr: FontRenderer,
-        countIn: String,
-        maxWidth: Int,
-        justCheckAbbreviation: Boolean
-    ): AbbreviationResult {
+    fun abbreviate(fr: FontRenderer, countIn: String, maxWidth: Int, justCheckAbbreviation: Boolean): AbbreviationResult {
         val (leadingFormatCodes, visibleCount) = splitLeadingFormatting(countIn)
         val numericCount = stripFormattingCodes(visibleCount)
         val result = abbreviateInner(fr, visibleCount, numericCount, maxWidth, justCheckAbbreviation)
@@ -92,13 +76,7 @@ object StackCountTextLayout {
         return result
     }
 
-    private fun abbreviateInner(
-        fr: FontRenderer,
-        count: String,
-        numericCount: String,
-        maxWidth: Int,
-        justCheckAbbreviation: Boolean
-    ): AbbreviationResult {
+    private fun abbreviateInner(fr: FontRenderer, count: String, numericCount: String, maxWidth: Int, justCheckAbbreviation: Boolean): AbbreviationResult {
         val countI = numericCount.toIntOrNull() ?: -1
         val maxScaleFactor = requireNotNull(StackUpUp.proxy).getCurrentScaleFactor()
 
@@ -114,7 +92,7 @@ object StackCountTextLayout {
                 formatLongCompactCount(paddedCountI),
                 formatLongCompactCount(countI),
                 maxScaleFactor,
-                true
+                true,
             )
             if (longResult.fits || justCheckAbbreviation) {
                 return longResult
@@ -126,7 +104,7 @@ object StackCountTextLayout {
                 formatShortCompactCount(paddedCountI),
                 formatShortCompactCount(countI),
                 maxScaleFactor,
-                true
+                true,
             )
             if (shortResult.fits) {
                 return shortResult
@@ -139,7 +117,7 @@ object StackCountTextLayout {
             formatGroupedCount(paddedCountI),
             formatGroupedCount(countI),
             maxScaleFactor,
-            false
+            false,
         )
     }
 
@@ -149,7 +127,7 @@ object StackCountTextLayout {
         comparedText: String,
         text: String,
         maxScaleFactor: Int,
-        abbreviated: Boolean
+        abbreviated: Boolean,
     ): AbbreviationResult {
         val strWidth = maxOf(fr.getStringWidth(text), fr.getStringWidth(comparedText))
 
@@ -185,16 +163,11 @@ object StackCountTextLayout {
         return AbbreviationResult(text, scale, scaledStrWidth <= maxWidth, abbreviated)
     }
 
-    internal fun formatShortCompactCount(countI: Int): String {
-        return formatCompactCount(countI, shortCompactSegments)
-    }
+    internal fun formatShortCompactCount(countI: Int): String = formatCompactCount(countI, shortCompactSegments)
 
-    internal fun formatLongCompactCount(countI: Int): String {
-        return formatCompactCount(countI, longCompactSegments)
-    }
+    internal fun formatLongCompactCount(countI: Int): String = formatCompactCount(countI, longCompactSegments)
 
-    internal fun formatGroupedCount(countI: Int): String =
-        String.format(Locale.ROOT, "%,d", countI)
+    internal fun formatGroupedCount(countI: Int): String = String.format(Locale.ROOT, "%,d", countI)
 
     internal fun stripFormattingCodes(text: String): String {
         if (FORMAT_CODE_MARKER !in text) {

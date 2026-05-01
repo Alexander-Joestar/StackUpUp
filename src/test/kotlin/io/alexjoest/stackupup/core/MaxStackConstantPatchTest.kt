@@ -13,7 +13,7 @@ import org.objectweb.asm.tree.MethodNode
 
 class MaxStackConstantPatchTest {
     @Test
-    fun `目标方法中的 64 常量应被替换为统一上限入口`() {
+    fun `targetMethod64_shouldBeReplacedWithUnifiedEntry`() {
         val method = MethodNode(Opcodes.ACC_PUBLIC, "onExtract", "()V", null, null)
         method.instructions.add(IntInsnNode(Opcodes.BIPUSH, 64))
         method.instructions.add(InsnNode(Opcodes.RETURN))
@@ -31,7 +31,7 @@ class MaxStackConstantPatchTest {
     }
 
     @Test
-    fun `非目标方法不应被误替换`() {
+    fun `nonTargetMethod_shouldNotBeReplaced`() {
         val method = MethodNode(Opcodes.ACC_PUBLIC, "notTarget", "()V", null, null)
         method.instructions.add(IntInsnNode(Opcodes.BIPUSH, 64))
         method.instructions.add(InsnNode(Opcodes.RETURN))
@@ -48,5 +48,3 @@ class MaxStackConstantPatchTest {
         assertEquals(64, original.operand)
     }
 }
-
-

@@ -2,8 +2,8 @@ package io.alexjoest.stackupup.dev
 
 import io.alexjoest.stackupup.StackLimitHooks
 import io.alexjoest.stackupup.StackUpUp
-import io.alexjoest.stackupup.limit.StackContextResolver
 import io.alexjoest.stackupup.limit.RuleRuntime
+import io.alexjoest.stackupup.limit.StackContextResolver
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiMainMenu
 import net.minecraft.item.ItemStack
@@ -16,9 +16,7 @@ import net.minecraftforge.fml.common.gameevent.TickEvent
 /**
  * 开发期全自动验收客户端桥接器。
  */
-class DevAutomationClientDriver(
-    private val controller: DevAutomationController = DevAutomationController()
-) {
+class DevAutomationClientDriver(private val controller: DevAutomationController = DevAutomationController()) {
     private var resolvedTarget: ResolvedDevTarget? = null
     private var observationLogged: Boolean = false
     private var inventoryCleared: Boolean = false
@@ -35,7 +33,7 @@ class DevAutomationClientDriver(
             atMainMenu = minecraft.world == null && minecraft.currentScreen is GuiMainMenu,
             hasWorld = minecraft.world != null,
             hasPlayer = player != null,
-            targetItemObserved = player?.inventory?.mainInventory?.any(::matchesTargetItem) == true
+            targetItemObserved = player?.inventory?.mainInventory?.any(::matchesTargetItem) == true,
         )
 
         if (player != null && snapshot.targetItemObserved && !observationLogged) {
@@ -44,7 +42,7 @@ class DevAutomationClientDriver(
 
         for (action in controller.advance(snapshot)) {
             when (action) {
-                DevAutomationAction.LaunchWorld    -> launchTestWorld(minecraft)
+                DevAutomationAction.LaunchWorld -> launchTestWorld(minecraft)
                 DevAutomationAction.GiveTargetItem -> giveTargetItem(minecraft)
             }
         }
@@ -56,18 +54,18 @@ class DevAutomationClientDriver(
             GameType.CREATIVE,
             false,
             false,
-            WorldType.DEFAULT
+            WorldType.DEFAULT,
         ).enableCommands()
 
         StackUpUp.logger?.info(
             "开发自动验收：准备进入测试世界 folder={} name={}",
             DevAutomationConfig.worldFolder,
-            DevAutomationConfig.worldName
+            DevAutomationConfig.worldName,
         )
         minecraft.launchIntegratedServer(
             DevAutomationConfig.worldFolder,
             DevAutomationConfig.worldName,
-            settings
+            settings,
         )
     }
 
@@ -79,17 +77,17 @@ class DevAutomationClientDriver(
                     "开发自动验收：已注入临时规则 `{}`，规则数 {} -> {}。",
                     injection.ruleLine,
                     injection.previousRuleCount,
-                    injection.newRuleCount
+                    injection.newRuleCount,
                 )
             }
 
-            is DevRuleInjectionResult.Failed  -> {
+            is DevRuleInjectionResult.Failed -> {
                 StackUpUp.logger?.error("开发自动验收：临时规则注入失败：{}", injection.errors.joinToString("；"))
                 controller.abort()
                 return
             }
 
-            DevRuleInjectionResult.Skipped    -> Unit
+            DevRuleInjectionResult.Skipped -> Unit
         }
 
         if (DevAutomationConfig.clearInventoryBeforeGive && !inventoryCleared) {
@@ -104,7 +102,7 @@ class DevAutomationClientDriver(
                 "开发自动验收：未找到目标物品 item={} meta={} ore={}，自动测试中止。",
                 DevAutomationConfig.itemId.ifBlank { "<未指定>" },
                 DevAutomationConfig.itemMeta,
-                DevAutomationConfig.oreName
+                DevAutomationConfig.oreName,
             )
             controller.abort()
             return
@@ -113,7 +111,7 @@ class DevAutomationClientDriver(
 
         val context = StackContextResolver.fromStack(
             probeStack,
-            StackLimitHooks.resolveOriginalBaseline(probeStack)
+            StackLimitHooks.resolveOriginalBaseline(probeStack),
         ) ?: return
         val resolvedLimit = RuleRuntime.limitService().resolve(context)
 
@@ -124,10 +122,10 @@ class DevAutomationClientDriver(
             DevAutomationConfig.itemCount,
             context.oreNames.joinToString(prefix = "[", postfix = "]"),
             resolvedLimit,
-            probeStack.maxStackSize
+            probeStack.maxStackSize,
         )
         player.sendChatMessage(
-            "/give @p ${resolvedTarget.itemId} ${DevAutomationConfig.itemCount} ${resolvedTarget.meta}"
+            "/give @p ${resolvedTarget.itemId} ${DevAutomationConfig.itemCount} ${resolvedTarget.meta}",
         )
     }
 
@@ -159,8 +157,7 @@ class DevAutomationClientDriver(
             matchingStacks.sumOf { it.count },
             first.count,
             first.maxStackSize,
-            RuleRuntime.oreDictIndex().getOreNames(first).joinToString(prefix = "[", postfix = "]")
+            RuleRuntime.oreDictIndex().getOreNames(first).joinToString(prefix = "[", postfix = "]"),
         )
     }
 }
-

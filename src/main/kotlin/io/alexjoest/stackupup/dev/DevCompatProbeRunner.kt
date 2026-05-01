@@ -14,16 +14,15 @@ object DevCompatProbeRunner {
         InvWrapperLimitProbe,
         RangedWrapperLimitProbe,
         SidedInvWrapperLimitProbe,
-        SlotItemHandlerLimitProbe
+        SlotItemHandlerLimitProbe,
     )
 
     internal fun probeIds(): List<String> = probes.map(DevCompatProbe::id)
 
-    internal fun fixedTargetCoverage(): Set<String> =
-        probes.asSequence()
-            .filter(DevCompatProbe::isFixedTargetProbe)
-            .flatMap { it.coveredClasses.asSequence() }
-            .toSet()
+    internal fun fixedTargetCoverage(): Set<String> = probes.asSequence()
+        .filter(DevCompatProbe::isFixedTargetProbe)
+        .flatMap { it.coveredClasses.asSequence() }
+        .toSet()
 
     fun run(server: MinecraftServer): List<String> {
         val selectedIds =
@@ -66,10 +65,7 @@ object DevCompatProbeRunner {
     }
 }
 
-internal data class ProbeAvailability(
-    val available: Boolean,
-    val failureSummary: String?
-) {
+internal data class ProbeAvailability(val available: Boolean, val failureSummary: String?) {
     companion object {
         fun available(): ProbeAvailability = ProbeAvailability(available = true, failureSummary = null)
 
@@ -93,10 +89,7 @@ internal interface DevCompatProbe {
     fun run(server: MinecraftServer): DevCompatProbeResult
 }
 
-internal data class DevCompatProbeResult(
-    val passed: Boolean,
-    val summary: String
-) {
+internal data class DevCompatProbeResult(val passed: Boolean, val summary: String) {
     companion object {
         fun passed(summary: String): DevCompatProbeResult = DevCompatProbeResult(true, summary)
 

@@ -8,8 +8,7 @@ data class CompiledRule(
     val sourceLine: String,
     val action: RuleAction,
     val referencedFields: Set<String>,
-    val predicate: (RuleMatchContext) -> Boolean
+    val predicate: (RuleMatchContext) -> Boolean,
 ) {
     fun matches(context: RuleMatchContext): Boolean = predicate(context)
 }
-

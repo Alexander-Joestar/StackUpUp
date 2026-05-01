@@ -1,8 +1,8 @@
 package io.alexjoest.stackupup.rules.io
 
-import java.io.File
-import net.minecraftforge.fml.common.FMLCommonHandler
 import io.alexjoest.stackupup.StackUpUpIds
+import net.minecraftforge.fml.common.FMLCommonHandler
+import java.io.File
 
 object RuleSourceLocator {
     @Volatile
@@ -44,11 +44,13 @@ object RuleSourceLocator {
         return world.saveHandler.worldDirectory
     }
 
-    private fun resolvePackFiles(globalDirectory: File, userFile: File): List<File> =
-        globalDirectory
-            .listFiles { file ->
-                file.isFile && file.extension == StackUpUpIds.RULE_FILE_EXTENSION && file.name != userFile.name
-            }
-            ?.sortedBy(File::getName)
-            .orEmpty()
+    private fun resolvePackFiles(globalDirectory: File, userFile: File): List<File> = globalDirectory
+        .listFiles { file ->
+            file.isFile &&
+                file.extension == StackUpUpIds.RULE_FILE_EXTENSION &&
+                file.name != userFile.name &&
+                file.name != StackUpUpIds.EXAMPLE_RULES_FILE_NAME
+        }
+        ?.sortedBy(File::getName)
+        .orEmpty()
 }

@@ -28,8 +28,8 @@ object DevRuleInjector {
         RuleRuntime.replaceSnapshot(
             RuleSnapshot(
                 version = System.nanoTime(),
-                rules = current.rules + loaded.snapshot.rules
-            )
+                rules = current.rules + loaded.snapshot.rules,
+            ),
         )
         injected = true
         return DevRuleInjectionResult.Applied(ruleLine, current.rules.size, RuleRuntime.currentSnapshot().rules.size)
@@ -41,5 +41,3 @@ sealed class DevRuleInjectionResult {
     data class Applied(val ruleLine: String, val previousRuleCount: Int, val newRuleCount: Int) : DevRuleInjectionResult()
     data class Failed(val errors: List<LocalizedMessage>) : DevRuleInjectionResult()
 }
-
-

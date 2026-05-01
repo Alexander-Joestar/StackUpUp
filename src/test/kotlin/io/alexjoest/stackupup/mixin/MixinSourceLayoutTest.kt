@@ -1,16 +1,16 @@
 package io.alexjoest.stackupup.mixin
 
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.io.path.exists
 import kotlin.streams.asSequence
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Test
 
 class MixinSourceLayoutTest {
     @Test
-    fun `mixin 源文件应全部位于 src main java`() {
+    fun `mixinSources_shouldBeInSrcMainJava`() {
         val kotlinMixinRoot = Paths.get("src", "main", "kotlin", "io", "alexjoest", "stackupup", "mixin")
         val kotlinMixinFiles = kotlinMixinRoot.walkRegularFiles()
             .filter { it.toString().endsWith(".kt") }

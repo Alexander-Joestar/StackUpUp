@@ -5,26 +5,26 @@ import org.junit.jupiter.api.Test
 
 class StackCountTextLayoutTest {
     @Test
-    fun `应剥离整串文本中的格式码`() {
+    fun `shouldStripFormattingCodes`() {
         assertEquals("1024", StackCountTextLayout.stripFormattingCodes("§e10§l24"))
         assertEquals("64", StackCountTextLayout.stripFormattingCodes("64"))
     }
 
     @Test
-    fun `应将数量截断到最高有效位`() {
+    fun `shouldTruncateToMostSignificantDigit`() {
         assertEquals(7, StackCountTextLayout.floorToMostSignificantDigit(7))
         assertEquals(900, StackCountTextLayout.floorToMostSignificantDigit(987))
         assertEquals(10000, StackCountTextLayout.floorToMostSignificantDigit(12345))
     }
 
     @Test
-    fun `千位数量应生成紧凑缩写`() {
+    fun `thousands_shouldUseCompactAbbreviation`() {
         assertEquals("10.2K", StackCountTextLayout.formatLongCompactCount(10240))
         assertEquals("10K", StackCountTextLayout.formatShortCompactCount(10240))
     }
 
     @Test
-    fun `紧凑缩写应覆盖关键边界值`() {
+    fun `compactAbbreviation_shouldCoverBoundaries`() {
         assertEquals("999", StackCountTextLayout.formatLongCompactCount(999))
         assertEquals("999", StackCountTextLayout.formatShortCompactCount(999))
 
@@ -45,7 +45,7 @@ class StackCountTextLayoutTest {
     }
 
     @Test
-    fun `原始整数显示应使用千分位分隔`() {
+    fun `rawInteger_shouldUseThousandsSeparator`() {
         assertEquals("1,024", StackCountTextLayout.formatGroupedCount(1024))
         assertEquals("80,000", StackCountTextLayout.formatGroupedCount(80000))
         assertEquals("1,000,000", StackCountTextLayout.formatGroupedCount(1000000))

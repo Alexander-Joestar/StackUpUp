@@ -1,19 +1,17 @@
 package io.alexjoest.stackupup.client
 
+import io.alexjoest.stackupup.StackUpUpConfig
 import net.minecraft.client.gui.FontRenderer
 import net.minecraft.client.renderer.GlStateManager
 import net.minecraft.entity.item.EntityItem
 import net.minecraft.item.ItemStack
 import net.minecraft.util.math.MathHelper
-import io.alexjoest.stackupup.StackUpUpConfig
 
 object StackRenderHooks {
     const val SLOT_MAX_WIDTH: Int = 16
 
     @JvmStatic
-    fun getModelCount(stack: ItemStack): Int {
-        return if (stack.count > 2) MathHelper.log2DeBruijn(stack.count) else stack.count
-    }
+    fun getModelCount(stack: ItemStack): Int = if (stack.count > 2) MathHelper.log2DeBruijn(stack.count) else stack.count
 
     @JvmStatic
     fun getItemRenderDistanceNeg(item: EntityItem): Float = -getItemRenderDistance(item)
@@ -52,5 +50,3 @@ object StackRenderHooks {
         return i
     }
 }
-
-

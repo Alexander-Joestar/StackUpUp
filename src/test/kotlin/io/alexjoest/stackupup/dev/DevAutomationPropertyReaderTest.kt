@@ -7,14 +7,14 @@ import org.junit.jupiter.api.Test
 
 class DevAutomationPropertyReaderTest {
     @Test
-    fun `新前缀应优先覆盖旧前缀`() {
+    fun `newPrefix_shouldOverrideLegacy`() {
         val values =
             mapOf(
                 "stackup.dev.autoTest" to "false",
                 "stackup.dev.autoTest.mode" to "client",
                 "${StackUpUpIds.DEV_AUTOMATION_PREFIX}.enabled" to "true",
                 "${StackUpUpIds.DEV_AUTOMATION_PREFIX}.mode" to "server",
-                "${StackUpUpIds.DEV_AUTOMATION_PREFIX}.worldFolder" to "stackupup_dev_autotest_new"
+                "${StackUpUpIds.DEV_AUTOMATION_PREFIX}.worldFolder" to "stackupup_dev_autotest_new",
             )
 
         val settings = readSettings(values::get)
@@ -25,13 +25,13 @@ class DevAutomationPropertyReaderTest {
     }
 
     @Test
-    fun `缺少新前缀时应回退读取旧前缀`() {
+    fun `noNewPrefix_shouldFallbackToLegacy`() {
         val values =
             mapOf(
                 "stackup.dev.autoTest" to "true",
                 "stackup.dev.autoTest.mode" to "both",
                 "stackup.dev.autoTest.item" to "gregtech:meta_item_1",
-                "stackup.dev.autoTest.meta" to "516"
+                "stackup.dev.autoTest.meta" to "516",
             )
 
         val settings = readSettings(values::get)

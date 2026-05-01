@@ -5,33 +5,32 @@ import org.junit.jupiter.api.Test
 
 class DevTargetSelectorTest {
     @Test
-    fun `显式物品存在时应优先使用显式匹配`() {
+    fun `explicitItem_shouldTakePriority`() {
         val selected = DevTargetRuntimeResolver.selectCandidate(
             explicitItemId = "gregtech:meta_item_1",
             explicitMeta = 11305,
             preferredOreName = "ingotSteel",
             candidates = listOf(
                 DevTargetCandidate("gregtech:meta_ingot", 42, setOf("ingotSteel")),
-                DevTargetCandidate("gregtech:meta_item_1", 11305, emptySet())
-            )
+                DevTargetCandidate("gregtech:meta_item_1", 11305, emptySet()),
+            ),
         )
 
         assertEquals(DevTargetCandidate("gregtech:meta_item_1", 11305, emptySet()), selected)
     }
 
     @Test
-    fun `显式物品不存在时应回退到 gregtech 的矿辞候选`() {
+    fun `noExplicit_shouldFallbackToGtOreDict`() {
         val selected = DevTargetRuntimeResolver.selectCandidate(
             explicitItemId = "gregtech:gt.metaitem.01",
             explicitMeta = 11305,
             preferredOreName = "ingotSteel",
             candidates = listOf(
                 DevTargetCandidate("othermod:steel_ingot", 0, setOf("ingotSteel")),
-                DevTargetCandidate("gregtech:meta_ingot", 42, setOf("ingotSteel"))
-            )
+                DevTargetCandidate("gregtech:meta_ingot", 42, setOf("ingotSteel")),
+            ),
         )
 
         assertEquals(DevTargetCandidate("gregtech:meta_ingot", 42, setOf("ingotSteel")), selected)
     }
 }
-

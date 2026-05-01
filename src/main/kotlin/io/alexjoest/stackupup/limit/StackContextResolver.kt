@@ -11,12 +11,7 @@ import net.minecraft.item.ItemStack
  */
 object StackContextResolver {
     @JvmStatic
-    fun fromStack(
-        stack: ItemStack,
-        baseLimit: Int,
-        includeOreNames: Boolean = true,
-        oreDictIndex: OreDictIndex = RuleRuntime.oreDictIndex()
-    ): StackContext? {
+    fun fromStack(stack: ItemStack, baseLimit: Int, includeOreNames: Boolean = true): StackContext? {
         if (stack.isEmpty) {
             return null
         }
@@ -29,9 +24,7 @@ object StackContextResolver {
             metadata = stack.metadata,
             type = type,
             baseLimit = baseLimit,
-            oreNames = if (includeOreNames) oreDictIndex.getOreNames(stack) else emptySet()
+            oreNames = if (includeOreNames) RuleRuntime.oreDictIndex().getOreNames(stack) else emptySet(),
         )
     }
 }
-
-

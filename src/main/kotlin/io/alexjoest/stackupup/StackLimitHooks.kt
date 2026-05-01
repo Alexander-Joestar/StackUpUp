@@ -1,10 +1,9 @@
 package io.alexjoest.stackupup
 
-import io.alexjoest.stackupup.Constants.VANILLA_STACK_LIMIT
-import net.minecraft.item.ItemStack
-import io.alexjoest.stackupup.limit.StackContextResolver
-import io.alexjoest.stackupup.limit.StackIdentity
 import io.alexjoest.stackupup.limit.RuleRuntime
+import io.alexjoest.stackupup.limit.StackIdentity
+import net.minecraft.item.ItemBlock
+import net.minecraft.item.ItemStack
 import java.util.ArrayDeque
 import java.util.IdentityHashMap
 import java.util.Random
@@ -25,21 +24,13 @@ object StackLimitHooks {
     @JvmStatic
     @Deprecated(
         message = "请改用 getCompatibilityStackSize，旧名称容易与精确物品上限混淆。",
-        replaceWith = ReplaceWith("getCompatibilityStackSize()")
+        replaceWith = ReplaceWith("getCompatibilityStackSize()"),
     )
     fun getMaxStackSize(): Int = getCompatibilityStackSize()
 
     @JvmStatic
-    fun applyDynamicStackLimit(
-        itemId: String,
-        modId: String,
-        meta: Int,
-        type: String,
-        baseLimit: Int,
-        oreNames: Set<String>
-    ): Int {
-        return RuleRuntime.limitService().resolve(StackIdentity(itemId, modId, meta, type), baseLimit, oreNames)
-    }
+    fun applyDynamicStackLimit(itemId: String, modId: String, meta: Int, type: String, baseLimit: Int, oreNames: Set<String>): Int =
+        RuleRuntime.limitService().resolve(StackIdentity(itemId, modId, meta, type), baseLimit, oreNames)
 
     @JvmStatic
     fun applyDynamicStackLimit(stack: ItemStack, baseLimit: Int): Int {
@@ -49,12 +40,20 @@ object StackLimitHooks {
         }
 
         val originalBaseline = resolveOriginalBaseline(stack, baseLimit)
-        val context = StackContextResolver.fromStack(
-            stack = stack,
+        val registryName = stack.item.registryName ?: return originalBaseline
+        val oreNames = if (limitService.needsOreNames()) {
+            RuleRuntime.oreDictIndex().getOreNames(stack)
+        } else {
+            emptySet()
+        }
+        return limitService.resolve(
+            itemId = registryName.toString(),
+            modId = registryName.namespace,
+            metadata = stack.metadata,
+            type = if (stack.item is ItemBlock) "block" else "item",
             baseLimit = originalBaseline,
-            includeOreNames = limitService.needsOreNames()
-        ) ?: return originalBaseline
-        return limitService.resolve(context)
+            oreNames = oreNames,
+        )
     }
 
     @JvmStatic
@@ -126,11 +125,19 @@ object StackLimitHooks {
         }
 
         val resolvedItemLimit = stack.maxStackSize
-        if (slotLimit >= resolvedItemLimit || !shouldTreatAsDefaultSlotLimit(slotLimit)) {
+        if (slotLimit >= resolvedItemLimit || slotLimit != VANILLA_STACK_LIMIT) {
             return slotLimit
         }
 
         return resolvedItemLimit
+    }
+
+    @JvmStatic
+    fun resolveContainerMergeSlotLimit(stack: ItemStack, slotHasStack: Boolean, declaredSlotLimit: Int): Int {
+        if (!slotHasStack) {
+            return declaredSlotLimit
+        }
+        return resolveDynamicSlotLimit(stack, declaredSlotLimit)
     }
 
     @JvmStatic
@@ -144,20 +151,11 @@ object StackLimitHooks {
 
         val currentItemLimit = stack.maxStackSize
         return when {
-            slotLimit < currentItemLimit                                                     -> slotLimit
-            currentItemLimit < slotLimit && !shouldTreatAsDefaultItemLimit(currentItemLimit) -> currentItemLimit
-            else                                                                             -> slotLimit
+            slotLimit < currentItemLimit                                            -> slotLimit
+            currentItemLimit < slotLimit && currentItemLimit != VANILLA_STACK_LIMIT -> currentItemLimit
+            else                                                                    -> slotLimit
         }
     }
-
-    @JvmStatic
-    fun shouldTreatAsDefaultSlotLimit(slotLimit: Int): Boolean =
-        slotLimit == VANILLA_STACK_LIMIT
-
-
-    @JvmStatic
-    fun shouldTreatAsDefaultItemLimit(itemLimit: Int): Boolean =
-        itemLimit == VANILLA_STACK_LIMIT
 
     @JvmStatic
     fun beginInventoryWrite(stack: ItemStack) {
@@ -191,7 +189,7 @@ object StackLimitHooks {
         }
 
         val itemLimit = stack.maxStackSize
-        return if (shouldTreatAsDefaultSlotLimit(inventoryLimit)) {
+        return if (inventoryLimit == VANILLA_STACK_LIMIT) {
             itemLimit
         } else {
             minOf(inventoryLimit, itemLimit)

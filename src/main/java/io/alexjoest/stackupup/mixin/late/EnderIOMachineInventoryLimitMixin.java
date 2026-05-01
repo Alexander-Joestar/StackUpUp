@@ -9,17 +9,17 @@ import org.spongepowered.asm.mixin.injection.At;
 
 @Pseudo
 @Mixin(
-    targets = {
-        "crazypants.enderio.base.machine.baselegacy.AbstractInventoryMachineEntity",
-        "crazypants.enderio.machines.machine.enchanter.TileEnchanter"
-    },
-    remap = false
+        targets = {
+                "crazypants.enderio.base.machine.baselegacy.AbstractInventoryMachineEntity",
+                "crazypants.enderio.machines.machine.enchanter.TileEnchanter"
+        },
+        remap = false
 )
 abstract class EnderIOMachineInventoryLimitMixin {
     @Unique
     private static final int VANILLA_STACK_LIMIT = 64;
 
-    @ModifyReturnValue(method = "getInventoryStackLimit", at = @At("RETURN"), require = 0)
+    @ModifyReturnValue(method = "getInventoryStackLimit()I", at = @At("RETURN"), require = 0)
     private int stackupup$expandDefaultMachineLimit(int original) {
         return original == VANILLA_STACK_LIMIT ? StackLimitHooks.getCompatibilityStackSize() : original;
     }

@@ -54,6 +54,25 @@ class ContainerInsertHooksTest {
     }
 
     @Test
+    fun `remainder is zero when inventory leaves overflow in argument stack`() {
+        val inventory = object : InventoryBasic("test", false, 1) {
+            override fun setInventorySlotContents(index: Int, stack: ItemStack) {
+                val stored = stack.copy()
+                stored.setCount(64)
+                super.setInventorySlotContents(index, stored)
+                stack.setCount(64)
+            }
+        }
+        val slot = Slot(inventory, 0, 0, 0)
+        val attempted = ItemStack(Item(), 128)
+        val originalCount = attempted.count
+
+        slot.putStack(attempted)
+
+        assertEquals(0, ContainerInsertHooks.remainderAfterPut(slot, attempted, originalCount))
+    }
+
+    @Test
     fun `remainder is zero when slot accepts full stack`() {
         val inventory = InventoryBasic("test", false, 1)
         val slot = Slot(inventory, 0, 0, 0)
@@ -113,5 +132,16 @@ class ContainerInsertHooksTest {
         slot.putStack(attempted.copy())
 
         assertEquals(0, ContainerInsertHooks.remainderAfterPut(slot, attempted, attempted.count))
+    }
+
+    @Test
+    fun `empty merge slot limit does not exceed inventory capacity`() {
+        val inventory = object : InventoryBasic("test", false, 1) {
+            override fun getInventoryStackLimit(): Int = 64
+        }
+        val slot = Slot(inventory, 0, 0, 0)
+        val attempted = ItemStack(Item(), 128)
+
+        assertEquals(64, ContainerInsertHooks.resolveMergeSlotLimit(slot, attempted, 128))
     }
 }

@@ -32,7 +32,7 @@ object ContainerInsertHooks {
         }
 
         val acceptedCount = resolveAcceptedCount(storedStack, attemptedStack, attemptedCount)
-        return (attemptedCount - acceptedCount).coerceAtLeast(0)
+        return resolveRemainder(storedStack, attemptedStack, attemptedCount, acceptedCount)
     }
 
     /**
@@ -65,7 +65,16 @@ object ContainerInsertHooks {
         }
 
         val acceptedCount = resolveAcceptedCount(storedStack, attemptedStack, attemptedCount)
-        return (attemptedCount - acceptedCount).coerceAtLeast(0)
+        return resolveRemainder(storedStack, attemptedStack, attemptedCount, acceptedCount)
+    }
+
+    @JvmStatic
+    fun resolveMergeSlotLimit(slot: Slot, stack: ItemStack, declaredSlotLimit: Int): Int {
+        val inventoryLimit = slot.inventory.inventoryStackLimit
+        if (inventoryLimit <= 0) {
+            return resolveContainerMergeSlotLimit(stack, slot.getHasStack(), declaredSlotLimit, VANILLA_STACK_LIMIT)
+        }
+        return resolveContainerMergeSlotLimit(stack, slot.getHasStack(), declaredSlotLimit, inventoryLimit)
     }
 
     private fun resolveAcceptedCount(storedStack: ItemStack, attemptedStack: ItemStack, attemptedCount: Int): Int {
@@ -79,5 +88,22 @@ object ContainerInsertHooks {
             // 不同物品 → 说明槽位被完全替换，未接受任何原尝试物品
             0
         }
+    }
+
+    private fun resolveRemainder(storedStack: ItemStack, attemptedStack: ItemStack, attemptedCount: Int, acceptedCount: Int): Int {
+        val remainder = (attemptedCount - acceptedCount).coerceAtLeast(0)
+        // Some inventories keep/spawn the leftover by mutating the argument to the remainder count.
+        if (remainder > 0 && storedStack !== attemptedStack && attemptedStack.count == remainder) {
+            return 0
+        }
+        return remainder
+    }
+
+    private fun resolveContainerMergeSlotLimit(stack: ItemStack, slotHasStack: Boolean, declaredSlotLimit: Int, inventoryLimit: Int): Int {
+        val effectiveInventoryLimit = if (inventoryLimit > 0) inventoryLimit else VANILLA_STACK_LIMIT
+        if (!slotHasStack) {
+            return minOf(declaredSlotLimit, effectiveInventoryLimit)
+        }
+        return StackLimitHooks.resolveDynamicSlotLimit(stack, minOf(declaredSlotLimit, effectiveInventoryLimit))
     }
 }

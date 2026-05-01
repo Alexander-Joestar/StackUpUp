@@ -5,7 +5,6 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import io.alexjoest.stackupup.Constants;
 import io.alexjoest.stackupup.ContainerInsertHooks;
 import io.alexjoest.stackupup.RemainderGuard;
-import io.alexjoest.stackupup.StackLimitHooks;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.ClickType;
@@ -30,12 +29,12 @@ public abstract class ContainerMixin {
     private static final ThreadLocal<Integer> stackupup$pendingSwapRemainder = new ThreadLocal<>();
 
     @Inject(
-        method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
-        at = @At("HEAD")
+            method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
+            at = @At("HEAD")
     )
     private void stackupup$clearPendingSlotClickStateBefore(
-        int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player,
-        CallbackInfoReturnable<ItemStack> cir
+            int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player,
+            CallbackInfoReturnable<ItemStack> cir
     ) {
         stackupup$clearPendingSlotClickState();
     }
@@ -43,31 +42,29 @@ public abstract class ContainerMixin {
     // ══════════════════ mergeItemStack ──────────────────────────────────
 
     @WrapOperation(
-        method = "mergeItemStack(Lnet/minecraft/item/ItemStack;IIZ)Z",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/inventory/Slot;getSlotStackLimit()I"
-        )
+            method = "mergeItemStack(Lnet/minecraft/item/ItemStack;IIZ)Z",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/inventory/Slot;getSlotStackLimit()I"
+            )
     )
     private int stackupup$useItemAwareMergeLimit(
-        Slot slot, Operation<Integer> original,
-        ItemStack stack, int startIndex, int endIndex, boolean reverseDirection
+            Slot slot, Operation<Integer> original,
+            ItemStack stack, int startIndex, int endIndex, boolean reverseDirection
     ) {
-        return StackLimitHooks.resolveContainerMergeSlotLimit(
-            stack, slot.getHasStack(), original.call(slot)
-        );
+        return ContainerInsertHooks.resolveMergeSlotLimit(slot, stack, original.call(slot));
     }
 
     @WrapOperation(
-        method = "mergeItemStack(Lnet/minecraft/item/ItemStack;IIZ)Z",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/inventory/Slot;putStack(Lnet/minecraft/item/ItemStack;)V"
-        )
+            method = "mergeItemStack(Lnet/minecraft/item/ItemStack;IIZ)Z",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/inventory/Slot;putStack(Lnet/minecraft/item/ItemStack;)V"
+            )
     )
     private void stackupup$restoreRemainderAfterMergePut(
-        Slot slot, ItemStack attemptedStack, Operation<Void> original,
-        ItemStack sourceStack, int startIndex, int endIndex, boolean reverseDirection
+            Slot slot, ItemStack attemptedStack, Operation<Void> original,
+            ItemStack sourceStack, int startIndex, int endIndex, boolean reverseDirection
     ) {
         if (!RemainderGuard.enabled) { original.call(slot, attemptedStack); return; }
         int attemptedCount = attemptedStack.getCount();
@@ -83,12 +80,12 @@ public abstract class ContainerMixin {
      * 余量暂存到 pendingDragRemainder，在拖动结束后的 setItemStack ordinal 0 中补回光标。
      */
     @WrapOperation(
-        method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
-        at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/Slot;putStack(Lnet/minecraft/item/ItemStack;)V", ordinal = 0)
+            method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/Slot;putStack(Lnet/minecraft/item/ItemStack;)V", ordinal = 0)
     )
     private void stackupup$restoreRemainderAfterClickPut_0(
-        Slot slot, ItemStack attemptedStack, Operation<Void> original,
-        int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
+            Slot slot, ItemStack attemptedStack, Operation<Void> original,
+            int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
         if (clickTypeIn == ClickType.QUICK_CRAFT) {
             if (!RemainderGuard.enabled) { original.call(slot, attemptedStack); return; }
@@ -105,12 +102,12 @@ public abstract class ContainerMixin {
      * ordinal 1 — PICKUP / 空槽写入 ("else" 分支的第一次 putStack)。
      */
     @WrapOperation(
-        method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
-        at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/Slot;putStack(Lnet/minecraft/item/ItemStack;)V", ordinal = 1)
+            method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/Slot;putStack(Lnet/minecraft/item/ItemStack;)V", ordinal = 1)
     )
     private void stackupup$restoreRemainderAfterClickPut_1(
-        Slot slot, ItemStack attemptedStack, Operation<Void> original,
-        int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
+            Slot slot, ItemStack attemptedStack, Operation<Void> original,
+            int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
         stackupup$restoreRemainderToCursor(slot, attemptedStack, original, player);
     }
@@ -119,12 +116,12 @@ public abstract class ContainerMixin {
      * ordinal 2 — PICKUP / 空槽变空后 putStack(EMPTY)。安全忽略。
      */
     @WrapOperation(
-        method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
-        at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/Slot;putStack(Lnet/minecraft/item/ItemStack;)V", ordinal = 2)
+            method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/Slot;putStack(Lnet/minecraft/item/ItemStack;)V", ordinal = 2)
     )
     private void stackupup$restoreRemainderAfterClickPut_2(
-        Slot slot, ItemStack attemptedStack, Operation<Void> original,
-        int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
+            Slot slot, ItemStack attemptedStack, Operation<Void> original,
+            int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
         original.call(slot, attemptedStack);
     }
@@ -133,12 +130,12 @@ public abstract class ContainerMixin {
      * ordinal 3 — PICKUP / decrStackSize 后 putStack(EMPTY)。安全忽略。
      */
     @WrapOperation(
-        method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
-        at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/Slot;putStack(Lnet/minecraft/item/ItemStack;)V", ordinal = 3)
+            method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/Slot;putStack(Lnet/minecraft/item/ItemStack;)V", ordinal = 3)
     )
     private void stackupup$restoreRemainderAfterClickPut_3(
-        Slot slot, ItemStack attemptedStack, Operation<Void> original,
-        int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
+            Slot slot, ItemStack attemptedStack, Operation<Void> original,
+            int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
         original.call(slot, attemptedStack);
     }
@@ -148,12 +145,12 @@ public abstract class ContainerMixin {
      * 余量暂存到 pendingSwapRemainder，在随后的 setItemStack 中补回。
      */
     @WrapOperation(
-        method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
-        at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/Slot;putStack(Lnet/minecraft/item/ItemStack;)V", ordinal = 4)
+            method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/Slot;putStack(Lnet/minecraft/item/ItemStack;)V", ordinal = 4)
     )
     private void stackupup$restoreRemainderAfterClickPut_4(
-        Slot slot, ItemStack attemptedStack, Operation<Void> original,
-        int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
+            Slot slot, ItemStack attemptedStack, Operation<Void> original,
+            int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
         if (!RemainderGuard.enabled) { original.call(slot, attemptedStack); return; }
         int attemptedCount = attemptedStack.getCount();
@@ -166,12 +163,12 @@ public abstract class ContainerMixin {
      * ordinal 5 — PICKUP / decrStackSize 清空后 putStack(EMPTY)。安全忽略。
      */
     @WrapOperation(
-        method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
-        at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/Slot;putStack(Lnet/minecraft/item/ItemStack;)V", ordinal = 5)
+            method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/Slot;putStack(Lnet/minecraft/item/ItemStack;)V", ordinal = 5)
     )
     private void stackupup$restoreRemainderAfterClickPut_5(
-        Slot slot, ItemStack attemptedStack, Operation<Void> original,
-        int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
+            Slot slot, ItemStack attemptedStack, Operation<Void> original,
+            int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
         original.call(slot, attemptedStack);
     }
@@ -180,12 +177,12 @@ public abstract class ContainerMixin {
      * ordinal 6 — SWAP (hotbar) / 空槽后 putStack(EMPTY)。安全忽略。
      */
     @WrapOperation(
-        method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
-        at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/Slot;putStack(Lnet/minecraft/item/ItemStack;)V", ordinal = 6)
+            method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/Slot;putStack(Lnet/minecraft/item/ItemStack;)V", ordinal = 6)
     )
     private void stackupup$restoreRemainderAfterClickPut_6(
-        Slot slot, ItemStack attemptedStack, Operation<Void> original,
-        int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
+            Slot slot, ItemStack attemptedStack, Operation<Void> original,
+            int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
         original.call(slot, attemptedStack);
     }
@@ -194,12 +191,12 @@ public abstract class ContainerMixin {
      * ordinal 7 — SWAP (hotbar) / splitStack 后写入。余量暂存，在 setItemStack/swap 中补回。
      */
     @WrapOperation(
-        method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
-        at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/Slot;putStack(Lnet/minecraft/item/ItemStack;)V", ordinal = 7)
+            method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/Slot;putStack(Lnet/minecraft/item/ItemStack;)V", ordinal = 7)
     )
     private void stackupup$restoreRemainderAfterClickPut_7(
-        Slot slot, ItemStack attemptedStack, Operation<Void> original,
-        int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
+            Slot slot, ItemStack attemptedStack, Operation<Void> original,
+            int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
         if (!RemainderGuard.enabled) { original.call(slot, attemptedStack); return; }
         int attemptedCount = attemptedStack.getCount();
@@ -212,12 +209,12 @@ public abstract class ContainerMixin {
      * ordinal 8 — SWAP (hotbar) / 完整物品写入。余量暂存。
      */
     @WrapOperation(
-        method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
-        at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/Slot;putStack(Lnet/minecraft/item/ItemStack;)V", ordinal = 8)
+            method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/Slot;putStack(Lnet/minecraft/item/ItemStack;)V", ordinal = 8)
     )
     private void stackupup$restoreRemainderAfterClickPut_8(
-        Slot slot, ItemStack attemptedStack, Operation<Void> original,
-        int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
+            Slot slot, ItemStack attemptedStack, Operation<Void> original,
+            int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
         if (!RemainderGuard.enabled) { original.call(slot, attemptedStack); return; }
         int attemptedCount = attemptedStack.getCount();
@@ -230,12 +227,12 @@ public abstract class ContainerMixin {
      * ordinal 9 — SWAP (hotbar, 有物品) / splitStack 后写入。余量暂存。
      */
     @WrapOperation(
-        method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
-        at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/Slot;putStack(Lnet/minecraft/item/ItemStack;)V", ordinal = 9)
+            method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/Slot;putStack(Lnet/minecraft/item/ItemStack;)V", ordinal = 9)
     )
     private void stackupup$restoreRemainderAfterClickPut_9(
-        Slot slot, ItemStack attemptedStack, Operation<Void> original,
-        int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
+            Slot slot, ItemStack attemptedStack, Operation<Void> original,
+            int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
         if (!RemainderGuard.enabled) { original.call(slot, attemptedStack); return; }
         int attemptedCount = attemptedStack.getCount();
@@ -248,12 +245,12 @@ public abstract class ContainerMixin {
      * ordinal 10 — SWAP (hotbar, 有物品) / 完整物品写入。余量暂存。
      */
     @WrapOperation(
-        method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
-        at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/Slot;putStack(Lnet/minecraft/item/ItemStack;)V", ordinal = 10)
+            method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/Slot;putStack(Lnet/minecraft/item/ItemStack;)V", ordinal = 10)
     )
     private void stackupup$restoreRemainderAfterClickPut_10(
-        Slot slot, ItemStack attemptedStack, Operation<Void> original,
-        int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
+            Slot slot, ItemStack attemptedStack, Operation<Void> original,
+            int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
         if (!RemainderGuard.enabled) { original.call(slot, attemptedStack); return; }
         int attemptedCount = attemptedStack.getCount();
@@ -265,21 +262,21 @@ public abstract class ContainerMixin {
     // ══════════════════ slotClick shrink / grow ───────────────────────────
 
     @WrapOperation(
-        method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
-        at = @At(value = "INVOKE", target = "Lnet/minecraft/item/ItemStack;shrink(I)V", ordinal = 0)
+            method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/item/ItemStack;shrink(I)V", ordinal = 0)
     )
     private void stackupup$delayCursorShrinkUntilSlotGrowth(
-        ItemStack cursorStack, int quantity, Operation<Void> original
+            ItemStack cursorStack, int quantity, Operation<Void> original
     ) {
         stackupup$pendingMergeShrink.set(new StackUpUpMergeShrink(cursorStack, quantity, original));
     }
 
     @WrapOperation(
-        method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
-        at = @At(value = "INVOKE", target = "Lnet/minecraft/item/ItemStack;grow(I)V", ordinal = 0)
+            method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/item/ItemStack;grow(I)V", ordinal = 0)
     )
     private void stackupup$shrinkCursorByAcceptedSlotGrowth(
-        ItemStack slotStack, int quantity, Operation<Void> original
+            ItemStack slotStack, int quantity, Operation<Void> original
     ) {
         StackUpUpMergeShrink pending = stackupup$pendingMergeShrink.get();
         if (pending == null) { original.call(slotStack, quantity); return; }
@@ -293,16 +290,16 @@ public abstract class ContainerMixin {
     // ══════════════════ slotClick drop / setItemStack ────────────────────
 
     @WrapOperation(
-        method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/entity/player/EntityPlayer;dropItem(Lnet/minecraft/item/ItemStack;Z)Lnet/minecraft/entity/item/EntityItem;",
-            ordinal = 0
-        )
+            method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/entity/player/EntityPlayer;dropItem(Lnet/minecraft/item/ItemStack;Z)Lnet/minecraft/entity/item/EntityItem;",
+                    ordinal = 0
+            )
     )
     private EntityItem stackupup$limitOutsideDropToDefaultSize(
-        ItemStack stack, boolean dropAround, Operation<EntityItem> original,
-        int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
+            ItemStack stack, boolean dropAround, Operation<EntityItem> original,
+            int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
         if (stack.getCount() > Constants.VANILLA_STACK_LIMIT) {
             ItemStack copy = stack.copy();
@@ -320,16 +317,16 @@ public abstract class ContainerMixin {
      * 合并 pendingDragRemainder 到光标。
      */
     @WrapOperation(
-        method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/entity/player/InventoryPlayer;setItemStack(Lnet/minecraft/item/ItemStack;)V",
-            ordinal = 0
-        )
+            method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/entity/player/InventoryPlayer;setItemStack(Lnet/minecraft/item/ItemStack;)V",
+                    ordinal = 0
+            )
     )
     private void stackupup$applyDragRemainderToCursor(
-        ItemStack cursorStack, Operation<Void> original,
-        int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
+            ItemStack cursorStack, Operation<Void> original,
+            int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
         Integer pendingDrag = stackupup$pendingDragRemainder.get();
         if (pendingDrag != null) {
@@ -345,12 +342,12 @@ public abstract class ContainerMixin {
     }
 
     @Inject(
-        method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
-        at = @At("RETURN")
+            method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
+            at = @At("RETURN")
     )
     private void stackupup$clearPendingSlotClickStateAfter(
-        int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player,
-        CallbackInfoReturnable<ItemStack> cir
+            int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player,
+            CallbackInfoReturnable<ItemStack> cir
     ) {
         stackupup$clearPendingSlotClickState();
     }
@@ -358,7 +355,7 @@ public abstract class ContainerMixin {
     // ══════════════════ 共享工具 ─────────────────────────────────────────
 
     private void stackupup$restoreRemainderToCursor(
-        Slot slot, ItemStack attemptedStack, Operation<Void> original, EntityPlayer player
+            Slot slot, ItemStack attemptedStack, Operation<Void> original, EntityPlayer player
     ) {
         if (!RemainderGuard.enabled) { original.call(slot, attemptedStack); return; }
         int attemptedCount = attemptedStack.getCount();
@@ -385,13 +382,13 @@ public abstract class ContainerMixin {
 
     @Unique
     private static final class StackUpUpMergeShrink {
-        private final ItemStack cursorStack;
-        private final int quantity;
+        private final ItemStack       cursorStack;
+        private final int             quantity;
         private final Operation<Void> originalShrink;
 
         private StackUpUpMergeShrink(ItemStack cursorStack, int quantity, Operation<Void> originalShrink) {
-            this.cursorStack = cursorStack;
-            this.quantity = quantity;
+            this.cursorStack    = cursorStack;
+            this.quantity       = quantity;
             this.originalShrink = originalShrink;
         }
     }

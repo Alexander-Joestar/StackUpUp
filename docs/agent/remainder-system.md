@@ -140,6 +140,8 @@ slotClick / mergeItemStack / SWAP
 
 这些 late mixin 通过 `@ModifyReturnValue` 把 `getInventoryStackLimit()` 的返回从 64 提升到 `StackLimitHooks.getCompatibilityStackSize()`（全局兼容上限）。
 
+Ender IO 的普通机器类同时存在 `getInventoryStackLimit()` 与 `getInventoryStackLimit(int)`，mixin 必须使用 `getInventoryStackLimit()I` 这类完整 descriptor，避免 overloaded selector 在 late 阶段静默漏打。对应源码测试会锁住这一点。
+
 ### 兼容性开关
 
 每个 mod 的 late mixin 都可以通过 `config/stackupup.cfg` → `compatibility` 分类下的布尔开关独立启停。
@@ -187,6 +189,7 @@ RemainderGuard.withoutRemainder {
 5. `remainderAfterPut` 在热路径上先做“尝试数量是否超过当前槽位与库存真实上限”的快速路径判断，低于上限时直接返回 0，不做 NBT 比对。
 6. `ContainerMixin` 在 `slotClick` 的 HEAD 和 RETURN 都会清理 ThreadLocal 状态，避免异常路径或跨点击残留影响下一次交互。
 7. 这个快速路径是 remainder 体系的主要性能保障，不能删成“总是进完整比较”。
+8. 若模组库存写入时把传入参数栈变成“剩余数量”（例如自己丢出/保留溢出物），`remainderAfterPut` 会认为溢出已由库存侧处理，不再二次回填，避免 EIO 这类路径发生重复物品。
 
 ## 槽位上限与库存容量的关系
 

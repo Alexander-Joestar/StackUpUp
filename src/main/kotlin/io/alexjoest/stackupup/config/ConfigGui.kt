@@ -22,10 +22,13 @@ class ConfigGui(parentScreen: GuiScreen?) :
     companion object {
         private fun collectConfigElements(): List<IConfigElement> = ConfigManager.getModConfigClasses(StackUpUp.CONFIG_ID).let { classes ->
             if (classes.size == 1) {
-                ConfigElement.from(classes.single()).childElements
+                sanitizeConfigElements(ConfigElement.from(classes.single()).childElements)
             } else {
-                classes.map(ConfigElement::from)
+                classes.flatMap { sanitizeConfigElements(ConfigElement.from(it).childElements) }
             }
         }
+
+        internal fun sanitizeConfigElements(elements: List<IConfigElement>): List<IConfigElement> =
+            elements.filterNot { it.name.equals("instance", ignoreCase = true) }
     }
 }

@@ -133,14 +133,6 @@ object StackLimitHooks {
     }
 
     @JvmStatic
-    fun resolveContainerMergeSlotLimit(stack: ItemStack, slotHasStack: Boolean, declaredSlotLimit: Int): Int {
-        if (!slotHasStack) {
-            return declaredSlotLimit
-        }
-        return resolveDynamicSlotLimit(stack, declaredSlotLimit)
-    }
-
-    @JvmStatic
     fun resolveItemHandlerSlotLimit(stack: ItemStack, simulatedLimit: Int, slotLimit: Int): Int {
         if (stack.isEmpty) {
             return simulatedLimit
@@ -151,9 +143,9 @@ object StackLimitHooks {
 
         val currentItemLimit = stack.maxStackSize
         return when {
-            slotLimit < currentItemLimit                                            -> slotLimit
+            slotLimit < currentItemLimit -> slotLimit
             currentItemLimit < slotLimit && currentItemLimit != VANILLA_STACK_LIMIT -> currentItemLimit
-            else                                                                    -> slotLimit
+            else -> slotLimit
         }
     }
 

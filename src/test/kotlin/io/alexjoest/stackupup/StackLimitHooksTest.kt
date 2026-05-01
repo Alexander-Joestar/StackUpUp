@@ -5,6 +5,8 @@ import io.alexjoest.stackupup.limit.RuleRuntime
 import io.alexjoest.stackupup.rules.compile.RuleCompiler
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import net.minecraft.init.Bootstrap
+import net.minecraft.inventory.InventoryBasic
+import net.minecraft.inventory.Slot
 import net.minecraft.item.Item
 import net.minecraft.item.ItemStack
 import net.minecraft.util.ResourceLocation
@@ -173,17 +175,17 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `emptyContainerMergeSlot_shouldUseDeclaredSlotLimitAsSafeFallback`() {
+    fun `emptyContainerMergeSlot_shouldClampDeclaredLimitToInventoryCapacity`() {
         Bootstrap.register()
         val item = object : Item() {
             override fun getItemStackLimit(stack: ItemStack): Int = 10240
         }.setRegistryName(ResourceLocation("stackupup_test", "dummy_item"))
+        val inventory = object : InventoryBasic("test", false, 1) {
+            override fun getInventoryStackLimit(): Int = 64
+        }
+        val slot = Slot(inventory, 0, 0, 0)
 
-        val result = StackLimitHooks.resolveContainerMergeSlotLimit(
-            stack = ItemStack(item, 1, 0),
-            slotHasStack = false,
-            declaredSlotLimit = 64,
-        )
+        val result = ContainerInsertHooks.resolveMergeSlotLimit(slot, ItemStack(item, 1, 0), 128)
 
         assertEquals(64, result)
     }
@@ -194,12 +196,13 @@ class StackLimitHooksTest {
         val item = object : Item() {
             override fun getItemStackLimit(stack: ItemStack): Int = 10240
         }.setRegistryName(ResourceLocation("stackupup_test", "dummy_item"))
+        val inventory = object : InventoryBasic("test", false, 1) {
+            override fun getInventoryStackLimit(): Int = 10240
+        }
+        val slot = Slot(inventory, 0, 0, 0)
+        slot.putStack(ItemStack(item, 1, 0))
 
-        val result = StackLimitHooks.resolveContainerMergeSlotLimit(
-            stack = ItemStack(item, 1, 0),
-            slotHasStack = true,
-            declaredSlotLimit = 64,
-        )
+        val result = ContainerInsertHooks.resolveMergeSlotLimit(slot, ItemStack(item, 1, 0), 64)
 
         assertEquals(10240, result)
     }

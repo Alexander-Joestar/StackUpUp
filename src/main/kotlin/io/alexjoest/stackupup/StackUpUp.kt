@@ -3,6 +3,8 @@ package io.alexjoest.stackupup
 import io.alexjoest.stackupup.config.ConfigFileSanitizer
 import io.alexjoest.stackupup.rules.io.RuleFileLocator
 import io.alexjoest.stackupup.rules.io.RuleReloadReport
+import io.alexjoest.stackupup.rules.io.RuleSourceLocator
+import io.alexjoest.stackupup.rules.io.RuleStateStore
 import net.minecraft.item.Item
 import net.minecraftforge.common.MinecraftForge
 import net.minecraftforge.common.config.Config
@@ -21,6 +23,11 @@ import net.minecraftforge.fml.common.eventhandler.EventPriority
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
+import java.io.File
+import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import java.util.concurrent.atomic.AtomicReference
 
 @Mod(
     modid = StackUpUpIds.MOD_ID,
@@ -108,8 +115,27 @@ class StackUpUp {
         if (StackUpUpCore.isDisabledForConflict()) {
             return
         }
+        initWorldMarkdown()
+        reload()
         val server = FMLCommonHandler.instance().minecraftServerInstance ?: return
         DevAutomationBridge.runServerAutomation(server)
+    }
+
+    private fun initWorldMarkdown() {
+        val worldMarkdownFile = RuleSourceLocator.resolveWorldMarkdownFile() ?: return
+        if (worldMarkdownFile.exists()) {
+            return
+        }
+        val templateFile = File(RuleFileLocator.resolveRulesDirectory(), StackUpUpIds.RULES_FILE_NAME)
+        if (!templateFile.exists()) {
+            return
+        }
+        worldMarkdownFile.parentFile?.mkdirs()
+        try {
+            Files.copy(templateFile.toPath(), worldMarkdownFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        } catch (e: IOException) {
+            logger?.warn("Failed to copy markdown template to world: {}", e.message)
+        }
     }
 
     companion object {
@@ -130,6 +156,46 @@ class StackUpUp {
         @JvmField
         var logger: Logger? = null
 
+        private val stateStoreCache = AtomicReference<RuleStateStore?>()
+
+        private fun stateStore(): RuleStateStore? {
+            val cached = stateStoreCache.get()
+            if (cached != null) {
+                return cached
+            }
+            val worldMarkdownFile = RuleSourceLocator.resolveWorldMarkdownFile() ?: return null
+            val store = RuleStateStore(worldMarkdownFile)
+            return if (stateStoreCache.compareAndSet(null, store)) {
+                store
+            } else {
+                stateStoreCache.get()
+            }
+        }
+
+        @JvmStatic
+        @Synchronized
+        fun getState(name: String): Boolean {
+            val store = stateStore() ?: run {
+                logger?.warn("Cannot read state '{}' because world markdown storage is unavailable", name)
+                return false
+            }
+            return store.readStates()[name] ?: false
+        }
+
+        @JvmStatic
+        @Synchronized
+        fun setState(name: String, value: Boolean) {
+            val store = stateStore() ?: run {
+                logger?.warn("Cannot write state '{}' because world markdown storage is unavailable", name)
+                return
+            }
+            val states = store.readStates().toMutableMap()
+            states[name] = value
+            val changed = store.writeStates(states)
+            if (!changed) return
+            reload()
+        }
+
         @JvmStatic
         fun reload(): RuleReloadReport = RuleRuntimeCoordinator.run {
             StackUpUpConfig.applyReloadControlledValues()
@@ -140,7 +206,7 @@ class StackUpUp {
         }
 
         private fun logReloadReport(report: RuleReloadReport) {
-            val activeLogger = requireNotNull(logger)
+            val activeLogger = logger ?: return
             activeLogger.info("Loaded {} DSL rules from {}", report.snapshot.rules.size, report.file.absolutePath)
             report.errors.map { it.format() }.forEach(activeLogger::error)
             for (warning in report.warnings) {

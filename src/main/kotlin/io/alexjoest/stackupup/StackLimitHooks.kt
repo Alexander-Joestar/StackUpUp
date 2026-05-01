@@ -22,13 +22,6 @@ object StackLimitHooks {
     fun getCompatibilityStackSize(): Int = StackUpUpConfig.maxStackSize
 
     @JvmStatic
-    @Deprecated(
-        message = "请改用 getCompatibilityStackSize，旧名称容易与精确物品上限混淆。",
-        replaceWith = ReplaceWith("getCompatibilityStackSize()"),
-    )
-    fun getMaxStackSize(): Int = getCompatibilityStackSize()
-
-    @JvmStatic
     fun applyDynamicStackLimit(itemId: String, modId: String, meta: Int, type: String, baseLimit: Int, oreNames: Set<String>): Int =
         RuleRuntime.limitService().resolve(StackIdentity(itemId, modId, meta, type), baseLimit, oreNames)
 

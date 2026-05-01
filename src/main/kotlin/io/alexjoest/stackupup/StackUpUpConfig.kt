@@ -177,6 +177,12 @@ object StackUpUpConfig {
         @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compatibility.refinedstorage.name")
         @Config.RequiresMcRestart
         var refinedStorage: Boolean = true
+
+        @JvmField
+        @Config.Comment("Enable late-mixin compatibility patch for Simple Storage Network.")
+        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compatibility.storagenetwork.name")
+        @Config.RequiresMcRestart
+        var storageNetwork: Boolean = true
     }
 }
 

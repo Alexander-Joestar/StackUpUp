@@ -15,6 +15,7 @@ class LateMixinConfigCoverageTest {
         CompatModule("ic2", "ic2"),
         CompatModule("mantle", "mantle"),
         CompatModule("refinedStorage", "refinedstorage"),
+        CompatModule("storageNetwork", "storagenetwork"),
     )
 
     @Test

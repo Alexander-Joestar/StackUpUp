@@ -1,12 +1,19 @@
 package io.alexjoest.stackupup.rules.io
 
 import io.alexjoest.stackupup.StackUpUpIds
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.io.File
 import kotlin.io.path.createTempDirectory
 
 class RuleSourceLocatorTest {
+    @AfterEach
+    fun tearDown() {
+        RuleFileLocator.resetForTests()
+        RuleSourceLocator.setWorldDirectoryForTests(null)
+    }
+
     @Test
     fun `shouldReturnGlobalWorldUserInOrder`() {
         val tempDir = createTempDirectory("stackupup-source-locator").toFile()
@@ -17,16 +24,16 @@ class RuleSourceLocatorTest {
         File(rulesDir, StackUpUpIds.USER_RULES_FILE_NAME).writeText("", Charsets.UTF_8)
 
         val worldDir = File(tempDir, "saves/demo/data/${StackUpUpIds.MOD_ID}").apply { mkdirs() }
-        File(worldDir, StackUpUpIds.WORLD_RULES_FILE_NAME).writeText("", Charsets.UTF_8)
+        File(worldDir, StackUpUpIds.WORLD_MARKDOWN_RULES_FILE_NAME).writeText("", Charsets.UTF_8)
 
         RuleFileLocator.setConfigDirectory(configDir)
         RuleSourceLocator.setWorldDirectoryForTests(File(tempDir, "saves/demo"))
 
         assertEquals(
             listOf(
+                File(worldDir, StackUpUpIds.WORLD_MARKDOWN_RULES_FILE_NAME).absolutePath,
                 File(rulesDir, "a-pack.su").absolutePath,
                 File(rulesDir, "z-pack.su").absolutePath,
-                File(worldDir, "world.su").absolutePath,
                 File(rulesDir, "user.su").absolutePath,
             ),
             RuleSourceLocator.resolveLoadOrder().map(File::getAbsolutePath),

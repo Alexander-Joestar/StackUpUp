@@ -24,15 +24,25 @@ internal object RuleConditionalPreprocessor {
 
     private fun isParentActive(activeStack: List<Boolean>): Boolean = activeStack.all { it }
 
-    private fun parseIf(trimmed: String): RuleGate? {
+    private fun parseIf(trimmed: String): RuleGateExpression? {
         if (!trimmed.startsWith("if ")) {
             return null
         }
 
-        val parts = trimmed.removePrefix("if ").trim().split(Regex("\\s+"), limit = 3)
-        if (parts.size != 3 || parts[1] != "=") {
-            return null
+        val expression = trimmed.removePrefix("if ").trim()
+        val normalized = legacyIfExpression(expression)
+        val parsed = MarkdownGateParser.parse(normalized)
+        return when (parsed) {
+            is MarkdownGateParseResult.Success -> parsed.expression
+            is MarkdownGateParseResult.Failure -> null
         }
-        return RuleGate(parts[0].lowercase(), parts[2].lowercase())
+    }
+
+    private fun legacyIfExpression(expression: String): String {
+        val parts = expression.split(Regex("\\s+"), limit = 3)
+        if (parts.size == 3 && parts[0].equals("mod", ignoreCase = true) && parts[1] == "=") {
+            return "modLoaded(\"${parts[2]}\")"
+        }
+        return expression
     }
 }

@@ -298,6 +298,7 @@ public abstract class ContainerMixin {
             )
     )
     private EntityItem stackupup$limitOutsideDropToDefaultSize(
+            EntityPlayer droppingPlayer,
             ItemStack stack, boolean dropAround, Operation<EntityItem> original,
             int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {

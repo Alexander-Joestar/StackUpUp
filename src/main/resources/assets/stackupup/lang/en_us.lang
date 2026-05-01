@@ -20,12 +20,15 @@ config.stackupup.general.enableDslRules.tooltip=Load DSL v2 rules from config/st
 config.stackupup.general.tooltipStackDisplayMode.tooltip=Choose when to show current stack size and max stack size in tooltips.
 config.stackupup.general.ruleComplexityWarnings.tooltip=Warn when the ruleset becomes unusually large or long.
 
-commands.stackupup.usage=/stackupup <reload|edit>
+commands.stackupup.usage=/stackupup <reload|edit|state>
 commands.stackupup.reload.success=Reloaded StackUpUp rules.
 commands.stackupup.edit.success=Opened rules file: %s
 commands.stackupup.edit.missing=Rules file does not exist yet: %s
 commands.stackupup.edit.unsupported=Desktop file opening is not supported in the current environment.
 commands.stackupup.edit.failed=Failed to open rules file: %s
+commands.stackupup.state.get=%s state is %s
+commands.stackupup.state.set=Set %s to %s
+commands.stackupup.state.missing=%s state is missing
 
 message.stackupup.rule_complexity.prefix=[StackUpUp] Rule complexity warning:
 message.stackupup.rule_reload_error.prefix=[StackUpUp] Rule load errors:
@@ -73,3 +76,4 @@ config.stackupup.compatibility.enderio.name=Ender IO
 config.stackupup.compatibility.ic2.name=IndustrialCraft 2
 config.stackupup.compatibility.mantle.name=Mantle
 config.stackupup.compatibility.refinedstorage.name=Refined Storage
+config.stackupup.compatibility.storagenetwork.name=Simple Storage Network

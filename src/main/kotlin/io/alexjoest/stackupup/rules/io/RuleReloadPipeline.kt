@@ -1,5 +1,6 @@
 package io.alexjoest.stackupup.rules.io
 
+import io.alexjoest.stackupup.rules.LocalizedMessage
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import java.io.File
 
@@ -11,14 +12,39 @@ internal object RuleReloadPipeline {
         warnings = emptyList(),
     )
 
-    fun loadDslRules(primaryRulesFile: File, sourceFiles: List<File>): RuleReloadReport {
+    fun loadDslRules(primaryRulesFile: File, sourceFiles: List<File>): RuleReloadReport = try {
         RuleFileTemplate.ensureExists(primaryRulesFile)
-        val result = DslRuleSource.fromFiles(sourceFiles, RuleGateContext.fromLoadedMods())
-        return RuleReloadReport(
+        val markdownFiles = sourceFiles.filter { it.name.endsWith(".su.md") }
+        val dslFiles = sourceFiles.filterNot { it.name.endsWith(".su.md") }
+        val gateContext = RuleGateContext.fromLoadedMods()
+        val stateErrors = markdownFiles.flatMap { file ->
+            if (!file.exists()) {
+                emptyList()
+            } else {
+                MarkdownStateParser.parse(file.readLines(Charsets.UTF_8)).errors
+            }
+        }
+        val markdownResult = MarkdownRuleSource.fromFiles(markdownFiles, gateContext)
+        val dslResult = DslRuleSource.fromFiles(dslFiles, gateContext)
+        val result = RuleLoadResult(
+            snapshot = RuleSnapshot(
+                version = maxOf(markdownResult.snapshot.version, dslResult.snapshot.version),
+                rules = markdownResult.snapshot.rules + dslResult.snapshot.rules,
+            ),
+            errors = markdownResult.errors + dslResult.errors,
+        )
+        RuleReloadReport(
             file = primaryRulesFile,
             snapshot = result.snapshot,
-            errors = result.errors,
             warnings = RuleComplexityAnalyzer.analyze(result.snapshot).warnings,
+            errors = result.errors + stateErrors.map { LocalizedMessage("[state] $it") },
+        )
+    } catch (ex: Exception) {
+        RuleReloadReport(
+            file = primaryRulesFile,
+            snapshot = RuleSnapshot(0L, emptyList()),
+            errors = listOf(LocalizedMessage(ex.message ?: ex.javaClass.simpleName)),
+            warnings = emptyList(),
         )
     }
 }

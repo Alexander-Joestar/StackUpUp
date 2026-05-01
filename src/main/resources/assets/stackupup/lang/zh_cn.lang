@@ -20,12 +20,15 @@ config.stackupup.general.enableDslRules.tooltip=从 config/stackupup/*.su 加载
 config.stackupup.general.tooltipStackDisplayMode.tooltip=选择何时在 Tooltip 中显示当前数量与最大堆叠上限。
 config.stackupup.general.ruleComplexityWarnings.tooltip=当规则条目过多或规则过长时给出提醒。
 
-commands.stackupup.usage=/stackupup <reload|edit>
+commands.stackupup.usage=/stackupup <reload|edit|state>
 commands.stackupup.reload.success=已重新加载 StackUpUp 规则。
 commands.stackupup.edit.success=已打开规则文件：%s
 commands.stackupup.edit.missing=规则文件尚不存在：%s
 commands.stackupup.edit.unsupported=当前环境不支持通过桌面方式打开文件。
 commands.stackupup.edit.failed=打开规则文件失败：%s
+commands.stackupup.state.get=%s 的状态为 %s
+commands.stackupup.state.set=已将 %s 设置为 %s
+commands.stackupup.state.missing=%s 的状态不存在
 
 message.stackupup.rule_complexity.prefix=[StackUpUp] 规则复杂度提醒：
 message.stackupup.rule_reload_error.prefix=[StackUpUp] 规则加载错误：
@@ -73,3 +76,4 @@ config.stackupup.compatibility.enderio.name=末影接口
 config.stackupup.compatibility.ic2.name=工业时代 2
 config.stackupup.compatibility.mantle.name=Mantle (匠魂)
 config.stackupup.compatibility.refinedstorage.name=精致存储
+config.stackupup.compatibility.storagenetwork.name=简单存储网络

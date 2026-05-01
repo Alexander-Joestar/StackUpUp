@@ -13,7 +13,7 @@ import java.io.IOException
 import javax.annotation.Nullable
 
 class CommandStackUpUp : CommandBase() {
-    private val subcommands = arrayOf("reload", "edit")
+    private val subcommands = arrayOf("reload", "edit", "state")
 
     override fun getName(): String = StackUpUpIds.MOD_ID
 
@@ -23,9 +23,10 @@ class CommandStackUpUp : CommandBase() {
 
     @Throws(CommandException::class)
     override fun execute(server: MinecraftServer, sender: ICommandSender, args: Array<out String>) {
-        when (args.singleOrNull()) {
+        when (args.getOrNull(0)) {
             "reload" -> emitReloadFeedback(sender)
             "edit" -> openRulesFile(sender)
+            "state" -> handleStateCommand(sender, args.drop(1))
             else -> throw WrongUsageException(getUsage(sender))
         }
     }
@@ -35,10 +36,38 @@ class CommandStackUpUp : CommandBase() {
         sender: ICommandSender,
         args: Array<out String>,
         @Nullable targetPos: BlockPos?,
-    ): MutableList<String> = if (args.size == 1) {
-        getListOfStringsMatchingLastWord(args, *subcommands)
-    } else {
-        mutableListOf()
+    ): MutableList<String> = when (args.size) {
+        1 -> getListOfStringsMatchingLastWord(args, *subcommands)
+        2 -> if (args[0] == "state") getListOfStringsMatchingLastWord(args, "get", "set") else mutableListOf()
+        3 -> if (args[0] == "state" && args[1] == "set") getListOfStringsMatchingLastWord(args, "true", "false") else mutableListOf()
+        else -> mutableListOf()
+    }
+
+    private fun handleStateCommand(sender: ICommandSender, args: List<String>) {
+        when (args.firstOrNull()) {
+            "get" -> {
+                val name = args.getOrNull(1) ?: throw WrongUsageException(getUsage(sender))
+                val value = StackUpUp.getState(name)
+                sender.reply(
+                    if (value) StackUpUpIds.COMMAND_STATE_GET_KEY else StackUpUpIds.COMMAND_STATE_MISSING_KEY,
+                    name,
+                    value,
+                )
+            }
+            "set" -> {
+                val name = args.getOrNull(1) ?: throw WrongUsageException(getUsage(sender))
+                val value = parseStateBoolean(args.getOrNull(2) ?: throw WrongUsageException(getUsage(sender)))
+                StackUpUp.setState(name, value)
+                sender.reply(StackUpUpIds.COMMAND_STATE_SET_KEY, name, value)
+            }
+            else -> throw WrongUsageException(getUsage(sender))
+        }
+    }
+
+    private fun parseStateBoolean(value: String): Boolean = when (value.lowercase()) {
+        "true", "1", "yes", "on" -> true
+        "false", "0", "no", "off" -> false
+        else -> throw WrongUsageException(StackUpUpIds.COMMAND_USAGE_KEY)
     }
 
     private fun emitReloadFeedback(sender: ICommandSender) {

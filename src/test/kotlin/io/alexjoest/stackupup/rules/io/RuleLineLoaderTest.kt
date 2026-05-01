@@ -46,4 +46,31 @@ class RuleLineLoaderTest {
         assertTrue(formatted.contains("[pack.su]"))
         assertTrue(formatted.contains("7"))
     }
+
+    @Test
+    fun `shouldStopCompilingAfterFirstParseError`() {
+        val result = RuleLineLoader.load(
+            listOf(
+                RuleLineLoader.RuleLineInput("item = minecraft:egg -> 64", 1, "main.su"),
+                RuleLineLoader.RuleLineInput("item = minecraft:egg -> /", 2, "main.su"),
+                RuleLineLoader.RuleLineInput("item = minecraft:egg -> 128", 3, "main.su"),
+            ),
+        )
+
+        assertEquals(1, result.snapshot.rules.size)
+        assertEquals(1, result.errors.size)
+    }
+
+    @Test
+    fun `shouldCompileValidRulesBeforeParseError`() {
+        val result = RuleLineLoader.load(
+            listOf(
+                RuleLineLoader.RuleLineInput("item = minecraft:egg -> 64", 1, "main.su"),
+                RuleLineLoader.RuleLineInput("item = minecraft:egg -> /", 2, "main.su"),
+            ),
+        )
+
+        assertEquals(1, result.snapshot.rules.size)
+        assertEquals(1, result.errors.size)
+    }
 }

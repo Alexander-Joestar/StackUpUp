@@ -142,4 +142,86 @@ Rule without condition applies to all items.
         }
         target.writeText(exampleContent, Charsets.UTF_8)
     }
+
+    val markdownExampleContent: String = """
+EDITING THIS FILE HAS NO EFFECT.
+This is a syntax reference only. Edit main.su.md to apply actual rules.
+
+
+# state
+
+State values are read by gate expressions in the rules section.
+Change them via `/stackupup state set <name> <true|false>`.
+
+- phase1 = false
+- expert_mode = false
+
+
+# rules
+
+Gate expressions go in headings: state("name") and modLoaded("modid").
+Combine with && / || / !. Parentheses are not supported.
+## always means unconditional.
+
+Rules inside ```stackupup (or ```su) fenced code blocks.
+Same DSL v2 syntax as main.su.
+
+## always
+
+```stackupup
+item = minecraft:egg -> 128
+item in [minecraft:egg, minecraft:snowball] -> 256
+```
+
+## modLoaded("thermal")
+
+```stackupup
+mod = thermal -> 1024
+```
+
+## state("expert_mode")
+
+```stackupup
+type = block -> 2048
+```
+
+## state("phase1") && modLoaded("enderio")
+
+```stackupup
+mod = enderio -> 4096
+```
+
+
+═══ Gate Functions ════════════════════════════════════════════════════
+
+  state("key")        Read a persisted boolean gate state
+  modLoaded("modid")   True when the mod is loaded (constant)
+
+
+═══ State Commands ════════════════════════════════════════════════════
+
+  /stackupup state get <name>          Read a state value
+  /stackupup state set <name> <bool>   Set a state value
+  /stackupup reload                    Reload rules
+
+
+═══ File Locations ═════════════════════════════════════════════════════
+
+  config template:  config/stackupup/main.su.md  (author reference)
+  world instance:   <save>/data/stackupup/main.su.md  (mutable, state writes go here)
+
+  Reload: /stackupup reload
+    """.trimIndent()
+
+    fun refreshMarkdownExample(globalDirectory: File) {
+        val target = File(globalDirectory, StackUpUpIds.EXAMPLE_MARKDOWN_RULES_FILE_NAME)
+        target.parentFile?.mkdirs()
+        if (target.exists()) {
+            val existing = target.readText(Charsets.UTF_8)
+            if (existing == markdownExampleContent) {
+                return
+            }
+        }
+        target.writeText(markdownExampleContent, Charsets.UTF_8)
+    }
 }

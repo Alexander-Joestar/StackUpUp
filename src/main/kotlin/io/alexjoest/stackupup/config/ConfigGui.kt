@@ -30,5 +30,15 @@ class ConfigGui(parentScreen: GuiScreen?) :
 
         internal fun sanitizeConfigElements(elements: List<IConfigElement>): List<IConfigElement> =
             elements.filterNot { it.name.equals("instance", ignoreCase = true) }
+                .map { element ->
+                    val children = element.childElements
+                    if (children.isNullOrEmpty()) {
+                        element
+                    } else {
+                        object : IConfigElement by element {
+                            override fun getChildElements(): MutableList<IConfigElement> = sanitizeConfigElements(children).toMutableList()
+                        }
+                    }
+                }
     }
 }

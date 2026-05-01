@@ -26,6 +26,7 @@ class MixinBooterIntegrationTest {
                 "mixins.stackupup.late.ic2.json",
                 "mixins.stackupup.late.mantle.json",
                 "mixins.stackupup.late.refinedstorage.json",
+                "mixins.stackupup.late.storagenetwork.json",
             ),
             StackUpUpLateMixinLoader().getMixinConfigs(),
         )

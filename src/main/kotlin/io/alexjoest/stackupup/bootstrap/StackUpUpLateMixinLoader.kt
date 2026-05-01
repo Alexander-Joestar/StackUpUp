@@ -63,6 +63,11 @@ class StackUpUpLateMixinLoader : ILateMixinLoader {
                 "refinedstorage",
                 "refinedStorage",
             ),
+            LateMixinModule(
+                StackUpUpIds.LATE_STORAGE_NETWORK_MIXIN_CONFIG,
+                "storagenetwork",
+                "storageNetwork",
+            ),
         )
     }
 }

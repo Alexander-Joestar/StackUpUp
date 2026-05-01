@@ -8,7 +8,9 @@ object StackUpUpIds {
     const val RULE_FILE_EXTENSION: String = "su"
     const val RULES_DIRECTORY_NAME: String = MOD_ID
     const val RULES_FILE_NAME: String = "main.$RULE_FILE_EXTENSION"
+    const val WORLD_MARKDOWN_RULES_FILE_NAME: String = "main.su.md"
     const val EXAMPLE_RULES_FILE_NAME: String = "example.su"
+    const val EXAMPLE_MARKDOWN_RULES_FILE_NAME: String = "example.su.md"
     const val USER_RULES_FILE_NAME: String = "user.$RULE_FILE_EXTENSION"
     const val WORLD_RULES_FILE_NAME: String = "world.$RULE_FILE_EXTENSION"
 
@@ -40,9 +42,13 @@ object StackUpUpIds {
     const val LATE_IC2_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.ic2.json"
     const val LATE_MANTLE_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.mantle.json"
     const val LATE_REFINED_STORAGE_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.refinedstorage.json"
+    const val LATE_STORAGE_NETWORK_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.storagenetwork.json"
 
     const val CONFIG_TITLE_KEY: String = "$CONFIG_LANG_ROOT.title"
     const val COMMAND_USAGE_KEY: String = "$COMMAND_LANG_ROOT.usage"
+    const val COMMAND_STATE_GET_KEY: String = "$COMMAND_LANG_ROOT.state.get"
+    const val COMMAND_STATE_SET_KEY: String = "$COMMAND_LANG_ROOT.state.set"
+    const val COMMAND_STATE_MISSING_KEY: String = "$COMMAND_LANG_ROOT.state.missing"
     const val COMMAND_RELOAD_SUCCESS_KEY: String = "$COMMAND_LANG_ROOT.reload.success"
     const val COMMAND_EDIT_SUCCESS_KEY: String = "$COMMAND_LANG_ROOT.edit.success"
     const val COMMAND_EDIT_MISSING_KEY: String = "$COMMAND_LANG_ROOT.edit.missing"

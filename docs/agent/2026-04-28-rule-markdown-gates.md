@@ -1,62 +1,46 @@
 # Rule Markdown Gates Notes
 
-## Decision
+StackUpUp 的规则容器已经收敛为单文件 Markdown 方案：每个规则集一个 `.su.md` 文件，固定分成两个顶层区域：`# state` 和 `# rules`。
 
-Use Markdown as a rule container, but keep rule bodies in fenced code blocks using the existing StackUpUp DSL.
+## 文件模型
 
-## Format
+- `config/`：模板和默认文件，作为只读来源。
+- `world/<save>/data/stackupup/`：运行时可写副本，状态修改只落在这里。
+- 同一规则集在 `config/` 与 `world/` 下保持同名结构。
+
+## 文件格式
 
 ```md
-# StackUpUp Rules
+# state
+- phase1 = true
+- expert_mode = false
 
-## always
+# rules
+## state("phase1") && modLoaded("storagenetwork")
 
 ```stackupup
 item = minecraft:egg -> 128
 ```
-
-## modLoaded(gregtech)
-
-```stackupup
-item = gregtech:meta_item_1 && meta = 516 -> 512
 ```
 
-### gate(expert_mode)
+## 规则约定
 
-```su
-ore = ingotSteel -> 1024
-```
-```
+- `# state` 只声明布尔状态，使用 `- name = true/false`。
+- `# rules` 只放规则分组和 fenced code block。
+- 规则块统一使用 ```stackupup。
+- gate 表达式只支持 `state("name")`、`modLoaded("modid"[, "modid"...])` 和 `&&` / `||` / `!`。
+- gate 写法不引入额外括号优先级，直接依赖 Kotlin 的短路求值。
+- `modLoaded` 在加载时可视为常量，接受多个 mod ID（全部加载才为 true）。
 
-## Semantics
+## 状态与 API
 
-- Markdown headings express gate scope.
-- Heading nesting means inherited gates and logical AND.
-- Same-level headings are independent branches.
-- `always` is unconditional.
-- Only `stackupup` and `su` fenced code blocks contain rules.
-- Plain Markdown text is documentation and is ignored.
-- Rule blocks are predefined; gate state only enables or disables blocks.
+- `/stackupup state get <name>`
+- `/stackupup state set <name> <true|false>`
+- `StackUpUp.getState(name)`
+- `StackUpUp.setState(name, value)`
 
-## First Gates
+## 运行时模型
 
-- `always`
-- `modLoaded(id[, id...])`
-- `gate(name)` for server-wide boolean state
-
-Future optional gates:
-
-- `gameStages(id[, id...])`
-- `ftbQuestCompleted(id[, id...])`
-
-## Runtime Model
-
-- Parse Markdown and compile rules only on explicit reload, world load, or gate state changes.
-- Do not parse Markdown on stack-limit hot paths.
-- Gate state changes recompute the enabled block signature.
-- If the enabled block signature is unchanged, keep the current `RuleSnapshot` and cache.
-- If it changes, rebuild a full `RuleSnapshot` and replace `StackLimitService`.
-
-## Scope
-
-Gate state is server/world-wide only. Per-player or per-team stack limits are out of scope because machines, pipes, slots, and item entities need one consistent stack-limit view.
+- Markdown 仅在加载、热重载或状态变更时解析。
+- 编译结果进入 `RuleSnapshot`，热路径由 `StackLimitService.resolve()` 直接消费。
+- gate 计算与规则匹配不回读 Markdown 源文本。

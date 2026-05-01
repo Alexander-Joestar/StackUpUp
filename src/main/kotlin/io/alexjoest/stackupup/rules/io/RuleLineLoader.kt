@@ -24,8 +24,9 @@ internal object RuleLineLoader {
 
             try {
                 rules += RuleCompiler.compileLine(line, index + 1)
-            } catch (t: Throwable) {
+            } catch (t: Exception) {
                 errors += input.formatError(t)
+                break
             }
         }
 

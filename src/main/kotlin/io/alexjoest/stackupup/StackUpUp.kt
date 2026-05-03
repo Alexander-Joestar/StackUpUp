@@ -35,8 +35,10 @@ import java.util.concurrent.atomic.AtomicReference
     version = StackUpUp.VERSION,
     dependencies = (
         "required-after:mixinbooter@[10.0,);required-after:forgelin_continuous@[2.1.0.0,);" +
+            "after:modularui;" +
             "before:stackup;before:refinedstorage;before:mantle;before:ic2;" +
-            "before:appliedenergistics2;before:actuallyadditions"
+            "before:appliedenergistics2;before:actuallyadditions;" +
+            "before:retrosophisticatedbackpacks"
         ),
     guiFactory = StackUpUpIds.CONFIG_GUI_FACTORY_CLASS_NAME,
 )

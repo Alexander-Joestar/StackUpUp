@@ -19,15 +19,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Container.class)
 public abstract class ContainerMixin {
-    @Unique
-    private static final ThreadLocal<StackUpUpMergeShrink> stackupup$pendingMergeShrink = new ThreadLocal<>();
-
-    @Unique
-    private static final ThreadLocal<Integer> stackupup$pendingDragRemainder = new ThreadLocal<>();
-
-    @Unique
-    private static final ThreadLocal<Integer> stackupup$pendingSwapRemainder = new ThreadLocal<>();
-
     @Inject(
             method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
             at = @At("HEAD")
@@ -92,7 +83,7 @@ public abstract class ContainerMixin {
             int attemptedCount = attemptedStack.getCount();
             original.call(slot, attemptedStack);
             int remainder = ContainerInsertHooks.remainderAfterPut(slot, attemptedStack, attemptedCount);
-            if (remainder > 0) { stackupup$pendingDragRemainder.set(remainder); }
+            if (remainder > 0) { ContainerState.pendingDragRemainder.set(remainder); }
             return;
         }
         stackupup$restoreRemainderToCursor(slot, attemptedStack, original, player);
@@ -156,7 +147,7 @@ public abstract class ContainerMixin {
         int attemptedCount = attemptedStack.getCount();
         original.call(slot, attemptedStack);
         int remainder = ContainerInsertHooks.remainderAfterPut(slot, attemptedStack, attemptedCount);
-        if (remainder > 0) { stackupup$pendingSwapRemainder.set(remainder); }
+        if (remainder > 0) { ContainerState.pendingSwapRemainder.set(remainder); }
     }
 
     /**
@@ -202,7 +193,7 @@ public abstract class ContainerMixin {
         int attemptedCount = attemptedStack.getCount();
         original.call(slot, attemptedStack);
         int remainder = ContainerInsertHooks.remainderAfterPut(slot, attemptedStack, attemptedCount);
-        if (remainder > 0) { stackupup$pendingSwapRemainder.set(remainder); }
+        if (remainder > 0) { ContainerState.pendingSwapRemainder.set(remainder); }
     }
 
     /**
@@ -220,7 +211,7 @@ public abstract class ContainerMixin {
         int attemptedCount = attemptedStack.getCount();
         original.call(slot, attemptedStack);
         int remainder = ContainerInsertHooks.remainderAfterPut(slot, attemptedStack, attemptedCount);
-        if (remainder > 0) { stackupup$pendingSwapRemainder.set(remainder); }
+        if (remainder > 0) { ContainerState.pendingSwapRemainder.set(remainder); }
     }
 
     /**
@@ -238,7 +229,7 @@ public abstract class ContainerMixin {
         int attemptedCount = attemptedStack.getCount();
         original.call(slot, attemptedStack);
         int remainder = ContainerInsertHooks.remainderAfterPut(slot, attemptedStack, attemptedCount);
-        if (remainder > 0) { stackupup$pendingSwapRemainder.set(remainder); }
+        if (remainder > 0) { ContainerState.pendingSwapRemainder.set(remainder); }
     }
 
     /**
@@ -256,7 +247,7 @@ public abstract class ContainerMixin {
         int attemptedCount = attemptedStack.getCount();
         original.call(slot, attemptedStack);
         int remainder = ContainerInsertHooks.remainderAfterPut(slot, attemptedStack, attemptedCount);
-        if (remainder > 0) { stackupup$pendingSwapRemainder.set(remainder); }
+        if (remainder > 0) { ContainerState.pendingSwapRemainder.set(remainder); }
     }
 
     // ══════════════════ slotClick shrink / grow ───────────────────────────
@@ -268,7 +259,7 @@ public abstract class ContainerMixin {
     private void stackupup$delayCursorShrinkUntilSlotGrowth(
             ItemStack cursorStack, int quantity, Operation<Void> original
     ) {
-        stackupup$pendingMergeShrink.set(new StackUpUpMergeShrink(cursorStack, quantity, original));
+        ContainerState.pendingMergeShrink.set(new StackUpUpMergeShrink(cursorStack, quantity, original));
     }
 
     @WrapOperation(
@@ -278,9 +269,9 @@ public abstract class ContainerMixin {
     private void stackupup$shrinkCursorByAcceptedSlotGrowth(
             ItemStack slotStack, int quantity, Operation<Void> original
     ) {
-        StackUpUpMergeShrink pending = stackupup$pendingMergeShrink.get();
+        StackUpUpMergeShrink pending = (StackUpUpMergeShrink) ContainerState.pendingMergeShrink.get();
         if (pending == null) { original.call(slotStack, quantity); return; }
-        stackupup$pendingMergeShrink.remove();
+        ContainerState.pendingMergeShrink.remove();
         int beforeCount = slotStack.getCount();
         original.call(slotStack, quantity);
         int accepted = Math.max(0, Math.min(pending.quantity, slotStack.getCount() - beforeCount));
@@ -329,14 +320,14 @@ public abstract class ContainerMixin {
             ItemStack cursorStack, Operation<Void> original,
             int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
-        Integer pendingDrag = stackupup$pendingDragRemainder.get();
+        Integer pendingDrag = ContainerState.pendingDragRemainder.get();
         if (pendingDrag != null) {
-            stackupup$pendingDragRemainder.remove();
+            ContainerState.pendingDragRemainder.remove();
             if (pendingDrag > 0 && !cursorStack.isEmpty()) { cursorStack.grow(pendingDrag); }
         }
-        Integer pendingSwap = stackupup$pendingSwapRemainder.get();
+        Integer pendingSwap = ContainerState.pendingSwapRemainder.get();
         if (pendingSwap != null) {
-            stackupup$pendingSwapRemainder.remove();
+            ContainerState.pendingSwapRemainder.remove();
             if (pendingSwap > 0 && !cursorStack.isEmpty()) { cursorStack.grow(pendingSwap); }
         }
         original.call(cursorStack);
@@ -376,12 +367,9 @@ public abstract class ContainerMixin {
 
     @Unique
     private static void stackupup$clearPendingSlotClickState() {
-        stackupup$pendingMergeShrink.remove();
-        stackupup$pendingDragRemainder.remove();
-        stackupup$pendingSwapRemainder.remove();
+        ContainerState.clear();
     }
 
-    @Unique
     private static final class StackUpUpMergeShrink {
         private final ItemStack       cursorStack;
         private final int             quantity;

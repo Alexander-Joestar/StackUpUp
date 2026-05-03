@@ -153,8 +153,6 @@ class EarlyMixinConfigTest {
 
         assertTrue(source.contains("clearPendingSlotClickStateBefore"))
         assertTrue(source.contains("clearPendingSlotClickStateAfter"))
-        assertTrue(source.contains("stackupup\$pendingMergeShrink.remove();"))
-        assertTrue(source.contains("stackupup\$pendingDragRemainder.remove();"))
-        assertTrue(source.contains("stackupup\$pendingSwapRemainder.remove();"))
+        assertTrue(source.contains("ContainerState.clear()"))
     }
 }

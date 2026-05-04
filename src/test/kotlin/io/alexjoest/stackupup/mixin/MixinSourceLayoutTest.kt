@@ -21,6 +21,19 @@ class MixinSourceLayoutTest {
         assertEquals(emptyList<String>(), kotlinMixinFiles)
     }
 
+    @Test
+    fun `mixinPackage_shouldNotContainRuntimeHelpers`() {
+        val mixinRoot = Paths.get("src", "main", "java", "io", "alexjoest", "stackupup", "mixin")
+        val nonMixinFiles = mixinRoot.walkRegularFiles()
+            .filter { it.toString().endsWith(".java") }
+            .map { mixinRoot.relativize(it).toString().replace('\\', '/') }
+            .filterNot { it.endsWith("Mixin.java") }
+            .sorted()
+            .toList()
+
+        assertEquals(emptyList<String>(), nonMixinFiles)
+    }
+
     private fun Path.walkRegularFiles(): Sequence<Path> {
         if (!exists()) {
             return emptySequence()
@@ -28,8 +41,7 @@ class MixinSourceLayoutTest {
         return Files.walk(this).use { stream ->
             stream
                 .filter(Files::isRegularFile)
-                .asSequence()
-                .toList()
+                .collect(java.util.stream.Collectors.toList())
                 .asSequence()
         }
     }

@@ -1,11 +1,5 @@
 package io.alexjoest.stackupup.rules.ast
 
-import io.alexjoest.stackupup.rules.RuleStepKind
+import io.alexjoest.stackupup.rules.model.RuleAction
 
-data class RuleStepAst(val kind: RuleStepKind, val value: Int) {
-    val debugName: String get() = kind.debugName
-}
-
-data class RuleActionAst(val steps: List<RuleStepAst>)
-
-data class RuleAst(val condition: ConditionAst, val action: RuleActionAst)
+data class RuleAst(val condition: ConditionAst, val action: RuleAction)

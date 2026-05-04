@@ -1,118 +1,95 @@
-## StackUpUp
+# StackUpUp
 
-StackUpUp 是一个面向 **Minecraft 1.12.2** 的堆叠上限重构模组。
+**让 Minecraft 1.12.2 的物品突破 64 上限。**
 
-它脱胎于 [StackUp](https://github.com/asiekierka/StackUp)，但当前目标已经不再是简单延续旧实现，而是逐步重建一套更稳定、对 `metadata` 物品更友好的新堆叠内核。
+[![CurseForge](https://img.shields.io/badge/CurseForge-StackUpUp-orange)](https://www.curseforge.com/minecraft/mc-mods/stackupup)
 
-## 现在能解决什么
+面向 1.12.2 整合包作者和服主的堆叠上限模组。用简单的文本规则文件控制任意物品的堆叠数量，支持 GregTech CEu 等大量使用 metadata 的模组。
 
-1. 支持普通物品堆叠突破 64。
-2. 支持针对同一物品 ID、不同 `metadata` 变体编写规则。
-3. 支持 1.12.2 的 **矿物辞典** 条件。
-4. 支持对 GregTech CEu 这类大量使用 `metadata` 区分子物品的模组进行更上层的统一兼容，而不是只对单一模组写特判。
-5. 支持在物品数量显示和 tooltip 中更清楚地展示大堆叠数量。
+## 下载
 
-## 和原版 StackUp 的主要差异
+**[CurseForge 下载页](https://www.curseforge.com/minecraft/mc-mods/stackupup)**
 
-1. 目标版本固定为 **1.12.2**。
-2. 规则系统已经转向新的 **DSL v2**，重点支持 `item + meta + ore` 组合匹配。
-3. 规则匹配粒度不再停留在粗糙的 `Item` 级，而是尽量向 `ItemStack` 语义靠拢。
-4. 兼容修复优先采用更现代的 `MixinBooter + Mixin` 路线，逐步收缩旧 ASM 边界。
-5. 不再把“全局最大堆叠值”当作主要配置入口，规则文件才是公开入口。
+## 安装
 
-## 快速使用
+1. 需要 Minecraft **1.12.2** + **Forge 14.23.5.2847**
+2. 安装依赖：[MixinBooter](https://www.curseforge.com/minecraft/mc-mods/mixin-booter)（≥ 10.0）、[Forgelin-Continuous](https://www.curseforge.com/minecraft/mc-mods/forgelin-continuous)（≥ 2.1.0.0）
+3. 将 StackUpUp 的 jar 放入 `mods/` 文件夹
 
-主规则文件：
+## 怎么用
 
-```text
-config/stackupup/main.su
+规则文件在 `config/stackupup/` 目录下，支持两种格式：
+
+| 格式 | 文件 | 说明 |
+|------|------|------|
+| `.su` | `main.su`、`user.su` 等 | 纯 DSL 文本规则，全局配置级别 |
+| `.su.md` | `main.su.md` 等 | Markdown 格式，支持 state 变量和 gate 条件，适合整合包分发 |
+
+主入口文件是 `config/stackupup/main.su`。修改后在游戏内输入：
+
 ```
-
-如果文件不存在，游戏会自动创建带注释的示例模板。
-
-修改规则后可在游戏内执行：
-
-```text
-/stackupup reload
+/stackupup reload    重载规则
+/stackupup edit      打开主规则文件（仅限客户端）
 ```
-
-如果想直接打开主规则文件：
-
-```text
-/stackupup edit
-```
-
-这个命令只适用于本地带桌面环境的客户端，不适用于无桌面的专用服务端。
 
 ## 规则示例
 
 ```text
-# 让鸡蛋堆到 256
+# 普通物品
 item = minecraft:egg -> 256
 
-# 某个模组下的物品统一提高上限
+# 所有可堆叠物品（排除工具、盔甲、桶等 baseSize=1 的物品）
+item = * -> 128
+
+# 按模组统一
 mod = thermal -> 1024
 
-# 同 ID、不同 metadata 的物品精确匹配
-item = gregtech:gt.metaitem.01 && meta = 11305 -> 512
-
-# 按矿物辞典处理
+# 按矿物辞典
 ore = ingotSteel -> 2048
 
 # 列表匹配
 item in [minecraft:egg, minecraft:snowball] -> 128
 
-# 条件匹配
+# metadata 精确匹配（完整写法）
+item = gregtech:gt.metaitem.01 && meta = 11305 -> 512
+
+# metadata 精确匹配（@简写，等价于上面）
+item = gregtech:gt.metaitem.01@11305 -> 512
+
+# 冒号简写（适用于只有两级的物品 ID）
+item = minecraft:wool:14 -> 512
+
+# 数值范围
 2 < size < 64 -> 256
+100 < meta < 300 -> 512
+
+# 按创造模式标签页
+tab = buildingBlocks -> 256
+
+# 按物品类别（药水瓶、附魔书）
+category = potion -> 32
+category = enchanted_book -> 16
+
+# 多条件组合
+item = gregtech:gt.metaitem.01@11305 && ore = ingotSteel -> 1024
+
+# 运算符链：先设值，再翻倍
+ore = ingotSteel -> 512 -> *2
 ```
 
-更完整的写法见：
+更多写法见 [docs/DSL-v2-规则示例.md](docs/DSL-v2-%E8%A7%84%E5%88%99%E7%A4%BA%E4%BE%8B.md)。
 
-1. [docs/DSL-v2-规则示例.md](docs/DSL-v2-%E8%A7%84%E5%88%99%E7%A4%BA%E4%BE%8B.md)
-2. [docs/DSL-v2-迁移说明.md](docs/DSL-v2-%E8%BF%81%E7%A7%BB%E8%AF%B4%E6%98%8E.md)
+## 和原版 StackUp 的区别
 
-## 当前规则重点
+- 目标版本锁定 **1.12.2**，不做多版本兼容
+- 规则系统使用 **DSL v2**，支持 `item + meta + ore` 组合
+- 兼容层优先走 **MixinBooter + Mixin**，逐步收缩旧 ASM
+- 不提供自定义字段注册 API；需要按类别匹配的场景，通过矿物辞典（`ore = ...`）或 `tab`/`category` 字段即可覆盖
 
-1. 只支持 **1.12.2**，因此只有 **OreDictionary**，没有高版本标签系统。
-2. 支持 `#`、`//`、`/* ... */` 注释。
-3. 支持 `item`、`mod`、`ore`、`meta`、`size` 等条件。
-4. 支持 `&&` 与 `||`，当前优先级为 `&&` 高于 `||`。
-5. 规则只在加载和重载时解析，运行时不会为每个 `ItemStack` 重新解析 DSL。
+## 兼容性
 
-## 适合谁使用
+StackUpUp 尽量在更上层统一兼容，不围绕单个模组堆特判。对遵循原版堆叠语义的模组通常直接生效；对自行写死 64 或有特殊库存逻辑的模组可能需要额外补丁。详细说明见 [docs/StackUpUp-实现与兼容性说明.md](docs/StackUpUp-%E5%AE%9E%E7%8E%B0%E4%B8%8E%E5%85%BC%E5%AE%B9%E6%80%A7%E8%AF%B4%E6%98%8E.md)。
 
-1. 想在 1.12.2 整合包里统一调整物品堆叠上限的玩家。
-2. 想给 GregTech CEu、热力、工业、仓储类模组做更稳定堆叠规则的整合包作者。
-3. 想保留简单文本配置，而不是引入过重脚本系统的服主或包作者。
+## 来源
 
-## 安装注意
-
-1. 适用游戏版本为 **Minecraft 1.12.2**。
-2. 当前开发与测试环境基于 **Forge 14.23.5.2847**。
-3. 运行时需要同时安装 [`MixinBooter`](https://www.curseforge.com/minecraft/mc-mods/mixin-booter) 与 [`Forgelin-Continuous`](https://www.curseforge.com/minecraft/mc-mods/forgelin-continuous)。
-4. 当前依赖下限为 `MixinBooter >= 10.0`、`Forgelin-Continuous >= 2.1.0.0`。
-
-## 兼容性说明
-
-StackUpUp 追求的是“尽量在更上层统一兼容”，不是围绕单个模组堆越来越多的特判。
-
-这意味着：
-
-1. 对遵循原版堆叠语义的大多数模组，通常可以直接生效。
-2. 对自己额外写死 `64`、或自带特殊库存逻辑的模组，仍可能需要额外兼容补丁。
-3. 当前已经优先覆盖了一批常见仓储与容器路径，但迁移仍在继续。
-
-面向玩家的兼容性概览见：
-
-1. [docs/StackUpUp-实现与兼容性说明.md](docs/StackUpUp-%E5%AE%9E%E7%8E%B0%E4%B8%8E%E5%85%BC%E5%AE%B9%E6%80%A7%E8%AF%B4%E6%98%8E.md)
-
-开发细节与迁移状态见：
-
-1. [docs/developer/Cleanroom-对齐与架构说明.md](docs/developer/Cleanroom-%E5%AF%B9%E9%BD%90%E4%B8%8E%E6%9E%B6%E6%9E%84%E8%AF%B4%E6%98%8E.md)
-2. [docs/ASM-迁移状态.md](docs/ASM-%E8%BF%81%E7%A7%BB%E7%8A%B6%E6%80%81.md)
-
-## 来源与致谢
-
-1. 本项目脱胎于 [StackUp](https://github.com/asiekierka/StackUp)。
-2. 原项目的 [CurseForge 页面](https://www.curseforge.com/minecraft/mc-mods/stackup) 标注许可为 `LGPLv3`。
-3. StackUpUp 当前是在其基础上面向 1.12.2 长期维护、逐步重构与现代化迁移的分支。
+脱胎于 [StackUp](https://github.com/asiekierka/StackUp)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/stackup)，LGPLv3）。StackUpUp 是在其基础上面向 1.12.2 长期维护与现代化迁移的分支。

@@ -10,9 +10,9 @@ import io.alexjoest.stackupup.rules.ast.ConditionAst
 import io.alexjoest.stackupup.rules.ast.FieldComparisonAst
 import io.alexjoest.stackupup.rules.ast.ListConditionAst
 import io.alexjoest.stackupup.rules.ast.OrConditionAst
-import io.alexjoest.stackupup.rules.ast.RuleActionAst
 import io.alexjoest.stackupup.rules.ast.RuleAst
-import io.alexjoest.stackupup.rules.ast.RuleStepAst
+import io.alexjoest.stackupup.rules.model.RuleAction
+import io.alexjoest.stackupup.rules.model.RuleStep
 
 object DslParser {
     fun parseLine(line: String): RuleAst {
@@ -23,38 +23,38 @@ object DslParser {
         return RuleAst(condition, action)
     }
 
-    private fun parseAction(stream: DslTokenCursor): RuleActionAst {
+    private fun parseAction(stream: DslTokenCursor): RuleAction {
         val steps = buildList {
             add(parseActionStep(stream))
             while (stream.peekType() == DslTokenType.ARROW) {
                 add(parseActionStep(stream))
             }
         }
-        return RuleActionAst(steps)
+        return RuleAction(steps)
     }
 
-    private fun parseActionStep(stream: DslTokenCursor): RuleStepAst {
+    private fun parseActionStep(stream: DslTokenCursor): RuleStep {
         stream.consumeActionOperator()
         return when (val type = stream.peekType()) {
-            DslTokenType.NUMBER -> RuleStepAst(
+            DslTokenType.NUMBER -> RuleStep(
                 RuleStepKind.SET,
                 stream.consumeLiteral(RuleMessages.message(RuleMessageKey.ACTION_VALUE_MUST_BE_INTEGER)).toInt(),
             )
             DslTokenType.PLUS -> {
                 stream.consume(type, RuleMessages.message(RuleMessageKey.ADD_ACTION_MISSING_SYMBOL))
-                RuleStepAst(RuleStepKind.ADD, stream.consumeLiteral(RuleMessages.message(RuleMessageKey.ADD_ACTION_MISSING_INTEGER)).toInt())
+                RuleStep(RuleStepKind.ADD, stream.consumeLiteral(RuleMessages.message(RuleMessageKey.ADD_ACTION_MISSING_INTEGER)).toInt())
             }
             DslTokenType.MINUS -> {
                 stream.consume(type, RuleMessages.message(RuleMessageKey.SUBTRACT_ACTION_MISSING_SYMBOL))
-                RuleStepAst(RuleStepKind.SUBTRACT, stream.consumeLiteral(RuleMessages.message(RuleMessageKey.SUBTRACT_ACTION_MISSING_INTEGER)).toInt())
+                RuleStep(RuleStepKind.SUBTRACT, stream.consumeLiteral(RuleMessages.message(RuleMessageKey.SUBTRACT_ACTION_MISSING_INTEGER)).toInt())
             }
             DslTokenType.STAR -> {
                 stream.consume(type, RuleMessages.message(RuleMessageKey.MULTIPLY_ACTION_MISSING_SYMBOL))
-                RuleStepAst(RuleStepKind.MULTIPLY, stream.consumeLiteral(RuleMessages.message(RuleMessageKey.MULTIPLY_ACTION_MISSING_INTEGER)).toInt())
+                RuleStep(RuleStepKind.MULTIPLY, stream.consumeLiteral(RuleMessages.message(RuleMessageKey.MULTIPLY_ACTION_MISSING_INTEGER)).toInt())
             }
             DslTokenType.SLASH -> {
                 stream.consume(type, RuleMessages.message(RuleMessageKey.DIVIDE_ACTION_MISSING_SYMBOL))
-                RuleStepAst(RuleStepKind.DIVIDE, stream.consumeLiteral(RuleMessages.message(RuleMessageKey.DIVIDE_ACTION_MISSING_INTEGER)).toInt())
+                RuleStep(RuleStepKind.DIVIDE, stream.consumeLiteral(RuleMessages.message(RuleMessageKey.DIVIDE_ACTION_MISSING_INTEGER)).toInt())
             }
             else -> throw RuleMessages.exception(RuleMessageKey.UNSUPPORTED_ACTION_STEP, stream.peekLexeme())
         }

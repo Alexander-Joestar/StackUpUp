@@ -60,6 +60,23 @@ message.stackupup.rule_error.condition_missing_value=条件缺少比较值。
 message.stackupup.rule_error.load_failed=第 %s 行加载失败：%s
 message.stackupup.rule_error.load_failed_with_source=[%s] 第 %s 行加载失败：%s
 message.stackupup.rule_error.unknown_error=未知错误
+message.stackupup.rule_error.gate_empty_expression=gate 表达式为空
+message.stackupup.rule_error.gate_unexpected_token=无法识别的 token：%s
+message.stackupup.rule_error.gate_expected_function=预期 gate 函数名
+message.stackupup.rule_error.gate_expected_left_paren=gate 函数名后预期 '('
+message.stackupup.rule_error.gate_expected_right_paren=参数后预期 ')'
+message.stackupup.rule_error.gate_expected_string_arg=预期带引号的字符串参数
+message.stackupup.rule_error.gate_expected_string_arg_after_comma=',' 后预期带引号的字符串参数
+message.stackupup.rule_error.gate_state_takes_one_arg=state() 只接受 1 个参数
+message.stackupup.rule_error.gate_unknown_function=未知的 gate 函数：%s
+message.stackupup.rule_error.gate_expected_and=预期 '&&' 的 '&'
+message.stackupup.rule_error.gate_expected_or=预期 '||' 的 '|'
+message.stackupup.rule_error.gate_unexpected_character=无法识别的字符：%s
+message.stackupup.rule_error.gate_unterminated_escape=未终止的转义序列
+message.stackupup.rule_error.gate_unterminated_string=未终止的字符串
+message.stackupup.rule_error.gate_parse_error=[%s:%s] gate 解析错误：%s
+message.stackupup.rule_error.state_invalid_declaration=第 %s 行：无效的状态声明 '%s' - 预期 '- name = true|false'
+message.stackupup.rule_error.state_error_prefix=[state] %s
 
 tooltip.stackupup.current_max=堆叠：%s/%s
 

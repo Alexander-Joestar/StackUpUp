@@ -1,18 +1,115 @@
 # DSL v2 规则示例
 
-本文只放最常用、最适合玩家和整合包作者直接抄用的写法。
+StackUpUp 支持两种规则格式：
 
-主规则文件：
+| 格式 | 放置位置 | 用途 |
+|------|----------|------|
+| `.su` | `config/stackupup/` | 纯 DSL 文本规则，全局配置级别 |
+| `.su.md` | `config/stackupup/` 或 `<世界>/data/stackupup/` | Markdown 格式，支持 state 变量和 gate 条件 |
+
+主入口文件是 `config/stackupup/main.su`。
+
+两种格式的 DSL 语法完全相同（`item`、`ore`、`mod`、`meta`、`size` 等），区别在于 `.su.md` 额外支持 state 声明和 gate 标题。
+
+---
+
+## `.su` 格式示例
+
+纯文本规则，每行一条，适合直接放在 `config/stackupup/main.su` 里：
+
+### 常用写法
 
 ```text
-config/stackupup/main.su.md
+# 所有可堆叠物品（排除工具、盔甲、桶等 baseSize=1 的物品）
+item = * -> 128
+
+# 普通物品
+item = minecraft:egg -> 256
+
+# 按模组统一
+mod = thermal -> 1024
+
+# 按矿物辞典
+ore = ingotSteel -> 2048
+
+# 列表匹配
+item in [minecraft:egg, minecraft:snowball] -> 128
+ore in [ingotSteel, ingotIron] -> 2048
+
+# 数值范围
+2 < size < 64 -> 256
+100 < meta < 300 -> 512
+
+# 按创造模式标签页
+tab = buildingBlocks -> 256
+tab = tools -> 128
+
+# 按物品类别（药水瓶、附魔书）
+category = potion -> 32
+category = enchanted_book -> 16
+
+# 类型条件
+type = block && mod = minecraft -> 512
 ```
 
-## 0. 推荐的完整 `.su.md` 写法
+### metadata 简写
 
-下面这个例子把 `state`、`rules`、gate 标题和规则块放在一起，适合作为整合包主入口文件的参考模板。
+对于 GregTech CEu 这类同 ID、不同 metadata 的物品，可以用 `@` 分隔符省掉 `&& meta = ...`：
 
-```md
+```text
+# 完整写法
+item = gregtech:gt.metaitem.01 && meta = 11305 -> 512
+
+# 简写（用 @ 分隔）
+item = gregtech:gt.metaitem.01@11305 -> 512
+
+# 也支持用额外冒号分隔（仅当 item ID 本身只有一个冒号时）
+item = minecraft:wool:14 -> 512
+```
+
+### 条件组合
+
+```text
+# 多条件 AND
+item = gregtech:gt.metaitem.01 && meta = 11305 && ore = ingotSteel -> 1024
+
+# OR 条件
+ore = ingotSteel || ore = ingotIron -> 2048
+
+# 组合
+item = gregtech:gt.metaitem.01@11305 && mod = gregtech -> 1024
+```
+
+### 运算符链
+
+```text
+# 先设值，再翻倍
+ore = ingotSteel -> 512 -> *2
+
+# 加减乘除
+ore = ingotSteel -> 512
+ore = ingotSteel -> +128
+ore = ingotSteel -> *2
+ore = ingotSteel -> /2
+```
+
+### 注释
+
+```text
+# 单行注释
+// 单行注释
+/* 块注释 */
+```
+
+---
+
+## `.su.md` 格式示例
+
+Markdown 容器格式，适合整合包分发。规则、说明和状态变量可以放在同一个文件里。
+
+### 完整模板
+
+```markdown
 # state
 - phase1 = true
 - phase2 = false
@@ -22,7 +119,7 @@ config/stackupup/main.su.md
 ## always
 
 ```stackupup
-item = minecraft:egg -> 64
+item = minecraft:egg -> 256
 item = minecraft:snowball -> 128
 ```
 
@@ -33,163 +130,80 @@ mod = thermal -> 1024
 ore = ingotCopper -> 512
 ```
 
-## state("phase2") && modLoaded("gregtech")
+## state("expert_mode") && modLoaded("gregtech")
 
-```su
-item = gregtech:gt.metaitem.01 && meta = 11305 -> 1024
+```stackupup
+item = gregtech:gt.metaitem.01@11305 -> 2048
 item = gregtech:gt.metaitem.01 && meta in [11306, 11307] -> 2048
 ```
 ```
 
-### 这份模板里最重要的几件事
+### 关键结构
 
-1. `# state` 用来声明会被保存的状态值，例如 `phase1`、`phase2`、`expert_mode`。
-2. `# rules` 用来放规则，下面的 `##` 标题就是 gate。
-3. gate 后面直接跟 fenced code block，规则写在代码块里。
-4. `config/stackupup/main.su.md` 是模板和入口文件，真正会变化的是 world 里的数据。
-5. `config` 更像整合包默认模板，`world` 才是运行时会被修改、保存和重载的那份状态。
+1. `# state` 声明可持久化的布尔变量，随存档保存
+2. `# rules` 放规则，下面的 `##` 标题是 gate 条件
+3. gate 后面跟 fenced code block，规则写在代码块里
+4. `## always` 表示无条件启用
+5. gate 支持 `state("名称")`、`modLoaded("modid")` 及 `&&`/`||`/`!` 组合
 
-### 常用命令
-
-```text
-/stackupup reload
-/stackupup edit
-/stackupup state get phase1
-/stackupup state set phase1 true
-/stackupup state get expert_mode
-/stackupup state set expert_mode false
-```
-
-## 1. 最基础的写法
+### Gate 表达式
 
 ```text
-# state
-- phase1 = true
-- expert_mode = false
-
-# rules
-## always
-
-```stackupup
-item = minecraft:egg -> 64
+## always                                    无条件
+## state("phase1")                            检查 state 变量
+## modLoaded("gregtech")                      检查模组是否加载
+## modLoaded("thermal", "gregtech")             多模组全部加载
+## state("expert_mode") && modLoaded("gregtech")  组合条件
+## !state("disable_thermal")                   取反
 ```
 
-## modLoaded("thermal")
-
-```su
-mod = thermal -> 1024
-```
-```
-
-## 2. metadata 物品
-
-这类写法适合 GregTech CEu 这类"同一物品 ID、不同 metadata 区分子物品"的模组。
+### State 管理
 
 ```text
-# rules
-## always
-
-```stackupup
-item = gregtech:gt.metaitem.01 && meta = 11305 -> 512
+/stackupup state get phase1          查看值
+/stackupup state set phase1 true     设置值
+/stackupup reload                    重载规则（state 变更后需要重载才生效）
 ```
 
-## state("expert_mode") && modLoaded("gregtech")
+### 世界级 `.su.md`
 
-```su
-item = gregtech:gt.metaitem.01 && meta in [11305, 11306, 11307] -> 2048
-```
-```
+每个存档的世界目录下也有一个 `main.su.md`（位于 `<世界>/data/stackupup/main.su.md`），它的 state 变量随存档独立保存。整合包的 `config/stackupup/*.su.md` 是默认模板，世界的那份才是运行时数据。
 
-## 3. 列表
+---
 
-```text
-# state
-- phase1 = true
-- expert_mode = false
+## 加载顺序
 
-# rules
-## always
+StackUpUp 按以下顺序加载规则文件，后面的规则会覆盖或叠加前面的结果：
 
-```stackupup
-item in [minecraft:egg, minecraft:snowball] -> 128
-mod in [thermal, ic2, enderio] -> 512
-ore in [ingotSteel, ingotIron] -> 2048
-meta in [0, 1, 2] -> 256
-size in [2, 16, 64] -> 1024
-```
-```
+1. `<世界>/data/stackupup/main.su.md` — 世界级 Markdown 规则（带 state）
+2. `<世界>/data/stackupup/world.su` — 世界级 DSL 规则
+3. `config/stackupup/*.su` — 整合包 DSL 规则（按文件名排序）
+4. `config/stackupup/*.su.md` — 整合包 Markdown 规则（按文件名排序）
+5. `config/stackupup/main.su` — 主 DSL 规则
+6. `config/stackupup/user.su` — 用户覆盖规则
 
-## 4. 条件组合
+如果存在旧版 `config/stackupup/stackupup-rules.su` 且 `main.su` 不存在，会先加载旧文件以兼容老整合包。
 
-```text
-# rules
-## state("phase1") && modLoaded("thermal")
+---
 
-```stackupup
-size > 2 && size < 64 -> 1024
-2 < size < 64 -> 1024
-type = block && mod = minecraft -> 256
-```
+## DSL 语法要点
 
-## state("expert_mode") && modLoaded("gregtech")
+- 匹配字段：`item`、`mod`、`ore`、`meta`（别名 `metadata`）、`size`、`type`、`tab`、`category`
+- 特殊匹配：`item = *` 匹配所有可堆叠物品（排除 baseSize=1 的工具、盔甲等）
+- 比较运算：`= != > >= < <=`
+- 列表匹配：`field in [value1, value2]`
+- 范围写法：`2 < size < 64`、`100 < meta < 300`
+- 逻辑组合：`&&`（优先级高于 `||`），当前不支持括号
+- 动作链：`-> 128`、`-> +32`、`-> *2`、`-> /2`，可链式执行
+- `type` 只支持 `item` 和 `block`
+- `tab` 是创造模式标签页 ID，如 `buildingBlocks`、`tools`、`combat`
+- `category` 当前支持 `potion`（药水瓶）和 `enchanted_book`（附魔书）
 
-```su
-item = gregtech:gt.metaitem.01 && meta in [11305, 11306] -> 2048
-ore = ingotSteel || ore = ingotIron -> 1024
-```
-```
+## 书写建议
 
-当前优先级：
-
-```text
-&& 高于 ||
-```
-
-当前 DSL 不支持括号；如果需要更复杂的条件，请拆成多个 gate 标题或拆成多条规则。
-
-## 5. 顺序执行
-
-后面的规则会接着处理前面的结果。
-
-```text
-ore = ingotSteel -> 512
-ore = ingotSteel -> *2
-```
-
-上面的结果等价于把 `ingotSteel` 先设为 `512`，再翻倍到 `1024`。
-
-等价写法：
-```text
-ore = ingotSteel -> 512 -> *2
-```
-
-## 6. 注释
-
-```text
-# 单行注释
-// 单行注释
-/* 块注释 */
-```
-
-## 7. `modLoaded` 多 Mod ID
-
-`modLoaded` 可以接受多个 mod ID，只有全部加载时才为 true：
-
-```text
-## modLoaded("thermal", "gregtech")
-
-```stackupup
-mod = thermal -> 512
-mod = gregtech -> 256
-```
-```
-
-等价于 `modLoaded("thermal") && modLoaded("gregtech")` 的缩写。
-
-## 8. 书写建议
-
-1. 能用 `ore = ...` 的地方，优先用矿物辞典。
-2. 需要精确指定某个 `metadata` 变体时，再写 `item + meta`。
-3. `type` 当前只支持 `item` 和 `block`。
-4. 规则尽量短、尽量直，不要把一条规则写成很长的逻辑表达式。
-5. 如果多条规则都命中，后面的规则优先级更高。
+1. 能用 `ore = ...` 的地方优先用矿物辞典
+2. 精确指定某个 metadata 变体时用 `item@meta` 简写，比 `&& meta = ...` 更简洁
+3. 需要对同一 item ID 下多个 metadata 做不同处理时用 `meta in [...]`
+4. 规则尽量短，不要把一条规则写成很长的逻辑表达式
+5. 多条规则都命中时，后面的规则优先级更高
+6. 需要阶段控制的整合包优先用 `.su.md`，简单场景用 `.su` 就够了

@@ -3,7 +3,7 @@ package io.alexjoest.stackupup.rules.model
 import io.alexjoest.stackupup.rules.RuleStepKind
 
 data class RuleStep(val kind: RuleStepKind, val value: Int) {
-    val debugName: String get() = kind.debugName
+    val debugName: String get() = kind.id
 }
 
 data class RuleAction(val steps: List<RuleStep>) {

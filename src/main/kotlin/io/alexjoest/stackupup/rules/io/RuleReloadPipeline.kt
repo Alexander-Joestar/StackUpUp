@@ -1,5 +1,7 @@
 package io.alexjoest.stackupup.rules.io
 
+import io.alexjoest.stackupup.rules.RuleMessageKey
+import io.alexjoest.stackupup.rules.RuleMessages
 import io.alexjoest.stackupup.rules.LocalizedMessage
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import java.io.File
@@ -36,14 +38,14 @@ internal object RuleReloadPipeline {
         RuleReloadReport(
             file = primaryRulesFile,
             snapshot = result.snapshot,
-            warnings = RuleComplexityAnalyzer.analyze(result.snapshot).warnings,
-            errors = result.errors + stateErrors.map { LocalizedMessage("[state] $it") },
+            warnings = RuleComplexityAnalyzer.analyze(result.snapshot),
+            errors = result.errors + stateErrors.map { RuleMessages.message(RuleMessageKey.STATE_ERROR_PREFIX, it) },
         )
     } catch (ex: Exception) {
         RuleReloadReport(
             file = primaryRulesFile,
             snapshot = RuleSnapshot(0L, emptyList()),
-            errors = listOf(LocalizedMessage(ex.message ?: ex.javaClass.simpleName)),
+            errors = listOf(RuleMessages.message(RuleMessageKey.UNKNOWN_ERROR, ex.message ?: ex.javaClass.simpleName)),
             warnings = emptyList(),
         )
     }

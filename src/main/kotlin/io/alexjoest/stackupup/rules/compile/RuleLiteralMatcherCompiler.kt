@@ -4,6 +4,10 @@ import io.alexjoest.stackupup.rules.model.RuleMatchContext
 
 internal object RuleLiteralMatcherCompiler {
     fun compileItemMatcher(literal: String): (RuleMatchContext) -> Boolean {
+        if (literal == "*") {
+            // "item = *" 匹配所有可堆叠物品（原版 baseSize > 1）
+            return { context -> context.baseSize > 1 }
+        }
         val itemLiteral = parseItemLiteral(literal)
         val itemIdMatcher = compileStringMatcher(itemLiteral.itemIdPattern)
         return { context ->

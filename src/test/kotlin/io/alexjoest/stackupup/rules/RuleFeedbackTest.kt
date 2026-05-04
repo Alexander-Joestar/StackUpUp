@@ -2,8 +2,8 @@ package io.alexjoest.stackupup.rules
 
 import io.alexjoest.stackupup.StackUpUpConfig
 import io.alexjoest.stackupup.StackUpUpIds
+import io.alexjoest.stackupup.rules.LocalizedMessage
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
-import io.alexjoest.stackupup.rules.io.RuleComplexityWarning
 import io.alexjoest.stackupup.rules.io.RuleFeedback
 import io.alexjoest.stackupup.rules.io.RuleLineLoader
 import io.alexjoest.stackupup.rules.io.RuleReloadReport
@@ -57,7 +57,7 @@ class RuleFeedbackTest {
                 file = File("run/config/stackupup/main.su"),
                 snapshot = RuleSnapshot(version = 1L, rules = emptyList()),
                 errors = emptyList(),
-                warnings = listOf(RuleComplexityWarning(StackUpUpIds.RULE_COMPLEXITY_RULE_COUNT_KEY, listOf(80))),
+                warnings = listOf(LocalizedMessage(StackUpUpIds.RULE_COMPLEXITY_RULE_COUNT_KEY, listOf(80))),
             )
             val emitted = mutableListOf<TextComponentTranslation>()
 

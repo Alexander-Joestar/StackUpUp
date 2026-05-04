@@ -3,10 +3,13 @@ package io.alexjoest.stackupup.mixin.early;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import io.alexjoest.stackupup.Constants;
+import io.alexjoest.stackupup.ContainerMergeShrink;
+import io.alexjoest.stackupup.ContainerState;
 import io.alexjoest.stackupup.ContainerInsertHooks;
 import io.alexjoest.stackupup.RemainderGuard;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.ClickType;
 import net.minecraft.inventory.Container;
 import net.minecraft.inventory.Slot;
@@ -79,11 +82,7 @@ public abstract class ContainerMixin {
             int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
         if (clickTypeIn == ClickType.QUICK_CRAFT) {
-            if (!RemainderGuard.enabled) { original.call(slot, attemptedStack); return; }
-            int attemptedCount = attemptedStack.getCount();
-            original.call(slot, attemptedStack);
-            int remainder = ContainerInsertHooks.remainderAfterPut(slot, attemptedStack, attemptedCount);
-            if (remainder > 0) { ContainerState.pendingDragRemainder.set(remainder); }
+            stackupup$storeRemainder(slot, attemptedStack, original, ContainerState.pendingDragRemainder);
             return;
         }
         stackupup$restoreRemainderToCursor(slot, attemptedStack, original, player);
@@ -143,11 +142,7 @@ public abstract class ContainerMixin {
             Slot slot, ItemStack attemptedStack, Operation<Void> original,
             int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
-        if (!RemainderGuard.enabled) { original.call(slot, attemptedStack); return; }
-        int attemptedCount = attemptedStack.getCount();
-        original.call(slot, attemptedStack);
-        int remainder = ContainerInsertHooks.remainderAfterPut(slot, attemptedStack, attemptedCount);
-        if (remainder > 0) { ContainerState.pendingSwapRemainder.set(remainder); }
+        stackupup$storeRemainder(slot, attemptedStack, original, ContainerState.pendingSwapRemainder);
     }
 
     /**
@@ -189,11 +184,7 @@ public abstract class ContainerMixin {
             Slot slot, ItemStack attemptedStack, Operation<Void> original,
             int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
-        if (!RemainderGuard.enabled) { original.call(slot, attemptedStack); return; }
-        int attemptedCount = attemptedStack.getCount();
-        original.call(slot, attemptedStack);
-        int remainder = ContainerInsertHooks.remainderAfterPut(slot, attemptedStack, attemptedCount);
-        if (remainder > 0) { ContainerState.pendingSwapRemainder.set(remainder); }
+        stackupup$storeRemainder(slot, attemptedStack, original, ContainerState.pendingSwapRemainder);
     }
 
     /**
@@ -207,11 +198,7 @@ public abstract class ContainerMixin {
             Slot slot, ItemStack attemptedStack, Operation<Void> original,
             int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
-        if (!RemainderGuard.enabled) { original.call(slot, attemptedStack); return; }
-        int attemptedCount = attemptedStack.getCount();
-        original.call(slot, attemptedStack);
-        int remainder = ContainerInsertHooks.remainderAfterPut(slot, attemptedStack, attemptedCount);
-        if (remainder > 0) { ContainerState.pendingSwapRemainder.set(remainder); }
+        stackupup$storeRemainder(slot, attemptedStack, original, ContainerState.pendingSwapRemainder);
     }
 
     /**
@@ -225,11 +212,7 @@ public abstract class ContainerMixin {
             Slot slot, ItemStack attemptedStack, Operation<Void> original,
             int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
-        if (!RemainderGuard.enabled) { original.call(slot, attemptedStack); return; }
-        int attemptedCount = attemptedStack.getCount();
-        original.call(slot, attemptedStack);
-        int remainder = ContainerInsertHooks.remainderAfterPut(slot, attemptedStack, attemptedCount);
-        if (remainder > 0) { ContainerState.pendingSwapRemainder.set(remainder); }
+        stackupup$storeRemainder(slot, attemptedStack, original, ContainerState.pendingSwapRemainder);
     }
 
     /**
@@ -243,11 +226,7 @@ public abstract class ContainerMixin {
             Slot slot, ItemStack attemptedStack, Operation<Void> original,
             int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
-        if (!RemainderGuard.enabled) { original.call(slot, attemptedStack); return; }
-        int attemptedCount = attemptedStack.getCount();
-        original.call(slot, attemptedStack);
-        int remainder = ContainerInsertHooks.remainderAfterPut(slot, attemptedStack, attemptedCount);
-        if (remainder > 0) { ContainerState.pendingSwapRemainder.set(remainder); }
+        stackupup$storeRemainder(slot, attemptedStack, original, ContainerState.pendingSwapRemainder);
     }
 
     // ══════════════════ slotClick shrink / grow ───────────────────────────
@@ -259,7 +238,7 @@ public abstract class ContainerMixin {
     private void stackupup$delayCursorShrinkUntilSlotGrowth(
             ItemStack cursorStack, int quantity, Operation<Void> original
     ) {
-        ContainerState.pendingMergeShrink.set(new StackUpUpMergeShrink(cursorStack, quantity, original));
+        ContainerState.pendingMergeShrink.set(new ContainerMergeShrink(cursorStack, quantity, original));
     }
 
     @WrapOperation(
@@ -269,7 +248,7 @@ public abstract class ContainerMixin {
     private void stackupup$shrinkCursorByAcceptedSlotGrowth(
             ItemStack slotStack, int quantity, Operation<Void> original
     ) {
-        StackUpUpMergeShrink pending = (StackUpUpMergeShrink) ContainerState.pendingMergeShrink.get();
+        ContainerMergeShrink pending = ContainerState.pendingMergeShrink.get();
         if (pending == null) { original.call(slotStack, quantity); return; }
         ContainerState.pendingMergeShrink.remove();
         int beforeCount = slotStack.getCount();
@@ -297,11 +276,11 @@ public abstract class ContainerMixin {
             ItemStack copy = stack.copy();
             stack.shrink(Constants.VANILLA_STACK_LIMIT);
             copy.setCount(Constants.VANILLA_STACK_LIMIT);
-            EntityItem dropped = player.dropItem(copy, dropAround);
-            player.inventory.setItemStack(stack);
+            EntityItem dropped = droppingPlayer.dropItem(copy, dropAround);
+            droppingPlayer.inventory.setItemStack(stack);
             return dropped;
         }
-        return original.call(stack, dropAround);
+        return original.call(droppingPlayer, stack, dropAround);
     }
 
     /**
@@ -317,7 +296,7 @@ public abstract class ContainerMixin {
             )
     )
     private void stackupup$applyDragRemainderToCursor(
-            ItemStack cursorStack, Operation<Void> original,
+            InventoryPlayer inventory, ItemStack cursorStack, Operation<Void> original,
             int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
         Integer pendingDrag = ContainerState.pendingDragRemainder.get();
@@ -330,7 +309,7 @@ public abstract class ContainerMixin {
             ContainerState.pendingSwapRemainder.remove();
             if (pendingSwap > 0 && !cursorStack.isEmpty()) { cursorStack.grow(pendingSwap); }
         }
-        original.call(cursorStack);
+        original.call(inventory, cursorStack);
     }
 
     @Inject(
@@ -346,6 +325,7 @@ public abstract class ContainerMixin {
 
     // ══════════════════ 共享工具 ─────────────────────────────────────────
 
+    @Unique
     private void stackupup$restoreRemainderToCursor(
             Slot slot, ItemStack attemptedStack, Operation<Void> original, EntityPlayer player
     ) {
@@ -366,19 +346,18 @@ public abstract class ContainerMixin {
     }
 
     @Unique
-    private static void stackupup$clearPendingSlotClickState() {
-        ContainerState.clear();
+    private void stackupup$storeRemainder(
+            Slot slot, ItemStack attemptedStack, Operation<Void> original, ThreadLocal<Integer> pendingRemainder
+    ) {
+        if (!RemainderGuard.enabled) { original.call(slot, attemptedStack); return; }
+        int attemptedCount = attemptedStack.getCount();
+        original.call(slot, attemptedStack);
+        int remainder = ContainerInsertHooks.remainderAfterPut(slot, attemptedStack, attemptedCount);
+        if (remainder > 0) { pendingRemainder.set(remainder); }
     }
 
-    private static final class StackUpUpMergeShrink {
-        private final ItemStack       cursorStack;
-        private final int             quantity;
-        private final Operation<Void> originalShrink;
-
-        private StackUpUpMergeShrink(ItemStack cursorStack, int quantity, Operation<Void> originalShrink) {
-            this.cursorStack    = cursorStack;
-            this.quantity       = quantity;
-            this.originalShrink = originalShrink;
-        }
+    @Unique
+    private static void stackupup$clearPendingSlotClickState() {
+        ContainerState.clear();
     }
 }

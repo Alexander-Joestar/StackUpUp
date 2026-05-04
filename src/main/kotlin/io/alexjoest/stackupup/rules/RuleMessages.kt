@@ -28,6 +28,23 @@ internal enum class RuleMessageKey(val suffix: String) {
     LOAD_FAILED("load_failed"),
     LOAD_FAILED_WITH_SOURCE("load_failed_with_source"),
     UNKNOWN_ERROR("unknown_error"),
+    GATE_EMPTY_EXPRESSION("gate_empty_expression"),
+    GATE_UNEXPECTED_TOKEN("gate_unexpected_token"),
+    GATE_EXPECTED_FUNCTION("gate_expected_function"),
+    GATE_EXPECTED_LEFT_PAREN("gate_expected_left_paren"),
+    GATE_EXPECTED_RIGHT_PAREN("gate_expected_right_paren"),
+    GATE_EXPECTED_STRING_ARG("gate_expected_string_arg"),
+    GATE_EXPECTED_STRING_ARG_AFTER_COMMA("gate_expected_string_arg_after_comma"),
+    GATE_STATE_TAKES_ONE_ARG("gate_state_takes_one_arg"),
+    GATE_UNKNOWN_FUNCTION("gate_unknown_function"),
+    GATE_EXPECTED_AND("gate_expected_and"),
+    GATE_EXPECTED_OR("gate_expected_or"),
+    GATE_UNEXPECTED_CHARACTER("gate_unexpected_character"),
+    GATE_UNTERMINATED_ESCAPE("gate_unterminated_escape"),
+    GATE_UNTERMINATED_STRING("gate_unterminated_string"),
+    GATE_PARSE_ERROR("gate_parse_error"),
+    STATE_INVALID_DECLARATION("state_invalid_declaration"),
+    STATE_ERROR_PREFIX("state_error_prefix"),
     ;
 
     val translationKey: String = "${StackUpUpIds.MESSAGE_LANG_ROOT}.rule_error.$suffix"

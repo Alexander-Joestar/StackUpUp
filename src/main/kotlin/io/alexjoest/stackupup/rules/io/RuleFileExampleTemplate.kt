@@ -17,15 +17,17 @@ Rule without condition applies to all items.
 
 ═══ Fields ═══════════════════════════════════════════════════════════════
 
-  field     meaning           example
-  ─────     ───────           ───────
-  item      item ID           item = minecraft:egg
-  mod       mod ID            mod = thermal
-  type      type              type = block
-  ore       ore dictionary    ore = ingotSteel
-  meta      damage / meta     meta = 324
-  metadata  alias for meta    metadata = 324
-  size      current limit     size > 2
+  field     meaning              example
+  ─────     ───────              ───────
+  item      item ID              item = minecraft:egg
+  mod       mod ID               mod = thermal
+  type      type                 type = block
+  ore       ore dictionary       ore = ingotSteel
+  meta      damage / meta        meta = 324
+  metadata  alias for meta       metadata = 324
+  size      current limit        size > 2
+  tab       creative tab         tab = buildingBlocks
+  category  item category        category = potion
 
 
 ═══ Comparisons ═════════════════════════════════════════════════════════
@@ -86,6 +88,7 @@ Rule without condition applies to all items.
 
 ═══ Wildcards ═══════════════════════════════════════════════════════════
 
+  item = *              all stackable items (baseSize > 1)
   item = thermal:* -> 256
   item = minecraft:*_ball -> 128
 
@@ -103,9 +106,16 @@ Rule without condition applies to all items.
   ore = ingotSteel -> 1024
   ore = ingotSteel -> *2
 
+  item = gregtech:meta_ingot@324 -> 512
   item = gregtech:meta_ingot && meta = 324 -> 512
 
+  item = * -> 128            all stackable items to 128
+  tab = buildingBlocks -> 256
+  category = potion -> 32
+  category = enchanted_book -> 16
+
   2 < size < 64 -> 1024
+  100 < meta < 300 -> 512
 
   size > 1 -> *2 -> +10
 

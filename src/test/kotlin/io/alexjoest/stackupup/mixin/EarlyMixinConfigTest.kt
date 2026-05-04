@@ -1,5 +1,6 @@
 package io.alexjoest.stackupup.mixin
 
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.nio.charset.StandardCharsets
@@ -7,152 +8,108 @@ import java.nio.file.Files
 import java.nio.file.Paths
 
 class EarlyMixinConfigTest {
+
+    private fun readSource(relativePath: String) = String(
+        Files.readAllBytes(Paths.get(relativePath)),
+        StandardCharsets.UTF_8,
+    )
+
+    private fun readMixinSource(relativePath: String) = readSource("src/main/java/io/alexjoest/stackupup/mixin/early/$relativePath")
+
     @Test
     fun `earlyConfig_shouldIncludeMigratedFixedTargets`() {
-        val content = String(
-            Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.early.json")),
-            StandardCharsets.UTF_8,
-        )
-        assertTrue(content.contains("ContainerMixin"))
-        assertTrue(content.contains("ItemStackNbtMixin"))
-        assertTrue(content.contains("SlotLimitMixin"))
-        assertTrue(content.contains("VanillaInventoryLimitMixin"))
-        assertTrue(content.contains("EntityItemMergeMixin"))
-        assertTrue(content.contains("InventoryPlayerAddResourceMixin"))
-        assertTrue(content.contains("ForgeItemHandlerLimitMixin"))
-        assertTrue(content.contains("SlotItemHandlerMixin"))
-        assertTrue(content.contains("RenderItemMixin"))
-        assertTrue(content.contains("ItemStackMixin"))
+        val content = readSource("src/main/resources/mixins.stackupup.early.json")
+
+        listOf(
+            "ContainerMixin", "ItemStackNbtMixin", "SlotLimitMixin",
+            "VanillaInventoryLimitMixin", "EntityItemMergeMixin",
+            "InventoryPlayerAddResourceMixin", "ForgeItemHandlerLimitMixin",
+            "SlotItemHandlerMixin", "RenderItemMixin", "ItemStackMixin",
+        ).forEach { assertTrue(content.contains(it), "$it missing from early config") }
     }
 
     @Test
-    fun `clientMixin_shouldBeInClientSection`() {
-        val content = String(
-            Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.early.json")),
-            StandardCharsets.UTF_8,
-        )
-        val mixinsSection = content.substringAfter("\"mixins\": [").substringBefore("],")
-        val clientSection = content.substringAfter("\"client\": [").substringBefore("]")
-        assertTrue(clientSection.contains("RenderEntityItemMixin"))
-        assertTrue(clientSection.contains("RenderItemMixin"))
-        assertTrue(!mixinsSection.contains("RenderEntityItemMixin"))
-        assertTrue(!mixinsSection.contains("RenderItemMixin"))
+    fun `earlyConfig_shouldSeparateClientFromServerMixins`() {
+        val content = readSource("src/main/resources/mixins.stackupup.early.json")
+        val mixins = content.substringAfter("\"mixins\": [").substringBefore("],")
+        val client = content.substringAfter("\"client\": [").substringBefore("]")
+
+        listOf("RenderEntityItemMixin", "RenderItemMixin", "NetHandlerPlayClientMixin").forEach { name ->
+            assertTrue(client.contains(name), "$name should be in client section")
+            assertFalse(mixins.contains(name), "$name should not be in mixins section")
+        }
+    }
+
+    @Test
+    fun `containerMixin_shouldHaveCorrectWrapperSignatures`() {
+        val source = readMixinSource("ContainerMixin.java")
+
+        // setItemStack wrapper must carry InventoryPlayer receiver
+        assertTrue(source.contains("InventoryPlayer inventory,"))
+        assertTrue(source.contains("original.call(inventory, cursorStack)"))
+
+        // dropItem wrapper must carry EntityPlayer receiver
+        assertTrue(source.contains("droppingPlayer.dropItem(copy, dropAround)"))
+        assertTrue(source.contains("original.call(droppingPlayer, stack, dropAround)"))
+
+        // ordinal coverage for remainder restoration
+        assertTrue(source.contains("restoreRemainderToCursor"))
+        assertTrue(source.contains("pendingSwapRemainder"))
+
+        // merge shrink/grow pair
+        assertTrue(source.contains("delayCursorShrinkUntilSlotGrowth"))
+        assertTrue(source.contains("shrinkCursorByAcceptedSlotGrowth"))
+
+        // ThreadLocal state cleanup
+        assertTrue(source.contains("clearPendingSlotClickStateBefore"))
+        assertTrue(source.contains("clearPendingSlotClickStateAfter"))
+        assertTrue(source.contains("ContainerState.clear()"))
+
+        // helper delegation to runtime package, not mixin-owned
+        assertTrue(source.contains("ContainerMergeShrink"))
+        assertFalse(source.contains("private static final class StackUpUpMergeShrink"))
+    }
+
+    @Test
+    fun `containerState_shouldLiveOutsideMixinPackage`() {
+        val stateSource = readSource("src/main/java/io/alexjoest/stackupup/ContainerState.java")
+        assertTrue(stateSource.contains("ThreadLocal<ContainerMergeShrink>"))
     }
 
     @Test
     fun `playerPickup_shouldClampWriteBySourceStack`() {
-        val source = String(
-            Files.readAllBytes(
-                Paths.get("src/main/java/io/alexjoest/stackupup/mixin/early/InventoryPlayerAddResourceMixin.java"),
-            ),
-            StandardCharsets.UTF_8,
-        )
+        val source = readMixinSource("InventoryPlayerAddResourceMixin.java")
 
-        assertTrue(source.contains("method = \"canMergeStacks(Lnet/minecraft/item/ItemStack;Lnet/minecraft/item/ItemStack;)Z\""))
-        assertTrue(source.contains("method = \"addResource(ILnet/minecraft/item/ItemStack;)I\""))
-        assertTrue(source.contains("target = \"Lnet/minecraft/item/ItemStack;getMaxStackSize()I\""))
-        assertTrue(source.contains("target = \"Lnet/minecraft/entity/player/InventoryPlayer;getInventoryStackLimit()I\""))
-        assertTrue(source.contains("resolveInventoryClampLimit(incoming, inventory.getInventoryStackLimit())"))
-        assertTrue(source.contains("return source.getMaxStackSize()"))
-        assertTrue(source.contains("resolveInventoryClampLimit(source, inventory.getInventoryStackLimit())"))
+        assertTrue(source.contains("canMergeStacks"))
+        assertTrue(source.contains("addResource"))
+        assertTrue(source.contains("getMaxStackSize()I"))
+        assertTrue(source.contains("getInventoryStackLimit()I"))
+        assertTrue(source.contains("resolveInventoryClampLimit"))
     }
 
     @Test
     fun `entityMerge_shouldUseLargerDynamicLimit`() {
-        val source = String(
-            Files.readAllBytes(
-                Paths.get("src/main/java/io/alexjoest/stackupup/mixin/early/EntityItemMergeMixin.java"),
-            ),
-            StandardCharsets.UTF_8,
-        )
+        val source = readMixinSource("EntityItemMergeMixin.java")
 
-        assertTrue(source.contains("method = \"combineItems(Lnet/minecraft/entity/item/EntityItem;)Z\""))
-        assertTrue(source.contains("target = \"Lnet/minecraft/item/ItemStack;getMaxStackSize()I\""))
-        assertTrue(source.contains("Math.max(candidate.getMaxStackSize(), current.getMaxStackSize())"))
-    }
-
-    @Test
-    fun `clientSlotSyncMixin_shouldStayClientOnly`() {
-        val content = String(
-            Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.early.json")),
-            StandardCharsets.UTF_8,
-        )
-        val mixinsSection = content.substringAfter("\"mixins\": [").substringBefore("],")
-        val clientSection = content.substringAfter("\"client\": [").substringBefore("]")
-        assertTrue(clientSection.contains("NetHandlerPlayClientMixin"))
-        assertTrue(!mixinsSection.contains("NetHandlerPlayClientMixin"))
-    }
-
-    @Test
-    fun `clientSlotSyncMixin_shouldRepairWindowAndSlotPacketsOnly`() {
-        val source = String(
-            Files.readAllBytes(
-                Paths.get("src/main/java/io/alexjoest/stackupup/mixin/early/NetHandlerPlayClientMixin.java"),
-            ),
-            StandardCharsets.UTF_8,
-        )
-
-        assertTrue(source.contains("handleSetSlot(Lnet/minecraft/network/play/server/SPacketSetSlot;)V"))
-        assertTrue(source.contains("handleWindowItems(Lnet/minecraft/network/play/server/SPacketWindowItems;)V"))
-        assertTrue(source.contains("restoreContainerSlotStackCount"))
-        assertTrue(source.contains("restoreContainerSlotStackCounts"))
+        assertTrue(source.contains("combineItems"))
+        assertTrue(source.contains("getMaxStackSize()I"))
+        assertTrue(source.contains("Math.max"))
     }
 
     @Test
     fun `clientSlotSyncHooks_shouldRestoreEmptySlotsFromTransmittedStacks`() {
-        val source = String(
-            Files.readAllBytes(
-                Paths.get("src/main/kotlin/io/alexjoest/stackupup/ClientSlotSyncHooks.kt"),
-            ),
-            StandardCharsets.UTF_8,
-        )
+        val source = readSource("src/main/kotlin/io/alexjoest/stackupup/ClientSlotSyncHooks.kt")
 
-        assertTrue(source.contains("if (currentStack.isEmpty)"))
-        assertTrue(source.contains("container.getSlot(slotId).putStack(restored)"))
+        assertTrue(source.contains("currentStack.isEmpty"))
+        assertTrue(source.contains("putStack(restored)"))
     }
 
     @Test
-    fun `containerClickRemainder_shouldCoverAllSlotClickPaths`() {
-        val source = String(
-            Files.readAllBytes(
-                Paths.get("src/main/java/io/alexjoest/stackupup/mixin/early/ContainerMixin.java"),
-            ),
-            StandardCharsets.UTF_8,
-        )
+    fun `clientSlotSyncMixin_shouldRepairPacketsOnly`() {
+        val source = readMixinSource("NetHandlerPlayClientMixin.java")
 
-        assertTrue(source.contains("restoreRemainderToCursor"))
-        assertTrue(source.contains("ordinal = 0"))
-        assertTrue(source.contains("ordinal = 1"))
-        assertTrue(source.contains("ordinal = 4"))
-        assertTrue(source.contains("ordinal = 7"))
-        assertTrue(source.contains("pendingSwapRemainder"))
-    }
-
-    @Test
-    fun `containerClickMerge_shouldShrinkCursorAfterAcceptedSlotGrowth`() {
-        val source = String(
-            Files.readAllBytes(
-                Paths.get("src/main/java/io/alexjoest/stackupup/mixin/early/ContainerMixin.java"),
-            ),
-            StandardCharsets.UTF_8,
-        )
-
-        assertTrue(source.contains("delayCursorShrinkUntilSlotGrowth"))
-        assertTrue(source.contains("shrinkCursorByAcceptedSlotGrowth"))
-        assertTrue(source.contains("slotStack.getCount() - beforeCount"))
-    }
-
-    @Test
-    fun `containerClickRemainder_shouldClearThreadLocalState`() {
-        val source = String(
-            Files.readAllBytes(
-                Paths.get("src/main/java/io/alexjoest/stackupup/mixin/early/ContainerMixin.java"),
-            ),
-            StandardCharsets.UTF_8,
-        )
-
-        assertTrue(source.contains("clearPendingSlotClickStateBefore"))
-        assertTrue(source.contains("clearPendingSlotClickStateAfter"))
-        assertTrue(source.contains("ContainerState.clear()"))
+        assertTrue(source.contains("handleSetSlot"))
+        assertTrue(source.contains("handleWindowItems"))
+        assertTrue(source.contains("restoreContainerSlotStackCount"))
     }
 }

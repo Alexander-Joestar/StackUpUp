@@ -522,31 +522,15 @@ idea {
     project {
         settings {
             runConfigurations {
-                add(
-                    Gradle("1. Run Client").apply {
-                        setProperty("taskNames", listOf("runClient"))
-                    },
-                )
-                add(
-                    Gradle("2. Run Server").apply {
-                        setProperty("taskNames", listOf("runServer"))
-                    },
-                )
-                add(
-                    Gradle("2a. Run Server AutoTest Matrix").apply {
-                        setProperty("taskNames", listOf("runServerAutoTestMatrix"))
-                    },
-                )
-                add(
-                    Gradle("3. Run Obfuscated Client").apply {
-                        setProperty("taskNames", listOf("runObfClient"))
-                    },
-                )
-                add(
-                    Gradle("4. Run Obfuscated Server").apply {
-                        setProperty("taskNames", listOf("runObfServer"))
-                    },
-                )
+                listOf(
+                    "1. Run Client" to "runClient",
+                    "2. Run Server" to "runServer",
+                    "2a. Run Server AutoTest Matrix" to "runServerAutoTestMatrix",
+                    "3. Run Obfuscated Client" to "runObfClient",
+                    "4. Run Obfuscated Server" to "runObfServer",
+                ).forEach { (name, taskName) ->
+                    add(Gradle(name).apply { setProperty("taskNames", listOf(taskName)) })
+                }
             }
             compiler.javac {
                 afterEvaluate {
@@ -578,8 +562,6 @@ fun gradlew(vararg args: String): List<String> =
         listOf("./gradlew", *args)
     }
 
-// ...existing code...
-
 tasks.register("runClientAutoTest") {
     group = "modded minecraft"
     description = "以开发自动验收模式运行客户端。"
@@ -592,111 +574,71 @@ tasks.register("runServerAutoTest") {
     dependsOn("runServer")
 }
 
-tasks.register<Exec>("runServerAutoTestMatrix") {
-    group = "modded minecraft"
-    description = "在单次服务端启动中运行核心自动验收矩阵。"
-    workingDir = project.projectDir
-    commandLine(
-        gradlew(
-            "--no-daemon",
-            "runServerAutoTest",
-            "-PstackupupDevAutoTest=true",
-            "-PstackupupDevAutoTestMode=server",
-            "-PstackupupDevAutoTestMatrix=true",
-            "-PstackupupDevAutoTestRule=",
-            "-PstackupupDevAutoTestServerPort=0",
-            "-PstackupupDevAutoTestWorldFolder=stackupup_dev_autotest_matrix",
-            "-PstackupupDevAutoTestWorldName=StackUpUp 自动测试 Matrix",
-            "-PstackupupDevAutoTestCount=128",
-            "--stacktrace",
-        ),
-    )
+fun registerServerAutoTestTask(
+    name: String,
+    descriptionText: String,
+    vararg properties: Pair<String, String>,
+) {
+    tasks.register<Exec>(name) {
+        group = "modded minecraft"
+        description = descriptionText
+        workingDir = project.projectDir
+        commandLine(
+            gradlew(
+                "--no-daemon",
+                "runServerAutoTest",
+                "-PstackupupDevAutoTest=true",
+                "-PstackupupDevAutoTestMode=server",
+                "-PstackupupDevAutoTestServerPort=0",
+                "-PstackupupDevAutoTestCount=128",
+                *properties.map { (key, value) -> "-PstackupupDevAutoTest$key=$value" }.toTypedArray(),
+                "--stacktrace",
+            ),
+        )
+    }
 }
 
-tasks.register<Exec>("runServerAutoTestIngotSteel") {
-    group = "modded minecraft"
-    description = "运行 IngotSteel 服务端自动验收样例。"
-    workingDir = project.projectDir
-    commandLine(
-        gradlew(
-            "--no-daemon",
-            "runServerAutoTest",
-            "-PstackupupDevAutoTest=true",
-            "-PstackupupDevAutoTestMode=server",
-            "-PstackupupDevAutoTestOre=ingotSteel",
-            "-PstackupupDevAutoTestRule=ore = ingotSteel -> 1024",
-            "-PstackupupDevAutoTestServerPort=0",
-            "-PstackupupDevAutoTestWorldFolder=stackupup_dev_autotest_ingotsteel",
-            "-PstackupupDevAutoTestWorldName=StackUpUp 自动测试 IngotSteel",
-            "-PstackupupDevAutoTestCount=128",
-            "--stacktrace",
-        ),
-    )
-}
-
-tasks.register<Exec>("runServerAutoTestPlateSteel") {
-    group = "modded minecraft"
-    description = "运行 PlateSteel 服务端自动验收样例。"
-    workingDir = project.projectDir
-    commandLine(
-        gradlew(
-            "--no-daemon",
-            "runServerAutoTest",
-            "-PstackupupDevAutoTest=true",
-            "-PstackupupDevAutoTestMode=server",
-            "-PstackupupDevAutoTestOre=plateSteel",
-            "-PstackupupDevAutoTestRule=ore = plateSteel -> 1024",
-            "-PstackupupDevAutoTestServerPort=0",
-            "-PstackupupDevAutoTestWorldFolder=stackupup_dev_autotest_platesteel",
-            "-PstackupupDevAutoTestWorldName=StackUpUp 自动测试 PlateSteel",
-            "-PstackupupDevAutoTestCount=128",
-            "--stacktrace",
-        ),
-    )
-}
-
-tasks.register<Exec>("runServerAutoTestDustSteel") {
-    group = "modded minecraft"
-    description = "运行 DustSteel 服务端自动验收样例。"
-    workingDir = project.projectDir
-    commandLine(
-        gradlew(
-            "--no-daemon",
-            "runServerAutoTest",
-            "-PstackupupDevAutoTest=true",
-            "-PstackupupDevAutoTestMode=server",
-            "-PstackupupDevAutoTestOre=dustSteel",
-            "-PstackupupDevAutoTestRule=ore = dustSteel -> 1024",
-            "-PstackupupDevAutoTestServerPort=0",
-            "-PstackupupDevAutoTestWorldFolder=stackupup_dev_autotest_duststeel",
-            "-PstackupupDevAutoTestWorldName=StackUpUp 自动测试 DustSteel",
-            "-PstackupupDevAutoTestCount=128",
-            "--stacktrace",
-        ),
-    )
-}
-
-tasks.register<Exec>("runServerAutoTestVacuumTube") {
-    group = "modded minecraft"
-    description = "运行 VacuumTube 服务端自动验收样例。"
-    workingDir = project.projectDir
-    commandLine(
-        gradlew(
-            "--no-daemon",
-            "runServerAutoTest",
-            "-PstackupupDevAutoTest=true",
-            "-PstackupupDevAutoTestMode=server",
-            "-PstackupupDevAutoTestItem=gregtech:meta_item_1",
-            "-PstackupupDevAutoTestMeta=516",
-            "-PstackupupDevAutoTestRule=item = gregtech:meta_item_1 && meta = 516 -> 512",
-            "-PstackupupDevAutoTestServerPort=0",
-            "-PstackupupDevAutoTestWorldFolder=stackupup_dev_autotest_vacuumtube",
-            "-PstackupupDevAutoTestWorldName=StackUpUp 自动测试 VacuumTube",
-            "-PstackupupDevAutoTestCount=128",
-            "--stacktrace",
-        ),
-    )
-}
+registerServerAutoTestTask(
+    "runServerAutoTestMatrix",
+    "在单次服务端启动中运行核心自动验收矩阵。",
+    "Matrix" to "true",
+    "Rule" to "",
+    "WorldFolder" to "stackupup_dev_autotest_matrix",
+    "WorldName" to "StackUpUp 自动测试 Matrix",
+)
+registerServerAutoTestTask(
+    "runServerAutoTestIngotSteel",
+    "运行 IngotSteel 服务端自动验收样例。",
+    "Ore" to "ingotSteel",
+    "Rule" to "ore = ingotSteel -> 1024",
+    "WorldFolder" to "stackupup_dev_autotest_ingotsteel",
+    "WorldName" to "StackUpUp 自动测试 IngotSteel",
+)
+registerServerAutoTestTask(
+    "runServerAutoTestPlateSteel",
+    "运行 PlateSteel 服务端自动验收样例。",
+    "Ore" to "plateSteel",
+    "Rule" to "ore = plateSteel -> 1024",
+    "WorldFolder" to "stackupup_dev_autotest_platesteel",
+    "WorldName" to "StackUpUp 自动测试 PlateSteel",
+)
+registerServerAutoTestTask(
+    "runServerAutoTestDustSteel",
+    "运行 DustSteel 服务端自动验收样例。",
+    "Ore" to "dustSteel",
+    "Rule" to "ore = dustSteel -> 1024",
+    "WorldFolder" to "stackupup_dev_autotest_duststeel",
+    "WorldName" to "StackUpUp 自动测试 DustSteel",
+)
+registerServerAutoTestTask(
+    "runServerAutoTestVacuumTube",
+    "运行 VacuumTube 服务端自动验收样例。",
+    "Item" to "gregtech:meta_item_1",
+    "Meta" to "516",
+    "Rule" to "item = gregtech:meta_item_1 && meta = 516 -> 512",
+    "WorldFolder" to "stackupup_dev_autotest_vacuumtube",
+    "WorldName" to "StackUpUp 自动测试 VacuumTube",
+)
 
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()

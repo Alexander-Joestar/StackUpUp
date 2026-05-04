@@ -1,5 +1,8 @@
 package io.alexjoest.stackupup.rules.io
 
+import io.alexjoest.stackupup.rules.RuleMessageKey
+import io.alexjoest.stackupup.rules.RuleMessages
+
 internal object MarkdownStateParser {
     fun parse(lines: List<String>): MarkdownStateDocument {
         val stateRanges = findStateSections(lines)
@@ -25,7 +28,7 @@ internal object MarkdownStateParser {
                 }
                 val parsed = parseStateLine(line)
                 if (parsed == null) {
-                    errors += "Line $lineNum: invalid state declaration '${line.trim()}' - expected '- name = true|false'"
+                    errors += RuleMessages.message(RuleMessageKey.STATE_INVALID_DECLARATION, lineNum, line.trim()).format()
                 } else {
                     val (name, value) = parsed
                     states[name] = value

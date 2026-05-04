@@ -161,4 +161,50 @@ class RuleCompilerTest {
         assertEquals(true, compiled.matches(RuleMatchContext("gregtech:gt.metaitem.01", "gregtech", 11305, 64, "item", emptySet())))
         assertEquals(false, compiled.matches(RuleMatchContext("gregtech:gt.metaitem.01", "gregtech", 1, 64, "item", emptySet())))
     }
+
+    @Test
+    fun `itemWildcard_shouldMatchStackableOnly`() {
+        val compiled = RuleCompiler.compileLine("item = * -> 128", 19)
+
+        // baseSize > 1 可堆叠
+        assertEquals(true, compiled.matches(RuleMatchContext("minecraft:egg", "minecraft", 0, 16, "item", emptySet())))
+        assertEquals(true, compiled.matches(RuleMatchContext("minecraft:stick", "minecraft", 0, 64, "item", emptySet())))
+
+        // baseSize = 1 不可堆叠（工具、装备、桶等）
+        assertEquals(false, compiled.matches(RuleMatchContext("minecraft:diamond_sword", "minecraft", 0, 1, "item", emptySet())))
+        assertEquals(false, compiled.matches(RuleMatchContext("minecraft:water_bucket", "minecraft", 0, 1, "item", emptySet())))
+    }
+
+    @Test
+    fun `shouldMatchTabField`() {
+        val compiled = RuleCompiler.compileLine("tab = buildingBlocks -> 256", 20)
+
+        assertEquals(true, compiled.matches(RuleMatchContext("minecraft:stone", "minecraft", 0, 64, "block", emptySet(), tab = "buildingBlocks")))
+        assertEquals(false, compiled.matches(RuleMatchContext("minecraft:stick", "minecraft", 0, 64, "item", emptySet(), tab = "tools")))
+    }
+
+    @Test
+    fun `shouldMatchCategoryField`() {
+        val compiled = RuleCompiler.compileLine("category = potion -> 32", 21)
+
+        assertEquals(true, compiled.matches(RuleMatchContext("minecraft:potion", "minecraft", 0, 1, "item", emptySet(), category = "potion")))
+        assertEquals(false, compiled.matches(RuleMatchContext("minecraft:stone", "minecraft", 0, 64, "block", emptySet(), category = "")))
+    }
+
+    @Test
+    fun `shouldMatchCategoryEnchantedBook`() {
+        val compiled = RuleCompiler.compileLine("category = enchanted_book -> 16", 22)
+
+        assertEquals(true, compiled.matches(RuleMatchContext("minecraft:enchanted_book", "minecraft", 0, 1, "item", emptySet(), category = "enchanted_book")))
+        assertEquals(false, compiled.matches(RuleMatchContext("minecraft:book", "minecraft", 0, 64, "item", emptySet(), category = "")))
+    }
+
+    @Test
+    fun `shouldMatchMetaRange`() {
+        val compiled = RuleCompiler.compileLine("100 < meta < 300 -> 512", 23)
+
+        assertEquals(true, compiled.matches(RuleMatchContext("minecraft:wool", "minecraft", 150, 64, "block", emptySet())))
+        assertEquals(false, compiled.matches(RuleMatchContext("minecraft:wool", "minecraft", 50, 64, "block", emptySet())))
+        assertEquals(false, compiled.matches(RuleMatchContext("minecraft:wool", "minecraft", 400, 64, "block", emptySet())))
+    }
 }

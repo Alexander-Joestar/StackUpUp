@@ -1,5 +1,8 @@
 package io.alexjoest.stackupup.rules.io
 
+import io.alexjoest.stackupup.rules.RuleMessageKey
+import io.alexjoest.stackupup.rules.RuleMessages
+
 internal object MarkdownGateParser {
     fun parse(source: String): MarkdownGateParseResult {
         val tokenizer = Tokenizer(source)
@@ -15,11 +18,11 @@ internal object MarkdownGateParser {
 
         fun parse(): MarkdownGateParseResult {
             if (peek().type == TokenType.END) {
-                return failure("Empty gate expression", peek().offset)
+                return failure(RuleMessages.message(RuleMessageKey.GATE_EMPTY_EXPRESSION).format(), peek().offset)
             }
             val expression = parseOr() ?: return lastFailure
             if (peek().type != TokenType.END) {
-                return failure("Unexpected token '${peek().text}'", peek().offset)
+                return failure(RuleMessages.message(RuleMessageKey.GATE_UNEXPECTED_TOKEN, peek().text).format(), peek().offset)
             }
             return MarkdownGateParseResult.Success(expression)
         }
@@ -50,10 +53,10 @@ internal object MarkdownGateParser {
         }
 
         private fun parseFunctionCall(): RuleGateExpression? {
-            val name = consume(TokenType.IDENTIFIER, "Expected gate function") ?: return null
-            consume(TokenType.LEFT_PAREN, "Expected '(' after gate function") ?: return null
+            val name = consume(TokenType.IDENTIFIER, RuleMessages.message(RuleMessageKey.GATE_EXPECTED_FUNCTION).format()) ?: return null
+            consume(TokenType.LEFT_PAREN, RuleMessages.message(RuleMessageKey.GATE_EXPECTED_LEFT_PAREN).format()) ?: return null
             val args = parseArgList() ?: return null
-            consume(TokenType.RIGHT_PAREN, "Expected ')' after arguments") ?: return null
+            consume(TokenType.RIGHT_PAREN, RuleMessages.message(RuleMessageKey.GATE_EXPECTED_RIGHT_PAREN).format()) ?: return null
             return buildExpression(name.text, args, name.offset)
         }
 
@@ -62,10 +65,10 @@ internal object MarkdownGateParser {
             if (peek().type == TokenType.RIGHT_PAREN) {
                 return args
             }
-            val first = consume(TokenType.STRING, "Expected quoted string argument") ?: return null
+            val first = consume(TokenType.STRING, RuleMessages.message(RuleMessageKey.GATE_EXPECTED_STRING_ARG).format()) ?: return null
             args += first.text
             while (match(TokenType.COMMA)) {
-                val next = consume(TokenType.STRING, "Expected quoted string argument after ','") ?: return null
+                val next = consume(TokenType.STRING, RuleMessages.message(RuleMessageKey.GATE_EXPECTED_STRING_ARG_AFTER_COMMA).format()) ?: return null
                 args += next.text
             }
             return args
@@ -74,7 +77,7 @@ internal object MarkdownGateParser {
         private fun buildExpression(name: String, args: List<String>, offset: Int): RuleGateExpression? = when (name) {
             "state" -> {
                 if (args.size != 1) {
-                    fail("state() takes exactly 1 argument", offset)
+                    fail(RuleMessages.message(RuleMessageKey.GATE_STATE_TAKES_ONE_ARG).format(), offset)
                     null
                 } else {
                     RuleGateExpression.State(args[0])
@@ -82,7 +85,7 @@ internal object MarkdownGateParser {
             }
             "modLoaded" -> RuleGateExpression.ModLoaded(args.map { it.lowercase() })
             else -> {
-                fail("Unknown gate function '$name'", offset)
+                fail(RuleMessages.message(RuleMessageKey.GATE_UNKNOWN_FUNCTION, name).format(), offset)
                 null
             }
         }
@@ -126,12 +129,12 @@ internal object MarkdownGateParser {
                         index++
                     }
                     '&' -> {
-                        if (source.getOrNull(index + 1) != '&') return error("Expected '&' for &&", index)
+                        if (source.getOrNull(index + 1) != '&') return error(RuleMessages.message(RuleMessageKey.GATE_EXPECTED_AND).format(), index)
                         tokens += Token(TokenType.AND, "&&", index)
                         index += 2
                     }
                     '|' -> {
-                        if (source.getOrNull(index + 1) != '|') return error("Expected '|' for ||", index)
+                        if (source.getOrNull(index + 1) != '|') return error(RuleMessages.message(RuleMessageKey.GATE_EXPECTED_OR).format(), index)
                         tokens += Token(TokenType.OR, "||", index)
                         index += 2
                     }
@@ -154,7 +157,7 @@ internal object MarkdownGateParser {
                         index = string.nextIndex
                     }
                     else -> {
-                        if (!isIdentifierStart(char)) return error("Unexpected character '$char'", index)
+                        if (!isIdentifierStart(char)) return error(RuleMessages.message(RuleMessageKey.GATE_UNEXPECTED_CHARACTER, char.toString()).format(), index)
                         val start = index
                         index++
                         while (index < source.length && isIdentifierPart(source[index])) index++
@@ -174,7 +177,7 @@ internal object MarkdownGateParser {
                 if (char == '"') return StringReadResult(builder.toString(), index + 1, null)
                 if (char == '\\') {
                     val next = source.getOrNull(index + 1)
-                        ?: return StringReadResult("", index, TokenizeError("Unterminated escape", index))
+                        ?: return StringReadResult("", index, TokenizeError(RuleMessages.message(RuleMessageKey.GATE_UNTERMINATED_ESCAPE).format(), index))
                     builder.append(next)
                     index += 2
                     continue
@@ -182,7 +185,7 @@ internal object MarkdownGateParser {
                 builder.append(char)
                 index++
             }
-            return StringReadResult("", start, TokenizeError("Unterminated string", start))
+            return StringReadResult("", start, TokenizeError(RuleMessages.message(RuleMessageKey.GATE_UNTERMINATED_STRING).format(), start))
         }
 
         private fun isIdentifierStart(char: Char): Boolean = char == '_' || char.isLetter()

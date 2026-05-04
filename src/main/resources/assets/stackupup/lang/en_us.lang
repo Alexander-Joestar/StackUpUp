@@ -60,6 +60,23 @@ message.stackupup.rule_error.condition_missing_value=Condition is missing a comp
 message.stackupup.rule_error.load_failed=Line %s failed to load: %s
 message.stackupup.rule_error.load_failed_with_source=[%s] Line %s failed to load: %s
 message.stackupup.rule_error.unknown_error=unknown error
+message.stackupup.rule_error.gate_empty_expression=Gate expression is empty
+message.stackupup.rule_error.gate_unexpected_token=Unexpected token '%s'
+message.stackupup.rule_error.gate_expected_function=Expected gate function name
+message.stackupup.rule_error.gate_expected_left_paren=Expected '(' after gate function
+message.stackupup.rule_error.gate_expected_right_paren=Expected ')' after arguments
+message.stackupup.rule_error.gate_expected_string_arg=Expected quoted string argument
+message.stackupup.rule_error.gate_expected_string_arg_after_comma=Expected quoted string argument after ','
+message.stackupup.rule_error.gate_state_takes_one_arg=state() takes exactly 1 argument
+message.stackupup.rule_error.gate_unknown_function=Unknown gate function '%s'
+message.stackupup.rule_error.gate_expected_and=Expected '&' for &&
+message.stackupup.rule_error.gate_expected_or=Expected '|' for ||
+message.stackupup.rule_error.gate_unexpected_character=Unexpected character '%s'
+message.stackupup.rule_error.gate_unterminated_escape=Unterminated escape sequence
+message.stackupup.rule_error.gate_unterminated_string=Unterminated string
+message.stackupup.rule_error.gate_parse_error=[%s:%s] Gate parse error: %s
+message.stackupup.rule_error.state_invalid_declaration=Line %s: invalid state declaration '%s' - expected '- name = true|false'
+message.stackupup.rule_error.state_error_prefix=[state] %s
 
 tooltip.stackupup.current_max=Stack: %s/%s
 

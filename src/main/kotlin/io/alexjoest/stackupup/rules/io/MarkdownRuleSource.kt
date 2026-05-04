@@ -1,6 +1,8 @@
 package io.alexjoest.stackupup.rules.io
 
 import io.alexjoest.stackupup.rules.LocalizedMessage
+import io.alexjoest.stackupup.rules.RuleMessageKey
+import io.alexjoest.stackupup.rules.RuleMessages
 import io.alexjoest.stackupup.rules.compile.CompiledRule
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import java.io.File
@@ -65,8 +67,11 @@ internal object MarkdownRuleSource {
                     }
                     val parsed = MarkdownGateParser.parse(block.title)
                     if (parsed is MarkdownGateParseResult.Failure) {
-                        gateErrors += LocalizedMessage(
-                            "[$sourceName:${block.lineNumber}] gate parse error: ${parsed.message}",
+                        gateErrors += RuleMessages.message(
+                            RuleMessageKey.GATE_PARSE_ERROR,
+                            sourceName,
+                            block.lineNumber,
+                            parsed.message,
                         )
                     }
                     gateStack += MarkdownGateFrame(parsed)

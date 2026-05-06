@@ -212,7 +212,7 @@ class StackUpUp {
             activeLogger.info("Loaded {} DSL rules from {}", report.snapshot.rules.size, report.file.absolutePath)
             report.errors.map { it.format() }.forEach(activeLogger::error)
             for (warning in report.warnings) {
-                if (!StackUpUpConfig.ruleComplexityWarnings) {
+                if (!StackUpUpConfig.general.ruleComplexityWarnings) {
                     continue
                 }
                 activeLogger.warn(warning.format())

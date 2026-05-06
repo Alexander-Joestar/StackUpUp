@@ -131,22 +131,22 @@ object StackCountTextLayout {
     ): AbbreviationResult {
         val strWidth = maxOf(fr.getStringWidth(text), fr.getStringWidth(comparedText))
 
-        if (StackUpUpConfig.scaleTextLinearly) {
+        if (StackUpUpConfig.client.fontScaleLinear) {
             var scaleFactor = maxWidth.toFloat() / strWidth
             var fits = true
-            if (scaleFactor > StackUpUpConfig.highestScaleDown) {
-                scaleFactor = StackUpUpConfig.highestScaleDown
-            } else if (scaleFactor < StackUpUpConfig.lowestScaleDown) {
-                scaleFactor = StackUpUpConfig.lowestScaleDown
+            if (scaleFactor > StackUpUpConfig.client.fontScaleMaximum.toFloat()) {
+                scaleFactor = StackUpUpConfig.client.fontScaleMaximum.toFloat()
+            } else if (scaleFactor < StackUpUpConfig.client.fontScaleMinimum.toFloat()) {
+                scaleFactor = StackUpUpConfig.client.fontScaleMinimum.toFloat()
                 fits = false
             }
             return AbbreviationResult(text, scaleFactor, fits, abbreviated)
         }
 
         val cfgMinScaleFactor =
-            (StackUpUpConfig.lowestScaleDown * maxScaleFactor).roundToInt().coerceIn(1, maxScaleFactor)
+            (StackUpUpConfig.client.fontScaleMinimum * maxScaleFactor).roundToInt().coerceIn(1, maxScaleFactor)
         val cfgMaxScaleFactor =
-            (StackUpUpConfig.highestScaleDown * maxScaleFactor).roundToInt().coerceIn(1, maxScaleFactor)
+            (StackUpUpConfig.client.fontScaleMaximum * maxScaleFactor).roundToInt().coerceIn(1, maxScaleFactor)
 
         if (cfgMinScaleFactor != cfgMaxScaleFactor) {
             for (currScaleFactor in cfgMaxScaleFactor downTo cfgMinScaleFactor) {

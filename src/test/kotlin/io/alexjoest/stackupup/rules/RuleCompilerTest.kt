@@ -184,24 +184,8 @@ class RuleCompilerTest {
     }
 
     @Test
-    fun `shouldMatchCategoryField`() {
-        val compiled = RuleCompiler.compileLine("category = potion -> 32", 21)
-
-        assertEquals(true, compiled.matches(RuleMatchContext("minecraft:potion", "minecraft", 0, 1, "item", emptySet(), category = "potion")))
-        assertEquals(false, compiled.matches(RuleMatchContext("minecraft:stone", "minecraft", 0, 64, "block", emptySet(), category = "")))
-    }
-
-    @Test
-    fun `shouldMatchCategoryEnchantedBook`() {
-        val compiled = RuleCompiler.compileLine("category = enchanted_book -> 16", 22)
-
-        assertEquals(true, compiled.matches(RuleMatchContext("minecraft:enchanted_book", "minecraft", 0, 1, "item", emptySet(), category = "enchanted_book")))
-        assertEquals(false, compiled.matches(RuleMatchContext("minecraft:book", "minecraft", 0, 64, "item", emptySet(), category = "")))
-    }
-
-    @Test
     fun `shouldMatchMetaRange`() {
-        val compiled = RuleCompiler.compileLine("100 < meta < 300 -> 512", 23)
+        val compiled = RuleCompiler.compileLine("100 < meta < 300 -> 512", 21)
 
         assertEquals(true, compiled.matches(RuleMatchContext("minecraft:wool", "minecraft", 150, 64, "block", emptySet())))
         assertEquals(false, compiled.matches(RuleMatchContext("minecraft:wool", "minecraft", 50, 64, "block", emptySet())))

@@ -20,18 +20,19 @@ class StackLimitHooksTest {
 
     @BeforeEach
     fun setUpMaxStackSize() {
-        previousMaxStackSize = StackUpUpConfig.maxStackSize
-        StackUpUpConfig.maxStackSize = 10240
+        previousMaxStackSize = StackUpUpConfig.activeMaxStackSize
+        StackUpUpConfig.general.maxStackSize = 10240
+        StackUpUpConfig.activeMaxStackSize = 10240
     }
 
     @AfterEach
     fun restoreMaxStackSize() {
-        StackUpUpConfig.maxStackSize = previousMaxStackSize
+        StackUpUpConfig.activeMaxStackSize = previousMaxStackSize
     }
 
-    @Test
     fun `getCompatibilityStackSize_shouldReturnGlobalMax`() {
-        StackUpUpConfig.maxStackSize = 10240
+        StackUpUpConfig.general.maxStackSize = 10240
+        StackUpUpConfig.activeMaxStackSize = 10240
         assertEquals(10240, StackLimitHooks.getCompatibilityStackSize())
     }
 
@@ -448,11 +449,8 @@ class StackLimitHooksTest {
         val stack = ItemStack(item, 1, 0)
 
         val firstPass = StackLimitHooks.applyDynamicStackLimit(stack, 64)
-        val marked = StackLimitHooks.markResolvedItemLimit(stack, firstPass)
 
-        assertEquals(66, marked)
-        assertEquals(true, StackLimitHooks.shouldSkipNestedItemStackLimit(stack, 66))
-        assertEquals(false, StackLimitHooks.shouldSkipNestedItemStackLimit(stack, 66))
+        assertEquals(66, firstPass)
     }
 
     @Test

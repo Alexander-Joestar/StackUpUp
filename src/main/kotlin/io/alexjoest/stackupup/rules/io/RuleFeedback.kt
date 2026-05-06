@@ -18,7 +18,7 @@ object RuleFeedback {
     }
 
     fun emitWarnings(report: RuleReloadReport, send: (ITextComponent) -> Unit) {
-        if (!StackUpUpConfig.ruleComplexityWarnings || report.warnings.isEmpty()) {
+        if (!StackUpUpConfig.general.ruleComplexityWarnings || report.warnings.isEmpty()) {
             return
         }
 

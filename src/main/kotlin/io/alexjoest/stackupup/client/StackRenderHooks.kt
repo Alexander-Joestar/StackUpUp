@@ -28,7 +28,7 @@ object StackRenderHooks {
             return 0
         }
 
-        if (StackUpUpConfig.highestScaleDown >= 1.0f && StackCountTextLayout.getStringLenWithoutFmtCodes(text) <= 2) {
+        if (StackUpUpConfig.client.fontScaleMaximum >= 1.0 && StackCountTextLayout.getStringLenWithoutFmtCodes(text) <= 2) {
             return fr.drawStringWithShadow(text, xIn, yIn, color)
         }
 

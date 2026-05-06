@@ -13,13 +13,14 @@ class StackLimitServiceTest {
 
     @BeforeEach
     fun setUpMaxStackSize() {
-        previousMaxStackSize = StackUpUpConfig.maxStackSize
-        StackUpUpConfig.maxStackSize = 10240
+        previousMaxStackSize = StackUpUpConfig.activeMaxStackSize
+        StackUpUpConfig.general.maxStackSize = 10240
+        StackUpUpConfig.activeMaxStackSize = 10240
     }
 
     @AfterEach
     fun restoreMaxStackSize() {
-        StackUpUpConfig.maxStackSize = previousMaxStackSize
+        StackUpUpConfig.activeMaxStackSize = previousMaxStackSize
     }
 
     @Test
@@ -116,8 +117,9 @@ class StackLimitServiceTest {
 
     @Test
     fun `runtimeResult_shouldBeClampedByMaxStackSize`() {
-        val previous = StackUpUpConfig.maxStackSize
-        StackUpUpConfig.maxStackSize = 256
+        val previous = StackUpUpConfig.activeMaxStackSize
+        StackUpUpConfig.general.maxStackSize = 256
+        StackUpUpConfig.activeMaxStackSize = 256
         try {
             val snapshot = RuleSnapshot(
                 version = 5L,
@@ -136,7 +138,7 @@ class StackLimitServiceTest {
                 ),
             )
         } finally {
-            StackUpUpConfig.maxStackSize = previous
+            StackUpUpConfig.activeMaxStackSize = previous
         }
     }
 }

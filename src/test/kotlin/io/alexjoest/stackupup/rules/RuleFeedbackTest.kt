@@ -50,8 +50,9 @@ class RuleFeedbackTest {
 
     @Test
     fun `complexityWarning_shouldPreserveTranslationKey`() {
-        val previous = StackUpUpConfig.ruleComplexityWarnings
-        StackUpUpConfig.ruleComplexityWarnings = true
+        val previous = StackUpUpConfig.general.ruleComplexityWarnings
+        StackUpUpConfig.general.ruleComplexityWarnings = true
+        StackUpUpConfig.applyReloadControlledValues()
         try {
             val report = RuleReloadReport(
                 file = File("run/config/stackupup/main.su"),
@@ -70,7 +71,7 @@ class RuleFeedbackTest {
             assertEquals(StackUpUpIds.RULE_COMPLEXITY_RULE_COUNT_KEY, emitted[1].key)
             assertArrayEquals(arrayOf(80), emitted[1].formatArgs)
         } finally {
-            StackUpUpConfig.ruleComplexityWarnings = previous
+            StackUpUpConfig.general.ruleComplexityWarnings = previous
         }
     }
 }

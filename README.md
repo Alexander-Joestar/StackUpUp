@@ -67,8 +67,8 @@ item = minecraft:wool:14 -> 512
 tab = buildingBlocks -> 256
 
 # 按物品类别（药水瓶、附魔书）
-category = potion -> 32
-category = enchanted_book -> 16
+~~category = potion -> 32~~（1.12.2无需category）
+~~category = enchanted_book -> 16~~（1.12.2无需category）
 
 # 多条件组合
 item = gregtech:gt.metaitem.01@11305 && ore = ingotSteel -> 1024
@@ -84,7 +84,7 @@ ore = ingotSteel -> 512 -> *2
 - 目标版本锁定 **1.12.2**，不做多版本兼容
 - 规则系统使用 **DSL v2**，支持 `item + meta + ore` 组合
 - 兼容层优先走 **MixinBooter + Mixin**，逐步收缩旧 ASM
-- 不提供自定义字段注册 API；需要按类别匹配的场景，通过矿物辞典（`ore = ...`）或 `tab`/`category` 字段即可覆盖
+- 不提供自定义字段注册 API；需要按类别匹配的场景，通过矿物辞典（`ore = ...`）或 `tab` 等字段即可覆盖
 
 ## 兼容性
 

@@ -19,10 +19,9 @@ class StackLimitService(private val snapshot: RuleSnapshot) {
         baseLimit = context.baseLimit,
         oreNames = context.oreNames,
         tab = context.tab,
-        category = context.category,
     )
 
-    fun resolve(identity: StackIdentity, baseLimit: Int, oreNames: Set<String>, tab: String = "", category: String = ""): Int = resolve(
+    fun resolve(identity: StackIdentity, baseLimit: Int, oreNames: Set<String>, tab: String = ""): Int = resolve(
         itemId = identity.itemId,
         modId = identity.modId,
         metadata = identity.meta,
@@ -30,7 +29,6 @@ class StackLimitService(private val snapshot: RuleSnapshot) {
         baseLimit = baseLimit,
         oreNames = oreNames,
         tab = tab,
-        category = category,
     )
 
     fun resolve(
@@ -41,7 +39,6 @@ class StackLimitService(private val snapshot: RuleSnapshot) {
         baseLimit: Int,
         oreNames: Set<String>,
         tab: String = "",
-        category: String = "",
     ): Int {
         val key = ResolvedLimitKey(itemId, modId, metadata, type, baseLimit)
         resolvedCache[key]?.let { return it }
@@ -54,7 +51,6 @@ class StackLimitService(private val snapshot: RuleSnapshot) {
             type = type,
             oreNames = oreNames,
             tab = tab,
-            category = category,
         )
 
         var result = baseLimit
@@ -64,7 +60,7 @@ class StackLimitService(private val snapshot: RuleSnapshot) {
             }
         }
 
-        val resolved = result.coerceIn(1, StackUpUpConfig.maxStackSize)
+        val resolved = result.coerceIn(1, StackUpUpConfig.activeMaxStackSize)
         val previous = resolvedCache.putIfAbsent(key, resolved)
         return previous ?: resolved
     }

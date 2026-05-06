@@ -19,12 +19,6 @@ public abstract class ItemStackMixin {
             return original;
         }
 
-        // 普通物品会先经过 Item#getItemStackLimit(ItemStack) 的动态规则入口；
-        // 这里仅在“物品类自己覆写了上限逻辑、绕开 ItemMixin”时补一次规则，
-        // 同时用线程本地标记避免把 + - * / 再执行第二遍。
-        if (StackLimitHooks.shouldSkipNestedItemStackLimit(stack, original)) {
-            return original;
-        }
-        return StackLimitHooks.applyDynamicStackLimit(stack, original);
-    }
+        // 这里只做兜底，不再单独执行规则，避免和 ItemMixin 重复。
+        return original;    }
 }

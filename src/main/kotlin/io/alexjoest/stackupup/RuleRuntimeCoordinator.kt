@@ -21,7 +21,7 @@ object RuleRuntimeCoordinator {
 
     fun lastReport(): RuleReloadReport = lastReportState
 
-    fun reload(enableDslRules: Boolean = StackUpUpConfig.enableDslRules): RuleReloadReport {
+    fun reload(enableDslRules: Boolean = StackUpUpConfig.general.enableDslRules): RuleReloadReport {
         val primaryRulesFile = RuleFileLocator.resolve()
         // Refresh the example syntax reference file on every reload,
         // so it always reflects the latest DSL documentation regardless of user edits.

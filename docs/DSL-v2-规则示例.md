@@ -45,8 +45,8 @@ tab = buildingBlocks -> 256
 tab = tools -> 128
 
 # 按物品类别（药水瓶、附魔书）
-category = potion -> 32
-category = enchanted_book -> 16
+~~category = potion -> 32~~（1.12.2无需category）
+~~category = enchanted_book -> 16~~（1.12.2无需category）
 
 # 类型条件
 type = block && mod = minecraft -> 512
@@ -188,7 +188,7 @@ StackUpUp 按以下顺序加载规则文件，后面的规则会覆盖或叠加�
 
 ## DSL 语法要点
 
-- 匹配字段：`item`、`mod`、`ore`、`meta`（别名 `metadata`）、`size`、`type`、`tab`、`category`
+- 匹配字段：`item`、`mod`、`ore`、`meta`（别名 `metadata`）、`size`、`type`、`tab`
 - 特殊匹配：`item = *` 匹配所有可堆叠物品（排除 baseSize=1 的工具、盔甲等）
 - 比较运算：`= != > >= < <=`
 - 列表匹配：`field in [value1, value2]`
@@ -197,7 +197,6 @@ StackUpUp 按以下顺序加载规则文件，后面的规则会覆盖或叠加�
 - 动作链：`-> 128`、`-> +32`、`-> *2`、`-> /2`，可链式执行
 - `type` 只支持 `item` 和 `block`
 - `tab` 是创造模式标签页 ID，如 `buildingBlocks`、`tools`、`combat`
-- `category` 当前支持 `potion`（药水瓶）和 `enchanted_book`（附魔书）
 
 ## 书写建议
 

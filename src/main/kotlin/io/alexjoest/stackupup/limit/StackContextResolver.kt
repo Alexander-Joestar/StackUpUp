@@ -20,7 +20,6 @@ object StackContextResolver {
         val type = if (stack.item is ItemBlock) "block" else "item"
         val item = stack.item
         val tabLabel = item.creativeTab?.tabLabel ?: ""
-        val category = categorizeItem(item)
         return StackContext(
             itemId = registryName.toString(),
             modId = registryName.namespace,
@@ -29,12 +28,6 @@ object StackContextResolver {
             baseLimit = baseLimit,
             oreNames = if (includeOreNames) RuleRuntime.oreDictIndex().getOreNames(stack) else emptySet(),
             tab = tabLabel,
-            category = category,
         )
-    }
-    private fun categorizeItem(item: net.minecraft.item.Item): String = when (item) {
-        is net.minecraft.item.ItemPotion -> "potion"
-        is net.minecraft.item.ItemEnchantedBook -> "enchanted_book"
-        else -> ""
     }
 }

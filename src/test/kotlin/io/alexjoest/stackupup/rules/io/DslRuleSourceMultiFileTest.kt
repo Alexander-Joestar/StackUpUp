@@ -16,13 +16,15 @@ class DslRuleSourceMultiFileTest {
 
     @BeforeEach
     fun setUpMaxStackSize() {
-        previousMaxStackSize = StackUpUpConfig.maxStackSize
-        StackUpUpConfig.maxStackSize = 10240
+        previousMaxStackSize = StackUpUpConfig.activeMaxStackSize
+        StackUpUpConfig.general.maxStackSize = 10240
+        StackUpUpConfig.activeMaxStackSize = 10240
     }
 
     @AfterEach
     fun restoreMaxStackSize() {
-        StackUpUpConfig.maxStackSize = previousMaxStackSize
+        StackUpUpConfig.general.maxStackSize = previousMaxStackSize
+        StackUpUpConfig.activeMaxStackSize = previousMaxStackSize
     }
 
     @Test

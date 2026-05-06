@@ -16,7 +16,6 @@ enum class RuleField(val fieldType: FieldType, aliases: Set<String> = emptySet()
     META(FieldType.NUMERIC, setOf("metadata")),
     SIZE(FieldType.NUMERIC),
     TAB(FieldType.STRING),
-    CATEGORY(FieldType.STRING),
     ;
 
     val id: String by lazy { name.lowercase() }

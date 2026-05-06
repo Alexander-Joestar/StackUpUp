@@ -25,16 +25,16 @@ class StackUpUpConfigTest {
 
             StackUpUpConfig.applyRuntimeValues()
 
-            assertFalse(StackUpUpConfig.enableDslRules)
-            assertEquals(TooltipStackDisplayMode.ALWAYS, StackUpUpConfig.tooltipStackDisplayMode)
-            assertEquals(previousActiveMaxStackSize, StackUpUpConfig.maxStackSize)
-            assertEquals(0.4f, StackUpUpConfig.lowestScaleDown)
-            assertEquals(0.4f, StackUpUpConfig.highestScaleDown)
+            assertFalse(StackUpUpConfig.general.enableDslRules)
+            assertEquals(TooltipStackDisplayMode.ALWAYS, StackUpUpConfig.general.tooltipStackDisplayMode)
+            assertEquals(previousActiveMaxStackSize, StackUpUpConfig.activeMaxStackSize)
+            assertEquals(0.4, StackUpUpConfig.client.fontScaleMinimum)
+            assertEquals(0.4, StackUpUpConfig.client.fontScaleMaximum)
             assertTrue(StackUpUpConfig.equalScaleDown)
 
             StackUpUpConfig.applyReloadControlledValues()
 
-            assertEquals(65536, StackUpUpConfig.maxStackSize)
+            assertEquals(65536, StackUpUpConfig.activeMaxStackSize)
         } finally {
             StackUpUpConfig.general.enableDslRules = previousEnableDslRules
             StackUpUpConfig.general.tooltipStackDisplayMode = previousTooltipStackDisplayMode

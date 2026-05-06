@@ -3,7 +3,7 @@ package io.alexjoest.stackupup
 import net.minecraftforge.common.config.Config
 import kotlin.math.abs
 
-@Config(modid = StackUpUp.CONFIG_ID, name = StackUpUp.PUBLIC_ID, category = "")
+@Config(modid = StackUpUp.CONFIG_ID, name = StackUpUp.PUBLIC_ID)
 @Config.LangKey(StackUpUpIds.CONFIG_LANG_ROOT)
 object StackUpUpConfig {
     @JvmField
@@ -32,49 +32,6 @@ object StackUpUpConfig {
     @Config.Name("compatibility")
     @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compatibility.name")
     val compatibility: Compatibility = Compatibility()
-
-    var enableDslRules: Boolean
-        get() = general.enableDslRules
-        set(value) {
-            general.enableDslRules = value
-        }
-
-    var tooltipStackDisplayMode: TooltipStackDisplayMode
-        get() = general.tooltipStackDisplayMode
-        set(value) {
-            general.tooltipStackDisplayMode = value
-        }
-
-    var ruleComplexityWarnings: Boolean
-        get() = general.ruleComplexityWarnings
-        set(value) {
-            general.ruleComplexityWarnings = value
-        }
-
-    var maxStackSize: Int
-        get() = activeMaxStackSize
-        set(value) {
-            general.maxStackSize = value
-            activeMaxStackSize = value
-        }
-
-    var scaleTextLinearly: Boolean
-        get() = client.fontScaleLinear
-        set(value) {
-            client.fontScaleLinear = value
-        }
-
-    var lowestScaleDown: Float
-        get() = client.fontScaleMinimum.toFloat()
-        set(value) {
-            client.fontScaleMinimum = value.toDouble()
-        }
-
-    var highestScaleDown: Float
-        get() = client.fontScaleMaximum.toFloat()
-        set(value) {
-            client.fontScaleMaximum = value.toDouble()
-        }
 
     @JvmStatic
     fun applyRuntimeValues() {

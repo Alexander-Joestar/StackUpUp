@@ -274,11 +274,10 @@ public abstract class ContainerMixin {
     ) {
         if (stack.getCount() > Constants.VANILLA_STACK_LIMIT) {
             ItemStack copy = stack.copy();
-            stack.shrink(Constants.VANILLA_STACK_LIMIT);
             copy.setCount(Constants.VANILLA_STACK_LIMIT);
-            EntityItem dropped = droppingPlayer.dropItem(copy, dropAround);
-            droppingPlayer.inventory.setItemStack(stack);
-            return dropped;
+            stack.shrink(Constants.VANILLA_STACK_LIMIT);
+            ContainerState.pendingOutsideDropRemainder.set(stack.getCount());
+            return droppingPlayer.dropItem(copy, dropAround);
         }
         return original.call(droppingPlayer, stack, dropAround);
     }
@@ -308,6 +307,30 @@ public abstract class ContainerMixin {
         if (pendingSwap != null) {
             ContainerState.pendingSwapRemainder.remove();
             if (pendingSwap > 0 && !cursorStack.isEmpty()) { cursorStack.grow(pendingSwap); }
+        }
+        original.call(inventory, cursorStack);
+    }
+
+    /**
+     * ordinal 1 setItemStack — outside-drop (slotId=-999, dragType=0) 后的光标清空。
+     * 有 pendingOutsideDropRemainder 时跳过 clear，保留已在 drop wrapper 中 shrunk 的余量。
+     */
+    @WrapOperation(
+            method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/entity/player/InventoryPlayer;setItemStack(Lnet/minecraft/item/ItemStack;)V",
+                    ordinal = 1
+            )
+    )
+    private void stackupup$protectOutsideDropRemainder(
+            InventoryPlayer inventory, ItemStack cursorStack, Operation<Void> original,
+            int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
+    ) {
+        Integer pending = ContainerState.pendingOutsideDropRemainder.get();
+        if (pending != null) {
+            ContainerState.pendingOutsideDropRemainder.remove();
+            return;
         }
         original.call(inventory, cursorStack);
     }

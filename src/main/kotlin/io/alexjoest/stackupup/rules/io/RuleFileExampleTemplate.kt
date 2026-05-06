@@ -27,7 +27,6 @@ Rule without condition applies to all items.
   metadata  alias for meta       metadata = 324
   size      current limit        size > 2
   tab       creative tab         tab = buildingBlocks
-  category  item category        category = potion
 
 
 ═══ Comparisons ═════════════════════════════════════════════════════════
@@ -111,8 +110,6 @@ Rule without condition applies to all items.
 
   item = * -> 128            all stackable items to 128
   tab = buildingBlocks -> 256
-  category = potion -> 32
-  category = enchanted_book -> 16
 
   2 < size < 64 -> 1024
   100 < meta < 300 -> 512

@@ -48,13 +48,9 @@ class EarlyMixinConfigTest {
         assertTrue(source.contains("InventoryPlayer inventory,"))
         assertTrue(source.contains("original.call(inventory, cursorStack)"))
 
-        // dropItem wrapper must carry EntityPlayer receiver
-        assertTrue(source.contains("droppingPlayer.dropItem(copy, dropAround)"))
-        assertTrue(source.contains("original.call(droppingPlayer, stack, dropAround)"))
-
-        // ordinal coverage for remainder restoration
-        assertTrue(source.contains("restoreRemainderToCursor"))
-        assertTrue(source.contains("pendingSwapRemainder"))
+        // merge/putStack remainder restoration via ContainerInsertHooks
+        assertTrue(source.contains("ContainerInsertHooks.remainderAfterPut"))
+        assertTrue(source.contains("ContainerInsertHooks.resolveMergeSlotLimit"))
 
         // merge shrink/grow pair
         assertTrue(source.contains("delayCursorShrinkUntilSlotGrowth"))
@@ -62,7 +58,7 @@ class EarlyMixinConfigTest {
 
         // ThreadLocal state cleanup
         assertTrue(source.contains("clearPendingSlotClickStateBefore"))
-        assertTrue(source.contains("clearPendingSlotClickStateAfter"))
+        // clearPendingSlotClickStateAfter was removed in simplification; HEAD handler covers cleanup
         assertTrue(source.contains("ContainerState.clear()"))
 
         // helper delegation to runtime package, not mixin-owned

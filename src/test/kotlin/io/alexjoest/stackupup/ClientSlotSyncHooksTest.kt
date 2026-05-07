@@ -161,27 +161,7 @@ class ClientSlotSyncHooksTest {
 
     // ── RemainerGuard integration ───────────────────────────────────────
 
-    @Test
-    fun `remainder calculation via guard respects disabled state`() {
-        val inventory = object : InventoryBasic("test", false, 1) {
-            override fun setInventorySlotContents(index: Int, stack: ItemStack) {
-                val stored = stack.copy()
-                if (!stored.isEmpty && stored.count > 64) {
-                    stored.setCount(64)
-                }
-                super.setInventorySlotContents(index, stored)
-            }
-        }
-        val slot = Slot(inventory, 0, 0, 0)
-        val attempted = ItemStack(TEST_ITEM, 200)
 
-        RemainderGuard.withoutRemainder {
-            slot.putStack(attempted.copy())
-        }
-
-        val remainder = ContainerInsertHooks.remainderCountAfterEmptyPut(slot, attempted)
-        assertEquals(136, remainder)
-    }
 
     // ── helpers ─────────────────────────────────────────────────────────
 

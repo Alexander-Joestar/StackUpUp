@@ -19,6 +19,10 @@ public abstract class ItemStackMixin {
             return original;
         }
 
-        // 这里只做兜底，不再单独执行规则，避免和 ItemMixin 重复。
-        return original;    }
+        // ItemMixin 已处理时跳过，否则 GT 等不走 Item#getItemStackLimit 的 mod 到这里补齐。
+        if (StackLimitHooks.shouldSkipNestedItemStackLimit(stack, original)) {
+            return original;
+        }
+        return StackLimitHooks.applyDynamicStackLimit(stack, original);
+    }
 }

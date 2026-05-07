@@ -2,12 +2,10 @@ package io.alexjoest.stackupup.mixin.early;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import io.alexjoest.stackupup.Constants;
 import io.alexjoest.stackupup.ContainerMergeShrink;
 import io.alexjoest.stackupup.ContainerState;
 import io.alexjoest.stackupup.ContainerInsertHooks;
 import io.alexjoest.stackupup.RemainderGuard;
-import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.ClickType;
@@ -31,9 +29,10 @@ public abstract class ContainerMixin {
             CallbackInfoReturnable<ItemStack> cir
     ) {
         stackupup$clearPendingSlotClickState();
+        ContainerState.isDropOperation.set(slotId == -999);
     }
 
-    // ══════════════════ mergeItemStack ──────────────────────────────────
+    // ?????????????????? mergeItemStack ??????????????????????????????????
 
     @WrapOperation(
             method = "mergeItemStack(Lnet/minecraft/item/ItemStack;IIZ)Z",
@@ -67,11 +66,15 @@ public abstract class ContainerMixin {
         if (remainder > 0) { sourceStack.grow(remainder); }
     }
 
-    // ══════════════════ slotClick ───────────────────────────────────────
+    // ?????????????????? slotClick ???????????????????????????????????????
+
+    @Unique
+    private static boolean stackupup$shouldBypassRemainder() {
+        return ContainerState.isDropOperation.get();
+    }
 
     /**
-     * ordinal 0 — QUICK_CRAFT 拖动过程中对逐个槽位的 putStack。
-     * 余量暂存到 pendingDragRemainder，在拖动结束后的 setItemStack ordinal 0 中补回光标。
+     * ordinal 0 ? QUICK_CRAFT ??????????? putStack?
      */
     @WrapOperation(
             method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
@@ -81,6 +84,7 @@ public abstract class ContainerMixin {
             Slot slot, ItemStack attemptedStack, Operation<Void> original,
             int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
+        if (stackupup$shouldBypassRemainder()) { original.call(slot, attemptedStack); return; }
         if (clickTypeIn == ClickType.QUICK_CRAFT) {
             stackupup$storeRemainder(slot, attemptedStack, original, ContainerState.pendingDragRemainder);
             return;
@@ -89,7 +93,7 @@ public abstract class ContainerMixin {
     }
 
     /**
-     * ordinal 1 — PICKUP / 空槽写入 ("else" 分支的第一次 putStack)。
+     * ordinal 1 ? PICKUP / ?????
      */
     @WrapOperation(
             method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
@@ -99,11 +103,12 @@ public abstract class ContainerMixin {
             Slot slot, ItemStack attemptedStack, Operation<Void> original,
             int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
+        if (stackupup$shouldBypassRemainder()) { original.call(slot, attemptedStack); return; }
         stackupup$restoreRemainderToCursor(slot, attemptedStack, original, player);
     }
 
     /**
-     * ordinal 2 — PICKUP / 空槽变空后 putStack(EMPTY)。安全忽略。
+     * ordinal 2 ? PICKUP / ????? putStack(EMPTY)??????
      */
     @WrapOperation(
             method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
@@ -113,11 +118,12 @@ public abstract class ContainerMixin {
             Slot slot, ItemStack attemptedStack, Operation<Void> original,
             int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
+        if (stackupup$shouldBypassRemainder()) { original.call(slot, attemptedStack); return; }
         original.call(slot, attemptedStack);
     }
 
     /**
-     * ordinal 3 — PICKUP / decrStackSize 后 putStack(EMPTY)。安全忽略。
+     * ordinal 3 ? PICKUP / decrStackSize ? putStack(EMPTY)??????
      */
     @WrapOperation(
             method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
@@ -127,12 +133,12 @@ public abstract class ContainerMixin {
             Slot slot, ItemStack attemptedStack, Operation<Void> original,
             int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
+        if (stackupup$shouldBypassRemainder()) { original.call(slot, attemptedStack); return; }
         original.call(slot, attemptedStack);
     }
 
     /**
-     * ordinal 4 — PICKUP / 光标物品替换槽位物品 (SWAP 语义)。
-     * 余量暂存到 pendingSwapRemainder，在随后的 setItemStack 中补回。
+     * ordinal 4 ? PICKUP / ?????????? (SWAP)?
      */
     @WrapOperation(
             method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
@@ -142,11 +148,12 @@ public abstract class ContainerMixin {
             Slot slot, ItemStack attemptedStack, Operation<Void> original,
             int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
+        if (stackupup$shouldBypassRemainder()) { original.call(slot, attemptedStack); return; }
         stackupup$storeRemainder(slot, attemptedStack, original, ContainerState.pendingSwapRemainder);
     }
 
     /**
-     * ordinal 5 — PICKUP / decrStackSize 清空后 putStack(EMPTY)。安全忽略。
+     * ordinal 5 ? PICKUP / decrStackSize ??? putStack(EMPTY)??????
      */
     @WrapOperation(
             method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
@@ -156,11 +163,12 @@ public abstract class ContainerMixin {
             Slot slot, ItemStack attemptedStack, Operation<Void> original,
             int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
+        if (stackupup$shouldBypassRemainder()) { original.call(slot, attemptedStack); return; }
         original.call(slot, attemptedStack);
     }
 
     /**
-     * ordinal 6 — SWAP (hotbar) / 空槽后 putStack(EMPTY)。安全忽略。
+     * ordinal 6 ? SWAP (hotbar) / ??? putStack(EMPTY)??????
      */
     @WrapOperation(
             method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
@@ -170,11 +178,12 @@ public abstract class ContainerMixin {
             Slot slot, ItemStack attemptedStack, Operation<Void> original,
             int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
+        if (stackupup$shouldBypassRemainder()) { original.call(slot, attemptedStack); return; }
         original.call(slot, attemptedStack);
     }
 
     /**
-     * ordinal 7 — SWAP (hotbar) / splitStack 后写入。余量暂存，在 setItemStack/swap 中补回。
+     * ordinal 7 ? SWAP (hotbar) / splitStack ????
      */
     @WrapOperation(
             method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
@@ -184,11 +193,12 @@ public abstract class ContainerMixin {
             Slot slot, ItemStack attemptedStack, Operation<Void> original,
             int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
+        if (stackupup$shouldBypassRemainder()) { original.call(slot, attemptedStack); return; }
         stackupup$storeRemainder(slot, attemptedStack, original, ContainerState.pendingSwapRemainder);
     }
 
     /**
-     * ordinal 8 — SWAP (hotbar) / 完整物品写入。余量暂存。
+     * ordinal 8 ? SWAP (hotbar) / ???????
      */
     @WrapOperation(
             method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
@@ -198,11 +208,12 @@ public abstract class ContainerMixin {
             Slot slot, ItemStack attemptedStack, Operation<Void> original,
             int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
+        if (stackupup$shouldBypassRemainder()) { original.call(slot, attemptedStack); return; }
         stackupup$storeRemainder(slot, attemptedStack, original, ContainerState.pendingSwapRemainder);
     }
 
     /**
-     * ordinal 9 — SWAP (hotbar, 有物品) / splitStack 后写入。余量暂存。
+     * ordinal 9 ? SWAP (hotbar, ???) / splitStack ????
      */
     @WrapOperation(
             method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
@@ -212,11 +223,12 @@ public abstract class ContainerMixin {
             Slot slot, ItemStack attemptedStack, Operation<Void> original,
             int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
+        if (stackupup$shouldBypassRemainder()) { original.call(slot, attemptedStack); return; }
         stackupup$storeRemainder(slot, attemptedStack, original, ContainerState.pendingSwapRemainder);
     }
 
     /**
-     * ordinal 10 — SWAP (hotbar, 有物品) / 完整物品写入。余量暂存。
+     * ordinal 10 ? SWAP (hotbar, ???) / ???????
      */
     @WrapOperation(
             method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
@@ -226,10 +238,11 @@ public abstract class ContainerMixin {
             Slot slot, ItemStack attemptedStack, Operation<Void> original,
             int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
+        if (stackupup$shouldBypassRemainder()) { original.call(slot, attemptedStack); return; }
         stackupup$storeRemainder(slot, attemptedStack, original, ContainerState.pendingSwapRemainder);
     }
 
-    // ══════════════════ slotClick shrink / grow ───────────────────────────
+    // ?????????????????? slotClick shrink / grow ???????????????????????????
 
     @WrapOperation(
             method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
@@ -238,6 +251,7 @@ public abstract class ContainerMixin {
     private void stackupup$delayCursorShrinkUntilSlotGrowth(
             ItemStack cursorStack, int quantity, Operation<Void> original
     ) {
+        if (stackupup$shouldBypassRemainder()) { original.call(cursorStack, quantity); return; }
         ContainerState.pendingMergeShrink.set(new ContainerMergeShrink(cursorStack, quantity, original));
     }
 
@@ -248,6 +262,7 @@ public abstract class ContainerMixin {
     private void stackupup$shrinkCursorByAcceptedSlotGrowth(
             ItemStack slotStack, int quantity, Operation<Void> original
     ) {
+        if (stackupup$shouldBypassRemainder()) { original.call(slotStack, quantity); return; }
         ContainerMergeShrink pending = ContainerState.pendingMergeShrink.get();
         if (pending == null) { original.call(slotStack, quantity); return; }
         ContainerState.pendingMergeShrink.remove();
@@ -257,34 +272,10 @@ public abstract class ContainerMixin {
         if (accepted > 0) { pending.originalShrink.call(pending.cursorStack, accepted); }
     }
 
-    // ══════════════════ slotClick drop / setItemStack ────────────────────
-
-    @WrapOperation(
-            method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/entity/player/EntityPlayer;dropItem(Lnet/minecraft/item/ItemStack;Z)Lnet/minecraft/entity/item/EntityItem;",
-                    ordinal = 0
-            )
-    )
-    private EntityItem stackupup$limitOutsideDropToDefaultSize(
-            EntityPlayer droppingPlayer,
-            ItemStack stack, boolean dropAround, Operation<EntityItem> original,
-            int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
-    ) {
-        if (stack.getCount() > Constants.VANILLA_STACK_LIMIT) {
-            ItemStack copy = stack.copy();
-            copy.setCount(Constants.VANILLA_STACK_LIMIT);
-            stack.shrink(Constants.VANILLA_STACK_LIMIT);
-            ContainerState.pendingOutsideDropRemainder.set(stack.getCount());
-            return droppingPlayer.dropItem(copy, dropAround);
-        }
-        return original.call(droppingPlayer, stack, dropAround);
-    }
+    // ?????????????????? slotClick setItemStack ????????????????????????????
 
     /**
-     * ordinal 0 setItemStack — QUICK_CRAFT 拖动结束后的光标刷新。
-     * 合并 pendingDragRemainder 到光标。
+     * ordinal 0 setItemStack ? QUICK_CRAFT ???????????
      */
     @WrapOperation(
             method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
@@ -298,6 +289,7 @@ public abstract class ContainerMixin {
             InventoryPlayer inventory, ItemStack cursorStack, Operation<Void> original,
             int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
     ) {
+        if (stackupup$shouldBypassRemainder()) { original.call(inventory, cursorStack); return; }
         Integer pendingDrag = ContainerState.pendingDragRemainder.get();
         if (pendingDrag != null) {
             ContainerState.pendingDragRemainder.remove();
@@ -307,30 +299,6 @@ public abstract class ContainerMixin {
         if (pendingSwap != null) {
             ContainerState.pendingSwapRemainder.remove();
             if (pendingSwap > 0 && !cursorStack.isEmpty()) { cursorStack.grow(pendingSwap); }
-        }
-        original.call(inventory, cursorStack);
-    }
-
-    /**
-     * ordinal 1 setItemStack — outside-drop (slotId=-999, dragType=0) 后的光标清空。
-     * 有 pendingOutsideDropRemainder 时跳过 clear，保留已在 drop wrapper 中 shrunk 的余量。
-     */
-    @WrapOperation(
-            method = "slotClick(IILnet/minecraft/inventory/ClickType;Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/entity/player/InventoryPlayer;setItemStack(Lnet/minecraft/item/ItemStack;)V",
-                    ordinal = 1
-            )
-    )
-    private void stackupup$protectOutsideDropRemainder(
-            InventoryPlayer inventory, ItemStack cursorStack, Operation<Void> original,
-            int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player
-    ) {
-        Integer pending = ContainerState.pendingOutsideDropRemainder.get();
-        if (pending != null) {
-            ContainerState.pendingOutsideDropRemainder.remove();
-            return;
         }
         original.call(inventory, cursorStack);
     }
@@ -346,7 +314,7 @@ public abstract class ContainerMixin {
         stackupup$clearPendingSlotClickState();
     }
 
-    // ══════════════════ 共享工具 ─────────────────────────────────────────
+    // ?????????????????? ???? ?????????????????????????????????????????
 
     @Unique
     private void stackupup$restoreRemainderToCursor(

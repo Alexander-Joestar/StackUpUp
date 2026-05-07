@@ -2,9 +2,9 @@
 
 StackUpUp 支持两种规则格式：
 
-| 格式 | 放置位置 | 用途 |
-|------|----------|------|
-| `.su` | `config/stackupup/` | 纯 DSL 文本规则，全局配置级别 |
+| 格式       | 放置位置                                         | 用途                               |
+|----------|----------------------------------------------|----------------------------------|
+| `.su`    | `config/stackupup/`                          | 纯 DSL 文本规则，全局配置级别                |
 | `.su.md` | `config/stackupup/` 或 `<世界>/data/stackupup/` | Markdown 格式，支持 state 变量和 gate 条件 |
 
 主入口文件是 `config/stackupup/main.su`。
@@ -44,9 +44,7 @@ ore in [ingotSteel, ingotIron] -> 2048
 tab = buildingBlocks -> 256
 tab = tools -> 128
 
-# 按物品类别（药水瓶、附魔书）
-~~category = potion -> 32~~（1.12.2无需category）
-~~category = enchanted_book -> 16~~（1.12.2无需category）
+# ~~按物品类别~~（1.12.2 不再支持，已移除）
 
 # 类型条件
 type = block && mod = minecraft -> 512
@@ -111,11 +109,13 @@ Markdown 容器格式，适合整合包分发。规则、说明和状态变量�
 
 ```markdown
 # state
+
 - phase1 = true
 - phase2 = false
 - expert_mode = false
 
 # rules
+
 ## always
 
 ```stackupup
@@ -136,6 +136,7 @@ ore = ingotCopper -> 512
 item = gregtech:gt.metaitem.01@11305 -> 2048
 item = gregtech:gt.metaitem.01 && meta in [11306, 11307] -> 2048
 ```
+
 ```
 
 ### 关键结构
@@ -167,7 +168,8 @@ item = gregtech:gt.metaitem.01 && meta in [11306, 11307] -> 2048
 
 ### 世界级 `.su.md`
 
-每个存档的世界目录下也有一个 `main.su.md`（位于 `<世界>/data/stackupup/main.su.md`），它的 state 变量随存档独立保存。整合包的 `config/stackupup/*.su.md` 是默认模板，世界的那份才是运行时数据。
+每个存档的世界目录下也有一个 `main.su.md`（位于 `<世界>/data/stackupup/main.su.md`），它的 state 变量随存档独立保存。整合包的
+`config/stackupup/*.su.md` 是默认模板，世界的那份才是运行时数据。
 
 ---
 
@@ -188,7 +190,7 @@ StackUpUp 按以下顺序加载规则文件，后面的规则会覆盖或叠加�
 
 ## DSL 语法要点
 
-- 匹配字段：`item`、`mod`、`ore`、`meta`（别名 `metadata`）、`size`、`type`、`tab`
+- 匹配字段：`item`、`mod`、`ore`、`meta`（别名 `metadata`）、`size`、`type`、`tab`（仅限创造模式标签页）
 - 特殊匹配：`item = *` 匹配所有可堆叠物品（排除 baseSize=1 的工具、盔甲等）
 - 比较运算：`= != > >= < <=`
 - 列表匹配：`field in [value1, value2]`
@@ -196,7 +198,7 @@ StackUpUp 按以下顺序加载规则文件，后面的规则会覆盖或叠加�
 - 逻辑组合：`&&`（优先级高于 `||`），当前不支持括号
 - 动作链：`-> 128`、`-> +32`、`-> *2`、`-> /2`，可链式执行
 - `type` 只支持 `item` 和 `block`
-- `tab` 是创造模式标签页 ID，如 `buildingBlocks`、`tools`、`combat`
+- `tab` 仅匹配创造模式标签页 ID（如 `buildingBlocks`、`tools`、`combat`），不是通用分类字段
 
 ## 书写建议
 

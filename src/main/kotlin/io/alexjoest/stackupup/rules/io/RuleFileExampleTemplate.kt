@@ -6,7 +6,7 @@ import java.io.File
 object RuleFileExampleTemplate {
     val exampleContent: String = """
 EDITING THIS FILE WILL HAVE NO EFFECT.
-This is a syntax reference only. Edit main.su to apply actual rules.
+This is a syntax reference. Place actual rules in config/stackupup/main.su.
 
 
 ═══ DSL v2 Rule Syntax ═══════════════════════════════════════════════════
@@ -152,7 +152,7 @@ Rule without condition applies to all items.
 
     val markdownExampleContent: String = """
 EDITING THIS FILE HAS NO EFFECT.
-This is a syntax reference only. Edit main.su.md to apply actual rules.
+This is a syntax reference. Place actual rules in <save>/data/stackupup/main.su.md.
 
 
 # state
@@ -171,7 +171,7 @@ Combine with && / || / !. Parentheses are not supported.
 ## always means unconditional.
 
 Rules inside ```stackupup (or ```su) fenced code blocks.
-Same DSL v2 syntax as main.su.
+Same DSL v2 syntax as the `.su` rules.
 
 ## always
 
@@ -215,7 +215,7 @@ mod = enderio -> 4096
 ═══ File Locations ═════════════════════════════════════════════════════
 
   config template:  config/stackupup/main.su.md  (author reference)
-  world instance:   <save>/data/stackupup/main.su.md  (mutable, state writes go here)
+  world instance:   <save>/data/stackupup/main.su.md  (runtime, gates read state from here)
 
   Reload: /stackupup reload
     """.trimIndent()

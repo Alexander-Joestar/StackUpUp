@@ -56,7 +56,7 @@ class StackUpUp {
     @SubscribeEvent
     fun onConfigChanged(event: ConfigChangedEvent.OnConfigChangedEvent) {
         if (MOD_ID == event.modID && (event.configID == null || CONFIG_ID == event.configID)) {
-            handleConfigChanged()
+            handleConfigChanged(activateReloadControlledValues = true)
             ConfigFileSanitizer.sanitize(Loader.instance().configDir)
         }
     }

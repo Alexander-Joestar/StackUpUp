@@ -6,9 +6,9 @@
 
 StackUpUp 支持两种规则格式，DSL 语法完全相同：
 
-| 格式 | 主入口 | 说明 |
-|------|--------|------|
-| `.su` | `config/stackupup/main.su` | 纯 DSL 文本规则，全局配置级别 |
+| 格式       | 主入口                        | 说明                               |
+|----------|----------------------------|----------------------------------|
+| `.su`    | `config/stackupup/main.su` | 纯 DSL 文本规则，全局配置级别                |
 | `.su.md` | `config/stackupup/*.su.md` | Markdown 容器，支持 state 变量和 gate 条件 |
 
 主入口文件是 `config/stackupup/main.su`，如果不存在会自动创建带示例的模板。

@@ -203,3 +203,4 @@ RemainderGuard.withoutRemainder {
 
 同理，`SlotItemHandlerMixin.getSlotStackLimit` 仅在 handler 侧的实际 limit > 64 时才提升上报值。
 若 handler 仍返回 64，槽位向 vanilla 如实报告 64，避免 handler 截断/丢弃与 remainder 恢复形成冲突。
+> **已过时**

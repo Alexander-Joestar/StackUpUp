@@ -41,39 +41,15 @@ class EarlyMixinConfigTest {
     }
 
     @Test
-    fun `containerMixin_shouldHaveCorrectWrapperSignatures`() {
+    fun `containerMixin_shouldHaveOnlyMergeLimitWrapper`() {
         val source = readMixinSource("ContainerMixin.java")
 
-        // setItemStack wrapper must carry InventoryPlayer receiver
-        assertTrue(source.contains("InventoryPlayer inventory,"))
-        assertTrue(source.contains("original.call(inventory, cursorStack)"))
-
-        // dropItem wrapper must carry EntityPlayer receiver
-        assertTrue(source.contains("droppingPlayer.dropItem(copy, dropAround)"))
-        assertTrue(source.contains("original.call(droppingPlayer, stack, dropAround)"))
-
-        // ordinal coverage for remainder restoration
-        assertTrue(source.contains("restoreRemainderToCursor"))
-        assertTrue(source.contains("pendingSwapRemainder"))
-
-        // merge shrink/grow pair
-        assertTrue(source.contains("delayCursorShrinkUntilSlotGrowth"))
-        assertTrue(source.contains("shrinkCursorByAcceptedSlotGrowth"))
-
-        // ThreadLocal state cleanup
-        assertTrue(source.contains("clearPendingSlotClickStateBefore"))
-        assertTrue(source.contains("clearPendingSlotClickStateAfter"))
-        assertTrue(source.contains("ContainerState.clear()"))
-
-        // helper delegation to runtime package, not mixin-owned
-        assertTrue(source.contains("ContainerMergeShrink"))
-        assertFalse(source.contains("private static final class StackUpUpMergeShrink"))
-    }
-
-    @Test
-    fun `containerState_shouldLiveOutsideMixinPackage`() {
-        val stateSource = readSource("src/main/java/io/alexjoest/stackupup/ContainerState.java")
-        assertTrue(stateSource.contains("ThreadLocal<ContainerMergeShrink>"))
+        // merge limit wrapper is the only remaining logic
+        assertTrue(source.contains("ContainerInsertHooks.resolveMergeSlotLimit"))
+        assertTrue(source.contains("useItemAwareMergeLimit"))
+        assertFalse(source.contains("putStack"))
+        assertFalse(source.contains("shrinkCursorByAcceptedSlotGrowth"))
+        assertFalse(source.contains("InventoryPlayer"))
     }
 
     @Test

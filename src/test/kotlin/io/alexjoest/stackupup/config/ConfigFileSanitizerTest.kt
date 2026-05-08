@@ -8,7 +8,7 @@ import java.nio.file.Files
 
 class ConfigFileSanitizerTest {
     @Test
-    fun `sanitize keeps supported categories and removes unknown roots`() {
+    fun `sanitize keeps compatibility category and removes unknown roots`() {
         val tempDir = Files.createTempDirectory("stackupup-config-sanitize").toFile()
         val configFile = java.io.File(tempDir, "stackupup.cfg")
         Files.write(
@@ -24,6 +24,10 @@ class ConfigFileSanitizerTest {
                     B:fontScaleLinear=false
                 }
 
+                compatibility {
+                    B:enderio=true
+                }
+
                 legacy {
                     B:oldSwitch=true
                 }
@@ -35,6 +39,7 @@ class ConfigFileSanitizerTest {
         val sanitized = String(Files.readAllBytes(configFile.toPath()), StandardCharsets.UTF_8)
         assertTrue(sanitized.contains("general"))
         assertTrue(sanitized.contains("client"))
+        assertTrue(sanitized.contains("compatibility"))
         assertFalse(sanitized.contains("legacy"))
     }
 }

@@ -1,6 +1,7 @@
 package io.alexjoest.stackupup
 
 import io.alexjoest.stackupup.config.ConfigFileSanitizer
+import io.alexjoest.stackupup.config.EarlyCompatConfigReader
 import io.alexjoest.stackupup.rules.io.RuleFileLocator
 import io.alexjoest.stackupup.rules.io.RuleReloadReport
 import io.alexjoest.stackupup.rules.io.RuleSourceLocator
@@ -82,6 +83,7 @@ class StackUpUp {
         RuleFileLocator.setConfigDirectory(event.modConfigurationDirectory)
         handleConfigChanged(activateReloadControlledValues = true)
         ConfigFileSanitizer.sanitize(event.modConfigurationDirectory)
+        EarlyCompatConfigReader.markConfigReady()
 
         MinecraftForge.EVENT_BUS.register(this)
         MinecraftForge.EVENT_BUS.register(proxy)

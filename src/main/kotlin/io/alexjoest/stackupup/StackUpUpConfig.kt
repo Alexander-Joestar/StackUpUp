@@ -29,10 +29,7 @@ object StackUpUpConfig {
     val client: Client = Client()
 
     @JvmField
-    @Config.Name("compatibility")
-    @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compatibility.name")
     val compatibility: Compatibility = Compatibility()
-
     @JvmStatic
     fun applyRuntimeValues() {
         equalScaleDown = abs(client.fontScaleMinimum - client.fontScaleMaximum) <= 0.001

@@ -28,9 +28,6 @@ object StackUpUpConfig {
     @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.client.name")
     val client: Client = Client()
 
-    @JvmField
-    val compatibility: Compatibility = Compatibility()
-    @JvmStatic
     fun applyRuntimeValues() {
         equalScaleDown = abs(client.fontScaleMinimum - client.fontScaleMaximum) <= 0.001
     }
@@ -83,34 +80,6 @@ object StackUpUpConfig {
         var fontScaleLinear: Boolean = false
     }
 
-    class Compatibility {
-        @JvmField
-        var ae2: Boolean = true
-
-        @JvmField
-        var brandonsCore: Boolean = true
-
-        @JvmField
-        var actuallyAdditions: Boolean = true
-
-        @JvmField
-        var cyclopsCore: Boolean = true
-
-        @JvmField
-        var enderIo: Boolean = true
-
-        @JvmField
-        var ic2: Boolean = true
-
-        @JvmField
-        var mantle: Boolean = true
-
-        @JvmField
-        var refinedStorage: Boolean = true
-
-        @JvmField
-        var storageNetwork: Boolean = true
-    }
 }
 
 enum class TooltipStackDisplayMode {

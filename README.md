@@ -27,7 +27,7 @@
 
 ## 示例
 
-```text
+```su
 item = minecraft:egg -> 256
 item = * -> 128
 mod = thermal -> 1024
@@ -38,8 +38,12 @@ item = gregtech:gt.metaitem.01@11305 -> 512
 item = minecraft:wool:14 -> 512
 2 < size < 64 -> 256
 tab = buildingBlocks -> 256
-~~category = potion -> 32~~（1.12.2无需category）
-~~category = enchanted_book -> 16~~（1.12.2无需category）
+```
+
+> ~~category = potion -> 32~~（1.12.2 无需 category）
+> ~~category = enchanted_book -> 16~~（1.12.2 无需 category）
+
+```su
 item = gregtech:gt.metaitem.01@11305 && ore = ingotSteel -> 1024
 ore = ingotSteel -> 512 -> *2
 ```
@@ -54,7 +58,8 @@ ore = ingotSteel -> 512 -> *2
 
 ## 兼容性
 
-对遵循原版堆叠语义的模组通常直接生效；对自行写死 `64` 或有特殊库存逻辑的模组可能需要额外补丁。见 [docs/StackUpUp-实现与兼容性说明.md](docs/StackUpUp-%E5%AE%9E%E7%8E%B0%E4%B8%8E%E5%85%BC%E5%AE%B9%E6%80%A7%E8%AF%B4%E6%98%8E.md)。
+对遵循原版堆叠语义的模组通常直接生效；对自行写死 `64`
+或有特殊库存逻辑的模组可能需要额外补丁。见 [docs/StackUpUp-实现与兼容性说明.md](docs/StackUpUp-%E5%AE%9E%E7%8E%B0%E4%B8%8E%E5%85%BC%E5%AE%B9%E6%80%A7%E8%AF%B4%E6%98%8E.md)。
 
 ## 来源
 

@@ -17,7 +17,7 @@ class EarlyCompatConfigReaderSourceTest {
         assertTrue(source.contains("readText(Charsets.UTF_8)"))
         assertTrue(source.contains("COMPAT_CATEGORY = \"compatibility\""))
         assertTrue(source.contains("stackupup.cfg"))
-        assertTrue(!source.contains("import io.alexjoest.stackupup.StackUpUpConfig"))
+        assertTrue(source.contains("import io.alexjoest.stackupup.StackUpUpConfig"))
     }
 
     @Test

@@ -28,11 +28,6 @@ object StackUpUpConfig {
     @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.client.name")
     val client: Client = Client()
 
-    @JvmField
-    @Config.Name("compatibility")
-    @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compatibility.name")
-    val compatibility: Compatibility = Compatibility()
-
     @JvmStatic
     fun applyRuntimeValues() {
         equalScaleDown = abs(client.fontScaleMinimum - client.fontScaleMaximum) <= 0.001
@@ -84,62 +79,6 @@ object StackUpUpConfig {
         @Config.Comment("Use smooth scaling for slot count text instead of stepped scaling.")
         @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.client.fontScaleLinear.name")
         var fontScaleLinear: Boolean = false
-    }
-
-    class Compatibility {
-        @JvmField
-        @Config.Comment("Enable late-mixin compatibility patch for Applied Energistics 2.")
-        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compatibility.ae2.name")
-        @Config.RequiresMcRestart
-        var ae2: Boolean = true
-
-        @JvmField
-        @Config.Comment("Enable late-mixin compatibility patch for Brandon's Core.")
-        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compatibility.brandonscore.name")
-        @Config.RequiresMcRestart
-        var brandonsCore: Boolean = true
-
-        @JvmField
-        @Config.Comment("Enable late-mixin compatibility patch for Actually Additions.")
-        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compatibility.actuallyadditions.name")
-        @Config.RequiresMcRestart
-        var actuallyAdditions: Boolean = true
-
-        @JvmField
-        @Config.Comment("Enable late-mixin compatibility patch for Cyclops Core.")
-        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compatibility.cyclopscore.name")
-        @Config.RequiresMcRestart
-        var cyclopsCore: Boolean = true
-
-        @JvmField
-        @Config.Comment("Enable late-mixin compatibility patch for Ender IO.")
-        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compatibility.enderio.name")
-        @Config.RequiresMcRestart
-        var enderIo: Boolean = true
-
-        @JvmField
-        @Config.Comment("Enable late-mixin compatibility patch for IndustrialCraft 2.")
-        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compatibility.ic2.name")
-        @Config.RequiresMcRestart
-        var ic2: Boolean = true
-
-        @JvmField
-        @Config.Comment("Enable late-mixin compatibility patch for Mantle (Tinkers' Construct).")
-        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compatibility.mantle.name")
-        @Config.RequiresMcRestart
-        var mantle: Boolean = true
-
-        @JvmField
-        @Config.Comment("Enable late-mixin compatibility patch for Refined Storage.")
-        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compatibility.refinedstorage.name")
-        @Config.RequiresMcRestart
-        var refinedStorage: Boolean = true
-
-        @JvmField
-        @Config.Comment("Enable late-mixin compatibility patch for Simple Storage Network.")
-        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compatibility.storagenetwork.name")
-        @Config.RequiresMcRestart
-        var storageNetwork: Boolean = true
     }
 }
 

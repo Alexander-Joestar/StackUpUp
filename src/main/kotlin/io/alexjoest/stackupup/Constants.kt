@@ -34,15 +34,6 @@ object StackUpUpIds {
     const val STACK_LIMIT_HOOKS_INTERNAL_NAME: String = "io/alexjoest/stackupup/StackLimitHooks"
 
     const val EARLY_MIXIN_CONFIG: String = "mixins.$MOD_ID.early.json"
-    const val LATE_AE2_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.ae2.json"
-    const val LATE_ACTUALLY_ADDITIONS_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.actuallyadditions.json"
-    const val LATE_CYCLOPSCORE_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.cyclopscore.json"
-    const val LATE_BRANDONSCORE_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.brandonscore.json"
-    const val LATE_ENDERIO_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.enderio.json"
-    const val LATE_IC2_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.ic2.json"
-    const val LATE_MANTLE_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.mantle.json"
-    const val LATE_REFINED_STORAGE_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.refinedstorage.json"
-    const val LATE_STORAGE_NETWORK_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.storagenetwork.json"
 
     const val CONFIG_TITLE_KEY: String = "$CONFIG_LANG_ROOT.title"
     const val COMMAND_USAGE_KEY: String = "$COMMAND_LANG_ROOT.usage"

@@ -79,18 +79,3 @@ message.stackupup.rule_error.state_invalid_declaration=第 %s 行：无效的状
 message.stackupup.rule_error.state_error_prefix=[state] %s
 
 tooltip.stackupup.current_max=堆叠：%s/%s
-
-
-
-config.stackupup.compatibility.name=模组兼容
-config.stackupup.compatibility.name.tooltip=按模组开关 late-mixin 兼容补丁。需要重启 Minecraft。
-
-config.stackupup.compatibility.ae2.name=应用能源 2
-config.stackupup.compatibility.brandonscore.name=Brandon's Core (龙之研究)
-config.stackupup.compatibility.actuallyadditions.name=实用拓展
-config.stackupup.compatibility.cyclopscore.name=Cyclops Core
-config.stackupup.compatibility.enderio.name=末影接口
-config.stackupup.compatibility.ic2.name=工业时代 2
-config.stackupup.compatibility.mantle.name=Mantle (匠魂)
-config.stackupup.compatibility.refinedstorage.name=精致存储
-config.stackupup.compatibility.storagenetwork.name=简单存储网络

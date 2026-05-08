@@ -268,3 +268,4 @@ warning 必须保留足够上下文，方便作者快速修正文件。
 - state 保留在 Markdown 文件中，不默认拆出 companion `.state` 文件。
 - 可以有多个 Markdown 规则文件。
 - state 写回时必须保留注释行。
+> **已过时**

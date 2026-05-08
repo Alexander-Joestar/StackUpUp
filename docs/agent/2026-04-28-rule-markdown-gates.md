@@ -44,3 +44,4 @@ item = minecraft:egg -> 128
 - Markdown 仅在加载、热重载或状态变更时解析。
 - 编译结果进入 `RuleSnapshot`，热路径由 `StackLimitService.resolve()` 直接消费。
 - gate 计算与规则匹配不回读 Markdown 源文本。
+> **已过时**

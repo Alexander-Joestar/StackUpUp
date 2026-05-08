@@ -84,3 +84,4 @@
 6. `RuleConditionCompiler` 只做条件拼装；item/string 通配与 metadata 语法糖统一下沉到 `RuleLiteralMatcherCompiler`。
 7. `org.cyclops.cyclopscore.inventory.SimpleInventory` 已进入 `FixedCompatTargets`，其库存上限完全由 late mixin 负责，不再允许 dynamic ASM 重复补丁。
 8. `appeng.tile.inventory.AppEngInternalInventory` 与 `appeng.tile.inventory.AppEngInternalAEInventory` 已补齐构造期常量和 `getInventoryStackLimit` 返回值两条路径，现已进入 `FixedCompatTargets`。
+> **已过时**

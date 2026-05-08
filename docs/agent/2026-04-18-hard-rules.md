@@ -59,3 +59,4 @@
 14. 规则运行态协调统一收口到 `RuleRuntimeCoordinator`：`reload / lastReport / rulesFile / worldRulesFile / persistWorldRules` 不要再散回 `StackUpUp`、命令层或代理层。
 15. `StackUpUp` 继续只做 Forge 生命周期编排；新逻辑优先落到独立协调器或服务，不要把入口类重新养胖。
 16. `DslParser` 只负责语法结构；token 游标放在 `DslTokenCursor`，字面量 matcher 编译放在 `RuleLiteralMatcherCompiler`，不要把 parser/compiler/runtime 的细节重新揉回一个文件。
+> **已过时**

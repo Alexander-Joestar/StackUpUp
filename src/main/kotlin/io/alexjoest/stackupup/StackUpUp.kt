@@ -11,7 +11,6 @@ import net.minecraftforge.common.config.ConfigManager
 import net.minecraftforge.event.RegistryEvent
 import net.minecraftforge.fml.client.event.ConfigChangedEvent
 import net.minecraftforge.fml.common.FMLCommonHandler
-import net.minecraftforge.fml.common.Loader
 import net.minecraftforge.fml.common.Mod
 import net.minecraftforge.fml.common.SidedProxy
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent
@@ -46,7 +45,6 @@ class StackUpUp {
 
     private fun handleConfigChanged(activateReloadControlledValues: Boolean = false) {
         ConfigManager.sync(CONFIG_ID, Config.Type.INSTANCE)
-        StackUpUpConfig.applyRuntimeValues()
         if (activateReloadControlledValues) {
             StackUpUpConfig.applyReloadControlledValues()
         }
@@ -56,7 +54,6 @@ class StackUpUp {
     fun onConfigChanged(event: ConfigChangedEvent.OnConfigChangedEvent) {
         if (MOD_ID == event.modID && (event.configID == null || CONFIG_ID == event.configID)) {
             handleConfigChanged(activateReloadControlledValues = true)
-
         }
     }
 

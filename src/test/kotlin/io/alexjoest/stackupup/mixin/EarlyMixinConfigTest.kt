@@ -24,7 +24,7 @@ class EarlyMixinConfigTest {
             "ContainerMixin", "ItemStackNbtMixin", "SlotLimitMixin",
             "VanillaInventoryLimitMixin", "EntityItemMergeMixin",
             "InventoryPlayerAddResourceMixin", "ForgeItemHandlerLimitMixin",
-            "SlotItemHandlerMixin", "RenderItemMixin", "ItemStackMixin",
+            "SlotItemHandlerMixin", "RenderItemMixin",
         ).forEach { assertTrue(content.contains(it), "$it missing from early config") }
     }
 

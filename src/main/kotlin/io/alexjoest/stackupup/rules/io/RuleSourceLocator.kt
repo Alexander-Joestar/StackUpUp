@@ -17,7 +17,7 @@ object RuleSourceLocator {
         val legacyFile = RuleFileLocator.resolveLegacy()
         val worldMdFile = resolveWorldMarkdownFile()
         val worldSuFile = resolveWorldFile()
-        return buildList(packFiles.size + packMarkdownFiles.size + 3) {
+        val ordered = buildList(packFiles.size + packMarkdownFiles.size + 3) {
             if (legacyFile.exists() && !primaryFile.exists()) {
                 add(legacyFile)
             }
@@ -35,6 +35,11 @@ object RuleSourceLocator {
             if (userFile.exists()) {
                 add(userFile)
             }
+        }
+        val seen = LinkedHashSet<String>()
+        return ordered.filter { file ->
+            val key = runCatching { file.canonicalPath }.getOrElse { file.absolutePath }
+            seen.add(key)
         }
     }
 

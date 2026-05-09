@@ -31,7 +31,7 @@ class ProxyClient : ProxyCommon() {
             event.toolTip.add("x ${StackCountTextLayout.formatGroupedCount(stackCount)}")
         }
 
-        when (StackUpUpConfig.general.tooltipStackDisplayMode) {
+        when (StackUpUpConfig.client.tooltipStackDisplayMode) {
             TooltipStackDisplayMode.OFF -> return
             TooltipStackDisplayMode.ADVANCED -> if (!event.flags.isAdvanced) return
             TooltipStackDisplayMode.ALWAYS -> Unit

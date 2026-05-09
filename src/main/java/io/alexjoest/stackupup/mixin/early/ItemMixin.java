@@ -10,9 +10,9 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(Item.class)
 public abstract class ItemMixin {
     @ModifyReturnValue(
-            method = "getItemStackLimit(Lnet/minecraft/item/ItemStack;)I",
-            remap = false,
-            at = @At("RETURN")
+        method = "getItemStackLimit(Lnet/minecraft/item/ItemStack;)I",
+        remap = false,
+        at = @At("RETURN")
     )
     private int stackupup$applyRules(int original, ItemStack stack) {
         if (StackLimitHooks.shouldBypassDynamicItemRules()) {

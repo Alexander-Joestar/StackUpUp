@@ -14,15 +14,7 @@ public abstract class ItemStackMixin {
     )
     private int stackupup$applyRules(int original) {
         final ItemStack stack = (ItemStack) (Object) this;
-
-        if (StackLimitHooks.shouldBypassDynamicItemRules()) {
-            return original;
-        }
-
-        // ItemMixin 已处理时跳过，否则 GT 等不走 Item#getItemStackLimit 的 mod 到这里补齐。
-        if (StackLimitHooks.shouldSkipNestedItemStackLimit(stack, original)) {
-            return original;
-        }
-        return StackLimitHooks.applyDynamicStackLimit(stack, original);
+        Integer resolved = StackLimitHooks.consumeResolvedItemLimit(stack);
+        return resolved != null ? resolved : StackLimitHooks.applyDynamicStackLimit(stack, original);
     }
 }

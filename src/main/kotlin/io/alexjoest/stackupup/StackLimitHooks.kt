@@ -13,6 +13,10 @@ object StackLimitHooks {
     private val inventoryWriteContext: ThreadLocal<ArrayDeque<ItemStack>> = ThreadLocal.withInitial(::ArrayDeque)
     private val itemLimitResolutionMarkers: ThreadLocal<IdentityHashMap<ItemStack, Int>> =
         ThreadLocal.withInitial(::IdentityHashMap)
+
+    @JvmField
+    val enteringItemMixin: ThreadLocal<Boolean> = ThreadLocal.withInitial { false }
+
     private val originalBaselineBypassDepth: ThreadLocal<Int> = ThreadLocal.withInitial { 0 }
 
     @JvmField
@@ -27,26 +31,30 @@ object StackLimitHooks {
 
     @JvmStatic
     fun applyDynamicStackLimit(stack: ItemStack, baseLimit: Int): Int {
-        val limitService = RuleRuntime.limitService()
-        if (!limitService.hasRules()) {
-            return resolveOriginalBaseline(stack, baseLimit)
+        if (shouldBypassDynamicItemRules()) return baseLimit
+        if (enteringItemMixin.get()) return baseLimit
+        enteringItemMixin.set(true)
+        try {
+            val limitService = RuleRuntime.limitService()
+            if (!limitService.hasRules()) return resolveOriginalBaseline(stack, baseLimit)
+            val originalBaseline = resolveOriginalBaseline(stack, baseLimit)
+            val registryName = stack.item.registryName ?: return originalBaseline
+            val oreNames = if (limitService.needsOreNames()) {
+                RuleRuntime.oreDictIndex().getOreNames(stack)
+            } else {
+                emptySet()
+            }
+            return limitService.resolve(
+                itemId = registryName.toString(),
+                modId = registryName.namespace,
+                metadata = stack.metadata,
+                type = if (stack.item is ItemBlock) "block" else "item",
+                baseLimit = originalBaseline,
+                oreNames = oreNames,
+            )
+        } finally {
+            enteringItemMixin.remove()
         }
-
-        val originalBaseline = resolveOriginalBaseline(stack, baseLimit)
-        val registryName = stack.item.registryName ?: return originalBaseline
-        val oreNames = if (limitService.needsOreNames()) {
-            RuleRuntime.oreDictIndex().getOreNames(stack)
-        } else {
-            emptySet()
-        }
-        return limitService.resolve(
-            itemId = registryName.toString(),
-            modId = registryName.namespace,
-            metadata = stack.metadata,
-            type = if (stack.item is ItemBlock) "block" else "item",
-            baseLimit = originalBaseline,
-            oreNames = oreNames,
-        )
     }
 
     @JvmStatic
@@ -84,13 +92,13 @@ object StackLimitHooks {
     }
 
     @JvmStatic
-    fun shouldSkipNestedItemStackLimit(stack: ItemStack, currentLimit: Int): Boolean {
+    fun consumeResolvedItemLimit(stack: ItemStack): Int? {
         val markers = itemLimitResolutionMarkers.get()
-        val markedLimit = markers.remove(stack) ?: return false
+        val resolved = markers.remove(stack) ?: return null
         if (markers.isEmpty()) {
             itemLimitResolutionMarkers.remove()
         }
-        return markedLimit == currentLimit
+        return resolved
     }
 
     @JvmStatic

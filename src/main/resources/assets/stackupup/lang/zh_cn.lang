@@ -13,11 +13,11 @@ config.stackupup.client.fontScaleLinear.tooltip=让槽位数字使用平滑缩�
 config.stackupup.general.name=通用
 config.stackupup.general.name.tooltip=配置 StackUpUp 的运行行为与规则加载方式。
 config.stackupup.general.enableDslRules.name=启用 DSL v2 规则
-config.stackupup.general.tooltipStackDisplayMode.name=Tooltip 堆叠显示
+config.stackupup.client.tooltipStackDisplayMode.name=Tooltip 堆叠显示
 config.stackupup.general.ruleComplexityWarnings.name=规则复杂度提醒
 config.stackupup.general.maxStackSize.name=全局兼容最大堆叠上限
 config.stackupup.general.enableDslRules.tooltip=从 config/stackupup/*.su 加载 DSL v2 规则，并叠加世界规则与用户覆盖规则。
-config.stackupup.general.tooltipStackDisplayMode.tooltip=选择何时在 Tooltip 中显示当前数量与最大堆叠上限。
+config.stackupup.client.tooltipStackDisplayMode.tooltip=选择何时在 Tooltip 中显示当前数量与最大堆叠上限。
 config.stackupup.general.ruleComplexityWarnings.tooltip=当规则条目过多或规则过长时给出提醒。
 
 commands.stackupup.usage=/stackupup <reload|edit|state>

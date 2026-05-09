@@ -1,18 +1,13 @@
 package io.alexjoest.stackupup
 
 import net.minecraftforge.common.config.Config
-import kotlin.math.abs
 
-@Config(modid = StackUpUp.CONFIG_ID, name = StackUpUp.PUBLIC_ID)
+@Config(modid = StackUpUp.CONFIG_ID, name = StackUpUp.PUBLIC_ID, category = "")
 @Config.LangKey(StackUpUpIds.CONFIG_LANG_ROOT)
 object StackUpUpConfig {
     @JvmField
     @Config.Ignore
     var coremodActive: Boolean = false
-
-    @JvmField
-    @Config.Ignore
-    var equalScaleDown: Boolean = false
 
     @JvmField
     @Config.Ignore
@@ -28,10 +23,6 @@ object StackUpUpConfig {
     @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.client.name")
     val client: Client = Client()
 
-    fun applyRuntimeValues() {
-        equalScaleDown = abs(client.fontScaleMinimum - client.fontScaleMaximum) <= 0.001
-    }
-
     @JvmStatic
     fun applyReloadControlledValues() {
         activeMaxStackSize = general.maxStackSize
@@ -43,11 +34,6 @@ object StackUpUpConfig {
         @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.general.enableDslRules.name")
         @Config.RequiresMcRestart
         var enableDslRules: Boolean = true
-
-        @JvmField
-        @Config.Comment("Tooltip stack display mode.")
-        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.general.tooltipStackDisplayMode.name")
-        var tooltipStackDisplayMode: TooltipStackDisplayMode = TooltipStackDisplayMode.ADVANCED
 
         @JvmField
         @Config.Comment("Warn when the ruleset becomes unusually large or long.")
@@ -62,6 +48,11 @@ object StackUpUpConfig {
     }
 
     class Client {
+        @JvmField
+        @Config.Comment("Tooltip stack display mode.")
+        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.client.tooltipStackDisplayMode.name")
+        var tooltipStackDisplayMode: TooltipStackDisplayMode = TooltipStackDisplayMode.ADVANCED
+
         @JvmField
         @Config.Comment("Minimum scale used when stack counts are squeezed into slot overlays.")
         @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.client.fontScaleMinimum.name")

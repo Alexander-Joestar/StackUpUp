@@ -13,11 +13,11 @@ config.stackupup.client.fontScaleLinear.tooltip=Use smooth scaling for slot coun
 config.stackupup.general.name=General
 config.stackupup.general.name.tooltip=Configure StackUpUp runtime behavior and rule loading.
 config.stackupup.general.enableDslRules.name=Enable DSL v2 Rules
-config.stackupup.general.tooltipStackDisplayMode.name=Tooltip Stack Display
+config.stackupup.client.tooltipStackDisplayMode.name=Tooltip Stack Display
 config.stackupup.general.ruleComplexityWarnings.name=Rule Complexity Warnings
 config.stackupup.general.maxStackSize.name=Global Compatibility Max Stack Size
 config.stackupup.general.enableDslRules.tooltip=Load DSL v2 rules from config/stackupup/*.su, with world and user overrides layered on top.
-config.stackupup.general.tooltipStackDisplayMode.tooltip=Choose when to show current stack size and max stack size in tooltips.
+config.stackupup.client.tooltipStackDisplayMode.tooltip=Choose when to show current stack size and max stack size in tooltips.
 config.stackupup.general.ruleComplexityWarnings.tooltip=Warn when the ruleset becomes unusually large or long.
 
 commands.stackupup.usage=/stackupup <reload|edit|state>

@@ -65,6 +65,10 @@ internal object MarkdownRuleSource {
                     while (gateStack.size >= block.level - 1) {
                         gateStack.removeAt(gateStack.lastIndex)
                     }
+                    if (block.title == "always") {
+                        gateStack += MarkdownGateFrame(null)
+                        continue
+                    }
                     val parsed = MarkdownGateParser.parse(block.title)
                     if (parsed is MarkdownGateParseResult.Failure) {
                         gateErrors += RuleMessages.message(
@@ -97,7 +101,7 @@ internal object MarkdownRuleSource {
         var active = true
         for (frame in gateStack) {
             val parsed = frame.parsed
-            active = active && parsed is MarkdownGateParseResult.Success && gateContext.matches(parsed.expression)
+            active = active && (parsed == null || (parsed is MarkdownGateParseResult.Success && gateContext.matches(parsed.expression)))
         }
         if (!active) {
             return
@@ -112,5 +116,5 @@ internal object MarkdownRuleSource {
         }
     }
 
-    private data class MarkdownGateFrame(val parsed: MarkdownGateParseResult)
+    private data class MarkdownGateFrame(val parsed: MarkdownGateParseResult?)
 }

@@ -31,15 +31,7 @@ class StackLimitService(private val snapshot: RuleSnapshot) {
         tab = tab,
     )
 
-    fun resolve(
-        itemId: String,
-        modId: String,
-        metadata: Int,
-        type: String,
-        baseLimit: Int,
-        oreNames: Set<String>,
-        tab: String = "",
-    ): Int {
+    fun resolve(itemId: String, modId: String, metadata: Int, type: String, baseLimit: Int, oreNames: Set<String>, tab: String = ""): Int {
         val key = ResolvedLimitKey(itemId, modId, metadata, type, baseLimit)
         resolvedCache[key]?.let { return it }
 

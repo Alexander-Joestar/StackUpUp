@@ -11,7 +11,7 @@ import java.util.Random
 object StackLimitHooks {
     private const val VANILLA_STACK_LIMIT: Int = Constants.VANILLA_STACK_LIMIT
     private val inventoryWriteContext: ThreadLocal<ArrayDeque<ItemStack>> = ThreadLocal.withInitial(::ArrayDeque)
-        private val itemLimitResolutionMarkers: ThreadLocal<IdentityHashMap<ItemStack, Int>> =
+    private val itemLimitResolutionMarkers: ThreadLocal<IdentityHashMap<ItemStack, Int>> =
         ThreadLocal.withInitial(::IdentityHashMap)
     private val originalBaselineBypassDepth: ThreadLocal<Int> = ThreadLocal.withInitial { 0 }
 

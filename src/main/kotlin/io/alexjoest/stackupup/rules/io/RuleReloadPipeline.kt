@@ -2,7 +2,6 @@ package io.alexjoest.stackupup.rules.io
 
 import io.alexjoest.stackupup.rules.RuleMessageKey
 import io.alexjoest.stackupup.rules.RuleMessages
-import io.alexjoest.stackupup.rules.LocalizedMessage
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import java.io.File
 

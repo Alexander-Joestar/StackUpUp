@@ -157,7 +157,12 @@ internal object MarkdownGateParser {
                         index = string.nextIndex
                     }
                     else -> {
-                        if (!isIdentifierStart(char)) return error(RuleMessages.message(RuleMessageKey.GATE_UNEXPECTED_CHARACTER, char.toString()).format(), index)
+                        if (!isIdentifierStart(
+                                char,
+                            )
+                        ) {
+                            return error(RuleMessages.message(RuleMessageKey.GATE_UNEXPECTED_CHARACTER, char.toString()).format(), index)
+                        }
                         val start = index
                         index++
                         while (index < source.length && isIdentifierPart(source[index])) index++

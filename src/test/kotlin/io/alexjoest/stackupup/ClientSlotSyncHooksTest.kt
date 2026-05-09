@@ -161,8 +161,6 @@ class ClientSlotSyncHooksTest {
 
     // ── RemainerGuard integration ───────────────────────────────────────
 
-
-
     // ── helpers ─────────────────────────────────────────────────────────
 
     private fun createContainerWithSlot(item: Item, count: Int): Pair<TestContainer, InventoryBasic> {

@@ -79,7 +79,6 @@ object StackUpUpConfig {
         @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.client.fontScaleLinear.name")
         var fontScaleLinear: Boolean = false
     }
-
 }
 
 enum class TooltipStackDisplayMode {

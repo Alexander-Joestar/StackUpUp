@@ -27,6 +27,9 @@ class MixinBooterIntegrationTest {
                 "mixins.stackupup.late.mantle.json",
                 "mixins.stackupup.late.refinedstorage.json",
                 "mixins.stackupup.late.storagenetwork.json",
+                "mixins.stackupup.late.integrateddynamics.json",
+                "mixins.stackupup.late.limelib.json",
+                "mixins.stackupup.late.immersiveengineering.json",
             ),
             StackUpUpLateMixinLoader().getMixinConfigs(),
         )
@@ -93,6 +96,39 @@ class MixinBooterIntegrationTest {
                     "mixins.stackupup.late.refinedstorage.json",
                     emptyList(),
                 ),
+            ),
+        )
+
+        assertTrue(
+            loader.shouldMixinConfigQueue(
+                Context("mixins.stackupup.late.integrateddynamics.json", listOf("integrateddynamics")),
+            ),
+        )
+        assertFalse(
+            loader.shouldMixinConfigQueue(
+                Context("mixins.stackupup.late.integrateddynamics.json", emptyList()),
+            ),
+        )
+
+        assertTrue(
+            loader.shouldMixinConfigQueue(
+                Context("mixins.stackupup.late.limelib.json", listOf("limelib")),
+            ),
+        )
+        assertFalse(
+            loader.shouldMixinConfigQueue(
+                Context("mixins.stackupup.late.limelib.json", emptyList()),
+            ),
+        )
+
+        assertTrue(
+            loader.shouldMixinConfigQueue(
+                Context("mixins.stackupup.late.immersiveengineering.json", listOf("immersiveengineering")),
+            ),
+        )
+        assertFalse(
+            loader.shouldMixinConfigQueue(
+                Context("mixins.stackupup.late.immersiveengineering.json", emptyList()),
             ),
         )
     }

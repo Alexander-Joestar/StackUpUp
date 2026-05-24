@@ -25,6 +25,9 @@ class StackUpUpLateMixinLoader : ILateMixinLoader {
             LateMixinModule(StackUpUpIds.LATE_MANTLE_MIXIN_CONFIG, "mantle") { MixinToggles.mantle },
             LateMixinModule(StackUpUpIds.LATE_REFINED_STORAGE_MIXIN_CONFIG, "refinedstorage") { MixinToggles.refinedStorage },
             LateMixinModule(StackUpUpIds.LATE_STORAGE_NETWORK_MIXIN_CONFIG, "storagenetwork") { MixinToggles.storageNetwork },
+            LateMixinModule(StackUpUpIds.LATE_INTEGRATEDDYNAMICS_MIXIN_CONFIG, "integrateddynamics") { MixinToggles.integratedDynamics },
+            LateMixinModule(StackUpUpIds.LATE_LIMELIB_MIXIN_CONFIG, "limelib") { MixinToggles.limeLib },
+            LateMixinModule(StackUpUpIds.LATE_IMMERSIVEENGINEERING_MIXIN_CONFIG, "immersiveengineering") { MixinToggles.immersiveEngineering },
         )
     }
 

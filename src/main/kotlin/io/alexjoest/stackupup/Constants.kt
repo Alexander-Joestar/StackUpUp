@@ -43,6 +43,9 @@ object StackUpUpIds {
     const val LATE_MANTLE_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.mantle.json"
     const val LATE_REFINED_STORAGE_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.refinedstorage.json"
     const val LATE_STORAGE_NETWORK_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.storagenetwork.json"
+    const val LATE_INTEGRATEDDYNAMICS_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.integrateddynamics.json"
+    const val LATE_LIMELIB_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.limelib.json"
+    const val LATE_IMMERSIVEENGINEERING_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.immersiveengineering.json"
 
     const val CONFIG_TITLE_KEY: String = "$CONFIG_LANG_ROOT.title"
     const val COMMAND_USAGE_KEY: String = "$COMMAND_LANG_ROOT.usage"

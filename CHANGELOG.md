@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.4
+
+- Add `alwaysCompactNumbers` config option: to force display stack counts into the short capped format (e.g. 1.5k, 0.1m, 2.1b)
+- Add late mixin support for IntegratedDynamics, LimeLib, and ImmersiveEngineering
+
 ## 0.2.3
 
 - 移除category字段, 1.12 为什么需要这个?

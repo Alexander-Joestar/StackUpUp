@@ -69,6 +69,11 @@ object StackUpUpConfig {
         @Config.Comment("Use smooth scaling for slot count text instead of stepped scaling.")
         @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.client.fontScaleLinear.name")
         var fontScaleLinear: Boolean = false
+
+        @JvmField
+        @Config.Comment("Display stack counts using a short capped format (e.g. 1.5k, 0.1m, 2.1b) instead of scaling.")
+        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.client.alwaysCompactNumbers.name")
+        var alwaysCompactNumbers: Boolean = false
     }
 }
 

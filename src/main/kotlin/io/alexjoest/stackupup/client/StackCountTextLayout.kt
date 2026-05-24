@@ -20,8 +20,10 @@ object StackCountTextLayout {
     private enum class CompactStyle {
         INTEGER,
         ONE_DECIMAL,
+        ONE_DECIMAL_TRIM,
         TWO_DECIMALS,
         LEADING_DOT,
+        ZERO_DECIMAL,
     }
 
     private data class CompactSegment(val minInclusive: Int, val maxInclusive: Int, val divisor: Int, val suffix: Char, val style: CompactStyle)
@@ -33,6 +35,16 @@ object StackCountTextLayout {
         CompactSegment(MILLION, HUNDRED_MILLION - 1, MILLION, 'M', CompactStyle.INTEGER),
         CompactSegment(HUNDRED_MILLION, BILLION - 1, HUNDRED_MILLION, 'B', CompactStyle.LEADING_DOT),
         CompactSegment(BILLION, Int.MAX_VALUE, BILLION, 'B', CompactStyle.INTEGER),
+    )
+
+    private val cappedSegments = arrayOf(
+        CompactSegment(THOUSAND, TEN_THOUSAND - 1, 100, 'K', CompactStyle.ONE_DECIMAL_TRIM),
+        CompactSegment(TEN_THOUSAND, HUNDRED_THOUSAND - 1, THOUSAND, 'K', CompactStyle.INTEGER),
+        CompactSegment(HUNDRED_THOUSAND, MILLION - 1, HUNDRED_THOUSAND, 'M', CompactStyle.ZERO_DECIMAL),
+        CompactSegment(MILLION, TEN_MILLION - 1, HUNDRED_THOUSAND, 'M', CompactStyle.ONE_DECIMAL_TRIM),
+        CompactSegment(TEN_MILLION, HUNDRED_MILLION - 1, MILLION, 'M', CompactStyle.INTEGER),
+        CompactSegment(HUNDRED_MILLION, BILLION - 1, HUNDRED_MILLION, 'B', CompactStyle.ZERO_DECIMAL),
+        CompactSegment(BILLION, Int.MAX_VALUE, HUNDRED_MILLION, 'B', CompactStyle.ONE_DECIMAL_TRIM),
     )
 
     private val longCompactSegments = arrayOf(
@@ -82,6 +94,11 @@ object StackCountTextLayout {
 
         if (countI < 0) {
             return tryFitString(fr, maxWidth, count, count, maxScaleFactor, false)
+        }
+
+        if (StackUpUpConfig.client.alwaysCompactNumbers) {
+            val cappedText = formatCappedCount(countI)
+            return tryFitString(fr, maxWidth, cappedText, cappedText, maxScaleFactor, countI >= THOUSAND)
         }
 
         val paddedCountI = floorToMostSignificantDigit(countI)
@@ -166,6 +183,8 @@ object StackCountTextLayout {
     internal fun formatShortCompactCount(countI: Int): String = formatCompactCount(countI, shortCompactSegments)
 
     internal fun formatLongCompactCount(countI: Int): String = formatCompactCount(countI, longCompactSegments)
+
+    internal fun formatCappedCount(countI: Int): String = formatCompactCount(countI, cappedSegments)
 
     internal fun formatGroupedCount(countI: Int): String = String.format(Locale.ROOT, "%,d", countI)
 
@@ -258,8 +277,14 @@ object StackCountTextLayout {
             return when (segment.style) {
                 CompactStyle.INTEGER -> "${scaledValue}${segment.suffix}"
                 CompactStyle.ONE_DECIMAL -> formatSingleDecimalCompact(scaledValue, segment.suffix)
+                CompactStyle.ONE_DECIMAL_TRIM -> {
+                    val intPart = scaledValue / DECIMAL_RADIX
+                    val fracPart = scaledValue % DECIMAL_RADIX
+                    if (fracPart == 0) "${intPart}${segment.suffix}" else "$intPart.${fracPart}${segment.suffix}"
+                }
                 CompactStyle.TWO_DECIMALS -> formatTwoDecimalCompact(scaledValue, segment.suffix)
                 CompactStyle.LEADING_DOT -> ".${scaledValue}${segment.suffix}"
+                CompactStyle.ZERO_DECIMAL -> "0.${scaledValue}${segment.suffix}"
             }
         }
 

@@ -18,4 +18,10 @@ object MixinToggles {
     @JvmField var refinedStorage = true
 
     @JvmField var storageNetwork = true
+
+    @JvmField var integratedDynamics = true
+
+    @JvmField var limeLib = true
+
+    @JvmField var immersiveEngineering = true
 }

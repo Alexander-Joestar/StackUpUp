@@ -1,11 +1,11 @@
 package io.alexjoest.stackupup
 
 import io.alexjoest.stackupup.rules.io.RuleSourceLocator
+import io.alexjoest.stackupup.rules.io.RuleStateService
 import net.minecraft.command.CommandResultStats
 import net.minecraft.command.ICommandSender
 import net.minecraft.command.WrongUsageException
 import net.minecraft.entity.Entity
-import net.minecraft.server.dedicated.DedicatedServer
 import net.minecraft.server.MinecraftServer
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Vec3d
@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.io.File
-import sun.misc.Unsafe
 import kotlin.io.path.createTempDirectory
 
 class CommandStackUpUpTest {
@@ -34,13 +33,11 @@ class CommandStackUpUpTest {
         worldDir = File(tempDir, "world").apply { mkdirs() }
         worldMarkdownFile = File(File(File(worldDir, "data"), StackUpUpIds.MOD_ID), StackUpUpIds.WORLD_MARKDOWN_RULES_FILE_NAME)
         RuleSourceLocator.setWorldDirectoryForTests(worldDir)
-        StackUpUp.clearStateStoreForTests()
     }
 
     @AfterEach
     fun tearDown() {
         RuleSourceLocator.setWorldDirectoryForTests(null)
-        StackUpUp.clearStateStoreForTests()
         tempDir.deleteRecursively()
     }
 
@@ -59,16 +56,16 @@ class CommandStackUpUpTest {
         val command = CommandStackUpUp()
         val sender = CapturingCommandSender()
 
-        assertEquals(listOf("reload"), command.getTabCompletions(unusedServer(), sender, arrayOf("r"), null))
-        assertEquals(listOf("get", "set"), command.getTabCompletions(unusedServer(), sender, arrayOf("state", ""), null))
-        assertEquals(listOf("false"), command.getTabCompletions(unusedServer(), sender, arrayOf("state", "set", "f"), null))
-        assertEquals(emptyList<String>(), command.getTabCompletions(unusedServer(), sender, arrayOf("reload", ""), null))
-        assertEquals(emptyList<String>(), command.getTabCompletions(unusedServer(), sender, arrayOf("state", "set", "false", "extra"), null))
+        assertEquals(listOf("reload"), command.tabCompletions(arrayOf("r")))
+        assertEquals(listOf("get", "set"), command.tabCompletions(arrayOf("state", "")))
+        assertEquals(listOf("false"), command.tabCompletions(arrayOf("state", "set", "f")))
+        assertEquals(emptyList<String>(), command.tabCompletions(arrayOf("reload", "")))
+        assertEquals(emptyList<String>(), command.tabCompletions(arrayOf("state", "set", "false", "extra")))
     }
 
     @Test
     fun `execute_shouldRejectMissingUnknownAndIncompleteStateUsage`() {
-        val command = CommandStackUpUp()
+        val command = command()
         val sender = CapturingCommandSender()
 
         assertWrongUsage(command, sender)
@@ -82,10 +79,10 @@ class CommandStackUpUpTest {
     @Test
     fun `executeStateSet_shouldParseTrueBooleanTokensAndReportStateSet`() {
         writeWorldMarkdownState("feature" to false)
-        val command = CommandStackUpUp()
+        val command = command()
         val sender = CapturingCommandSender()
 
-        command.execute(unusedServer(), sender, arrayOf("state", "set", "feature", "yes"))
+        command.executeCommand(sender, arrayOf("state", "set", "feature", "yes"))
 
         assertWorldMarkdownContains("- feature = true")
         sender.assertLastTranslation(StackUpUpIds.COMMAND_STATE_SET_KEY, "feature", true)
@@ -94,10 +91,10 @@ class CommandStackUpUpTest {
     @Test
     fun `executeStateSet_shouldParseFalseBooleanTokensAndKeepCurrentFalseBehavior`() {
         writeWorldMarkdownState("feature" to true)
-        val command = CommandStackUpUp()
+        val command = command()
         val sender = CapturingCommandSender()
 
-        command.execute(unusedServer(), sender, arrayOf("state", "set", "feature", "off"))
+        command.executeCommand(sender, arrayOf("state", "set", "feature", "off"))
 
         assertWorldMarkdownContains("- feature = false")
         sender.assertLastTranslation(StackUpUpIds.COMMAND_STATE_SET_KEY, "feature", false)
@@ -105,10 +102,12 @@ class CommandStackUpUpTest {
 
     private fun assertWrongUsage(command: CommandStackUpUp, sender: ICommandSender, vararg args: String) {
         val exception = assertThrows(WrongUsageException::class.java) {
-            command.execute(unusedServer(), sender, args)
+            command.executeCommand(sender, args)
         }
         assertEquals(StackUpUpIds.COMMAND_USAGE_KEY, exception.message)
     }
+
+    private fun command(): CommandStackUpUp = CommandStackUpUp(StateAccessAdapter(RuleStateService { worldMarkdownFile }))
 
     private fun writeWorldMarkdownState(vararg states: Pair<String, Boolean>) {
         worldMarkdownFile.parentFile.mkdirs()
@@ -130,13 +129,13 @@ class CommandStackUpUpTest {
         kotlin.test.assertTrue(content.contains(text), "Expected world markdown to contain '$text' but was:\n$content")
     }
 
-    private fun unusedServer(): MinecraftServer = unusedMinecraftServer
+    private class StateAccessAdapter(
+        private val service: RuleStateService,
+    ) : CommandStackUpUp.StateAccess {
+        override fun getState(name: String): Boolean = service.getState(name) ?: false
 
-    private companion object {
-        private val unusedMinecraftServer: MinecraftServer by lazy {
-            val field = Unsafe::class.java.getDeclaredField("theUnsafe").apply { isAccessible = true }
-            val unsafe = field.get(null) as Unsafe
-            unsafe.allocateInstance(DedicatedServer::class.java) as MinecraftServer
+        override fun setState(name: String, value: Boolean) {
+            service.setState(name, value)
         }
     }
 

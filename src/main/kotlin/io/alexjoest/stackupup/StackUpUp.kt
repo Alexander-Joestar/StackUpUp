@@ -3,7 +3,7 @@ package io.alexjoest.stackupup
 import io.alexjoest.stackupup.rules.io.RuleFileLocator
 import io.alexjoest.stackupup.rules.io.RuleReloadReport
 import io.alexjoest.stackupup.rules.io.RuleSourceLocator
-import io.alexjoest.stackupup.rules.io.RuleStateStore
+import io.alexjoest.stackupup.rules.io.RuleStateService
 import net.minecraft.item.Item
 import net.minecraftforge.common.MinecraftForge
 import net.minecraftforge.common.config.Config
@@ -25,7 +25,6 @@ import java.io.File
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
-import java.util.concurrent.atomic.AtomicReference
 
 @Mod(
     modid = StackUpUpIds.MOD_ID,
@@ -153,47 +152,24 @@ class StackUpUp {
         @JvmField
         var logger: Logger? = null
 
-        private val stateStoreCache = AtomicReference<RuleStateStore?>()
-
-        @JvmStatic
-        internal fun clearStateStoreForTests() {
-            stateStoreCache.set(null)
-        }
-
-        private fun stateStore(): RuleStateStore? {
-            val cached = stateStoreCache.get()
-            if (cached != null) {
-                return cached
-            }
-            val worldMarkdownFile = RuleSourceLocator.resolveWorldMarkdownFile() ?: return null
-            val store = RuleStateStore(worldMarkdownFile)
-            return if (stateStoreCache.compareAndSet(null, store)) {
-                store
-            } else {
-                stateStoreCache.get()
-            }
-        }
+        private val stateService = RuleStateService(RuleSourceLocator::resolveWorldMarkdownFile)
 
         @JvmStatic
         @Synchronized
         fun getState(name: String): Boolean {
-            val store = stateStore() ?: run {
+            return stateService.getState(name) ?: run {
                 logger?.warn("Cannot read state '{}' because world markdown storage is unavailable", name)
-                return false
+                false
             }
-            return store.readStates()[name] ?: false
         }
 
         @JvmStatic
         @Synchronized
         fun setState(name: String, value: Boolean) {
-            val store = stateStore() ?: run {
+            val changed = stateService.setState(name, value) ?: run {
                 logger?.warn("Cannot write state '{}' because world markdown storage is unavailable", name)
                 return
             }
-            val states = store.readStates().toMutableMap()
-            states[name] = value
-            val changed = store.writeStates(states)
             if (!changed) return
             reload()
         }

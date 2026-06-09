@@ -12,8 +12,12 @@ import java.awt.Desktop
 import java.io.IOException
 import javax.annotation.Nullable
 
-class CommandStackUpUp : CommandBase() {
+class CommandStackUpUp internal constructor(
+    private val stateAccess: StateAccess = StackUpUpStateAccess,
+) : CommandBase() {
     private val subcommands = arrayOf(SUBCOMMAND_RELOAD, SUBCOMMAND_EDIT, SUBCOMMAND_STATE)
+
+    constructor() : this(StackUpUpStateAccess)
 
     override fun getName(): String = StackUpUpIds.MOD_ID
 
@@ -23,6 +27,10 @@ class CommandStackUpUp : CommandBase() {
 
     @Throws(CommandException::class)
     override fun execute(server: MinecraftServer, sender: ICommandSender, args: Array<out String>) {
+        executeCommand(sender, args)
+    }
+
+    internal fun executeCommand(sender: ICommandSender, args: Array<out String>) {
         when (args.getOrNull(0)) {
             SUBCOMMAND_RELOAD -> emitReloadFeedback(sender)
             SUBCOMMAND_EDIT -> openRulesFile(sender)
@@ -36,7 +44,9 @@ class CommandStackUpUp : CommandBase() {
         sender: ICommandSender,
         args: Array<out String>,
         @Nullable targetPos: BlockPos?,
-    ): MutableList<String> = when (args.size) {
+    ): MutableList<String> = tabCompletions(args)
+
+    internal fun tabCompletions(args: Array<out String>): MutableList<String> = when (args.size) {
         1 -> getListOfStringsMatchingLastWord(args, *subcommands)
         2 -> if (args[0] == SUBCOMMAND_STATE) getListOfStringsMatchingLastWord(args, STATE_ACTION_GET, STATE_ACTION_SET) else mutableListOf()
         3 -> if (args[0] == SUBCOMMAND_STATE && args[1] == STATE_ACTION_SET) {
@@ -51,7 +61,7 @@ class CommandStackUpUp : CommandBase() {
         when (args.getOrNull(1)) {
             STATE_ACTION_GET -> {
                 val name = args.getOrNull(2) ?: throw WrongUsageException(getUsage(sender))
-                val value = StackUpUp.getState(name)
+                val value = stateAccess.getState(name)
                 sender.reply(
                     if (value) StackUpUpIds.COMMAND_STATE_GET_KEY else StackUpUpIds.COMMAND_STATE_MISSING_KEY,
                     name,
@@ -61,7 +71,7 @@ class CommandStackUpUp : CommandBase() {
             STATE_ACTION_SET -> {
                 val name = args.getOrNull(2) ?: throw WrongUsageException(getUsage(sender))
                 val value = parseStateBoolean(args.getOrNull(3) ?: throw WrongUsageException(getUsage(sender)))
-                StackUpUp.setState(name, value)
+                stateAccess.setState(name, value)
                 sender.reply(StackUpUpIds.COMMAND_STATE_SET_KEY, name, value)
             }
             else -> throw WrongUsageException(getUsage(sender))
@@ -129,5 +139,19 @@ class CommandStackUpUp : CommandBase() {
         private const val STATE_ACTION_SET = "set"
         private const val STATE_VALUE_TRUE = "true"
         private const val STATE_VALUE_FALSE = "false"
+    }
+
+    internal interface StateAccess {
+        fun getState(name: String): Boolean
+
+        fun setState(name: String, value: Boolean)
+    }
+
+    private object StackUpUpStateAccess : StateAccess {
+        override fun getState(name: String): Boolean = StackUpUp.getState(name)
+
+        override fun setState(name: String, value: Boolean) {
+            StackUpUp.setState(name, value)
+        }
     }
 }

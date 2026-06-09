@@ -71,7 +71,7 @@ object StackUpUpConfig {
         var fontScaleLinear: Boolean = false
 
         @JvmField
-        @Config.Comment("Display stack counts using a short capped format (e.g. 1.5k, 0.1m, 2.1b) instead of scaling.")
+        @Config.Comment("Display stack counts using capped compact text (e.g. 1.5K, 0.1M, 2.1B) before fitting and any font scaling.")
         @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.client.alwaysCompactNumbers.name")
         var alwaysCompactNumbers: Boolean = false
     }

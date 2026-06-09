@@ -3,6 +3,10 @@ package io.alexjoest.stackupup.core
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.objectweb.asm.ClassReader
+import org.objectweb.asm.Opcodes
+import org.objectweb.asm.tree.ClassNode
+import org.objectweb.asm.tree.IntInsnNode
 
 class CompatibilityLimitPatchTest {
     @Test
@@ -43,6 +47,19 @@ class CompatibilityLimitPatchTest {
     }
 
     @Test
+    fun `unknown item handler dynamic plan disabled even when getSlotLimit returns literal 64`() {
+        val unsafeHandlerBytes = classBytes("io.alexjoest.stackupup.core.TestUnsafeItemHandler")
+
+        assertTrue(unsafeHandlerBytes.hasGetSlotLimitReturningLiteral64())
+        assertFalse(
+            CompatibilityLimitPatch.planFor(
+                "io.alexjoest.stackupup.core.TestUnsafeItemHandler",
+                unsafeHandlerBytes,
+            ).isNotEmpty(),
+        )
+    }
+
+    @Test
     fun `inheritedNoMethod_shouldNotGeneratePlan`() {
         assertFalse(
             CompatibilityLimitPatch.planFor(
@@ -63,5 +80,16 @@ class CompatibilityLimitPatchTest {
         return requireNotNull(javaClass.classLoader.getResourceAsStream(resourcePath)) {
             "无法读取类字节码: $className"
         }.use { it.readBytes() }
+    }
+
+    private fun ByteArray.hasGetSlotLimitReturningLiteral64(): Boolean {
+        val node = ClassNode()
+        ClassReader(this).accept(node, 0)
+        val method = node.methods.single { it.name == "getSlotLimit" && it.desc == "(I)I" }
+        return method.instructions.iterator().asSequence().any { instruction ->
+            instruction is IntInsnNode &&
+                instruction.opcode == Opcodes.BIPUSH &&
+                instruction.operand == 64
+        }
     }
 }

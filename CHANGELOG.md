@@ -2,7 +2,7 @@
 
 ## 0.2.4
 
-- Add `alwaysCompactNumbers` config option: to force display stack counts into the short capped format (e.g. 1.5k, 0.1m, 2.1b)
+- Add `alwaysCompactNumbers` config option to always use capped compact stack-count text before fitting and any font scaling (e.g. 1.5K, 0.1M, 2.1B)
 - Add late mixin support for IntegratedDynamics, LimeLib, and ImmersiveEngineering
 
 ## 0.2.3

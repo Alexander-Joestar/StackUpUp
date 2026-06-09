@@ -10,7 +10,7 @@ config.stackupup.client.fontScaleMinimum.tooltip=Minimum scale used when stack c
 config.stackupup.client.fontScaleMaximum.tooltip=Maximum scale used when stack counts are squeezed into slot overlays.
 config.stackupup.client.fontScaleLinear.tooltip=Use smooth scaling for slot count text instead of stepped scaling.
 config.stackupup.client.alwaysCompactNumbers.name=Always Compact Numbers
-config.stackupup.client.alwaysCompactNumbers.tooltip=Show stack counts as short capped text: 1-999 exact, then 1k-99k, 0.1m-99m, 0.1b-2.1b.
+config.stackupup.client.alwaysCompactNumbers.tooltip=Always show stack counts in capped compact text before fitting and any font scaling: 1-999 exact, then 1K-99K, 0.1M-99M, 0.1B-2.1B.
 
 config.stackupup.general.name=General
 config.stackupup.general.name.tooltip=Configure StackUpUp runtime behavior and rule loading.

@@ -45,6 +45,19 @@ class StackCountTextLayoutTest {
     }
 
     @Test
+    fun `cappedAbbreviation_shouldCoverAlwaysCompactBoundaries`() {
+        assertEquals("999", StackCountTextLayout.formatCappedCount(999))
+        assertEquals("1K", StackCountTextLayout.formatCappedCount(1000))
+        assertEquals("1.5K", StackCountTextLayout.formatCappedCount(1500))
+        assertEquals("99K", StackCountTextLayout.formatCappedCount(99999))
+        assertEquals("0.1M", StackCountTextLayout.formatCappedCount(100000))
+        assertEquals("9.9M", StackCountTextLayout.formatCappedCount(9999999))
+        assertEquals("99M", StackCountTextLayout.formatCappedCount(99999999))
+        assertEquals("0.1B", StackCountTextLayout.formatCappedCount(100000000))
+        assertEquals("2.1B", StackCountTextLayout.formatCappedCount(Int.MAX_VALUE))
+    }
+
+    @Test
     fun `rawInteger_shouldUseThousandsSeparator`() {
         assertEquals("1,024", StackCountTextLayout.formatGroupedCount(1024))
         assertEquals("80,000", StackCountTextLayout.formatGroupedCount(80000))

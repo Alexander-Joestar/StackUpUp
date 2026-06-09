@@ -41,6 +41,10 @@ public final class CompatibilityLimitPatch {
         }
 
         int profile = DynamicCompatTargetClassifier.classify(transformedName, declaredProfiles);
+        if (profile == DynamicCompatTargetProfile.ITEM_HANDLER) {
+            return Collections.emptyList();
+        }
+
         String[] methods = DynamicCompatTargetProfile.methodsFor(profile);
         if (methods == null) {
             return Collections.emptyList();

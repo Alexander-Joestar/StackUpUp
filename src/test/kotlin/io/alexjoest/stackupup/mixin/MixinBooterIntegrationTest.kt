@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import zone.rong.mixinbooter.Context
+import java.nio.file.Files
+import java.nio.file.Paths
 
 class MixinBooterIntegrationTest {
     @Test
@@ -33,6 +35,25 @@ class MixinBooterIntegrationTest {
             ),
             StackUpUpLateMixinLoader().getMixinConfigs(),
         )
+    }
+
+    @Test
+    fun `lateConfigFiles_shouldReferenceExistingMixinSources`() {
+        for (config in StackUpUpLateMixinLoader().getMixinConfigs()) {
+            val configPath = Paths.get("src", "main", "resources", config)
+            assertTrue(Files.isRegularFile(configPath), "Missing mixin config: $config")
+
+            val json = String(Files.readAllBytes(configPath), Charsets.UTF_8)
+            val packageName = requireNotNull(extractJsonString(json, "package")) {
+                "Missing package in mixin config: $config"
+            }.replace('.', '/')
+            val mixins = listOf("mixins", "client", "server").flatMap { key -> extractJsonStringArray(json, key) }
+
+            for (mixin in mixins) {
+                val sourcePath = Paths.get("src", "main", "java", packageName, "$mixin.java")
+                assertTrue(Files.isRegularFile(sourcePath), "Missing mixin source for $config: $mixin")
+            }
+        }
     }
 
     @Test
@@ -131,5 +152,19 @@ class MixinBooterIntegrationTest {
                 Context("mixins.stackupup.late.immersiveengineering.json", emptyList()),
             ),
         )
+    }
+
+    private fun extractJsonString(json: String, key: String): String? {
+        val pattern = Regex(""""$key"\s*:\s*"([^"]+)"""")
+        return pattern.find(json)?.groupValues?.get(1)
+    }
+
+    private fun extractJsonStringArray(json: String, key: String): List<String> {
+        val pattern = Regex(""""$key"\s*:\s*\[(.*?)]""", RegexOption.DOT_MATCHES_ALL)
+        val body = pattern.find(json)?.groupValues?.get(1) ?: return emptyList()
+        return Regex(""""([^"]+)"""")
+            .findAll(body)
+            .map { it.groupValues[1] }
+            .toList()
     }
 }

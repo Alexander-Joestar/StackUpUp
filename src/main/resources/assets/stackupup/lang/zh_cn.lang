@@ -9,6 +9,8 @@ config.stackupup.client.fontScaleLinear.name=线性字体缩放
 config.stackupup.client.fontScaleMinimum.tooltip=当槽位内堆叠数字被压缩显示时允许的最小缩放比例。
 config.stackupup.client.fontScaleMaximum.tooltip=当槽位内堆叠数字被压缩显示时允许的最大缩放比例。
 config.stackupup.client.fontScaleLinear.tooltip=让槽位数字使用平滑缩放，而不是分段缩放。
+config.stackupup.client.alwaysCompactNumbers.name=始终使用短格式数字
+config.stackupup.client.alwaysCompactNumbers.tooltip=始终先将槽位堆叠数量显示为封顶短格式，再适配槽位和字体缩放：1-999 保持原样，之后为 1K-99K、0.1M-99M、0.1B-2.1B。
 
 config.stackupup.general.name=通用
 config.stackupup.general.name.tooltip=配置 StackUpUp 的运行行为与规则加载方式。

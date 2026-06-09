@@ -1,15 +1,16 @@
 package io.alexjoest.stackupup.limit
 
 import io.alexjoest.stackupup.StackUpUpConfig
-import io.alexjoest.stackupup.rules.RuleField
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
+import io.alexjoest.stackupup.rules.field.RuleFieldCacheContext
 import io.alexjoest.stackupup.rules.model.RuleMatchContext
 import java.util.concurrent.ConcurrentHashMap
 
 class StackLimitService(private val snapshot: RuleSnapshot) {
+    private val cacheKeyFields = snapshot.requirements.cacheKeyFieldsInOrder
+
     // 规则求值是高频热路径。
-    // 当前 DSL 只依赖物品标识、metadata、类型、原版基线和由其稳定导出的矿辞集合，
-    // 因此这里按“物品身份 + 原版基线”缓存结果，避免反复构造 RuleMatchContext 并遍历整条规则链。
+    // 缓存键固定包含物品身份和原版基线；会随上下文变化的字段由 RuleField 自己声明并贡献缓存键。
     private val resolvedCache = ConcurrentHashMap<ResolvedLimitKey, Int>()
 
     fun resolve(context: StackContext): Int = resolve(
@@ -50,13 +51,14 @@ class StackLimitService(private val snapshot: RuleSnapshot) {
         tab: String = "",
         material: String = "",
     ): Int {
+        val fieldCacheKey = buildFieldCacheKey(itemId, modId, metadata, type, baseLimit, tab, material)
         val key = ResolvedLimitKey(
             itemId,
             modId,
             metadata,
             type,
             baseLimit,
-            if (RuleField.MATERIAL in snapshot.requirements.cacheKeyFields) material else "",
+            fieldCacheKey,
         )
         resolvedCache[key]?.let { return it }
 
@@ -95,12 +97,47 @@ class StackLimitService(private val snapshot: RuleSnapshot) {
     // 在当前 1.12.2 语义下，矿辞集合由 itemId + metadata 稳定决定；
     // 一旦规则快照或矿辞索引被替换，RuleRuntime 会整体刷新 StackLimitService，
     // 从而自然清空这层缓存。
+    private fun buildFieldCacheKey(
+        itemId: String,
+        modId: String,
+        metadata: Int,
+        type: String,
+        baseLimit: Int,
+        tab: String,
+        material: String,
+    ): Any {
+        if (cacheKeyFields.isEmpty()) {
+            return EMPTY_FIELD_CACHE_KEY
+        }
+        val context = RuleFieldCacheContext(
+            itemId = itemId,
+            modId = modId,
+            metadata = metadata,
+            type = type,
+            baseLimit = baseLimit,
+            tab = tab,
+            material = material,
+        )
+        if (cacheKeyFields.size == 1) {
+            return cacheKeyFields[0].cacheKeyValue(context)
+        }
+        return ArrayList<String>(cacheKeyFields.size).apply {
+            for (field in cacheKeyFields) {
+                add(field.cacheKeyValue(context))
+            }
+        }
+    }
+
     private data class ResolvedLimitKey(
         val itemId: String,
         val modId: String,
         val metadata: Int,
         val type: String,
         val baseLimit: Int,
-        val material: String,
+        val fieldValues: Any,
     )
+
+    private companion object {
+        private val EMPTY_FIELD_CACHE_KEY = emptyList<String>()
+    }
 }

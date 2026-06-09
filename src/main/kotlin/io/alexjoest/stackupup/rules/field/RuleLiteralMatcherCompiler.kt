@@ -1,4 +1,4 @@
-package io.alexjoest.stackupup.rules.compile
+package io.alexjoest.stackupup.rules.field
 
 import io.alexjoest.stackupup.rules.model.RuleMatchContext
 
@@ -38,7 +38,7 @@ internal object RuleLiteralMatcherCompiler {
     }
 
     private fun parseItemLiteral(literal: String): ItemLiteral {
-        extractMetaLiteral(literal, '@')?.let { return it }
+        extractMetaLiteral(literal)?.let { return it }
 
         val lastColon = literal.lastIndexOf(':')
         if (lastColon <= literal.indexOf(':')) {
@@ -53,8 +53,8 @@ internal object RuleLiteralMatcherCompiler {
         )
     }
 
-    private fun extractMetaLiteral(literal: String, separator: Char): ItemLiteral? {
-        val separatorIndex = literal.lastIndexOf(separator)
+    private fun extractMetaLiteral(literal: String): ItemLiteral? {
+        val separatorIndex = literal.lastIndexOf('@')
         if (separatorIndex <= 0) {
             return null
         }

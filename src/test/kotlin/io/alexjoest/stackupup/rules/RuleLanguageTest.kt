@@ -1,5 +1,7 @@
 package io.alexjoest.stackupup.rules
 
+import io.alexjoest.stackupup.rules.field.RuleFieldCacheContext
+import io.alexjoest.stackupup.rules.model.RuleMatchContext
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
@@ -36,12 +38,43 @@ class RuleLanguageTest {
     fun `fieldMetadata_shouldDeclareContextRequirements`() {
         assertEquals(FieldType.ITEM, RuleField.ITEM.fieldType)
         assertEquals(emptySet<RuleContextRequirement>(), RuleField.ITEM.requirements)
-        assertEquals(false, RuleField.ITEM.contributesToCacheKey)
+        assertEquals(false, RuleField.ITEM.contributesToCacheKey())
 
         assertEquals(setOf(RuleContextRequirement.ORE_NAMES), RuleField.ORE.requirements)
-        assertEquals(false, RuleField.ORE.contributesToCacheKey)
+        assertEquals(false, RuleField.ORE.contributesToCacheKey())
 
         assertEquals(setOf(RuleContextRequirement.MATERIAL), RuleField.MATERIAL.requirements)
-        assertEquals(true, RuleField.MATERIAL.contributesToCacheKey)
+        assertEquals(true, RuleField.MATERIAL.contributesToCacheKey())
+
+        assertEquals(emptySet<RuleContextRequirement>(), RuleField.TAB.requirements)
+        assertEquals(true, RuleField.TAB.contributesToCacheKey())
+    }
+
+    @Test
+    fun `cacheKeyField_shouldExtractDeclaredFieldValue`() {
+        val context = RuleMatchContext(
+            itemId = "gregtech:meta_item_1",
+            modId = "gregtech",
+            meta = 1000,
+            baseSize = 64,
+            type = "item",
+            oreNames = emptySet(),
+            material = "steel",
+        )
+
+        assertEquals(
+            "steel",
+            RuleField.MATERIAL.cacheKeyValue(
+                RuleFieldCacheContext(
+                    itemId = context.itemId,
+                    modId = context.modId,
+                    metadata = context.meta,
+                    type = context.type,
+                    baseLimit = context.baseSize,
+                    tab = context.tab,
+                    material = context.material,
+                )
+            )
+        )
     }
 }

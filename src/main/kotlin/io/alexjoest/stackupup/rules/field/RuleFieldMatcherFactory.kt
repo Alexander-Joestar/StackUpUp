@@ -1,4 +1,4 @@
-package io.alexjoest.stackupup.rules.compile
+package io.alexjoest.stackupup.rules.field
 
 import io.alexjoest.stackupup.rules.ComparisonOperator
 import io.alexjoest.stackupup.rules.model.RuleMatchContext

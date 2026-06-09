@@ -1,8 +1,10 @@
 package io.alexjoest.stackupup.rules
 
-import io.alexjoest.stackupup.rules.compile.MissingValuePolicy
-import io.alexjoest.stackupup.rules.compile.RuleFieldMatcherFactory
-import io.alexjoest.stackupup.rules.compile.RuleFieldMatchers
+import io.alexjoest.stackupup.rules.field.MissingValuePolicy
+import io.alexjoest.stackupup.rules.field.RuleFieldCacheContext
+import io.alexjoest.stackupup.rules.field.RuleFieldCacheKeyExtractor
+import io.alexjoest.stackupup.rules.field.RuleFieldMatcherFactory
+import io.alexjoest.stackupup.rules.field.RuleFieldMatchers
 import io.alexjoest.stackupup.rules.model.RuleMatchContext
 
 enum class FieldType { ITEM, STRING, STRING_SET, NUMERIC }
@@ -22,7 +24,7 @@ enum class RuleField(
     val fieldType: FieldType,
     aliases: Set<String> = emptySet(),
     val requirements: Set<RuleContextRequirement> = emptySet(),
-    val contributesToCacheKey: Boolean = false,
+    private val cacheKeyExtractor: RuleFieldCacheKeyExtractor? = null,
     private val matcherFactory: RuleFieldMatcherFactory,
 ) {
     ITEM(FieldType.ITEM, matcherFactory = RuleFieldMatchers.item()),
@@ -36,16 +38,22 @@ enum class RuleField(
     MATERIAL(
         FieldType.STRING,
         requirements = setOf(RuleContextRequirement.MATERIAL),
-        contributesToCacheKey = true,
+        cacheKeyExtractor = RuleFieldCacheKeyExtractor { it.material },
         matcherFactory = RuleFieldMatchers.string(RuleMatchContext::material, MissingValuePolicy.NEVER_MATCH),
     ),
     META(FieldType.NUMERIC, setOf("metadata"), matcherFactory = RuleFieldMatchers.numeric(RuleMatchContext::meta)),
     SIZE(FieldType.NUMERIC, matcherFactory = RuleFieldMatchers.numeric(RuleMatchContext::baseSize)),
-    TAB(FieldType.STRING, matcherFactory = RuleFieldMatchers.string(RuleMatchContext::tab)),
+    TAB(
+        FieldType.STRING,
+        cacheKeyExtractor = RuleFieldCacheKeyExtractor { it.tab },
+        matcherFactory = RuleFieldMatchers.string(RuleMatchContext::tab),
+    ),
     ;
 
     val id: String by lazy { name.lowercase() }
     private val matchers: Set<String> by lazy { aliases.mapTo(mutableSetOf(name)) { it.uppercase() } }
+
+    fun contributesToCacheKey(): Boolean = cacheKeyExtractor != null
 
     /**
      * 编译单值字段比较。
@@ -58,6 +66,12 @@ enum class RuleField(
      */
     fun compileListMatcher(literals: List<String>): (RuleMatchContext) -> Boolean =
         matcherFactory.compileList(literals)
+
+    /**
+     * 提取该字段贡献给规则缓存键的值。
+     */
+    internal fun cacheKeyValue(context: RuleFieldCacheContext): String =
+        cacheKeyExtractor?.extract(context).orEmpty()
 
     companion object {
         private val byName: Map<String, RuleField> by lazy {

@@ -35,6 +35,14 @@ class RuleSnapshotTest {
 
         assertEquals(setOf(RuleField.ITEM), itemRule.referencedFields)
         assertEquals(false, itemSnapshot.needsMaterial)
+
+        val tabSnapshot = RuleSnapshot(
+            version = 4L,
+            rules = listOf(
+                RuleCompiler.compileLine("tab = buildingBlocks -> 256", 1),
+            ),
+        )
+        assertEquals(setOf(RuleField.TAB), tabSnapshot.requirements.cacheKeyFields)
     }
 
     @Test
@@ -42,13 +50,14 @@ class RuleSnapshotTest {
         val snapshot = RuleSnapshot(
             version = 1L,
             rules = listOf(
-                RuleCompiler.compileLine("mod = gregtech && material = steel && ore = ingotSteel -> 2048", 1),
+                RuleCompiler.compileLine("mod = gregtech && material = steel && ore = ingotSteel && tab = materials -> 2048", 1),
             ),
         )
 
-        assertEquals(setOf(RuleField.MOD, RuleField.MATERIAL, RuleField.ORE), snapshot.requirements.referencedFields)
+        assertEquals(setOf(RuleField.MOD, RuleField.MATERIAL, RuleField.ORE, RuleField.TAB), snapshot.requirements.referencedFields)
         assertEquals(true, snapshot.needsMaterial)
         assertEquals(true, snapshot.needsOreNames)
-        assertEquals(setOf(RuleField.MATERIAL), snapshot.requirements.cacheKeyFields)
+        assertEquals(setOf(RuleField.MATERIAL, RuleField.TAB), snapshot.requirements.cacheKeyFields)
+        assertEquals(listOf(RuleField.MATERIAL, RuleField.TAB), snapshot.requirements.cacheKeyFieldsInOrder)
     }
 }

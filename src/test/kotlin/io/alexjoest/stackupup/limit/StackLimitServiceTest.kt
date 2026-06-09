@@ -173,4 +173,37 @@ class StackLimitServiceTest {
         assertEquals(512, service.resolve(identity, 64, emptySet(), material = "copper"))
         assertEquals(1, service.debugResolvedCacheSize())
     }
+
+    @Test
+    fun `tabDependentRules_shouldPartitionResolvedCacheByTab`() {
+        val snapshot = RuleSnapshot(
+            version = 8L,
+            rules = listOf(
+                RuleCompiler.compileLine("tab = buildingBlocks -> 256", 1),
+            ),
+        )
+        val service = StackLimitService(snapshot)
+        val identity = StackIdentity("minecraft:stone", "minecraft", 0, "block")
+
+        assertEquals(256, service.resolve(identity, 64, emptySet(), tab = "buildingBlocks"))
+        assertEquals(64, service.resolve(identity, 64, emptySet(), tab = "materials"))
+        assertEquals(2, service.debugResolvedCacheSize())
+    }
+
+    @Test
+    fun `mixedDynamicFields_shouldPartitionResolvedCacheByDeclaredFields`() {
+        val snapshot = RuleSnapshot(
+            version = 9L,
+            rules = listOf(
+                RuleCompiler.compileLine("material = steel && tab = materials -> 1024", 1),
+            ),
+        )
+        val service = StackLimitService(snapshot)
+        val identity = StackIdentity("gregtech:meta_item_1", "gregtech", 1000, "item")
+
+        assertEquals(1024, service.resolve(identity, 64, emptySet(), tab = "materials", material = "steel"))
+        assertEquals(64, service.resolve(identity, 64, emptySet(), tab = "materials", material = "copper"))
+        assertEquals(64, service.resolve(identity, 64, emptySet(), tab = "tools", material = "steel"))
+        assertEquals(3, service.debugResolvedCacheSize())
+    }
 }

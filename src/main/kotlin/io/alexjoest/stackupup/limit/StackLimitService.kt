@@ -1,6 +1,7 @@
 package io.alexjoest.stackupup.limit
 
 import io.alexjoest.stackupup.StackUpUpConfig
+import io.alexjoest.stackupup.rules.RuleField
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import io.alexjoest.stackupup.rules.model.RuleMatchContext
 import java.util.concurrent.ConcurrentHashMap
@@ -49,7 +50,14 @@ class StackLimitService(private val snapshot: RuleSnapshot) {
         tab: String = "",
         material: String = "",
     ): Int {
-        val key = ResolvedLimitKey(itemId, modId, metadata, type, baseLimit, if (snapshot.needsMaterial) material else "")
+        val key = ResolvedLimitKey(
+            itemId,
+            modId,
+            metadata,
+            type,
+            baseLimit,
+            if (RuleField.MATERIAL in snapshot.requirements.cacheKeyFields) material else "",
+        )
         resolvedCache[key]?.let { return it }
 
         val matchContext = RuleMatchContext(

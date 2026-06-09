@@ -10,7 +10,7 @@ class DslParserTest {
         val rule = DslParser.parseLine("2 < size < 64 -> 1024")
         assertEquals(listOf("set"), rule.action.steps.map { it.debugName })
         assertEquals(listOf(1024), rule.action.steps.map { it.value })
-        assertEquals(listOf("size"), rule.condition.debugFields())
+        assertEquals(listOf(RuleField.SIZE), rule.condition.debugFields())
     }
 
     @Test
@@ -26,7 +26,7 @@ class DslParserTest {
         val rule = DslParser.parseLine("item in [minecraft:egg, minecraft:snowball] && metadata = 0 -> 128")
         assertEquals(listOf("set"), rule.action.steps.map { it.debugName })
         assertEquals(listOf(128), rule.action.steps.map { it.value })
-        assertEquals(listOf("item", "meta"), rule.condition.debugFields())
+        assertEquals(listOf(RuleField.ITEM, RuleField.META), rule.condition.debugFields())
         assertEquals(3, rule.condition.debugLiteralCount())
     }
 
@@ -35,7 +35,7 @@ class DslParserTest {
         val rule = DslParser.parseLine("size > 2 -> *4")
         assertEquals(listOf("multiply"), rule.action.steps.map { it.debugName })
         assertEquals(listOf(4), rule.action.steps.map { it.value })
-        assertEquals(listOf("size"), rule.condition.debugFields())
+        assertEquals(listOf(RuleField.SIZE), rule.condition.debugFields())
     }
 
     @Test
@@ -43,7 +43,7 @@ class DslParserTest {
         val rule = DslParser.parseLine("item = gregtech:gt.metaitem.01 && metadata in [1, 2, 3] -> 1024")
         assertEquals(listOf("set"), rule.action.steps.map { it.debugName })
         assertEquals(listOf(1024), rule.action.steps.map { it.value })
-        assertEquals(listOf("item", "meta"), rule.condition.debugFields())
+        assertEquals(listOf(RuleField.ITEM, RuleField.META), rule.condition.debugFields())
         assertEquals(4, rule.condition.debugLiteralCount())
     }
 

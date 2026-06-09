@@ -2,7 +2,7 @@ package io.alexjoest.stackupup.dev
 
 import io.alexjoest.stackupup.StackUpUpConfig
 import io.alexjoest.stackupup.limit.RuleRuntime
-import io.alexjoest.stackupup.limit.StackIdentity
+import io.alexjoest.stackupup.limit.StackContext
 import io.alexjoest.stackupup.limit.StackLimitService
 import io.alexjoest.stackupup.rules.compile.RuleCompiler
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
@@ -41,9 +41,14 @@ class DevRuleInjectorTest {
         val result = DevRuleInjector.ensureInjected("ore = ingotSteel -> *2")
         val snapshot = RuleRuntime.currentSnapshot()
         val resolved = StackLimitService(snapshot).resolve(
-            StackIdentity("gregtech:meta_ingot", "gregtech", 324, "item"),
-            baseLimit = 64,
-            oreNames = setOf("ingotSteel"),
+            StackContext(
+                itemId = "gregtech:meta_ingot",
+                modId = "gregtech",
+                metadata = 324,
+                type = "item",
+                baseLimit = 64,
+                oreNames = setOf("ingotSteel"),
+            ),
         )
 
         assertEquals(2, snapshot.rules.size)

@@ -2,7 +2,7 @@ package io.alexjoest.stackupup
 
 import io.alexjoest.stackupup.limit.RuleRuntime
 import io.alexjoest.stackupup.limit.OreDictIndex
-import io.alexjoest.stackupup.limit.StackIdentity
+import io.alexjoest.stackupup.limit.StackContext
 import io.alexjoest.stackupup.rules.compile.RuleCompiler
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import io.alexjoest.stackupup.rules.io.RuleFileLocator
@@ -54,9 +54,14 @@ class RuleRuntimeCoordinatorTest {
             assertEquals(
                 32,
                 RuleRuntime.limitService().resolve(
-                    StackIdentity("gregtech:meta_ingot", "gregtech", 0, "item"),
-                    baseLimit = 64,
-                    oreNames = RuleRuntime.oreDictIndex().getOreNames("gregtech:meta_ingot", 0),
+                    StackContext(
+                        itemId = "gregtech:meta_ingot",
+                        modId = "gregtech",
+                        metadata = 0,
+                        type = "item",
+                        baseLimit = 64,
+                        oreNames = RuleRuntime.oreDictIndex().getOreNames("gregtech:meta_ingot", 0),
+                    ),
                 ),
             )
         } finally {

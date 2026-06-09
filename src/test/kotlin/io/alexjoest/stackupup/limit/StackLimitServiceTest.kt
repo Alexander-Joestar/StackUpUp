@@ -1,7 +1,6 @@
 package io.alexjoest.stackupup.limit
 
 import io.alexjoest.stackupup.StackUpUpConfig
-import io.alexjoest.stackupup.rules.RuleContextRequirement
 import io.alexjoest.stackupup.rules.compile.RuleCompiler
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import org.junit.jupiter.api.AfterEach
@@ -35,9 +34,7 @@ class StackLimitServiceTest {
         )
         val service = StackLimitService(snapshot)
         val result = service.resolve(
-            StackIdentity("gregtech:gt.metaitem.01", "gregtech", 11305, "item"),
-            baseLimit = 64,
-            oreNames = setOf("ingotSteel"),
+            context("gregtech:gt.metaitem.01", "gregtech", 11305, "item", oreNames = setOf("ingotSteel")),
         )
         assertEquals(1024, result)
     }
@@ -60,10 +57,10 @@ class StackLimitServiceTest {
             ),
         )
         val service = StackLimitService(snapshot)
-        val identity = StackIdentity("gregtech:meta_ingot", "gregtech", 324, "item")
+        val identity = context("gregtech:meta_ingot", "gregtech", 324, "item", oreNames = setOf("ingotSteel"))
 
-        assertEquals(1024, service.resolve(identity, 64, setOf("ingotSteel")))
-        assertEquals(1024, service.resolve(identity, 64, setOf("ingotSteel")))
+        assertEquals(1024, service.resolve(identity))
+        assertEquals(1024, service.resolve(identity))
         assertEquals(1, evaluations)
         assertEquals(1, service.debugResolvedCacheSize())
     }
@@ -81,17 +78,13 @@ class StackLimitServiceTest {
         assertEquals(
             1024,
             service.resolve(
-                StackIdentity("gregtech:gt.metaitem.01", "gregtech", 11305, "item"),
-                baseLimit = 64,
-                oreNames = emptySet(),
+                context("gregtech:gt.metaitem.01", "gregtech", 11305, "item"),
             ),
         )
         assertEquals(
             64,
             service.resolve(
-                StackIdentity("gregtech:gt.metaitem.01", "gregtech", 11306, "item"),
-                baseLimit = 64,
-                oreNames = emptySet(),
+                context("gregtech:gt.metaitem.01", "gregtech", 11306, "item"),
             ),
         )
     }
@@ -109,9 +102,7 @@ class StackLimitServiceTest {
         assertEquals(
             138,
             service.resolve(
-                StackIdentity("gregtech:gt.metaitem.01", "gregtech", 11305, "item"),
-                baseLimit = 64,
-                oreNames = setOf("ingotSteel"),
+                context("gregtech:gt.metaitem.01", "gregtech", 11305, "item", oreNames = setOf("ingotSteel")),
             ),
         )
     }
@@ -133,9 +124,7 @@ class StackLimitServiceTest {
             assertEquals(
                 256,
                 service.resolve(
-                    StackIdentity("minecraft:egg", "minecraft", 0, "item"),
-                    baseLimit = 16,
-                    oreNames = emptySet(),
+                    context("minecraft:egg", "minecraft", 0, "item", baseLimit = 16),
                 ),
             )
         } finally {
@@ -148,25 +137,11 @@ class StackLimitServiceTest {
         StackUpUpConfig.general.maxStackSize = 128
         StackUpUpConfig.activeMaxStackSize = 128
         val service = StackLimitService(RuleSnapshot(version = 10L, rules = emptyList()))
-        val identity = StackIdentity("minecraft:egg", "minecraft", 0, "item")
+        val identity = context("minecraft:egg", "minecraft", 0, "item", baseLimit = 16)
 
-        assertEquals(128, service.resolve(identity, 999, emptySet(), tab = "ignored", material = "ignored"))
-        assertEquals(1, service.resolve(identity, 0, emptySet(), tab = "ignored", material = "ignored"))
+        assertEquals(128, service.resolve(identity.copy(baseLimit = 999, tab = "ignored", material = "ignored")))
+        assertEquals(1, service.resolve(identity.copy(baseLimit = 0, tab = "ignored", material = "ignored")))
         assertEquals(0, service.debugResolvedCacheSize())
-    }
-
-    @Test
-    fun `requiresContext_shouldDelegateSnapshotRequirements`() {
-        val snapshot = RuleSnapshot(
-            version = 11L,
-            rules = listOf(
-                RuleCompiler.compileLine("material = steel -> 1024", 1),
-            ),
-        )
-        val service = StackLimitService(snapshot)
-
-        assertEquals(true, service.requiresContext(RuleContextRequirement.MATERIAL))
-        assertEquals(false, service.requiresContext(RuleContextRequirement.ORE_NAMES))
     }
 
     @Test
@@ -178,10 +153,10 @@ class StackLimitServiceTest {
             ),
         )
         val service = StackLimitService(snapshot)
-        val identity = StackIdentity("gregtech:meta_item_1", "gregtech", 1000, "item")
+        val identity = context("gregtech:meta_item_1", "gregtech", 1000, "item")
 
-        assertEquals(1024, service.resolve(identity, 64, emptySet(), material = "steel"))
-        assertEquals(64, service.resolve(identity, 64, emptySet(), material = "copper"))
+        assertEquals(1024, service.resolve(identity.copy(material = "steel")))
+        assertEquals(64, service.resolve(identity.copy(material = "copper")))
         assertEquals(2, service.debugResolvedCacheSize())
     }
 
@@ -194,10 +169,10 @@ class StackLimitServiceTest {
             ),
         )
         val service = StackLimitService(snapshot)
-        val identity = StackIdentity("gregtech:meta_item_1", "gregtech", 1000, "item")
+        val identity = context("gregtech:meta_item_1", "gregtech", 1000, "item")
 
-        assertEquals(512, service.resolve(identity, 64, emptySet(), material = "steel"))
-        assertEquals(512, service.resolve(identity, 64, emptySet(), material = "copper"))
+        assertEquals(512, service.resolve(identity.copy(material = "steel")))
+        assertEquals(512, service.resolve(identity.copy(material = "copper")))
         assertEquals(1, service.debugResolvedCacheSize())
     }
 
@@ -210,10 +185,10 @@ class StackLimitServiceTest {
             ),
         )
         val service = StackLimitService(snapshot)
-        val identity = StackIdentity("minecraft:stone", "minecraft", 0, "block")
+        val identity = context("minecraft:stone", "minecraft", 0, "block")
 
-        assertEquals(256, service.resolve(identity, 64, emptySet(), tab = "buildingBlocks"))
-        assertEquals(64, service.resolve(identity, 64, emptySet(), tab = "materials"))
+        assertEquals(256, service.resolve(identity.copy(tab = "buildingBlocks")))
+        assertEquals(64, service.resolve(identity.copy(tab = "materials")))
         assertEquals(2, service.debugResolvedCacheSize())
     }
 
@@ -226,11 +201,31 @@ class StackLimitServiceTest {
             ),
         )
         val service = StackLimitService(snapshot)
-        val identity = StackIdentity("gregtech:meta_item_1", "gregtech", 1000, "item")
+        val identity = context("gregtech:meta_item_1", "gregtech", 1000, "item")
 
-        assertEquals(1024, service.resolve(identity, 64, emptySet(), tab = "materials", material = "steel"))
-        assertEquals(64, service.resolve(identity, 64, emptySet(), tab = "materials", material = "copper"))
-        assertEquals(64, service.resolve(identity, 64, emptySet(), tab = "tools", material = "steel"))
+        assertEquals(1024, service.resolve(identity.copy(tab = "materials", material = "steel")))
+        assertEquals(64, service.resolve(identity.copy(tab = "materials", material = "copper")))
+        assertEquals(64, service.resolve(identity.copy(tab = "tools", material = "steel")))
         assertEquals(3, service.debugResolvedCacheSize())
     }
+
+    private fun context(
+        itemId: String,
+        modId: String,
+        metadata: Int,
+        type: String,
+        baseLimit: Int = 64,
+        oreNames: Set<String> = emptySet(),
+        tab: String = "",
+        material: String = "",
+    ): StackContext = StackContext(
+        itemId = itemId,
+        modId = modId,
+        metadata = metadata,
+        type = type,
+        baseLimit = baseLimit,
+        oreNames = oreNames,
+        tab = tab,
+        material = material,
+    )
 }

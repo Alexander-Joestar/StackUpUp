@@ -5,15 +5,10 @@ import io.alexjoest.stackupup.rules.RuleField
 
 data class RuleContextRequirements(
     val referencedFields: Set<RuleField>,
-    val cacheKeyFields: Set<RuleField>,
+    val cacheKeyFields: List<RuleField>,
 ) {
     private val requirements: Set<RuleContextRequirement> = referencedFields
         .flatMapTo(LinkedHashSet(), RuleField::requirements)
-
-    /**
-     * 热路径使用的预计算缓存键字段顺序。
-     */
-    val cacheKeyFieldsInOrder: List<RuleField> = cacheKeyFields.toList()
 
     fun requires(requirement: RuleContextRequirement): Boolean = requirement in requirements
 
@@ -24,7 +19,7 @@ data class RuleContextRequirements(
         fun fromRules(rules: List<CompiledRule>): RuleContextRequirements {
             val referencedFields = rules.flatMapTo(LinkedHashSet(), CompiledRule::referencedFields)
             val cacheKeyFields = referencedFields.filterTo(LinkedHashSet()) { it.contributesToCacheKey() }
-            return RuleContextRequirements(referencedFields, cacheKeyFields)
+            return RuleContextRequirements(referencedFields, cacheKeyFields.toList())
         }
     }
 }

@@ -1,8 +1,8 @@
 package io.alexjoest.stackupup
 
 import io.alexjoest.stackupup.limit.RuleRuntime
+import io.alexjoest.stackupup.limit.StackContext
 import io.alexjoest.stackupup.limit.StackContextResolver
-import io.alexjoest.stackupup.limit.StackIdentity
 import net.minecraft.item.ItemStack
 import java.util.ArrayDeque
 import java.util.IdentityHashMap
@@ -26,8 +26,18 @@ object StackLimitHooks {
     fun getCompatibilityStackSize(): Int = StackUpUpConfig.activeMaxStackSize
 
     @JvmStatic
+    @Deprecated("Internal stack limit resolution has moved to ItemStack/StackContext; this overload is kept only for legacy callers.")
     fun applyDynamicStackLimit(itemId: String, modId: String, meta: Int, type: String, baseLimit: Int, oreNames: Set<String>): Int =
-        RuleRuntime.limitService().resolve(StackIdentity(itemId, modId, meta, type), baseLimit, oreNames)
+        RuleRuntime.limitService().resolve(
+            StackContext(
+                itemId = itemId,
+                modId = modId,
+                metadata = meta,
+                type = type,
+                baseLimit = baseLimit,
+                oreNames = oreNames,
+            ),
+        )
 
     @JvmStatic
     fun applyDynamicStackLimit(stack: ItemStack, baseLimit: Int): Int {

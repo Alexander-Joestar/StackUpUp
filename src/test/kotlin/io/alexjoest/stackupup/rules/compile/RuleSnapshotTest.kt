@@ -25,7 +25,7 @@ class RuleSnapshotTest {
 
         assertEquals(setOf(RuleField.MATERIAL), materialSnapshot.rules.single().referencedFields)
         assertEquals(setOf(RuleField.MATERIAL), materialSnapshot.requirements.referencedFields)
-        assertEquals(setOf(RuleField.MATERIAL), materialSnapshot.requirements.cacheKeyFields)
+        assertEquals(listOf(RuleField.MATERIAL), materialSnapshot.requirements.cacheKeyFields)
         assertEquals(true, materialSnapshot.needsMaterial)
         assertEquals(false, materialSnapshot.needsOreNames)
         assertEquals(true, materialSnapshot.requires(RuleContextRequirement.MATERIAL))
@@ -36,7 +36,7 @@ class RuleSnapshotTest {
         assertEquals(false, oreSnapshot.needsMaterial)
         assertEquals(true, oreSnapshot.requires(RuleContextRequirement.ORE_NAMES))
         assertEquals(false, oreSnapshot.requires(RuleContextRequirement.MATERIAL))
-        assertEquals(emptySet<RuleField>(), oreSnapshot.requirements.cacheKeyFields)
+        assertEquals(emptyList<RuleField>(), oreSnapshot.requirements.cacheKeyFields)
 
         assertEquals(setOf(RuleField.ITEM), itemRule.referencedFields)
         assertEquals(false, itemSnapshot.needsMaterial)
@@ -47,7 +47,7 @@ class RuleSnapshotTest {
                 RuleCompiler.compileLine("tab = buildingBlocks -> 256", 1),
             ),
         )
-        assertEquals(setOf(RuleField.TAB), tabSnapshot.requirements.cacheKeyFields)
+        assertEquals(listOf(RuleField.TAB), tabSnapshot.requirements.cacheKeyFields)
     }
 
     @Test
@@ -62,7 +62,6 @@ class RuleSnapshotTest {
         assertEquals(setOf(RuleField.MOD, RuleField.MATERIAL, RuleField.ORE, RuleField.TAB), snapshot.requirements.referencedFields)
         assertEquals(true, snapshot.needsMaterial)
         assertEquals(true, snapshot.needsOreNames)
-        assertEquals(setOf(RuleField.MATERIAL, RuleField.TAB), snapshot.requirements.cacheKeyFields)
-        assertEquals(listOf(RuleField.MATERIAL, RuleField.TAB), snapshot.requirements.cacheKeyFieldsInOrder)
+        assertEquals(listOf(RuleField.MATERIAL, RuleField.TAB), snapshot.requirements.cacheKeyFields)
     }
 }

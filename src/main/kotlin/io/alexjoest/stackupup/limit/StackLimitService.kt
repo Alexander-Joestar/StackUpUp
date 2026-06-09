@@ -1,14 +1,13 @@
 package io.alexjoest.stackupup.limit
 
 import io.alexjoest.stackupup.StackUpUpConfig
-import io.alexjoest.stackupup.rules.RuleContextRequirement
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import io.alexjoest.stackupup.rules.field.RuleFieldCacheContext
 import io.alexjoest.stackupup.rules.model.RuleMatchContext
 import java.util.concurrent.ConcurrentHashMap
 
 class StackLimitService(private val snapshot: RuleSnapshot) {
-    private val cacheKeyFields = snapshot.requirements.cacheKeyFieldsInOrder
+    private val cacheKeyFields = snapshot.requirements.cacheKeyFields
 
     // 规则求值是高频热路径。
     // 缓存键固定包含物品身份和原版基线；会随上下文变化的字段由 RuleField 自己声明并贡献缓存键。
@@ -53,6 +52,7 @@ class StackLimitService(private val snapshot: RuleSnapshot) {
         return previous ?: resolved
     }
 
+    @Deprecated("Use resolve(StackContext)")
     fun resolve(
         identity: StackIdentity,
         baseLimit: Int,
@@ -72,31 +72,7 @@ class StackLimitService(private val snapshot: RuleSnapshot) {
         )
     )
 
-    fun resolve(
-        itemId: String,
-        modId: String,
-        metadata: Int,
-        type: String,
-        baseLimit: Int,
-        oreNames: Set<String>,
-        tab: String = "",
-        material: String = "",
-    ): Int = resolve(
-        StackContext(
-            itemId = itemId,
-            modId = modId,
-            metadata = metadata,
-            type = type,
-            baseLimit = baseLimit,
-            oreNames = oreNames,
-            tab = tab,
-            material = material,
-        )
-    )
-
     fun hasRules(): Boolean = snapshot.hasRules
-
-    fun requiresContext(requirement: RuleContextRequirement): Boolean = snapshot.requires(requirement)
 
     fun needsOreNames(): Boolean = snapshot.needsOreNames
 

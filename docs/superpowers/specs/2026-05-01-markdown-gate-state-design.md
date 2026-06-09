@@ -1,5 +1,7 @@
 # StackUpUp Markdown gate 与 state 设计
 
+> **已过时，仅供历史参考。** 禁止把本文作为当前实现计划执行；当前入口见 `docs/agent/START_HERE.md`。本文可能保留旧的 gate/state 设计上下文，但不代表当前代码或文档路线。
+
 ## 概述
 
 本设计为 StackUpUp 引入一种单文件规则容器格式。

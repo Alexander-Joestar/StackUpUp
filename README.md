@@ -115,7 +115,7 @@ category = enchanted_book -> 16
 
 StackUpUp 对遵循原版堆叠语义的模组通常直接生效。对自行写死 `64`、绕过 `ItemStack#getMaxStackSize()`、或有特殊库存逻辑的模组，可能需要额外补丁。
 
-核心安全原则：**对外广告容量不能大于真实写入容量。**动态 ASM 只保留给未知 `IInventory`、`Slot` 等旧库存路径；未知 `IItemHandler` 的动态 ASM 已故意禁用。即使某个 unknown `IItemHandler#getSlotLimit()` 字面返回 64，也不能据此证明真实写入容量可以扩大，否则 vanilla 可能投入超过库存真实承受能力的物品，进而触发截断、吞物品或和模组自己的溢出逻辑冲突。
+核心安全原则：**对外广告容量不能大于真实写入容量。**动态 ASM 只保留给未知旧式 `IInventory` / `Slot` 路径；未知 `IItemHandler` 的动态 ASM 已故意禁用。即使某个 unknown `IItemHandler#getSlotLimit()` 字面返回 64，也不能据此证明真实写入容量可以扩大，否则 vanilla 可能投入超过库存真实承受能力的物品，进而触发截断、吞物品或和模组自己的溢出逻辑冲突。
 
 对已知模组，StackUpUp 通过 MixinBooter late mixin 扩展真实 `getInventoryStackLimit()` / `getSlotLimit()` 等容量入口，再让槽位上限跟随。旧 ASM 只作为历史兼容和早期加载兜底，不再是新增兼容首选；也不会引入或复活写入后回填的 remainder-system。
 

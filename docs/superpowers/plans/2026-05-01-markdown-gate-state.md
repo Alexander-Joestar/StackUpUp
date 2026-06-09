@@ -1,5 +1,8 @@
 # StackUpUp Markdown Gate 与 State 实施计划
 
+> **已过时，仅供历史参考。** 禁止把本文作为当前实现计划执行；当前入口见 `docs/agent/START_HERE.md`。本文可能保留旧的 gate/state 设计上下文，但不代表当前代码或文档路线。
+> Unknown `IItemHandler` 动态扩大已禁用；不要恢复 remainder-system。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 把规则系统升级为单文件 Markdown 容器，支持 `# state` 持久化区、`# rules` gate 区、`state("xxx")` 读取和无括号 gate 表达式，同时保持热路径只读编译快照。

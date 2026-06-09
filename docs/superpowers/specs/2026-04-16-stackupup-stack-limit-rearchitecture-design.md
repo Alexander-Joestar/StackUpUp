@@ -1,5 +1,8 @@
 # StackUpUp 堆叠上限重构设计
 
+> **已过时，仅供历史参考。** 禁止把本文作为当前实现计划执行；当前入口见 `docs/agent/START_HERE.md`。本文保留早期堆叠上限重构思路，但不代表当前代码或文档路线。
+> Unknown `IItemHandler` 动态扩大已禁用；不要恢复 remainder-system。
+
 ## 目标
 
 本阶段目标不是一次性推翻现有实现，而是在 **Minecraft 1.12.2** 环境下，先把以下能力做正确：

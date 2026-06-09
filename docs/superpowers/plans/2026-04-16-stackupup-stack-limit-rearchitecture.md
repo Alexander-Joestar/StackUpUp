@@ -1,5 +1,8 @@
 # StackUpUp 堆叠上限重构 Implementation Plan
 
+> **已过时，仅供历史参考。** 禁止把本文作为当前实现计划执行；当前入口见 `docs/agent/START_HERE.md`。本文保留早期堆叠上限重构思路，但不代表当前代码或文档路线。
+> Unknown `IItemHandler` 动态扩大已禁用；不要恢复 remainder-system。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 在 1.12.2 环境下重构 StackUpUp 的堆叠上限内核，优先打通 `metadata`、GregTech `gt.metaitem.*`、矿物辞典匹配，并接入 `MixinBooter`。

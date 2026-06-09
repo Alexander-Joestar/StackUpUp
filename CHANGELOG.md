@@ -7,8 +7,8 @@
 
 ## 0.2.3
 
-- 移除category字段, 1.12 为什么需要这个?
-- 尝试修复规则重复执行的问题, 大概修好了?
+- 移除 1.12.2 下不再需要的 `category` 字段
+- 修复规则可能重复执行的问题
 - 优化代码结构
 
 ## 0.2.2
@@ -20,7 +20,7 @@
 - 简化 `EarlyMixinConfigTest`，合并同类 IO 读取测试
 - 新增 `item = *` 通配符，匹配所有可堆叠物品（排除 baseSize=1 的工具、盔甲等）
 - 新增 `tab` 字段，按创造模式标签页匹配（如 `tab = buildingBlocks`）
-- 新增 `category` 字段
+- 新增 `category` 字段（后续版本已移除）
 - 新增 `meta` 范围写法（`100 < meta < 300`）
 - `RuleField` 简化：去掉冗余 `id` 构造参数，`matchers`/`byName` 懒加载，`fromIdentifier` 只做一次 uppercase 查表
 - 引入 `FieldType` 枚举，编译器按类型分发，加新字段只需 enum 一行

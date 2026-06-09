@@ -107,7 +107,13 @@ class CommandStackUpUpTest {
         assertEquals(StackUpUpIds.COMMAND_USAGE_KEY, exception.message)
     }
 
-    private fun command(): CommandStackUpUp = CommandStackUpUp(StateAccessAdapter(RuleStateService { worldMarkdownFile }))
+    private fun command(): CommandStackUpUp {
+        val service = RuleStateService { worldMarkdownFile }
+        return CommandStackUpUp(
+            getState = { name -> service.getState(name) ?: false },
+            setState = service::setState,
+        )
+    }
 
     private fun writeWorldMarkdownState(vararg states: Pair<String, Boolean>) {
         worldMarkdownFile.parentFile.mkdirs()
@@ -127,16 +133,6 @@ class CommandStackUpUpTest {
     private fun assertWorldMarkdownContains(text: String) {
         val content = worldMarkdownFile.readText(Charsets.UTF_8)
         kotlin.test.assertTrue(content.contains(text), "Expected world markdown to contain '$text' but was:\n$content")
-    }
-
-    private class StateAccessAdapter(
-        private val service: RuleStateService,
-    ) : CommandStackUpUp.StateAccess {
-        override fun getState(name: String): Boolean = service.getState(name) ?: false
-
-        override fun setState(name: String, value: Boolean) {
-            service.setState(name, value)
-        }
     }
 
     private class CapturingCommandSender : ICommandSender {

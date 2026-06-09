@@ -99,4 +99,48 @@ class MarkdownRuleSourceTest {
             StackUpUpConfig.activeMaxStackSize = previousMaxStackSize
         }
     }
+
+    @Test
+    fun `parsed markdown files should keep per-file state scope`() {
+        val first = ParsedMarkdownFile(
+            sourceName = "first.su.md",
+            document = MarkdownStateParser.parse(
+                listOf(
+                    "# state",
+                    "- enabled = true",
+                    "# rules",
+                    "## state(\"enabled\")",
+                    "```stackupup",
+                    "item = minecraft:egg -> 64",
+                    "```",
+                ),
+            ),
+        )
+        val second = ParsedMarkdownFile(
+            sourceName = "second.su.md",
+            document = MarkdownStateParser.parse(
+                listOf(
+                    "# rules",
+                    "## state(\"enabled\")",
+                    "```stackupup",
+                    "item = minecraft:snowball -> 64",
+                    "```",
+                ),
+            ),
+        )
+
+        previousMaxStackSize = StackUpUpConfig.activeMaxStackSize
+        StackUpUpConfig.general.maxStackSize = 10240
+        StackUpUpConfig.activeMaxStackSize = 10240
+
+        val result = MarkdownRuleSource.fromParsedFiles(listOf(first, second))
+
+        try {
+            assertEquals(listOf("item = minecraft:egg -> 64"), result.snapshot.rules.map { it.sourceLine })
+            assertTrue(result.errors.isEmpty())
+        } finally {
+            StackUpUpConfig.general.maxStackSize = previousMaxStackSize
+            StackUpUpConfig.activeMaxStackSize = previousMaxStackSize
+        }
+    }
 }

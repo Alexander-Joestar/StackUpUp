@@ -18,14 +18,15 @@ internal object RuleReloadPipeline {
         val markdownFiles = sourceFiles.filter { it.name.endsWith(".su.md") }
         val dslFiles = sourceFiles.filterNot { it.name.endsWith(".su.md") }
         val gateContext = RuleGateContext.fromLoadedMods()
-        val stateErrors = markdownFiles.flatMap { file ->
+        val parsedMarkdownFiles = markdownFiles.mapNotNull { file ->
             if (!file.exists()) {
-                emptyList()
+                null
             } else {
-                MarkdownStateParser.parse(file.readLines(Charsets.UTF_8)).errors
+                ParsedMarkdownFile(file.name, MarkdownStateParser.parse(file.readLines(Charsets.UTF_8)))
             }
         }
-        val markdownResult = MarkdownRuleSource.fromFiles(markdownFiles, gateContext)
+        val stateErrors = parsedMarkdownFiles.flatMap { it.document.errors }
+        val markdownResult = MarkdownRuleSource.fromParsedFiles(parsedMarkdownFiles, gateContext)
         val dslResult = DslRuleSource.fromFiles(dslFiles, gateContext)
         val result = RuleLoadResult(
             snapshot = RuleSnapshot(

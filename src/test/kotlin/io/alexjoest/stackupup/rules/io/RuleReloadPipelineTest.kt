@@ -47,4 +47,31 @@ class RuleReloadPipelineTest {
         assertEquals(StackUpUpIds.RULE_LIMIT_CLAMP_KEY, report.warnings.single().translationKey)
         assertEquals(listOf(1, 10240), report.warnings.single().args)
     }
+
+    @Test
+    fun `reload_shouldKeepMarkdownRuleErrorsBeforeStateErrors`() {
+        val tempDir = Files.createTempDirectory("stackupup-rule-reload-markdown-error-order-test")
+        val primaryRulesFile = tempDir.resolve("main.su").toFile()
+        val markdownFile = tempDir.resolve("main.su.md").toFile().apply {
+            writeText(
+                """
+                # state
+                - phase1 = maybe
+                # rules
+                ```stackupup
+                item minecraft:egg -> 64
+                ```
+                """.trimIndent() + System.lineSeparator(),
+                Charsets.UTF_8,
+            )
+        }
+
+        val report = RuleReloadPipeline.loadDslRules(primaryRulesFile, listOf(markdownFile))
+
+        assertEquals(2, report.errors.size)
+        assertTrue(report.errors[0].format().contains("[main.su.md]"))
+        assertTrue(report.errors[0].format().contains("failed to load"))
+        assertTrue(report.errors[1].format().startsWith("[state] "))
+        assertTrue(report.errors[1].format().contains("phase1 = maybe"))
+    }
 }

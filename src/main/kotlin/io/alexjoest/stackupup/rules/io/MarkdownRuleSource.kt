@@ -14,13 +14,27 @@ internal object MarkdownRuleSource {
     }
 
     fun fromFiles(files: List<File>, gateContext: RuleGateContext = RuleGateContext.EMPTY): RuleLoadResult {
+        return fromParsedFiles(files.mapNotNull { file ->
+            if (!file.exists()) {
+                null
+            } else {
+                ParsedMarkdownFile(
+                    sourceName = file.name,
+                    document = MarkdownStateParser.parse(file.readLines(Charsets.UTF_8)),
+                )
+            }
+        }, gateContext)
+    }
+
+    fun fromParsedFiles(
+        files: List<ParsedMarkdownFile>,
+        gateContext: RuleGateContext = RuleGateContext.EMPTY,
+    ): RuleLoadResult {
         val allRules = ArrayList<CompiledRule>()
         val allErrors = ArrayList<LocalizedMessage>()
         for (file in files) {
-            if (!file.exists()) continue
-            val lines = file.readLines(Charsets.UTF_8)
-            val effectiveContext = gateContext.copy(states = gateContext.states + MarkdownStateParser.parse(lines).states)
-            val result = collectInputs(lines, file.name, effectiveContext)
+            val effectiveContext = gateContext.copy(states = gateContext.states + file.document.states)
+            val result = collectInputs(file.document.lines, file.sourceName, effectiveContext)
             allRules += result.snapshot.rules
             allErrors += result.errors
         }
@@ -118,3 +132,8 @@ internal object MarkdownRuleSource {
 
     private data class MarkdownGateFrame(val parsed: MarkdownGateParseResult?)
 }
+
+internal data class ParsedMarkdownFile(
+    val sourceName: String,
+    val document: MarkdownStateDocument,
+)

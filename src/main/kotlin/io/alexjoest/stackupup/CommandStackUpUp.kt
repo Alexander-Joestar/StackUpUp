@@ -13,11 +13,12 @@ import java.io.IOException
 import javax.annotation.Nullable
 
 class CommandStackUpUp internal constructor(
-    private val stateAccess: StateAccess = StackUpUpStateAccess,
+    private val getState: (String) -> Boolean = StackUpUp::getState,
+    private val setState: (String, Boolean) -> Unit = StackUpUp::setState,
 ) : CommandBase() {
     private val subcommands = arrayOf(SUBCOMMAND_RELOAD, SUBCOMMAND_EDIT, SUBCOMMAND_STATE)
 
-    constructor() : this(StackUpUpStateAccess)
+    constructor() : this(StackUpUp::getState, StackUpUp::setState)
 
     override fun getName(): String = StackUpUpIds.MOD_ID
 
@@ -61,7 +62,7 @@ class CommandStackUpUp internal constructor(
         when (args.getOrNull(1)) {
             STATE_ACTION_GET -> {
                 val name = args.getOrNull(2) ?: throw WrongUsageException(getUsage(sender))
-                val value = stateAccess.getState(name)
+                val value = getState(name)
                 sender.reply(
                     if (value) StackUpUpIds.COMMAND_STATE_GET_KEY else StackUpUpIds.COMMAND_STATE_MISSING_KEY,
                     name,
@@ -71,7 +72,7 @@ class CommandStackUpUp internal constructor(
             STATE_ACTION_SET -> {
                 val name = args.getOrNull(2) ?: throw WrongUsageException(getUsage(sender))
                 val value = parseStateBoolean(args.getOrNull(3) ?: throw WrongUsageException(getUsage(sender)))
-                stateAccess.setState(name, value)
+                setState(name, value)
                 sender.reply(StackUpUpIds.COMMAND_STATE_SET_KEY, name, value)
             }
             else -> throw WrongUsageException(getUsage(sender))
@@ -139,19 +140,5 @@ class CommandStackUpUp internal constructor(
         private const val STATE_ACTION_SET = "set"
         private const val STATE_VALUE_TRUE = "true"
         private const val STATE_VALUE_FALSE = "false"
-    }
-
-    internal interface StateAccess {
-        fun getState(name: String): Boolean
-
-        fun setState(name: String, value: Boolean)
-    }
-
-    private object StackUpUpStateAccess : StateAccess {
-        override fun getState(name: String): Boolean = StackUpUp.getState(name)
-
-        override fun setState(name: String, value: Boolean) {
-            StackUpUp.setState(name, value)
-        }
     }
 }

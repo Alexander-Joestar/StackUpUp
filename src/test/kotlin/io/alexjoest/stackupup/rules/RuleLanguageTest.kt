@@ -31,4 +31,17 @@ class RuleLanguageTest {
         assertEquals(ComparisonOperator.GREATER_EQUALS, ComparisonOperator.fromSymbol(">="))
         assertEquals(ComparisonOperator.LESS_EQUALS, ComparisonOperator.fromSymbol("<="))
     }
+
+    @Test
+    fun `fieldMetadata_shouldDeclareContextRequirements`() {
+        assertEquals(FieldType.ITEM, RuleField.ITEM.fieldType)
+        assertEquals(emptySet<RuleContextRequirement>(), RuleField.ITEM.requirements)
+        assertEquals(false, RuleField.ITEM.contributesToCacheKey)
+
+        assertEquals(setOf(RuleContextRequirement.ORE_NAMES), RuleField.ORE.requirements)
+        assertEquals(false, RuleField.ORE.contributesToCacheKey)
+
+        assertEquals(setOf(RuleContextRequirement.MATERIAL), RuleField.MATERIAL.requirements)
+        assertEquals(true, RuleField.MATERIAL.contributesToCacheKey)
+    }
 }

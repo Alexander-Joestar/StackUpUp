@@ -36,4 +36,19 @@ class RuleSnapshotTest {
         assertEquals(setOf(RuleField.ITEM), itemRule.referencedFields)
         assertEquals(false, itemSnapshot.needsMaterial)
     }
+
+    @Test
+    fun `requirements_shouldMergeMixedFieldNeeds`() {
+        val snapshot = RuleSnapshot(
+            version = 1L,
+            rules = listOf(
+                RuleCompiler.compileLine("mod = gregtech && material = steel && ore = ingotSteel -> 2048", 1),
+            ),
+        )
+
+        assertEquals(setOf(RuleField.MOD, RuleField.MATERIAL, RuleField.ORE), snapshot.requirements.referencedFields)
+        assertEquals(true, snapshot.needsMaterial)
+        assertEquals(true, snapshot.needsOreNames)
+        assertEquals(setOf(RuleField.MATERIAL), snapshot.requirements.cacheKeyFields)
+    }
 }

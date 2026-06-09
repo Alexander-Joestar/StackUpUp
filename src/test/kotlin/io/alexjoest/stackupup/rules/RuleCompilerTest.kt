@@ -189,6 +189,7 @@ class RuleCompilerTest {
 
         assertEquals(true, compiled.matches(RuleMatchContext("gregtech:meta_item_1", "gregtech", 1000, 64, "item", emptySet(), material = "steel")))
         assertEquals(false, compiled.matches(RuleMatchContext("gregtech:meta_item_1", "gregtech", 1001, 64, "item", emptySet(), material = "copper")))
+        assertEquals(false, compiled.matches(RuleMatchContext("gregtech:meta_item_1", "gregtech", 1002, 64, "item", emptySet())))
     }
 
     @Test
@@ -201,8 +202,25 @@ class RuleCompilerTest {
     }
 
     @Test
+    fun `materialMissing_shouldNotMatchNegativeComparison`() {
+        val compiled = RuleCompiler.compileLine("material != steel -> 2048", 23)
+
+        assertEquals(false, compiled.matches(RuleMatchContext("gregtech:meta_item_1", "gregtech", 1000, 64, "item", emptySet())))
+        assertEquals(false, compiled.matches(RuleMatchContext("gregtech:meta_item_1", "gregtech", 1001, 64, "item", emptySet(), material = "steel")))
+        assertEquals(true, compiled.matches(RuleMatchContext("gregtech:meta_item_1", "gregtech", 1002, 64, "item", emptySet(), material = "copper")))
+    }
+
+    @Test
+    fun `itemList_shouldReuseItemMatcherMetadataSugar`() {
+        val compiled = RuleCompiler.compileLine("item in [gregtech:gt.metaitem.01@11305] -> 1024", 24)
+
+        assertEquals(true, compiled.matches(RuleMatchContext("gregtech:gt.metaitem.01", "gregtech", 11305, 64, "item", emptySet())))
+        assertEquals(false, compiled.matches(RuleMatchContext("gregtech:gt.metaitem.01", "gregtech", 42, 64, "item", emptySet())))
+    }
+
+    @Test
     fun `shouldMatchMetaRange`() {
-        val compiled = RuleCompiler.compileLine("100 < meta < 300 -> 512", 23)
+        val compiled = RuleCompiler.compileLine("100 < meta < 300 -> 512", 25)
 
         assertEquals(true, compiled.matches(RuleMatchContext("minecraft:wool", "minecraft", 150, 64, "block", emptySet())))
         assertEquals(false, compiled.matches(RuleMatchContext("minecraft:wool", "minecraft", 50, 64, "block", emptySet())))

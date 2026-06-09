@@ -196,7 +196,7 @@ StackUpUp 按以下顺序加载规则文件，后面的规则会覆盖或叠加�
 
 - 匹配字段：`item`、`mod`、`ore`、`material`、`meta`（别名 `metadata`）、`size`、`type`、`tab`（仅限创造模式标签页）
 - 特殊匹配：`item = *` 匹配所有可堆叠物品（排除 baseSize=1 的工具、盔甲等）
-- `material` 是可选字段，仅在 GregTech 已加载且能解析出 GT material 时有值；GT 未加载或非材料物品为空
+- `material` 是可选字段，仅在 GregTech 已加载且能解析出 GT material 时有值；GT 未加载、解析失败或非 GT 材料物品时，所有 `material` 条件都不命中，包括 `!=` 和列表匹配
 - `material` 请使用 material registry name：GT 原生材料可写 `steel` 这类名称；需要跨 mod 精确区分时使用 `modid:name` 格式，不在示例中列未经验证的具体材料
 - `material` 不承诺覆盖所有 GT 物品
 - 比较运算：`= != > >= < <=`

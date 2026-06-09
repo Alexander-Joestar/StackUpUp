@@ -92,7 +92,7 @@ material = steel && mod = gregtech -> 1024
 ore = ingotSteel -> 512 -> *2
 ```
 
-`material` is an optional match field. It only has a value when GregTech is loaded and the item can be resolved to a GT material; when GT is not loaded, or for non-material items, it is empty. Use the material registry name: native GT materials can use names such as `steel`; use the `modid:name` format when you need to distinguish materials across mods, without treating unverified concrete material IDs as examples. This does not promise support for every GT item.
+`material` is an optional match field. It only has a value when GregTech is loaded and the item can be resolved to a GT material; when GT is not loaded, resolution fails, or the item is not a GT material item, every `material` condition is treated as not matched, including `!=` and list matches. Use the material registry name: native GT materials can use names such as `steel`; use the `modid:name` format when you need to distinguish materials across mods, without treating unverified concrete material IDs as examples. This does not promise support for every GT item.
 
 The old `category` field is not needed on 1.12.2 and should not be used:
 

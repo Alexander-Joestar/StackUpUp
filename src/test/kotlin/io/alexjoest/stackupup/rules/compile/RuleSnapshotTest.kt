@@ -28,6 +28,8 @@ class RuleSnapshotTest {
         assertEquals(listOf(RuleField.MATERIAL), materialSnapshot.requirements.cacheKeyFields)
         assertEquals(true, materialSnapshot.needsMaterial)
         assertEquals(false, materialSnapshot.needsOreNames)
+        assertEquals(true, materialSnapshot.requirements.runtimeRequirements().requires(RuleContextRequirement.MATERIAL))
+        assertEquals(false, materialSnapshot.requirements.runtimeRequirements().requires(RuleContextRequirement.ORE_NAMES))
         assertEquals(true, materialSnapshot.requires(RuleContextRequirement.MATERIAL))
         assertEquals(false, materialSnapshot.requires(RuleContextRequirement.ORE_NAMES))
 

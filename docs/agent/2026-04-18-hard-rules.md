@@ -59,6 +59,4 @@
 14. 规则运行态协调统一收口到 `RuleRuntimeCoordinator`：`reload / lastReport / rulesFile / worldRulesFile / persistWorldRules` 不要再散回 `StackUpUp`、命令层或代理层。
 15. `StackUpUp` 继续只做 Forge 生命周期编排；新逻辑优先落到独立协调器或服务，不要把入口类重新养胖。
 16. `DslParser` 只负责语法结构；token 游标放在 `DslTokenCursor`，字面量 matcher 编译放在 `RuleLiteralMatcherCompiler`，不要把 parser/compiler/runtime 的细节重新揉回一个文件。
-17. `RuleField` 解耦保留 enum 自描述，不引入动态注册表；运行时入口以 `StackContext` 为主，参数式 `resolve` 只作兼容薄壳；昂贵上下文需求通过 `RuleContextRequirement` / `requires` 查询扩展，不再复制 `needsXxx` 布尔。
-
-> **已过时**
+17. `RuleField` 解耦保留 enum 自描述，不引入动态注册表；运行时入口以 `StackContext` 为主，参数式 `resolve` 只作兼容薄壳；昂贵上下文需求通过 `RuleContextRequirement` / `requirements` 查询扩展，不再复制 `needsXxx` 布尔。

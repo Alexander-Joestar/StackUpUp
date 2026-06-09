@@ -7,10 +7,13 @@ data class RuleContextRequirements(
     val referencedFields: Set<RuleField>,
     val cacheKeyFields: List<RuleField>,
 ) {
-    private val requirements: Set<RuleContextRequirement> = referencedFields
-        .flatMapTo(LinkedHashSet(), RuleField::requirements)
+    private val requirements: Set<RuleContextRequirement> =
+        referencedFields.flatMapTo(LinkedHashSet(), RuleField::requirements)
 
     fun requires(requirement: RuleContextRequirement): Boolean = requirement in requirements
+
+    fun runtimeRequirements(): RuntimeContextRequirements =
+        RuntimeContextRequirements.of(*requirements.toTypedArray())
 
     val needsOreNames: Boolean = requires(RuleContextRequirement.ORE_NAMES)
     val needsMaterial: Boolean = requires(RuleContextRequirement.MATERIAL)

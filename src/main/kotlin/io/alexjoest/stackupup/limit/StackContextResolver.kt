@@ -1,5 +1,7 @@
 package io.alexjoest.stackupup.limit
 
+import io.alexjoest.stackupup.rules.RuleContextRequirement
+import io.alexjoest.stackupup.rules.compile.RuntimeContextRequirements
 import net.minecraft.item.ItemBlock
 import net.minecraft.item.ItemStack
 
@@ -14,8 +16,7 @@ object StackContextResolver {
     fun fromStack(
         stack: ItemStack,
         baseLimit: Int,
-        includeOreNames: Boolean = true,
-        includeMaterial: Boolean = false,
+        requirements: RuntimeContextRequirements = RuntimeContextRequirements.DEFAULT_STACK_CONTEXT,
     ): StackContext? {
         if (stack.isEmpty) {
             return null
@@ -31,9 +32,17 @@ object StackContextResolver {
             metadata = stack.metadata,
             type = type,
             baseLimit = baseLimit,
-            oreNames = if (includeOreNames) RuleRuntime.oreDictIndex().getOreNames(stack) else emptySet(),
+            oreNames = if (requirements.requires(RuleContextRequirement.ORE_NAMES)) {
+                RuleRuntime.oreDictIndex().getOreNames(stack)
+            } else {
+                emptySet()
+            },
             tab = tabLabel,
-            material = if (includeMaterial) GregTechMaterialResolver.resolveMaterial(stack) else "",
+            material = if (requirements.requires(RuleContextRequirement.MATERIAL)) {
+                GregTechMaterialResolver.resolveMaterial(stack)
+            } else {
+                ""
+            },
         )
     }
 }

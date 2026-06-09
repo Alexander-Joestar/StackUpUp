@@ -1,5 +1,7 @@
 package io.alexjoest.stackupup.limit
 
+import io.alexjoest.stackupup.rules.RuleContextRequirement
+import io.alexjoest.stackupup.rules.compile.RuntimeContextRequirements
 import net.minecraft.init.Bootstrap
 import net.minecraft.item.Item
 import net.minecraft.item.ItemStack
@@ -39,22 +41,81 @@ class StackContextResolverTest {
         Bootstrap.register()
         val item = Item().setRegistryName(ResourceLocation("gregtech", "meta_ingot"))
         val stack = ItemStack(item, 1, 324)
+        val previousIndex = RuleRuntime.oreDictIndex()
 
-        val context = StackContextResolver.fromStack(stack = stack, baseLimit = 64, includeOreNames = false)
+        try {
+            RuleRuntime.replaceOreDictIndex(OreDictIndex.fromStackLoader { error("ore dict must not be queried") })
 
-        assertNotNull(context)
-        assertTrue(context?.oreNames?.isEmpty() == true)
+            val context = StackContextResolver.fromStack(
+                stack = stack,
+                baseLimit = 64,
+                requirements = RuntimeContextRequirements.EMPTY,
+            )
+
+            assertNotNull(context)
+            assertTrue(context?.oreNames?.isEmpty() == true)
+        } finally {
+            RuleRuntime.replaceOreDictIndex(previousIndex)
+        }
     }
 
     @Test
     fun `shouldReturnEmptyMaterialWhenMaterialLookupDisabled`() {
         Bootstrap.register()
+        var calls = 0
+        val restoreResolver = GregTechMaterialResolver.installResolverForTesting {
+            calls++
+            "steel"
+        }
         val item = Item().setRegistryName(ResourceLocation("gregtech", "meta_ingot"))
         val stack = ItemStack(item, 1, 324)
 
-        val context = StackContextResolver.fromStack(stack = stack, baseLimit = 64, includeMaterial = false)
+        try {
+            val context = StackContextResolver.fromStack(
+                stack = stack,
+                baseLimit = 64,
+                requirements = RuntimeContextRequirements.EMPTY,
+            )
 
-        assertNotNull(context)
-        assertEquals("", context?.material)
+            assertNotNull(context)
+            assertEquals("", context?.material)
+            assertEquals(0, calls)
+        } finally {
+            restoreResolver()
+        }
+    }
+
+    @Test
+    fun `shouldResolveOnlyRequiredExpensiveFields`() {
+        Bootstrap.register()
+        var materialCalls = 0
+        val restoreResolver = GregTechMaterialResolver.installResolverForTesting {
+            materialCalls++
+            "steel"
+        }
+        val item = Item().setRegistryName(ResourceLocation("gregtech", "meta_ingot"))
+        val stack = ItemStack(item, 1, 324)
+        val index = OreDictIndex.fromStackLoader { setOf("ingotSteel") }
+        val previousIndex = RuleRuntime.oreDictIndex()
+        try {
+            RuleRuntime.replaceOreDictIndex(index)
+
+            val context = StackContextResolver.fromStack(
+                stack = stack,
+                baseLimit = 64,
+                requirements = RuntimeContextRequirements.of(
+                    RuleContextRequirement.ORE_NAMES,
+                    RuleContextRequirement.MATERIAL,
+                ),
+            )
+
+            assertNotNull(context)
+            assertEquals(setOf("ingotSteel"), context?.oreNames)
+            assertEquals("steel", context?.material)
+            assertEquals(1, materialCalls)
+        } finally {
+            RuleRuntime.replaceOreDictIndex(previousIndex)
+            restoreResolver()
+        }
     }
 }

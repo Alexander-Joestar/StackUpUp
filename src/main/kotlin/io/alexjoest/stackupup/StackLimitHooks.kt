@@ -51,8 +51,7 @@ object StackLimitHooks {
             val context = StackContextResolver.fromStack(
                 stack = stack,
                 baseLimit = originalBaseline,
-                includeOreNames = limitService.needsOreNames(),
-                includeMaterial = limitService.needsMaterial(),
+                requirements = limitService.contextRequirements(),
             ) ?: return originalBaseline
             return limitService.resolve(context)
         } finally {

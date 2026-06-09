@@ -2,6 +2,7 @@ package io.alexjoest.stackupup.limit
 
 import io.alexjoest.stackupup.StackUpUpConfig
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
+import io.alexjoest.stackupup.rules.compile.RuntimeContextRequirements
 import io.alexjoest.stackupup.rules.field.RuleFieldCacheContext
 import io.alexjoest.stackupup.rules.model.RuleMatchContext
 import java.util.concurrent.ConcurrentHashMap
@@ -77,6 +78,8 @@ class StackLimitService(private val snapshot: RuleSnapshot) {
     fun needsOreNames(): Boolean = snapshot.needsOreNames
 
     fun needsMaterial(): Boolean = snapshot.needsMaterial
+
+    fun contextRequirements(): RuntimeContextRequirements = snapshot.requirements.runtimeRequirements()
 
     fun debugResolvedCacheSize(): Int = resolvedCache.size
 

@@ -84,4 +84,6 @@
 6. `RuleConditionCompiler` 只做条件拼装；item/string 通配与 metadata 语法糖统一下沉到 `RuleLiteralMatcherCompiler`。
 7. `org.cyclops.cyclopscore.inventory.SimpleInventory` 已进入 `FixedCompatTargets`，其库存上限完全由 late mixin 负责，不再允许 dynamic ASM 重复补丁。
 8. `appeng.tile.inventory.AppEngInternalInventory` 与 `appeng.tile.inventory.AppEngInternalAEInventory` 已补齐构造期常量和 `getInventoryStackLimit` 返回值两条路径，现已进入 `FixedCompatTargets`。
-> **已过时**
+9. `RuleField` enum 保持字段自身描述能力，不引入动态注册表或散落字符串分发。
+10. 规则运行时字段解析以 `StackContext` 为主入口；旧参数式入口只作为兼容薄壳保留，不再承载新逻辑。
+11. 昂贵上下文按 `RuleContextRequirement` / `requirements` 查询声明和聚合，不再新增 `needsXxx` 布尔开关。

@@ -7,12 +7,21 @@ import io.alexjoest.stackupup.rules.compile.CompiledRule
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import java.io.File
 
+/**
+ * 从 Markdown 文档中的规则代码块加载 DSL 规则。
+ */
 internal object MarkdownRuleSource {
+    /**
+     * 读取单个 Markdown 规则文件。
+     */
     fun fromFile(file: File, gateContext: RuleGateContext = RuleGateContext.EMPTY): RuleLoadResult {
         RuleFileTemplate.ensureExists(file)
         return fromLines(file.readLines(Charsets.UTF_8), file.name, gateContext)
     }
 
+    /**
+     * 读取多个 Markdown 规则文件，并为每个文件独立合并本文件 state。
+     */
     fun fromFiles(files: List<File>, gateContext: RuleGateContext = RuleGateContext.EMPTY): RuleLoadResult {
         return fromParsedFiles(files.mapNotNull { file ->
             if (!file.exists()) {
@@ -26,6 +35,9 @@ internal object MarkdownRuleSource {
         }, gateContext)
     }
 
+    /**
+     * 使用已解析的 Markdown state 文档加载规则，避免同一文件重复解析。
+     */
     fun fromParsedFiles(
         files: List<ParsedMarkdownFile>,
         gateContext: RuleGateContext = RuleGateContext.EMPTY,
@@ -44,6 +56,9 @@ internal object MarkdownRuleSource {
         )
     }
 
+    /**
+     * 从内存中的 Markdown 行加载规则。
+     */
     fun fromLines(lines: List<String>, sourceName: String = "markdown", gateContext: RuleGateContext = RuleGateContext.EMPTY): RuleLoadResult {
         val effectiveContext = gateContext.copy(states = gateContext.states + MarkdownStateParser.parse(lines).states)
         return collectInputs(lines, sourceName, effectiveContext)
@@ -133,6 +148,9 @@ internal object MarkdownRuleSource {
     private data class MarkdownGateFrame(val parsed: MarkdownGateParseResult?)
 }
 
+/**
+ * 已解析的 Markdown 规则文件，用于在 reload 流程中复用 state 解析结果。
+ */
 internal data class ParsedMarkdownFile(
     val sourceName: String,
     val document: MarkdownStateDocument,

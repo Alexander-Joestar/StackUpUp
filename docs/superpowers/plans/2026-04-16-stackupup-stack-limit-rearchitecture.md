@@ -2,6 +2,7 @@
 
 > **已过时，仅供历史参考。** 禁止把本文作为当前实现计划执行；当前入口见 `docs/agent/START_HERE.md`。本文保留早期堆叠上限重构思路，但不代表当前代码或文档路线。
 > Unknown `IItemHandler` 动态扩大已禁用；不要恢复 remainder-system。
+> 本文中的 `RuleMatchContext`、`CompiledRule.matches(RuleMatchContext)`、字段缓存上下文复制层均为旧设计；当前实现必须使用 `StackContext`，`RuleField` matcher/cache 直接读取 `StackContext`，昂贵字段通过 `RuleContextRequirement` 声明。
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

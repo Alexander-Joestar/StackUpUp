@@ -11,6 +11,9 @@ import io.alexjoest.stackupup.rules.io.RuleReloadReport
 import io.alexjoest.stackupup.rules.io.RuleSourceLocator
 import java.io.File
 
+/**
+ * 规则重载与运行时发布的统一协调入口。
+ */
 object RuleRuntimeCoordinator {
     @Volatile
     private var lastReportState: RuleReloadReport = RuleReloadReport(
@@ -20,8 +23,14 @@ object RuleRuntimeCoordinator {
         warnings = emptyList(),
     )
 
+    /**
+     * 返回最近一次规则重载报告。
+     */
     fun lastReport(): RuleReloadReport = lastReportState
 
+    /**
+     * 重载规则文件、刷新运行时快照，并恢复已备份的堆叠上限。
+     */
     fun reload(enableDslRules: Boolean = StackUpUpConfig.general.enableDslRules): RuleReloadReport {
         val primaryRulesFile = RuleFileLocator.resolve()
         // Refresh the example syntax reference file on every reload,
@@ -53,5 +62,8 @@ object RuleRuntimeCoordinator {
         }
     }
 
+    /**
+     * 返回主规则文件位置，供命令层打开编辑。
+     */
     fun getRulesFile(): File = RuleFileLocator.resolve()
 }

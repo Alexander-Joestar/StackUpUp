@@ -12,6 +12,11 @@ import java.awt.Desktop
 import java.io.IOException
 import javax.annotation.Nullable
 
+/**
+ * `/stackupup` 管理命令。
+ *
+ * 状态读写以函数注入，便于测试命令层而不绑定真实世界文件。
+ */
 class CommandStackUpUp internal constructor(
     private val getState: (String) -> Boolean = StackUpUp::getState,
     private val setState: (String, Boolean) -> Unit = StackUpUp::setState,
@@ -31,6 +36,9 @@ class CommandStackUpUp internal constructor(
         executeCommand(sender, args)
     }
 
+    /**
+     * 执行命令参数分发；测试直接调用这个入口。
+     */
     internal fun executeCommand(sender: ICommandSender, args: Array<out String>) {
         when (args.getOrNull(0)) {
             SUBCOMMAND_RELOAD -> emitReloadFeedback(sender)
@@ -47,6 +55,9 @@ class CommandStackUpUp internal constructor(
         @Nullable targetPos: BlockPos?,
     ): MutableList<String> = tabCompletions(args)
 
+    /**
+     * 生成命令补全项；测试直接覆盖这一层。
+     */
     internal fun tabCompletions(args: Array<out String>): MutableList<String> = when (args.size) {
         1 -> getListOfStringsMatchingLastWord(args, *subcommands)
         2 -> if (args[0] == SUBCOMMAND_STATE) getListOfStringsMatchingLastWord(args, STATE_ACTION_GET, STATE_ACTION_SET) else mutableListOf()

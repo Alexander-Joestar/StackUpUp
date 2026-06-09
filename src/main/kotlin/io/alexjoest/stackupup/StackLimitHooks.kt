@@ -1,9 +1,8 @@
 package io.alexjoest.stackupup
 
-import io.alexjoest.stackupup.limit.GregTechMaterialResolver
 import io.alexjoest.stackupup.limit.RuleRuntime
+import io.alexjoest.stackupup.limit.StackContextResolver
 import io.alexjoest.stackupup.limit.StackIdentity
-import net.minecraft.item.ItemBlock
 import net.minecraft.item.ItemStack
 import java.util.ArrayDeque
 import java.util.IdentityHashMap
@@ -39,26 +38,13 @@ object StackLimitHooks {
             val limitService = RuleRuntime.limitService()
             if (!limitService.hasRules()) return resolveOriginalBaseline(stack, baseLimit)
             val originalBaseline = resolveOriginalBaseline(stack, baseLimit)
-            val registryName = stack.item.registryName ?: return originalBaseline
-            val oreNames = if (limitService.needsOreNames()) {
-                RuleRuntime.oreDictIndex().getOreNames(stack)
-            } else {
-                emptySet()
-            }
-            val material = if (limitService.needsMaterial()) {
-                GregTechMaterialResolver.resolveMaterial(stack)
-            } else {
-                ""
-            }
-            return limitService.resolve(
-                itemId = registryName.toString(),
-                modId = registryName.namespace,
-                metadata = stack.metadata,
-                type = if (stack.item is ItemBlock) "block" else "item",
+            val context = StackContextResolver.fromStack(
+                stack = stack,
                 baseLimit = originalBaseline,
-                oreNames = oreNames,
-                material = material,
-            )
+                includeOreNames = limitService.needsOreNames(),
+                includeMaterial = limitService.needsMaterial(),
+            ) ?: return originalBaseline
+            return limitService.resolve(context)
         } finally {
             enteringItemMixin.remove()
         }

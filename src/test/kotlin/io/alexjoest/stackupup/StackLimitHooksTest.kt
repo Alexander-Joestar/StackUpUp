@@ -5,6 +5,7 @@ import io.alexjoest.stackupup.limit.GregTechMaterialResolver
 import io.alexjoest.stackupup.limit.RuleRuntime
 import io.alexjoest.stackupup.rules.compile.RuleCompiler
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
+import net.minecraft.creativetab.CreativeTabs
 import net.minecraft.init.Bootstrap
 import net.minecraft.inventory.InventoryBasic
 import net.minecraft.inventory.Slot
@@ -85,6 +86,31 @@ class StackLimitHooksTest {
         )
 
         assertEquals(1024, result)
+    }
+
+    @Test
+    fun `applyDynamicStackLimit_shouldMatchCreativeTabFromItemStack`() {
+        Bootstrap.register()
+        val item = Item()
+            .setCreativeTab(CreativeTabs.MATERIALS)
+            .setRegistryName(ResourceLocation("stackupup_test", "tabbed_item"))
+        val tabLabel = CreativeTabs.MATERIALS.tabLabel
+        RuleRuntime.replaceSnapshot(
+            RuleSnapshot(
+                version = 18L,
+                rules = listOf(
+                    RuleCompiler.compileLine("tab = $tabLabel -> 128", 1),
+                ),
+            ),
+        )
+        RuleRuntime.replaceOreDictIndex(OreDictIndex.fromStackLoader { emptySet() })
+
+        val result = StackLimitHooks.applyDynamicStackLimit(
+            stack = ItemStack(item, 1, 0),
+            baseLimit = 64,
+        )
+
+        assertEquals(128, result)
     }
 
     @Test

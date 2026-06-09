@@ -9,22 +9,8 @@ class RuleCompilerTest {
     @Test
     fun `shouldCompileItemInListToMatchAny`() {
         val compiled = RuleCompiler.compileLine("item in [minecraft:egg, minecraft:snowball] -> 128", 7)
-        val egg = RuleMatchContext(
-            itemId = "minecraft:egg",
-            modId = "minecraft",
-            meta = 0,
-            baseSize = 16,
-            type = "item",
-            oreNames = emptySet(),
-        )
-        val snowball = RuleMatchContext(
-            itemId = "minecraft:snowball",
-            modId = "minecraft",
-            meta = 0,
-            baseSize = 16,
-            type = "item",
-            oreNames = emptySet(),
-        )
+        val egg = ctx("minecraft:egg", baseSize = 16)
+        val snowball = ctx("minecraft:snowball", baseSize = 16)
         assertEquals(true, compiled.matches(egg))
         assertEquals(true, compiled.matches(snowball))
     }
@@ -32,9 +18,9 @@ class RuleCompilerTest {
     @Test
     fun `shouldCompileOrCondition`() {
         val compiled = RuleCompiler.compileLine("mod = thermal || mod = ic2 -> 512", 8)
-        val thermal = RuleMatchContext("thermal:foo", "thermal", 0, 16, "item", emptySet())
-        val ic2 = RuleMatchContext("ic2:bar", "ic2", 0, 16, "item", emptySet())
-        val vanilla = RuleMatchContext("minecraft:egg", "minecraft", 0, 16, "item", emptySet())
+        val thermal = ctx("thermal:foo", baseSize = 16)
+        val ic2 = ctx("ic2:bar", baseSize = 16)
+        val vanilla = ctx("minecraft:egg", baseSize = 16)
         assertEquals(true, compiled.matches(thermal))
         assertEquals(true, compiled.matches(ic2))
         assertEquals(false, compiled.matches(vanilla))
@@ -43,9 +29,9 @@ class RuleCompilerTest {
     @Test
     fun `shouldSupportModListWildcard`() {
         val compiled = RuleCompiler.compileLine("mod in [therm*, ic2] -> 512", 8)
-        val thermal = RuleMatchContext("thermal:foo", "thermalexpansion", 0, 16, "item", emptySet())
-        val ic2 = RuleMatchContext("ic2:bar", "ic2", 0, 16, "item", emptySet())
-        val vanilla = RuleMatchContext("minecraft:egg", "minecraft", 0, 16, "item", emptySet())
+        val thermal = ctx("thermal:foo", modId = "thermalexpansion", baseSize = 16)
+        val ic2 = ctx("ic2:bar", baseSize = 16)
+        val vanilla = ctx("minecraft:egg", baseSize = 16)
 
         assertEquals(true, compiled.matches(thermal))
         assertEquals(true, compiled.matches(ic2))
@@ -70,22 +56,22 @@ class RuleCompilerTest {
     @Test
     fun `shouldSupportSizeRange`() {
         val compiled = RuleCompiler.compileLine("size > 2 && size < 64 -> 1024", 11)
-        assertEquals(true, compiled.matches(RuleMatchContext("minecraft:egg", "minecraft", 0, 16, "item", emptySet())))
-        assertEquals(false, compiled.matches(RuleMatchContext("minecraft:stick", "minecraft", 0, 64, "item", emptySet())))
+        assertEquals(true, compiled.matches(ctx("minecraft:egg", baseSize = 16)))
+        assertEquals(false, compiled.matches(ctx("minecraft:stick")))
     }
 
     @Test
     fun `shouldSupportCompactSizeComparison`() {
         val compiled = RuleCompiler.compileLine("size >2 -> 1000000", 11)
-        assertEquals(true, compiled.matches(RuleMatchContext("minecraft:egg", "minecraft", 0, 64, "item", emptySet())))
-        assertEquals(false, compiled.matches(RuleMatchContext("minecraft:sword", "minecraft", 0, 1, "item", emptySet())))
+        assertEquals(true, compiled.matches(ctx("minecraft:egg")))
+        assertEquals(false, compiled.matches(ctx("minecraft:sword", baseSize = 1)))
     }
 
     @Test
     fun `shouldSupportItemWithMetadataSugar`() {
         val compiled = RuleCompiler.compileLine("item = gregtech:gt.metaitem.01:11305 -> 1024", 12)
-        val matched = RuleMatchContext("gregtech:gt.metaitem.01", "gregtech", 11305, 64, "item", emptySet())
-        val otherMeta = RuleMatchContext("gregtech:gt.metaitem.01", "gregtech", 42, 64, "item", emptySet())
+        val matched = ctx("gregtech:gt.metaitem.01", meta = 11305)
+        val otherMeta = ctx("gregtech:gt.metaitem.01", meta = 42)
 
         assertEquals(true, compiled.matches(matched))
         assertEquals(false, compiled.matches(otherMeta))
@@ -94,8 +80,8 @@ class RuleCompilerTest {
     @Test
     fun `shouldSupportOreWildcardMatch`() {
         val compiled = RuleCompiler.compileLine("ore != ingot* -> 64", 12)
-        val ingot = RuleMatchContext("minecraft:iron_ingot", "minecraft", 0, 64, "item", setOf("ingotIron"))
-        val dust = RuleMatchContext("minecraft:gunpowder", "minecraft", 0, 64, "item", setOf("dustSulfur"))
+        val ingot = ctx("minecraft:iron_ingot", oreNames = setOf("ingotIron"))
+        val dust = ctx("minecraft:gunpowder", oreNames = setOf("dustSulfur"))
 
         assertEquals(false, compiled.matches(ingot))
         assertEquals(true, compiled.matches(dust))
@@ -104,8 +90,8 @@ class RuleCompilerTest {
     @Test
     fun `shouldSupportItemAtMetadataSugar`() {
         val compiled = RuleCompiler.compileLine("item = gregtech:gt.metaitem.01@11305 -> 1024", 13)
-        val matched = RuleMatchContext("gregtech:gt.metaitem.01", "gregtech", 11305, 64, "item", emptySet())
-        val otherMeta = RuleMatchContext("gregtech:gt.metaitem.01", "gregtech", 42, 64, "item", emptySet())
+        val matched = ctx("gregtech:gt.metaitem.01", meta = 11305)
+        val otherMeta = ctx("gregtech:gt.metaitem.01", meta = 42)
 
         assertEquals(true, compiled.matches(matched))
         assertEquals(false, compiled.matches(otherMeta))
@@ -114,17 +100,17 @@ class RuleCompilerTest {
     @Test
     fun `shouldSupportMetaAsAlias`() {
         val compiled = RuleCompiler.compileLine("metadata in [1, 2, 3] -> 512", 14)
-        assertEquals(true, compiled.matches(RuleMatchContext("minecraft:egg", "minecraft", 2, 16, "item", emptySet())))
-        assertEquals(false, compiled.matches(RuleMatchContext("minecraft:egg", "minecraft", 4, 16, "item", emptySet())))
+        assertEquals(true, compiled.matches(ctx("minecraft:egg", meta = 2, baseSize = 16)))
+        assertEquals(false, compiled.matches(ctx("minecraft:egg", meta = 4, baseSize = 16)))
     }
 
     @Test
     fun `itemWithoutMeta_shouldMatchWholeDomain`() {
         val compiled = RuleCompiler.compileLine("item = gregtech:gt.metaitem.01 -> 1024", 15)
 
-        assertEquals(true, compiled.matches(RuleMatchContext("gregtech:gt.metaitem.01", "gregtech", 1, 64, "item", emptySet())))
-        assertEquals(true, compiled.matches(RuleMatchContext("gregtech:gt.metaitem.01", "gregtech", 11305, 64, "item", emptySet())))
-        assertEquals(false, compiled.matches(RuleMatchContext("gregtech:meta_ingot", "gregtech", 324, 64, "item", emptySet())))
+        assertEquals(true, compiled.matches(ctx("gregtech:gt.metaitem.01", meta = 1)))
+        assertEquals(true, compiled.matches(ctx("gregtech:gt.metaitem.01", meta = 11305)))
+        assertEquals(false, compiled.matches(ctx("gregtech:meta_ingot", meta = 324)))
     }
 
     @Test
@@ -134,8 +120,8 @@ class RuleCompilerTest {
             16,
         )
 
-        assertEquals(true, compiled.matches(RuleMatchContext("gregtech:gt.metaitem.01", "gregtech", 2, 64, "item", emptySet())))
-        assertEquals(false, compiled.matches(RuleMatchContext("gregtech:gt.metaitem.01", "gregtech", 3, 64, "item", emptySet())))
+        assertEquals(true, compiled.matches(ctx("gregtech:gt.metaitem.01", meta = 2)))
+        assertEquals(false, compiled.matches(ctx("gregtech:gt.metaitem.01", meta = 3)))
     }
 
     @Test
@@ -145,9 +131,9 @@ class RuleCompilerTest {
             17,
         )
 
-        assertEquals(true, compiled.matches(RuleMatchContext("gregtech:gt.metaitem.01", "gregtech", 2, 64, "item", emptySet())))
-        assertEquals(false, compiled.matches(RuleMatchContext("gregtech:gt.metaitem.01", "gregtech", 4, 64, "item", emptySet())))
-        assertEquals(false, compiled.matches(RuleMatchContext("gregtech:meta_ingot", "gregtech", 2, 64, "item", emptySet())))
+        assertEquals(true, compiled.matches(ctx("gregtech:gt.metaitem.01", meta = 2)))
+        assertEquals(false, compiled.matches(ctx("gregtech:gt.metaitem.01", meta = 4)))
+        assertEquals(false, compiled.matches(ctx("gregtech:meta_ingot", meta = 2)))
     }
 
     @Test
@@ -157,9 +143,9 @@ class RuleCompilerTest {
             18,
         )
 
-        assertEquals(true, compiled.matches(RuleMatchContext("thermal:foo", "thermal", 0, 64, "item", emptySet())))
-        assertEquals(true, compiled.matches(RuleMatchContext("gregtech:gt.metaitem.01", "gregtech", 11305, 64, "item", emptySet())))
-        assertEquals(false, compiled.matches(RuleMatchContext("gregtech:gt.metaitem.01", "gregtech", 1, 64, "item", emptySet())))
+        assertEquals(true, compiled.matches(ctx("thermal:foo")))
+        assertEquals(true, compiled.matches(ctx("gregtech:gt.metaitem.01", meta = 11305)))
+        assertEquals(false, compiled.matches(ctx("gregtech:gt.metaitem.01", meta = 1)))
     }
 
     @Test
@@ -167,63 +153,83 @@ class RuleCompilerTest {
         val compiled = RuleCompiler.compileLine("item = * -> 128", 19)
 
         // baseSize > 1 可堆叠
-        assertEquals(true, compiled.matches(RuleMatchContext("minecraft:egg", "minecraft", 0, 16, "item", emptySet())))
-        assertEquals(true, compiled.matches(RuleMatchContext("minecraft:stick", "minecraft", 0, 64, "item", emptySet())))
+        assertEquals(true, compiled.matches(ctx("minecraft:egg", baseSize = 16)))
+        assertEquals(true, compiled.matches(ctx("minecraft:stick")))
 
         // baseSize = 1 不可堆叠（工具、装备、桶等）
-        assertEquals(false, compiled.matches(RuleMatchContext("minecraft:diamond_sword", "minecraft", 0, 1, "item", emptySet())))
-        assertEquals(false, compiled.matches(RuleMatchContext("minecraft:water_bucket", "minecraft", 0, 1, "item", emptySet())))
+        assertEquals(false, compiled.matches(ctx("minecraft:diamond_sword", baseSize = 1)))
+        assertEquals(false, compiled.matches(ctx("minecraft:water_bucket", baseSize = 1)))
     }
 
     @Test
     fun `shouldMatchTabField`() {
         val compiled = RuleCompiler.compileLine("tab = buildingBlocks -> 256", 20)
 
-        assertEquals(true, compiled.matches(RuleMatchContext("minecraft:stone", "minecraft", 0, 64, "block", emptySet(), tab = "buildingBlocks")))
-        assertEquals(false, compiled.matches(RuleMatchContext("minecraft:stick", "minecraft", 0, 64, "item", emptySet(), tab = "tools")))
+        assertEquals(true, compiled.matches(ctx("minecraft:stone", type = "block", tab = "buildingBlocks")))
+        assertEquals(false, compiled.matches(ctx("minecraft:stick", tab = "tools")))
     }
 
     @Test
     fun `shouldMatchMaterialFieldExactly`() {
         val compiled = RuleCompiler.compileLine("material = steel -> 2048", 21)
 
-        assertEquals(true, compiled.matches(RuleMatchContext("gregtech:meta_item_1", "gregtech", 1000, 64, "item", emptySet(), material = "steel")))
-        assertEquals(false, compiled.matches(RuleMatchContext("gregtech:meta_item_1", "gregtech", 1001, 64, "item", emptySet(), material = "copper")))
-        assertEquals(false, compiled.matches(RuleMatchContext("gregtech:meta_item_1", "gregtech", 1002, 64, "item", emptySet())))
+        assertEquals(true, compiled.matches(ctx("gregtech:meta_item_1", meta = 1000, material = "steel")))
+        assertEquals(false, compiled.matches(ctx("gregtech:meta_item_1", meta = 1001, material = "copper")))
+        assertEquals(false, compiled.matches(ctx("gregtech:meta_item_1", meta = 1002)))
     }
 
     @Test
     fun `shouldMatchMaterialListAndRejectEmptyDefault`() {
         val compiled = RuleCompiler.compileLine("material in [steel, copper] -> 2048", 22)
 
-        assertEquals(true, compiled.matches(RuleMatchContext("gregtech:meta_item_1", "gregtech", 1000, 64, "item", emptySet(), material = "steel")))
-        assertEquals(true, compiled.matches(RuleMatchContext("gregtech:meta_item_1", "gregtech", 1001, 64, "item", emptySet(), material = "copper")))
-        assertEquals(false, compiled.matches(RuleMatchContext("gregtech:meta_item_1", "gregtech", 1002, 64, "item", emptySet())))
+        assertEquals(true, compiled.matches(ctx("gregtech:meta_item_1", meta = 1000, material = "steel")))
+        assertEquals(true, compiled.matches(ctx("gregtech:meta_item_1", meta = 1001, material = "copper")))
+        assertEquals(false, compiled.matches(ctx("gregtech:meta_item_1", meta = 1002)))
     }
 
     @Test
     fun `materialMissing_shouldNotMatchNegativeComparison`() {
         val compiled = RuleCompiler.compileLine("material != steel -> 2048", 23)
 
-        assertEquals(false, compiled.matches(RuleMatchContext("gregtech:meta_item_1", "gregtech", 1000, 64, "item", emptySet())))
-        assertEquals(false, compiled.matches(RuleMatchContext("gregtech:meta_item_1", "gregtech", 1001, 64, "item", emptySet(), material = "steel")))
-        assertEquals(true, compiled.matches(RuleMatchContext("gregtech:meta_item_1", "gregtech", 1002, 64, "item", emptySet(), material = "copper")))
+        assertEquals(false, compiled.matches(ctx("gregtech:meta_item_1", meta = 1000)))
+        assertEquals(false, compiled.matches(ctx("gregtech:meta_item_1", meta = 1001, material = "steel")))
+        assertEquals(true, compiled.matches(ctx("gregtech:meta_item_1", meta = 1002, material = "copper")))
     }
 
     @Test
     fun `itemList_shouldReuseItemMatcherMetadataSugar`() {
         val compiled = RuleCompiler.compileLine("item in [gregtech:gt.metaitem.01@11305] -> 1024", 24)
 
-        assertEquals(true, compiled.matches(RuleMatchContext("gregtech:gt.metaitem.01", "gregtech", 11305, 64, "item", emptySet())))
-        assertEquals(false, compiled.matches(RuleMatchContext("gregtech:gt.metaitem.01", "gregtech", 42, 64, "item", emptySet())))
+        assertEquals(true, compiled.matches(ctx("gregtech:gt.metaitem.01", meta = 11305)))
+        assertEquals(false, compiled.matches(ctx("gregtech:gt.metaitem.01", meta = 42)))
     }
 
     @Test
     fun `shouldMatchMetaRange`() {
         val compiled = RuleCompiler.compileLine("100 < meta < 300 -> 512", 25)
 
-        assertEquals(true, compiled.matches(RuleMatchContext("minecraft:wool", "minecraft", 150, 64, "block", emptySet())))
-        assertEquals(false, compiled.matches(RuleMatchContext("minecraft:wool", "minecraft", 50, 64, "block", emptySet())))
-        assertEquals(false, compiled.matches(RuleMatchContext("minecraft:wool", "minecraft", 400, 64, "block", emptySet())))
+        assertEquals(true, compiled.matches(ctx("minecraft:wool", meta = 150, type = "block")))
+        assertEquals(false, compiled.matches(ctx("minecraft:wool", meta = 50, type = "block")))
+        assertEquals(false, compiled.matches(ctx("minecraft:wool", meta = 400, type = "block")))
     }
+
+    private fun ctx(
+        itemId: String = "minecraft:egg",
+        modId: String = itemId.substringBefore(':'),
+        meta: Int = 0,
+        baseSize: Int = 64,
+        type: String = "item",
+        oreNames: Set<String> = emptySet(),
+        tab: String = "",
+        material: String = "",
+    ) = RuleMatchContext(
+        itemId = itemId,
+        modId = modId,
+        meta = meta,
+        baseSize = baseSize,
+        type = type,
+        oreNames = oreNames,
+        tab = tab,
+        material = material,
+    )
 }

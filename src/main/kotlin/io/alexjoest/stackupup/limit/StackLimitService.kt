@@ -122,13 +122,15 @@ class StackLimitService(private val snapshot: RuleSnapshot) {
             tab = tab,
             material = material,
         )
-        if (cacheKeyFields.size == 1) {
-            return cacheKeyFields[0].cacheKeyValue(context)
-        }
-        return ArrayList<String>(cacheKeyFields.size).apply {
-            for (field in cacheKeyFields) {
-                add(field.cacheKeyValue(context))
-            }
+        return when (cacheKeyFields.size) {
+            1 -> cacheKeyFields[0].cacheKeyValue(context)
+            2 -> PairFieldCacheKey(
+                cacheKeyFields[0].cacheKeyValue(context),
+                cacheKeyFields[1].cacheKeyValue(context),
+            )
+            else -> MultiFieldCacheKey(Array(cacheKeyFields.size) { index ->
+                cacheKeyFields[index].cacheKeyValue(context)
+            })
         }
     }
 
@@ -141,7 +143,18 @@ class StackLimitService(private val snapshot: RuleSnapshot) {
         val fieldValues: Any,
     )
 
+    private object EmptyFieldCacheKey
+
+    private data class PairFieldCacheKey(val first: String, val second: String)
+
+    private class MultiFieldCacheKey(private val values: Array<String>) {
+        override fun equals(other: Any?): Boolean =
+            this === other || other is MultiFieldCacheKey && values.contentEquals(other.values)
+
+        override fun hashCode(): Int = values.contentHashCode()
+    }
+
     private companion object {
-        private val EMPTY_FIELD_CACHE_KEY = emptyList<String>()
+        private val EMPTY_FIELD_CACHE_KEY = EmptyFieldCacheKey
     }
 }

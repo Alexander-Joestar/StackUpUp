@@ -1,7 +1,6 @@
 package io.alexjoest.stackupup.rules
 
 import io.alexjoest.stackupup.rules.field.RuleFieldCacheContext
-import io.alexjoest.stackupup.rules.model.RuleMatchContext
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
@@ -52,29 +51,27 @@ class RuleLanguageTest {
 
     @Test
     fun `cacheKeyField_shouldExtractDeclaredFieldValue`() {
-        val context = RuleMatchContext(
-            itemId = "gregtech:meta_item_1",
-            modId = "gregtech",
-            meta = 1000,
-            baseSize = 64,
-            type = "item",
-            oreNames = emptySet(),
-            material = "steel",
-        )
-
         assertEquals(
             "steel",
-            RuleField.MATERIAL.cacheKeyValue(
-                RuleFieldCacheContext(
-                    itemId = context.itemId,
-                    modId = context.modId,
-                    metadata = context.meta,
-                    type = context.type,
-                    baseLimit = context.baseSize,
-                    tab = context.tab,
-                    material = context.material,
-                )
-            )
+            RuleField.MATERIAL.cacheKeyValue(cacheCtx(material = "steel"))
         )
     }
+
+    private fun cacheCtx(
+        itemId: String = "gregtech:meta_item_1",
+        modId: String = itemId.substringBefore(':'),
+        metadata: Int = 1000,
+        type: String = "item",
+        baseLimit: Int = 64,
+        tab: String = "",
+        material: String = "",
+    ) = RuleFieldCacheContext(
+        itemId = itemId,
+        modId = modId,
+        metadata = metadata,
+        type = type,
+        baseLimit = baseLimit,
+        tab = tab,
+        material = material,
+    )
 }

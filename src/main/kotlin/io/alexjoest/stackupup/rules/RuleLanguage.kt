@@ -1,11 +1,10 @@
 package io.alexjoest.stackupup.rules
 
 import io.alexjoest.stackupup.rules.field.MissingValuePolicy
-import io.alexjoest.stackupup.rules.field.RuleFieldCacheContext
 import io.alexjoest.stackupup.rules.field.RuleFieldCacheKeyExtractor
 import io.alexjoest.stackupup.rules.field.RuleFieldMatcherFactory
 import io.alexjoest.stackupup.rules.field.RuleFieldMatchers
-import io.alexjoest.stackupup.rules.model.RuleMatchContext
+import io.alexjoest.stackupup.limit.StackContext
 
 enum class FieldType { ITEM, STRING, STRING_SET, NUMERIC }
 
@@ -28,25 +27,25 @@ enum class RuleField(
     private val matcherFactory: RuleFieldMatcherFactory,
 ) {
     ITEM(FieldType.ITEM, matcherFactory = RuleFieldMatchers.item()),
-    MOD(FieldType.STRING, matcherFactory = RuleFieldMatchers.string(RuleMatchContext::modId)),
-    TYPE(FieldType.STRING, matcherFactory = RuleFieldMatchers.string(RuleMatchContext::type)),
+    MOD(FieldType.STRING, matcherFactory = RuleFieldMatchers.string(StackContext::modId)),
+    TYPE(FieldType.STRING, matcherFactory = RuleFieldMatchers.string(StackContext::type)),
     ORE(
         FieldType.STRING_SET,
         requirements = setOf(RuleContextRequirement.ORE_NAMES),
-        matcherFactory = RuleFieldMatchers.stringSet(RuleMatchContext::oreNames)
+        matcherFactory = RuleFieldMatchers.stringSet(StackContext::oreNames)
     ),
     MATERIAL(
         FieldType.STRING,
         requirements = setOf(RuleContextRequirement.MATERIAL),
         cacheKeyExtractor = RuleFieldCacheKeyExtractor { it.material },
-        matcherFactory = RuleFieldMatchers.string(RuleMatchContext::material, MissingValuePolicy.NEVER_MATCH),
+        matcherFactory = RuleFieldMatchers.string(StackContext::material, MissingValuePolicy.NEVER_MATCH),
     ),
-    META(FieldType.NUMERIC, setOf("metadata"), matcherFactory = RuleFieldMatchers.numeric(RuleMatchContext::meta)),
-    SIZE(FieldType.NUMERIC, matcherFactory = RuleFieldMatchers.numeric(RuleMatchContext::baseSize)),
+    META(FieldType.NUMERIC, setOf("metadata"), matcherFactory = RuleFieldMatchers.numeric(StackContext::metadata)),
+    SIZE(FieldType.NUMERIC, matcherFactory = RuleFieldMatchers.numeric(StackContext::baseLimit)),
     TAB(
         FieldType.STRING,
         cacheKeyExtractor = RuleFieldCacheKeyExtractor { it.tab },
-        matcherFactory = RuleFieldMatchers.string(RuleMatchContext::tab),
+        matcherFactory = RuleFieldMatchers.string(StackContext::tab),
     ),
     ;
 
@@ -58,19 +57,19 @@ enum class RuleField(
     /**
      * 编译单值字段比较。
      */
-    fun compileMatcher(operator: ComparisonOperator, literal: String): (RuleMatchContext) -> Boolean =
+    fun compileMatcher(operator: ComparisonOperator, literal: String): (StackContext) -> Boolean =
         matcherFactory.compile(operator, literal)
 
     /**
      * 编译列表字段比较，列表语义复用字段自身的等值 matcher。
      */
-    fun compileListMatcher(literals: List<String>): (RuleMatchContext) -> Boolean =
+    fun compileListMatcher(literals: List<String>): (StackContext) -> Boolean =
         matcherFactory.compileList(literals)
 
     /**
      * 提取该字段贡献给规则缓存键的值。
      */
-    internal fun cacheKeyValue(context: RuleFieldCacheContext): String =
+    internal fun cacheKeyValue(context: StackContext): String =
         cacheKeyExtractor?.extract(context).orEmpty()
 
     companion object {

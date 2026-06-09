@@ -3,7 +3,6 @@ package io.alexjoest.stackupup.dev
 import io.alexjoest.stackupup.StackLimitHooks
 import io.alexjoest.stackupup.StackUpUp
 import io.alexjoest.stackupup.limit.RuleRuntime
-import io.alexjoest.stackupup.limit.StackContextResolver
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiMainMenu
 import net.minecraft.item.ItemStack
@@ -109,7 +108,7 @@ class DevAutomationClientDriver(private val controller: DevAutomationController 
         }
         val resolvedTarget = target ?: return
 
-        val context = StackContextResolver.fromStack(
+        val context = resolveDevProbeContext(
             probeStack,
             StackLimitHooks.resolveOriginalBaseline(probeStack),
         ) ?: return

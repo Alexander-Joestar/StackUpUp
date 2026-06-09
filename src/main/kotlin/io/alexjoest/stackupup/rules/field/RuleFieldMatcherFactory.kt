@@ -1,7 +1,7 @@
 package io.alexjoest.stackupup.rules.field
 
+import io.alexjoest.stackupup.limit.StackContext
 import io.alexjoest.stackupup.rules.ComparisonOperator
-import io.alexjoest.stackupup.rules.model.RuleMatchContext
 
 /**
  * 字段条件 matcher 工厂。
@@ -9,9 +9,9 @@ import io.alexjoest.stackupup.rules.model.RuleMatchContext
  * 字段只负责把比较表达式编译成命中判断，堆叠数量仍由规则 action 决定。
  */
 internal fun interface RuleFieldMatcherFactory {
-    fun compile(operator: ComparisonOperator, literal: String): (RuleMatchContext) -> Boolean
+    fun compile(operator: ComparisonOperator, literal: String): (StackContext) -> Boolean
 
-    fun compileList(literals: List<String>): (RuleMatchContext) -> Boolean {
+    fun compileList(literals: List<String>): (StackContext) -> Boolean {
         val predicates = literals.map { compile(ComparisonOperator.EQUALS, it) }
         return { context -> predicates.any { it(context) } }
     }
@@ -37,7 +37,7 @@ internal object RuleFieldMatchers {
     }
 
     fun string(
-        selector: (RuleMatchContext) -> String,
+        selector: (StackContext) -> String,
         missingValuePolicy: MissingValuePolicy = MissingValuePolicy.EMPTY_VALUE,
     ): RuleFieldMatcherFactory = RuleFieldMatcherFactory { operator, literal ->
         val matcher = RuleLiteralMatcherCompiler.compileStringMatcher(literal)
@@ -51,13 +51,13 @@ internal object RuleFieldMatchers {
         }
     }
 
-    fun stringSet(selector: (RuleMatchContext) -> Iterable<String>): RuleFieldMatcherFactory =
+    fun stringSet(selector: (StackContext) -> Iterable<String>): RuleFieldMatcherFactory =
         RuleFieldMatcherFactory { operator, literal ->
             val matcher = RuleLiteralMatcherCompiler.compileStringMatcher(literal)
             compileEqualityComparison(operator) { context -> selector(context).any(matcher) }
         }
 
-    fun numeric(selector: (RuleMatchContext) -> Int): RuleFieldMatcherFactory =
+    fun numeric(selector: (StackContext) -> Int): RuleFieldMatcherFactory =
         RuleFieldMatcherFactory { operator, literal ->
             val expected = literal.toInt()
             return@RuleFieldMatcherFactory { context -> matchesNumericComparison(operator, selector(context), expected) }
@@ -65,8 +65,8 @@ internal object RuleFieldMatchers {
 
     private fun compileEqualityComparison(
         operator: ComparisonOperator,
-        matcher: (RuleMatchContext) -> Boolean,
-    ): (RuleMatchContext) -> Boolean = { applyEqualityOperator(operator, matcher(it)) }
+        matcher: (StackContext) -> Boolean,
+    ): (StackContext) -> Boolean = { applyEqualityOperator(operator, matcher(it)) }
 
     private fun applyEqualityOperator(op: ComparisonOperator, matches: Boolean): Boolean = when (op) {
         ComparisonOperator.EQUALS -> matches

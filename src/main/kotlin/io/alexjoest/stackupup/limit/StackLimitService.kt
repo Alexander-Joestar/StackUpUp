@@ -3,8 +3,6 @@ package io.alexjoest.stackupup.limit
 import io.alexjoest.stackupup.StackUpUpConfig
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import io.alexjoest.stackupup.rules.compile.RuntimeContextRequirements
-import io.alexjoest.stackupup.rules.field.RuleFieldCacheContext
-import io.alexjoest.stackupup.rules.model.RuleMatchContext
 import java.util.concurrent.ConcurrentHashMap
 
 class StackLimitService(private val snapshot: RuleSnapshot) {
@@ -30,20 +28,9 @@ class StackLimitService(private val snapshot: RuleSnapshot) {
         )
         resolvedCache[key]?.let { return it }
 
-        val matchContext = RuleMatchContext(
-            itemId = context.itemId,
-            modId = context.modId,
-            meta = context.metadata,
-            baseSize = context.baseLimit,
-            type = context.type,
-            oreNames = context.oreNames,
-            tab = context.tab,
-            material = context.material,
-        )
-
         var result = context.baseLimit
         for (rule in snapshot.rules) {
-            if (rule.matches(matchContext)) {
+            if (rule.matches(context)) {
                 result = rule.action.apply(result)
             }
         }
@@ -91,23 +78,14 @@ class StackLimitService(private val snapshot: RuleSnapshot) {
         if (cacheKeyFields.isEmpty()) {
             return EMPTY_FIELD_CACHE_KEY
         }
-        val fieldContext = RuleFieldCacheContext(
-            itemId = context.itemId,
-            modId = context.modId,
-            metadata = context.metadata,
-            type = context.type,
-            baseLimit = context.baseLimit,
-            tab = context.tab,
-            material = context.material,
-        )
         return when (cacheKeyFields.size) {
-            1 -> cacheKeyFields[0].cacheKeyValue(fieldContext)
+            1 -> cacheKeyFields[0].cacheKeyValue(context)
             2 -> PairFieldCacheKey(
-                cacheKeyFields[0].cacheKeyValue(fieldContext),
-                cacheKeyFields[1].cacheKeyValue(fieldContext),
+                cacheKeyFields[0].cacheKeyValue(context),
+                cacheKeyFields[1].cacheKeyValue(context),
             )
             else -> MultiFieldCacheKey(Array(cacheKeyFields.size) { index ->
-                cacheKeyFields[index].cacheKeyValue(fieldContext)
+                cacheKeyFields[index].cacheKeyValue(context)
             })
         }
     }

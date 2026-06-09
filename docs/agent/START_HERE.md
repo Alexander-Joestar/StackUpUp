@@ -17,4 +17,6 @@
 - NC/TR 机器先查真实写入容量。
 - Rules 运行态以 `StackContext` 为主入口；旧参数入口只保留兼容薄壳。
 - `RuleField` enum 保持自描述，不新增动态注册表。
+- `RuleField` matcher/cache 直接读取 `StackContext`，不要再复制 `RuleMatchContext` / 字段缓存上下文。
 - 昂贵上下文需求走 `RuleContextRequirement` / `requirements` 查询，不新增 `needsXxx` 布尔。
+- Dev 探针解析上下文必须使用当前 `limitService.contextRequirements()`。

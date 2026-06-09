@@ -87,3 +87,5 @@
 9. `RuleField` enum 保持字段自身描述能力，不引入动态注册表或散落字符串分发。
 10. 规则运行时字段解析以 `StackContext` 为主入口；旧参数式入口只作为兼容薄壳保留，不再承载新逻辑。
 11. 昂贵上下文按 `RuleContextRequirement` / `requirements` 查询声明和聚合，不再新增 `needsXxx` 布尔开关。
+12. `RuleField` matcher 与缓存键提取器直接读取 `StackContext`；不要重新引入 `RuleMatchContext` / 字段缓存上下文复制层。
+13. Dev 自动化探针必须按当前 `RuleRuntime.limitService().contextRequirements()` 解析上下文，避免 material 等可选字段与正式路径不一致。

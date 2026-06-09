@@ -1,6 +1,6 @@
 package io.alexjoest.stackupup.rules
 
-import io.alexjoest.stackupup.rules.field.RuleFieldCacheContext
+import io.alexjoest.stackupup.limit.StackContext
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
@@ -63,14 +63,16 @@ class RuleLanguageTest {
         metadata: Int = 1000,
         type: String = "item",
         baseLimit: Int = 64,
+        oreNames: Set<String> = emptySet(),
         tab: String = "",
         material: String = "",
-    ) = RuleFieldCacheContext(
+    ) = StackContext(
         itemId = itemId,
         modId = modId,
         metadata = metadata,
         type = type,
         baseLimit = baseLimit,
+        oreNames = oreNames,
         tab = tab,
         material = material,
     )

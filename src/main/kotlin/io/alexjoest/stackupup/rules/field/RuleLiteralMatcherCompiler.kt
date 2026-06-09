@@ -1,17 +1,17 @@
 package io.alexjoest.stackupup.rules.field
 
-import io.alexjoest.stackupup.rules.model.RuleMatchContext
+import io.alexjoest.stackupup.limit.StackContext
 
 internal object RuleLiteralMatcherCompiler {
-    fun compileItemMatcher(literal: String): (RuleMatchContext) -> Boolean {
+    fun compileItemMatcher(literal: String): (StackContext) -> Boolean {
         if (literal == "*") {
             // "item = *" 匹配所有可堆叠物品（原版 baseSize > 1）
-            return { context -> context.baseSize > 1 }
+            return { context -> context.baseLimit > 1 }
         }
         val itemLiteral = parseItemLiteral(literal)
         val itemIdMatcher = compileStringMatcher(itemLiteral.itemIdPattern)
         return { context ->
-            itemIdMatcher(context.itemId) && (itemLiteral.meta == null || itemLiteral.meta == context.meta)
+            itemIdMatcher(context.itemId) && (itemLiteral.meta == null || itemLiteral.meta == context.metadata)
         }
     }
 

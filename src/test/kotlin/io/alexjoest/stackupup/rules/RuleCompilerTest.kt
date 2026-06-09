@@ -1,7 +1,7 @@
 package io.alexjoest.stackupup.rules
 
+import io.alexjoest.stackupup.limit.StackContext
 import io.alexjoest.stackupup.rules.compile.RuleCompiler
-import io.alexjoest.stackupup.rules.model.RuleMatchContext
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -222,11 +222,11 @@ class RuleCompilerTest {
         oreNames: Set<String> = emptySet(),
         tab: String = "",
         material: String = "",
-    ) = RuleMatchContext(
+    ) = StackContext(
         itemId = itemId,
         modId = modId,
-        meta = meta,
-        baseSize = baseSize,
+        metadata = meta,
+        baseLimit = baseSize,
         type = type,
         oreNames = oreNames,
         tab = tab,

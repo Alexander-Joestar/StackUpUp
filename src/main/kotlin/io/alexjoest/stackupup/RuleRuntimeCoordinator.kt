@@ -29,8 +29,16 @@ object RuleRuntimeCoordinator {
         RuleFileExampleTemplate.refreshExample(primaryRulesFile.parentFile)
         RuleFileExampleTemplate.refreshMarkdownExample(primaryRulesFile.parentFile)
         return try {
-            val report = loadState(primaryRulesFile, enableDslRules)
-            refreshRuntime(report, enableDslRules)
+            val report = if (enableDslRules) {
+                RuleReloadPipeline.loadDslRules(
+                    primaryRulesFile = primaryRulesFile,
+                    sourceFiles = RuleSourceLocator.resolveLoadOrder(),
+                )
+            } else {
+                RuleReloadPipeline.disabled(primaryRulesFile)
+            }
+            val oreDictIndex = if (enableDslRules) OreDictIndex.createDefault() else RuleRuntime.oreDictIndex()
+            RuleRuntime.replaceRuntime(report.snapshot, oreDictIndex)
             StackSizeBackupRegistry.restoreAll()
             report.also { lastReportState = it }
         } catch (ex: Exception) {
@@ -46,20 +54,4 @@ object RuleRuntimeCoordinator {
     }
 
     fun getRulesFile(): File = RuleFileLocator.resolve()
-
-    fun getWorldMarkdownFile(): File? = RuleSourceLocator.resolveWorldMarkdownFile()
-
-    private fun loadState(primaryRulesFile: File, enableDslRules: Boolean): RuleReloadReport = if (enableDslRules) {
-        RuleReloadPipeline.loadDslRules(
-            primaryRulesFile = primaryRulesFile,
-            sourceFiles = RuleSourceLocator.resolveLoadOrder(),
-        )
-    } else {
-        RuleReloadPipeline.disabled(primaryRulesFile)
-    }
-
-    private fun refreshRuntime(report: RuleReloadReport, enableDslRules: Boolean) {
-        val oreDictIndex = if (enableDslRules) OreDictIndex.createDefault() else RuleRuntime.oreDictIndex()
-        RuleRuntime.replaceRuntime(report.snapshot, oreDictIndex)
-    }
 }

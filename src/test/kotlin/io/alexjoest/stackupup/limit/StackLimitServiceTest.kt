@@ -1,6 +1,7 @@
 package io.alexjoest.stackupup.limit
 
 import io.alexjoest.stackupup.StackUpUpConfig
+import io.alexjoest.stackupup.rules.RuleContextRequirement
 import io.alexjoest.stackupup.rules.compile.RuleCompiler
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import org.junit.jupiter.api.AfterEach
@@ -152,6 +153,20 @@ class StackLimitServiceTest {
         assertEquals(128, service.resolve(identity, 999, emptySet(), tab = "ignored", material = "ignored"))
         assertEquals(1, service.resolve(identity, 0, emptySet(), tab = "ignored", material = "ignored"))
         assertEquals(0, service.debugResolvedCacheSize())
+    }
+
+    @Test
+    fun `requiresContext_shouldDelegateSnapshotRequirements`() {
+        val snapshot = RuleSnapshot(
+            version = 11L,
+            rules = listOf(
+                RuleCompiler.compileLine("material = steel -> 1024", 1),
+            ),
+        )
+        val service = StackLimitService(snapshot)
+
+        assertEquals(true, service.requiresContext(RuleContextRequirement.MATERIAL))
+        assertEquals(false, service.requiresContext(RuleContextRequirement.ORE_NAMES))
     }
 
     @Test

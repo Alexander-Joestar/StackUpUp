@@ -15,8 +15,10 @@ data class RuleContextRequirements(
      */
     val cacheKeyFieldsInOrder: List<RuleField> = cacheKeyFields.toList()
 
-    val needsOreNames: Boolean = RuleContextRequirement.ORE_NAMES in requirements
-    val needsMaterial: Boolean = RuleContextRequirement.MATERIAL in requirements
+    fun requires(requirement: RuleContextRequirement): Boolean = requirement in requirements
+
+    val needsOreNames: Boolean = requires(RuleContextRequirement.ORE_NAMES)
+    val needsMaterial: Boolean = requires(RuleContextRequirement.MATERIAL)
 
     companion object {
         fun fromRules(rules: List<CompiledRule>): RuleContextRequirements {

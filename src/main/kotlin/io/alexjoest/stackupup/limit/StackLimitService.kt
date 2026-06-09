@@ -1,6 +1,7 @@
 package io.alexjoest.stackupup.limit
 
 import io.alexjoest.stackupup.StackUpUpConfig
+import io.alexjoest.stackupup.rules.RuleContextRequirement
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import io.alexjoest.stackupup.rules.field.RuleFieldCacheContext
 import io.alexjoest.stackupup.rules.model.RuleMatchContext
@@ -13,71 +14,34 @@ class StackLimitService(private val snapshot: RuleSnapshot) {
     // 缓存键固定包含物品身份和原版基线；会随上下文变化的字段由 RuleField 自己声明并贡献缓存键。
     private val resolvedCache = ConcurrentHashMap<ResolvedLimitKey, Int>()
 
-    fun resolve(context: StackContext): Int = resolve(
-        itemId = context.itemId,
-        modId = context.modId,
-        metadata = context.metadata,
-        type = context.type,
-        baseLimit = context.baseLimit,
-        oreNames = context.oreNames,
-        tab = context.tab,
-        material = context.material,
-    )
-
-    fun resolve(
-        identity: StackIdentity,
-        baseLimit: Int,
-        oreNames: Set<String>,
-        tab: String = "",
-        material: String = "",
-    ): Int = resolve(
-        itemId = identity.itemId,
-        modId = identity.modId,
-        metadata = identity.meta,
-        type = identity.type,
-        baseLimit = baseLimit,
-        oreNames = oreNames,
-        tab = tab,
-        material = material,
-    )
-
-    fun resolve(
-        itemId: String,
-        modId: String,
-        metadata: Int,
-        type: String,
-        baseLimit: Int,
-        oreNames: Set<String>,
-        tab: String = "",
-        material: String = "",
-    ): Int {
+    fun resolve(context: StackContext): Int {
         if (!snapshot.hasRules) {
-            return baseLimit.coerceIn(1, StackUpUpConfig.activeMaxStackSize)
+            return context.baseLimit.coerceIn(1, StackUpUpConfig.activeMaxStackSize)
         }
 
-        val fieldCacheKey = buildFieldCacheKey(itemId, modId, metadata, type, baseLimit, tab, material)
+        val fieldCacheKey = buildFieldCacheKey(context)
         val key = ResolvedLimitKey(
-            itemId,
-            modId,
-            metadata,
-            type,
-            baseLimit,
+            context.itemId,
+            context.modId,
+            context.metadata,
+            context.type,
+            context.baseLimit,
             fieldCacheKey,
         )
         resolvedCache[key]?.let { return it }
 
         val matchContext = RuleMatchContext(
-            itemId = itemId,
-            modId = modId,
-            meta = metadata,
-            baseSize = baseLimit,
-            type = type,
-            oreNames = oreNames,
-            tab = tab,
-            material = material,
+            itemId = context.itemId,
+            modId = context.modId,
+            meta = context.metadata,
+            baseSize = context.baseLimit,
+            type = context.type,
+            oreNames = context.oreNames,
+            tab = context.tab,
+            material = context.material,
         )
 
-        var result = baseLimit
+        var result = context.baseLimit
         for (rule in snapshot.rules) {
             if (rule.matches(matchContext)) {
                 result = rule.action.apply(result)
@@ -89,7 +53,50 @@ class StackLimitService(private val snapshot: RuleSnapshot) {
         return previous ?: resolved
     }
 
+    fun resolve(
+        identity: StackIdentity,
+        baseLimit: Int,
+        oreNames: Set<String>,
+        tab: String = "",
+        material: String = "",
+    ): Int = resolve(
+        StackContext(
+            itemId = identity.itemId,
+            modId = identity.modId,
+            metadata = identity.meta,
+            type = identity.type,
+            baseLimit = baseLimit,
+            oreNames = oreNames,
+            tab = tab,
+            material = material,
+        )
+    )
+
+    fun resolve(
+        itemId: String,
+        modId: String,
+        metadata: Int,
+        type: String,
+        baseLimit: Int,
+        oreNames: Set<String>,
+        tab: String = "",
+        material: String = "",
+    ): Int = resolve(
+        StackContext(
+            itemId = itemId,
+            modId = modId,
+            metadata = metadata,
+            type = type,
+            baseLimit = baseLimit,
+            oreNames = oreNames,
+            tab = tab,
+            material = material,
+        )
+    )
+
     fun hasRules(): Boolean = snapshot.hasRules
+
+    fun requiresContext(requirement: RuleContextRequirement): Boolean = snapshot.requires(requirement)
 
     fun needsOreNames(): Boolean = snapshot.needsOreNames
 
@@ -101,35 +108,27 @@ class StackLimitService(private val snapshot: RuleSnapshot) {
     // 在当前 1.12.2 语义下，矿辞集合由 itemId + metadata 稳定决定；
     // 一旦规则快照或矿辞索引被替换，RuleRuntime 会整体刷新 StackLimitService，
     // 从而自然清空这层缓存。
-    private fun buildFieldCacheKey(
-        itemId: String,
-        modId: String,
-        metadata: Int,
-        type: String,
-        baseLimit: Int,
-        tab: String,
-        material: String,
-    ): Any {
+    private fun buildFieldCacheKey(context: StackContext): Any {
         if (cacheKeyFields.isEmpty()) {
             return EMPTY_FIELD_CACHE_KEY
         }
-        val context = RuleFieldCacheContext(
-            itemId = itemId,
-            modId = modId,
-            metadata = metadata,
-            type = type,
-            baseLimit = baseLimit,
-            tab = tab,
-            material = material,
+        val fieldContext = RuleFieldCacheContext(
+            itemId = context.itemId,
+            modId = context.modId,
+            metadata = context.metadata,
+            type = context.type,
+            baseLimit = context.baseLimit,
+            tab = context.tab,
+            material = context.material,
         )
         return when (cacheKeyFields.size) {
-            1 -> cacheKeyFields[0].cacheKeyValue(context)
+            1 -> cacheKeyFields[0].cacheKeyValue(fieldContext)
             2 -> PairFieldCacheKey(
-                cacheKeyFields[0].cacheKeyValue(context),
-                cacheKeyFields[1].cacheKeyValue(context),
+                cacheKeyFields[0].cacheKeyValue(fieldContext),
+                cacheKeyFields[1].cacheKeyValue(fieldContext),
             )
             else -> MultiFieldCacheKey(Array(cacheKeyFields.size) { index ->
-                cacheKeyFields[index].cacheKeyValue(context)
+                cacheKeyFields[index].cacheKeyValue(fieldContext)
             })
         }
     }

@@ -1,5 +1,6 @@
 package io.alexjoest.stackupup.rules.compile
 
+import io.alexjoest.stackupup.rules.RuleContextRequirement
 import io.alexjoest.stackupup.rules.RuleField
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -27,10 +28,14 @@ class RuleSnapshotTest {
         assertEquals(setOf(RuleField.MATERIAL), materialSnapshot.requirements.cacheKeyFields)
         assertEquals(true, materialSnapshot.needsMaterial)
         assertEquals(false, materialSnapshot.needsOreNames)
+        assertEquals(true, materialSnapshot.requires(RuleContextRequirement.MATERIAL))
+        assertEquals(false, materialSnapshot.requires(RuleContextRequirement.ORE_NAMES))
 
         assertEquals(setOf(RuleField.ORE), oreSnapshot.requirements.referencedFields)
         assertEquals(true, oreSnapshot.needsOreNames)
         assertEquals(false, oreSnapshot.needsMaterial)
+        assertEquals(true, oreSnapshot.requires(RuleContextRequirement.ORE_NAMES))
+        assertEquals(false, oreSnapshot.requires(RuleContextRequirement.MATERIAL))
         assertEquals(emptySet<RuleField>(), oreSnapshot.requirements.cacheKeyFields)
 
         assertEquals(setOf(RuleField.ITEM), itemRule.referencedFields)

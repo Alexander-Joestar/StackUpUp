@@ -143,6 +143,18 @@ class StackLimitServiceTest {
     }
 
     @Test
+    fun `emptySnapshot_shouldClampBaseLimitWithoutCaching`() {
+        StackUpUpConfig.general.maxStackSize = 128
+        StackUpUpConfig.activeMaxStackSize = 128
+        val service = StackLimitService(RuleSnapshot(version = 10L, rules = emptyList()))
+        val identity = StackIdentity("minecraft:egg", "minecraft", 0, "item")
+
+        assertEquals(128, service.resolve(identity, 999, emptySet(), tab = "ignored", material = "ignored"))
+        assertEquals(1, service.resolve(identity, 0, emptySet(), tab = "ignored", material = "ignored"))
+        assertEquals(0, service.debugResolvedCacheSize())
+    }
+
+    @Test
     fun `materialDependentRules_shouldPartitionResolvedCacheByMaterial`() {
         val snapshot = RuleSnapshot(
             version = 6L,

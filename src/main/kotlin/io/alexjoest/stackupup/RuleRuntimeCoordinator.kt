@@ -3,6 +3,7 @@ package io.alexjoest.stackupup
 import io.alexjoest.stackupup.limit.OreDictIndex
 import io.alexjoest.stackupup.limit.RuleRuntime
 import io.alexjoest.stackupup.rules.LocalizedMessage
+import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import io.alexjoest.stackupup.rules.io.RuleFileExampleTemplate
 import io.alexjoest.stackupup.rules.io.RuleFileLocator
 import io.alexjoest.stackupup.rules.io.RuleReloadPipeline
@@ -14,7 +15,7 @@ object RuleRuntimeCoordinator {
     @Volatile
     private var lastReportState: RuleReloadReport = RuleReloadReport(
         file = RuleFileLocator.resolve(),
-        snapshot = io.alexjoest.stackupup.rules.compile.RuleSnapshot(version = 0L, rules = emptyList()),
+        snapshot = RuleSnapshot(version = 0L, rules = emptyList()),
         errors = emptyList(),
         warnings = emptyList(),
     )
@@ -35,7 +36,7 @@ object RuleRuntimeCoordinator {
         } catch (ex: Exception) {
             val report = RuleReloadReport(
                 file = primaryRulesFile,
-                snapshot = io.alexjoest.stackupup.rules.compile.RuleSnapshot(version = 0L, rules = emptyList()),
+                snapshot = RuleSnapshot(version = 0L, rules = emptyList()),
                 errors = listOf(LocalizedMessage(ex.message ?: ex.javaClass.simpleName)),
                 warnings = emptyList(),
             )
@@ -58,9 +59,7 @@ object RuleRuntimeCoordinator {
     }
 
     private fun refreshRuntime(report: RuleReloadReport, enableDslRules: Boolean) {
-        RuleRuntime.replaceSnapshot(report.snapshot)
-        if (enableDslRules) {
-            RuleRuntime.replaceOreDictIndex(OreDictIndex.createDefault())
-        }
+        val oreDictIndex = if (enableDslRules) OreDictIndex.createDefault() else RuleRuntime.oreDictIndex()
+        RuleRuntime.replaceRuntime(report.snapshot, oreDictIndex)
     }
 }

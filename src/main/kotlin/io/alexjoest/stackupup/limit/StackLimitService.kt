@@ -51,6 +51,10 @@ class StackLimitService(private val snapshot: RuleSnapshot) {
         tab: String = "",
         material: String = "",
     ): Int {
+        if (!snapshot.hasRules) {
+            return baseLimit.coerceIn(1, StackUpUpConfig.activeMaxStackSize)
+        }
+
         val fieldCacheKey = buildFieldCacheKey(itemId, modId, metadata, type, baseLimit, tab, material)
         val key = ResolvedLimitKey(
             itemId,

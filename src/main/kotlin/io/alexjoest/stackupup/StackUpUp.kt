@@ -155,6 +155,11 @@ class StackUpUp {
 
         private val stateStoreCache = AtomicReference<RuleStateStore?>()
 
+        @JvmStatic
+        internal fun clearStateStoreForTests() {
+            stateStoreCache.set(null)
+        }
+
         private fun stateStore(): RuleStateStore? {
             val cached = stateStoreCache.get()
             if (cached != null) {

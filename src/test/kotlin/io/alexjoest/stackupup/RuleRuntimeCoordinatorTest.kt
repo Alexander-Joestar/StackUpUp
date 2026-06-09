@@ -1,8 +1,13 @@
 package io.alexjoest.stackupup
 
 import io.alexjoest.stackupup.limit.RuleRuntime
+import io.alexjoest.stackupup.limit.OreDictIndex
+import io.alexjoest.stackupup.limit.StackIdentity
+import io.alexjoest.stackupup.rules.compile.RuleCompiler
+import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import io.alexjoest.stackupup.rules.io.RuleFileLocator
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Test
 import java.io.File
 import kotlin.io.path.createTempDirectory
@@ -28,6 +33,34 @@ class RuleRuntimeCoordinatorTest {
             assertEquals(0, RuleRuntime.currentSnapshot().rules.size)
         } finally {
             RuleFileLocator.resetForTests()
+        }
+    }
+
+    @Test
+    fun `replaceRuntime_shouldPublishSnapshotOreIndexAndLimitServiceTogether`() {
+        val previousSnapshot = RuleRuntime.currentSnapshot()
+        val previousIndex = RuleRuntime.oreDictIndex()
+        val snapshot = RuleSnapshot(
+            version = 42L,
+            rules = listOf(RuleCompiler.compileLine("ore = ingotSteel -> 32", 1)),
+        )
+        val index = OreDictIndex({ _, _ -> setOf("ingotSteel") })
+
+        try {
+            RuleRuntime.replaceRuntime(snapshot, index)
+
+            assertSame(snapshot, RuleRuntime.currentSnapshot())
+            assertSame(index, RuleRuntime.oreDictIndex())
+            assertEquals(
+                32,
+                RuleRuntime.limitService().resolve(
+                    StackIdentity("gregtech:meta_ingot", "gregtech", 0, "item"),
+                    baseLimit = 64,
+                    oreNames = RuleRuntime.oreDictIndex().getOreNames("gregtech:meta_ingot", 0),
+                ),
+            )
+        } finally {
+            RuleRuntime.replaceRuntime(previousSnapshot, previousIndex)
         }
     }
 }

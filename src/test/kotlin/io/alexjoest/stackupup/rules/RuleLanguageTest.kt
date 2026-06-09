@@ -10,6 +10,7 @@ class RuleLanguageTest {
         assertEquals(RuleField.ITEM, RuleField.fromIdentifier("item"))
         assertEquals(RuleField.MOD, RuleField.fromIdentifier("mod"))
         assertEquals(RuleField.TYPE, RuleField.fromIdentifier("type"))
+        assertEquals(RuleField.MATERIAL, RuleField.fromIdentifier("material"))
         assertEquals(RuleField.META, RuleField.fromIdentifier("metadata"))
         assertEquals(RuleField.SIZE, RuleField.fromIdentifier("size"))
         assertNull(RuleField.fromIdentifier("unknown"))

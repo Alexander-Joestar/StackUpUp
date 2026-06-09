@@ -141,4 +141,36 @@ class StackLimitServiceTest {
             StackUpUpConfig.activeMaxStackSize = previous
         }
     }
+
+    @Test
+    fun `materialDependentRules_shouldPartitionResolvedCacheByMaterial`() {
+        val snapshot = RuleSnapshot(
+            version = 6L,
+            rules = listOf(
+                RuleCompiler.compileLine("material = steel -> 1024", 1),
+            ),
+        )
+        val service = StackLimitService(snapshot)
+        val identity = StackIdentity("gregtech:meta_item_1", "gregtech", 1000, "item")
+
+        assertEquals(1024, service.resolve(identity, 64, emptySet(), material = "steel"))
+        assertEquals(64, service.resolve(identity, 64, emptySet(), material = "copper"))
+        assertEquals(2, service.debugResolvedCacheSize())
+    }
+
+    @Test
+    fun `materialIndependentRules_shouldNotPartitionResolvedCacheByMaterial`() {
+        val snapshot = RuleSnapshot(
+            version = 7L,
+            rules = listOf(
+                RuleCompiler.compileLine("item = gregtech:meta_item_1 -> 512", 1),
+            ),
+        )
+        val service = StackLimitService(snapshot)
+        val identity = StackIdentity("gregtech:meta_item_1", "gregtech", 1000, "item")
+
+        assertEquals(512, service.resolve(identity, 64, emptySet(), material = "steel"))
+        assertEquals(512, service.resolve(identity, 64, emptySet(), material = "copper"))
+        assertEquals(1, service.debugResolvedCacheSize())
+    }
 }

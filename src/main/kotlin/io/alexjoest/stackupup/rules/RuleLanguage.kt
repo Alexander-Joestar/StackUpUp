@@ -13,6 +13,7 @@ enum class RuleField(val fieldType: FieldType, aliases: Set<String> = emptySet()
     MOD(FieldType.STRING),
     TYPE(FieldType.STRING),
     ORE(FieldType.STRING_SET),
+    MATERIAL(FieldType.STRING),
     META(FieldType.NUMERIC, setOf("metadata")),
     SIZE(FieldType.NUMERIC),
     TAB(FieldType.STRING),

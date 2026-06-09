@@ -1,6 +1,7 @@
 package io.alexjoest.stackupup
 
 import io.alexjoest.stackupup.limit.OreDictIndex
+import io.alexjoest.stackupup.limit.GregTechMaterialResolver
 import io.alexjoest.stackupup.limit.RuleRuntime
 import io.alexjoest.stackupup.rules.compile.RuleCompiler
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
@@ -28,6 +29,9 @@ class StackLimitHooksTest {
     @AfterEach
     fun restoreMaxStackSize() {
         StackUpUpConfig.activeMaxStackSize = previousMaxStackSize
+        RuleRuntime.replaceSnapshot(RuleSnapshot(version = 0L, rules = emptyList()))
+        RuleRuntime.replaceOreDictIndex(OreDictIndex.fromStackLoader { emptySet() })
+        GregTechMaterialResolver.resetResolverForTesting()
     }
 
     fun `getCompatibilityStackSize_shouldReturnGlobalMax`() {
@@ -158,6 +162,92 @@ class StackLimitHooksTest {
         )
 
         assertEquals(256, result)
+    }
+
+    @Test
+    fun `noMaterialRule_shouldSkipMaterialResolver`() {
+        Bootstrap.register()
+        var calls = 0
+        val restoreResolver = GregTechMaterialResolver.installResolverForTesting {
+            calls++
+            "steel"
+        }
+        RuleRuntime.replaceSnapshot(
+            RuleSnapshot(
+                version = 16L,
+                rules = listOf(
+                    RuleCompiler.compileLine("item = stackupup_test:dummy_item -> 256", 1),
+                ),
+            ),
+        )
+        RuleRuntime.replaceOreDictIndex(OreDictIndex.fromStackLoader { emptySet() })
+        val item = Item().setRegistryName(ResourceLocation("stackupup_test", "dummy_item"))
+
+        try {
+            val result = StackLimitHooks.applyDynamicStackLimit(
+                stack = ItemStack(item, 1, 0),
+                baseLimit = 64,
+            )
+
+            assertEquals(256, result)
+            assertEquals(0, calls)
+        } finally {
+            restoreResolver()
+        }
+    }
+
+    @Test
+    fun `materialRule_shouldCallMaterialResolver`() {
+        Bootstrap.register()
+        var calls = 0
+        val restoreResolver = GregTechMaterialResolver.installResolverForTesting {
+            calls++
+            "steel"
+        }
+        RuleRuntime.replaceSnapshot(
+            RuleSnapshot(
+                version = 17L,
+                rules = listOf(
+                    RuleCompiler.compileLine("material = steel -> 256", 1),
+                ),
+            ),
+        )
+        RuleRuntime.replaceOreDictIndex(OreDictIndex.fromStackLoader { emptySet() })
+        val item = Item().setRegistryName(ResourceLocation("stackupup_test", "material_item"))
+
+        try {
+            val result = StackLimitHooks.applyDynamicStackLimit(
+                stack = ItemStack(item, 1, 0),
+                baseLimit = 64,
+            )
+
+            assertEquals(256, result)
+            assertEquals(1, calls)
+        } finally {
+            restoreResolver()
+        }
+    }
+
+    @Test
+    fun `materialRule_shouldNotMatchWhenResolverReturnsEmpty`() {
+        Bootstrap.register()
+        RuleRuntime.replaceSnapshot(
+            RuleSnapshot(
+                version = 16L,
+                rules = listOf(
+                    RuleCompiler.compileLine("material = steel -> 256", 1),
+                ),
+            ),
+        )
+        RuleRuntime.replaceOreDictIndex(OreDictIndex.fromStackLoader { emptySet() })
+        val item = Item().setRegistryName(ResourceLocation("stackupup_test", "non_material_item"))
+
+        val result = StackLimitHooks.applyDynamicStackLimit(
+            stack = ItemStack(item, 1, 0),
+            baseLimit = 64,
+        )
+
+        assertEquals(64, result)
     }
 
     @Test

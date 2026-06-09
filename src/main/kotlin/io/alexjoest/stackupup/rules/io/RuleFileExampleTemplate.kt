@@ -23,6 +23,7 @@ Rule without condition applies to all items.
   mod       mod ID               mod = thermal
   type      type                 type = block
   ore       ore dictionary       ore = ingotSteel
+  material  GT material          material = steel
   meta      damage / meta        meta = 324
   metadata  alias for meta       metadata = 324
   size      current limit        size > 2
@@ -46,6 +47,7 @@ Rule without condition applies to all items.
   item in [minecraft:egg, minecraft:snowball] -> 128
   mod in [thermal, ic2, enderio] -> 1024
   ore in [ingotSteel, ingotIron] -> 2048
+  material in [steel, modid:material_name] -> 2048
   meta in [11305, 11306] -> 512
 
 
@@ -84,6 +86,14 @@ Rule without condition applies to all items.
   type = block && mod = minecraft
   type = item
 
+  material = steel
+  material = modid:material_name
+  material is optional: it is set only when GregTech is loaded and
+  the item resolves to a GT material. It is empty when GregTech is not
+  loaded or for non-material items. Use material registry names: native
+  GT materials such as steel, or modid:name for cross-mod material names.
+  It does not cover every GT item.
+
 
 ═══ Wildcards ═══════════════════════════════════════════════════════════
 
@@ -104,6 +114,7 @@ Rule without condition applies to all items.
 
   ore = ingotSteel -> 1024
   ore = ingotSteel -> *2
+  material = steel -> 2048
 
   item = gregtech:meta_ingot@324 -> 512
   item = gregtech:meta_ingot && meta = 324 -> 512

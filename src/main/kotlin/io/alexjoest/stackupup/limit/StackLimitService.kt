@@ -19,9 +19,16 @@ class StackLimitService(private val snapshot: RuleSnapshot) {
         baseLimit = context.baseLimit,
         oreNames = context.oreNames,
         tab = context.tab,
+        material = context.material,
     )
 
-    fun resolve(identity: StackIdentity, baseLimit: Int, oreNames: Set<String>, tab: String = ""): Int = resolve(
+    fun resolve(
+        identity: StackIdentity,
+        baseLimit: Int,
+        oreNames: Set<String>,
+        tab: String = "",
+        material: String = "",
+    ): Int = resolve(
         itemId = identity.itemId,
         modId = identity.modId,
         metadata = identity.meta,
@@ -29,10 +36,20 @@ class StackLimitService(private val snapshot: RuleSnapshot) {
         baseLimit = baseLimit,
         oreNames = oreNames,
         tab = tab,
+        material = material,
     )
 
-    fun resolve(itemId: String, modId: String, metadata: Int, type: String, baseLimit: Int, oreNames: Set<String>, tab: String = ""): Int {
-        val key = ResolvedLimitKey(itemId, modId, metadata, type, baseLimit)
+    fun resolve(
+        itemId: String,
+        modId: String,
+        metadata: Int,
+        type: String,
+        baseLimit: Int,
+        oreNames: Set<String>,
+        tab: String = "",
+        material: String = "",
+    ): Int {
+        val key = ResolvedLimitKey(itemId, modId, metadata, type, baseLimit, if (snapshot.needsMaterial) material else "")
         resolvedCache[key]?.let { return it }
 
         val matchContext = RuleMatchContext(
@@ -43,6 +60,7 @@ class StackLimitService(private val snapshot: RuleSnapshot) {
             type = type,
             oreNames = oreNames,
             tab = tab,
+            material = material,
         )
 
         var result = baseLimit
@@ -61,11 +79,20 @@ class StackLimitService(private val snapshot: RuleSnapshot) {
 
     fun needsOreNames(): Boolean = snapshot.needsOreNames
 
+    fun needsMaterial(): Boolean = snapshot.needsMaterial
+
     fun debugResolvedCacheSize(): Int = resolvedCache.size
 
     // 这里故意不直接把 oreNames 放进缓存键：
     // 在当前 1.12.2 语义下，矿辞集合由 itemId + metadata 稳定决定；
     // 一旦规则快照或矿辞索引被替换，RuleRuntime 会整体刷新 StackLimitService，
     // 从而自然清空这层缓存。
-    private data class ResolvedLimitKey(val itemId: String, val modId: String, val metadata: Int, val type: String, val baseLimit: Int)
+    private data class ResolvedLimitKey(
+        val itemId: String,
+        val modId: String,
+        val metadata: Int,
+        val type: String,
+        val baseLimit: Int,
+        val material: String,
+    )
 }

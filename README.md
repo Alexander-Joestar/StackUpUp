@@ -73,6 +73,7 @@ item = minecraft:egg -> 256
 item = * -> 128
 mod = thermal -> 1024
 ore = ingotSteel -> 2048
+material = steel -> 2048
 
 item in [minecraft:egg, minecraft:snowball] -> 128
 item = gregtech:gt.metaitem.01 && meta = 11305 -> 512
@@ -87,8 +88,11 @@ tab = buildingBlocks -> 256
 
 ```su
 item = gregtech:gt.metaitem.01@11305 && ore = ingotSteel -> 1024
+material = steel && mod = gregtech -> 1024
 ore = ingotSteel -> 512 -> *2
 ```
+
+`material` 是可选匹配字段，只在 GregTech 已加载、且物品可以解析出 GT material 时有值；GT 未加载或非材料物品会当作空值处理。请使用 material registry name：GT 原生材料可写 `steel` 这类名称；需要跨 mod 精确区分时使用 `modid:name` 格式，不在示例中列未经验证的具体材料。它不表示支持所有 GT 物品。
 
 `category` 字段曾经短暂出现过，但 1.12.2 下不再需要，建议不要使用：
 

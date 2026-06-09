@@ -14,6 +14,7 @@ data class StackContext(
     val baseLimit: Int,
     val oreNames: Set<String>,
     val tab: String = "",
+    val material: String = "",
 ) {
     fun toIdentity(): StackIdentity = StackIdentity(itemId, modId, metadata, type)
 }

@@ -45,4 +45,16 @@ class StackContextResolverTest {
         assertNotNull(context)
         assertTrue(context?.oreNames?.isEmpty() == true)
     }
+
+    @Test
+    fun `shouldReturnEmptyMaterialWhenMaterialLookupDisabled`() {
+        Bootstrap.register()
+        val item = Item().setRegistryName(ResourceLocation("gregtech", "meta_ingot"))
+        val stack = ItemStack(item, 1, 324)
+
+        val context = StackContextResolver.fromStack(stack = stack, baseLimit = 64, includeMaterial = false)
+
+        assertNotNull(context)
+        assertEquals("", context?.material)
+    }
 }

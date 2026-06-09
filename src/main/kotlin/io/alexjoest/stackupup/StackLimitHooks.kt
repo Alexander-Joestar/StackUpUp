@@ -1,5 +1,6 @@
 package io.alexjoest.stackupup
 
+import io.alexjoest.stackupup.limit.GregTechMaterialResolver
 import io.alexjoest.stackupup.limit.RuleRuntime
 import io.alexjoest.stackupup.limit.StackIdentity
 import net.minecraft.item.ItemBlock
@@ -44,6 +45,11 @@ object StackLimitHooks {
             } else {
                 emptySet()
             }
+            val material = if (limitService.needsMaterial()) {
+                GregTechMaterialResolver.resolveMaterial(stack)
+            } else {
+                ""
+            }
             return limitService.resolve(
                 itemId = registryName.toString(),
                 modId = registryName.namespace,
@@ -51,6 +57,7 @@ object StackLimitHooks {
                 type = if (stack.item is ItemBlock) "block" else "item",
                 baseLimit = originalBaseline,
                 oreNames = oreNames,
+                material = material,
             )
         } finally {
             enteringItemMixin.remove()

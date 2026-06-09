@@ -32,6 +32,9 @@ mod = thermal -> 1024
 # 按矿物辞典
 ore = ingotSteel -> 2048
 
+# 按 GregTech material（可选字段）
+material = steel -> 2048
+
 # 列表匹配
 item in [minecraft:egg, minecraft:snowball] -> 128
 ore in [ingotSteel, ingotIron] -> 2048
@@ -70,6 +73,7 @@ item = minecraft:wool:14 -> 512
 ```text
 # 多条件 AND
 item = gregtech:gt.metaitem.01 && meta = 11305 && ore = ingotSteel -> 1024
+material = steel && mod = gregtech -> 1024
 
 # OR 条件
 ore = ingotSteel || ore = ingotIron -> 2048
@@ -190,8 +194,11 @@ StackUpUp 按以下顺序加载规则文件，后面的规则会覆盖或叠加�
 
 ## DSL 语法要点
 
-- 匹配字段：`item`、`mod`、`ore`、`meta`（别名 `metadata`）、`size`、`type`、`tab`（仅限创造模式标签页）
+- 匹配字段：`item`、`mod`、`ore`、`material`、`meta`（别名 `metadata`）、`size`、`type`、`tab`（仅限创造模式标签页）
 - 特殊匹配：`item = *` 匹配所有可堆叠物品（排除 baseSize=1 的工具、盔甲等）
+- `material` 是可选字段，仅在 GregTech 已加载且能解析出 GT material 时有值；GT 未加载或非材料物品为空
+- `material` 请使用 material registry name：GT 原生材料可写 `steel` 这类名称；需要跨 mod 精确区分时使用 `modid:name` 格式，不在示例中列未经验证的具体材料
+- `material` 不承诺覆盖所有 GT 物品
 - 比较运算：`= != > >= < <=`
 - 列表匹配：`field in [value1, value2]`
 - 范围写法：`2 < size < 64`、`100 < meta < 300`

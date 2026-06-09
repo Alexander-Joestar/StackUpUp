@@ -73,6 +73,7 @@ item = minecraft:egg -> 256
 item = * -> 128
 mod = thermal -> 1024
 ore = ingotSteel -> 2048
+material = steel -> 2048
 
 item in [minecraft:egg, minecraft:snowball] -> 128
 item = gregtech:gt.metaitem.01 && meta = 11305 -> 512
@@ -87,8 +88,11 @@ Actions can be chained to keep transforming the current result:
 
 ```su
 item = gregtech:gt.metaitem.01@11305 && ore = ingotSteel -> 1024
+material = steel && mod = gregtech -> 1024
 ore = ingotSteel -> 512 -> *2
 ```
+
+`material` is an optional match field. It only has a value when GregTech is loaded and the item can be resolved to a GT material; when GT is not loaded, or for non-material items, it is empty. Use the material registry name: native GT materials can use names such as `steel`; use the `modid:name` format when you need to distinguish materials across mods, without treating unverified concrete material IDs as examples. This does not promise support for every GT item.
 
 The old `category` field is not needed on 1.12.2 and should not be used:
 

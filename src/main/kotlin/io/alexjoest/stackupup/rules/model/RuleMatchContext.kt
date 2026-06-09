@@ -8,4 +8,5 @@ data class RuleMatchContext(
     val type: String,
     val oreNames: Set<String>,
     val tab: String = "",
+    val material: String = "",
 )

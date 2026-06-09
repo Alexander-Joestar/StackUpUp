@@ -184,8 +184,25 @@ class RuleCompilerTest {
     }
 
     @Test
+    fun `shouldMatchMaterialFieldExactly`() {
+        val compiled = RuleCompiler.compileLine("material = steel -> 2048", 21)
+
+        assertEquals(true, compiled.matches(RuleMatchContext("gregtech:meta_item_1", "gregtech", 1000, 64, "item", emptySet(), material = "steel")))
+        assertEquals(false, compiled.matches(RuleMatchContext("gregtech:meta_item_1", "gregtech", 1001, 64, "item", emptySet(), material = "copper")))
+    }
+
+    @Test
+    fun `shouldMatchMaterialListAndRejectEmptyDefault`() {
+        val compiled = RuleCompiler.compileLine("material in [steel, copper] -> 2048", 22)
+
+        assertEquals(true, compiled.matches(RuleMatchContext("gregtech:meta_item_1", "gregtech", 1000, 64, "item", emptySet(), material = "steel")))
+        assertEquals(true, compiled.matches(RuleMatchContext("gregtech:meta_item_1", "gregtech", 1001, 64, "item", emptySet(), material = "copper")))
+        assertEquals(false, compiled.matches(RuleMatchContext("gregtech:meta_item_1", "gregtech", 1002, 64, "item", emptySet())))
+    }
+
+    @Test
     fun `shouldMatchMetaRange`() {
-        val compiled = RuleCompiler.compileLine("100 < meta < 300 -> 512", 21)
+        val compiled = RuleCompiler.compileLine("100 < meta < 300 -> 512", 23)
 
         assertEquals(true, compiled.matches(RuleMatchContext("minecraft:wool", "minecraft", 150, 64, "block", emptySet())))
         assertEquals(false, compiled.matches(RuleMatchContext("minecraft:wool", "minecraft", 50, 64, "block", emptySet())))

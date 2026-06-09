@@ -40,6 +40,7 @@ internal object RuleConditionCompiler {
         RuleField.MOD -> { c -> c.modId }
         RuleField.TYPE -> { c -> c.type }
         RuleField.TAB -> { c -> c.tab }
+        RuleField.MATERIAL -> { c -> c.material }
         else -> throw IllegalStateException("field is not STRING: $field")
     }
 

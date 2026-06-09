@@ -11,7 +11,12 @@ import net.minecraft.item.ItemStack
  */
 object StackContextResolver {
     @JvmStatic
-    fun fromStack(stack: ItemStack, baseLimit: Int, includeOreNames: Boolean = true): StackContext? {
+    fun fromStack(
+        stack: ItemStack,
+        baseLimit: Int,
+        includeOreNames: Boolean = true,
+        includeMaterial: Boolean = false,
+    ): StackContext? {
         if (stack.isEmpty) {
             return null
         }
@@ -28,6 +33,7 @@ object StackContextResolver {
             baseLimit = baseLimit,
             oreNames = if (includeOreNames) RuleRuntime.oreDictIndex().getOreNames(stack) else emptySet(),
             tab = tabLabel,
+            material = if (includeMaterial) GregTechMaterialResolver.resolveMaterial(stack) else "",
         )
     }
 }

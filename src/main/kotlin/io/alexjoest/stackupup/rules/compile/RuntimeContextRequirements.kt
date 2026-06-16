@@ -13,10 +13,12 @@ data class RuntimeContextRequirements(
     /**
      * 判断指定昂贵字段是否需要在当前规则快照下采集。
      */
-    fun requires(requirement: RuleContextRequirement): Boolean = when (requirement) {
-        RuleContextRequirement.ORE_NAMES -> RuleFieldContextProvider.ORE_NAMES in providers
-        RuleContextRequirement.MATERIAL -> RuleFieldContextProvider.MATERIAL in providers
-    }
+    fun requires(provider: RuleFieldContextProvider): Boolean = provider in providers
+
+    /**
+     * 兼容旧的 requirement 查询；新增字段应优先声明 RuleField.contextProviders。
+     */
+    fun requires(requirement: RuleContextRequirement): Boolean = requires(requirement.provider)
 
     companion object {
         /**
@@ -40,19 +42,12 @@ data class RuntimeContextRequirements(
         }
 
         fun fromProviders(providers: Iterable<RuleFieldContextProvider>): RuntimeContextRequirements =
-            RuntimeContextRequirements(providers.toList())
+            RuntimeContextRequirements(providers.toCollection(LinkedHashSet()).toList())
 
         /**
          * 从编译期字段需求创建运行时需求集合。
          */
         fun of(vararg requirements: RuleContextRequirement): RuntimeContextRequirements =
-            RuntimeContextRequirements(
-                requirements.mapTo(LinkedHashSet()) { requirement ->
-                    when (requirement) {
-                        RuleContextRequirement.ORE_NAMES -> RuleFieldContextProvider.ORE_NAMES
-                        RuleContextRequirement.MATERIAL -> RuleFieldContextProvider.MATERIAL
-                    }
-                }.toList()
-            )
+            fromProviders(requirements.map(RuleContextRequirement::provider))
     }
 }

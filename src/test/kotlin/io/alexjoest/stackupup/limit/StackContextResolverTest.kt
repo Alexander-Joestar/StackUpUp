@@ -1,6 +1,5 @@
 package io.alexjoest.stackupup.limit
 
-import io.alexjoest.stackupup.rules.RuleContextRequirement
 import io.alexjoest.stackupup.rules.RuleField
 import io.alexjoest.stackupup.rules.compile.RuntimeContextRequirements
 import net.minecraft.creativetab.CreativeTabs
@@ -62,6 +61,32 @@ class StackContextResolverTest {
     }
 
     @Test
+    fun `defaultStackContext_shouldQueryOreNamesForCompatibility`() {
+        Bootstrap.register()
+        val item = Item().setRegistryName(ResourceLocation("gregtech", "meta_ingot"))
+        val stack = ItemStack(item, 1, 324)
+        var oreDictCalls = 0
+        val previousIndex = RuleRuntime.oreDictIndex()
+
+        try {
+            RuleRuntime.replaceOreDictIndex(
+                OreDictIndex.fromStackLoader {
+                    oreDictCalls++
+                    setOf("ingotSteel")
+                },
+            )
+
+            val context = StackContextResolver.fromStack(stack = stack, baseLimit = 64)
+
+            assertNotNull(context)
+            assertEquals(setOf("ingotSteel"), context?.oreNames)
+            assertEquals(1, oreDictCalls)
+        } finally {
+            RuleRuntime.replaceOreDictIndex(previousIndex)
+        }
+    }
+
+    @Test
     fun `shouldReturnEmptyMaterialWhenMaterialLookupDisabled`() {
         Bootstrap.register()
         var calls = 0
@@ -105,10 +130,7 @@ class StackContextResolverTest {
             val context = StackContextResolver.fromStack(
                 stack = stack,
                 baseLimit = 64,
-                requirements = RuntimeContextRequirements.of(
-                    RuleContextRequirement.ORE_NAMES,
-                    RuleContextRequirement.MATERIAL,
-                ),
+                requirements = RuntimeContextRequirements.fromFields(setOf(RuleField.ORE, RuleField.MATERIAL)),
             )
 
             assertNotNull(context)

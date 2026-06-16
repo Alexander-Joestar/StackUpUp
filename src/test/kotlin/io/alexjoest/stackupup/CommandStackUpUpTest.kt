@@ -56,11 +56,11 @@ class CommandStackUpUpTest {
         val command = CommandStackUpUp()
         val sender = CapturingCommandSender()
 
-        assertEquals(listOf("reload"), command.tabCompletions(arrayOf("r")))
-        assertEquals(listOf("get", "set"), command.tabCompletions(arrayOf("state", "")))
-        assertEquals(listOf("false"), command.tabCompletions(arrayOf("state", "set", "f")))
-        assertEquals(emptyList<String>(), command.tabCompletions(arrayOf("reload", "")))
-        assertEquals(emptyList<String>(), command.tabCompletions(arrayOf("state", "set", "false", "extra")))
+        assertEquals(listOf("reload"), command.getTabCompletions(null, sender, arrayOf("r"), null))
+        assertEquals(listOf("get", "set"), command.getTabCompletions(null, sender, arrayOf("state", ""), null))
+        assertEquals(listOf("false"), command.getTabCompletions(null, sender, arrayOf("state", "set", "f"), null))
+        assertEquals(emptyList<String>(), command.getTabCompletions(null, sender, arrayOf("reload", ""), null))
+        assertEquals(emptyList<String>(), command.getTabCompletions(null, sender, arrayOf("state", "set", "false", "extra"), null))
     }
 
     @Test
@@ -82,7 +82,7 @@ class CommandStackUpUpTest {
         val command = command()
         val sender = CapturingCommandSender()
 
-        command.executeCommand(sender, arrayOf("state", "set", "feature", "yes"))
+        command.execute(null, sender, arrayOf("state", "set", "feature", "yes"))
 
         assertWorldMarkdownContains("- feature = true")
         sender.assertLastTranslation(StackUpUpIds.COMMAND_STATE_SET_KEY, "feature", true)
@@ -94,7 +94,7 @@ class CommandStackUpUpTest {
         val command = command()
         val sender = CapturingCommandSender()
 
-        command.executeCommand(sender, arrayOf("state", "set", "feature", "off"))
+        command.execute(null, sender, arrayOf("state", "set", "feature", "off"))
 
         assertWorldMarkdownContains("- feature = false")
         sender.assertLastTranslation(StackUpUpIds.COMMAND_STATE_SET_KEY, "feature", false)
@@ -102,7 +102,7 @@ class CommandStackUpUpTest {
 
     private fun assertWrongUsage(command: CommandStackUpUp, sender: ICommandSender, vararg args: String) {
         val exception = assertThrows(WrongUsageException::class.java) {
-            command.executeCommand(sender, args)
+            command.execute(null, sender, args)
         }
         assertEquals(StackUpUpIds.COMMAND_USAGE_KEY, exception.message)
     }

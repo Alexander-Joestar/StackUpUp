@@ -10,8 +10,13 @@ enum class FieldType { ITEM, STRING, STRING_SET, NUMERIC }
 
 /**
  * 规则字段需要的运行时上下文。
+ *
+ * 这是面向旧 ABI 和诊断调用的兼容投影；字段扩展的主路径是 RuleField.contextProviders。
  */
-enum class RuleContextRequirement { ORE_NAMES, MATERIAL }
+enum class RuleContextRequirement(val provider: RuleFieldContextProvider) {
+    ORE_NAMES(RuleFieldContextProvider.ORE_NAMES),
+    MATERIAL(RuleFieldContextProvider.MATERIAL),
+}
 
 /**
  * 规则字段枚举。

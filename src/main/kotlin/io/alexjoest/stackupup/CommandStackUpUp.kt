@@ -32,14 +32,7 @@ class CommandStackUpUp internal constructor(
     override fun getUsage(sender: ICommandSender): String = StackUpUpIds.COMMAND_USAGE_KEY
 
     @Throws(CommandException::class)
-    override fun execute(server: MinecraftServer, sender: ICommandSender, args: Array<out String>) {
-        executeCommand(sender, args)
-    }
-
-    /**
-     * 执行命令参数分发；测试直接调用这个入口。
-     */
-    internal fun executeCommand(sender: ICommandSender, args: Array<out String>) {
+    override fun execute(server: MinecraftServer?, sender: ICommandSender, args: Array<out String>) {
         when (args.getOrNull(0)) {
             SUBCOMMAND_RELOAD -> emitReloadFeedback(sender)
             SUBCOMMAND_EDIT -> openRulesFile(sender)
@@ -49,16 +42,11 @@ class CommandStackUpUp internal constructor(
     }
 
     override fun getTabCompletions(
-        server: MinecraftServer,
+        server: MinecraftServer?,
         sender: ICommandSender,
         args: Array<out String>,
         @Nullable targetPos: BlockPos?,
-    ): MutableList<String> = tabCompletions(args)
-
-    /**
-     * 生成命令补全项；测试直接覆盖这一层。
-     */
-    internal fun tabCompletions(args: Array<out String>): MutableList<String> = when (args.size) {
+    ): MutableList<String> = when (args.size) {
         1 -> getListOfStringsMatchingLastWord(args, *subcommands)
         2 -> if (args[0] == SUBCOMMAND_STATE) getListOfStringsMatchingLastWord(args, STATE_ACTION_GET, STATE_ACTION_SET) else mutableListOf()
         3 -> if (args[0] == SUBCOMMAND_STATE && args[1] == STATE_ACTION_SET) {
@@ -112,7 +100,7 @@ class CommandStackUpUp internal constructor(
 
         val desktop = openCapableDesktop()
         if (desktop == null) {
-            sender.replyUnsupportedOpen()
+            sender.reply(StackUpUpIds.COMMAND_EDIT_UNSUPPORTED_KEY)
             return
         }
 
@@ -137,10 +125,6 @@ class CommandStackUpUp internal constructor(
 
     private fun ICommandSender.reply(key: String, vararg args: Any) {
         sendMessage(TextComponentTranslation(key, *args))
-    }
-
-    private fun ICommandSender.replyUnsupportedOpen() {
-        reply(StackUpUpIds.COMMAND_EDIT_UNSUPPORTED_KEY)
     }
 
     private companion object {

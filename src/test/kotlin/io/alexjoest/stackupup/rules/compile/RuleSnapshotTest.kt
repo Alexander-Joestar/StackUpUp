@@ -89,7 +89,27 @@ class RuleSnapshotTest {
     }
 
     @Test
-    fun `runtimeRequirements_fromFields_shouldDeduplicateProvidersAndKeepFieldOrder`() {
+    fun `runtimeRequirements_fromFields_shouldInferProvidersFromFieldDeclarations`() {
+        val requirements = RuntimeContextRequirements.fromFields(
+            setOf(
+                RuleField.TAB,
+                RuleField.MATERIAL,
+                RuleField.ORE,
+            ),
+        )
+
+        assertEquals(
+            listOf(
+                RuleFieldContextProvider.TAB,
+                RuleFieldContextProvider.MATERIAL,
+                RuleFieldContextProvider.ORE_NAMES,
+            ),
+            requirements.providers,
+        )
+    }
+
+    @Test
+    fun `runtimeRequirements_fromFields_shouldDeduplicateRepeatedProviderDeclarations`() {
         val requirements = RuntimeContextRequirements.fromFields(
             listOf(
                 RuleField.TAB,

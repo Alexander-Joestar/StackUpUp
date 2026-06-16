@@ -1,7 +1,7 @@
 package io.alexjoest.stackupup.rules.compile
 
-import io.alexjoest.stackupup.rules.RuleContextRequirement
 import io.alexjoest.stackupup.rules.RuleField
+import io.alexjoest.stackupup.rules.field.RuleFieldContextProvider
 
 data class RuleContextRequirements(
     val referencedFields: Set<RuleField>,
@@ -13,8 +13,8 @@ data class RuleContextRequirements(
     fun runtimeRequirements(): RuntimeContextRequirements =
         runtimeRequirementsCache
 
-    val needsOreNames: Boolean = runtimeRequirementsCache.requires(RuleContextRequirement.ORE_NAMES)
-    val needsMaterial: Boolean = runtimeRequirementsCache.requires(RuleContextRequirement.MATERIAL)
+    val needsOreNames: Boolean = runtimeRequirementsCache.requires(RuleFieldContextProvider.ORE_NAMES)
+    val needsMaterial: Boolean = runtimeRequirementsCache.requires(RuleFieldContextProvider.MATERIAL)
 
     companion object {
         fun fromRules(rules: List<CompiledRule>): RuleContextRequirements {

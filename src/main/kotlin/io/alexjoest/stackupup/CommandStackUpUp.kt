@@ -32,7 +32,15 @@ class CommandStackUpUp internal constructor(
     override fun getUsage(sender: ICommandSender): String = StackUpUpIds.COMMAND_USAGE_KEY
 
     @Throws(CommandException::class)
-    override fun execute(server: MinecraftServer?, sender: ICommandSender, args: Array<out String>) {
+    override fun execute(server: MinecraftServer, sender: ICommandSender, args: Array<out String>) {
+        executeArguments(sender, args)
+    }
+
+    /**
+     * Forge 已路由到本命令后分发 `/stackupup` 参数。
+     * 独立出来便于不依赖 MinecraftServer 实例验证参数行为。
+     */
+    internal fun executeArguments(sender: ICommandSender, args: Array<out String>) {
         when (args.getOrNull(0)) {
             SUBCOMMAND_RELOAD -> emitReloadFeedback(sender)
             SUBCOMMAND_EDIT -> openRulesFile(sender)
@@ -42,11 +50,16 @@ class CommandStackUpUp internal constructor(
     }
 
     override fun getTabCompletions(
-        server: MinecraftServer?,
+        server: MinecraftServer,
         sender: ICommandSender,
         args: Array<out String>,
         @Nullable targetPos: BlockPos?,
-    ): MutableList<String> = when (args.size) {
+    ): MutableList<String> = completeArguments(args)
+
+    /**
+     * 生成命令参数补全，不依赖 Forge server 上下文。
+     */
+    internal fun completeArguments(args: Array<out String>): MutableList<String> = when (args.size) {
         1 -> getListOfStringsMatchingLastWord(args, *subcommands)
         2 -> if (args[0] == SUBCOMMAND_STATE) getListOfStringsMatchingLastWord(args, STATE_ACTION_GET, STATE_ACTION_SET) else mutableListOf()
         3 -> if (args[0] == SUBCOMMAND_STATE && args[1] == STATE_ACTION_SET) {

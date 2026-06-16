@@ -86,6 +86,15 @@ ASM 仍可能存在，但它的定位已经降级：
 
 规则字段仍由静态 `RuleField` enum 自描述，不引入动态注册表。昂贵/可选上下文由 `RuleField.contextProviders` 聚合成 `RuntimeContextRequirements` provider plan，`StackContextResolver` 只执行已编译 plan。`RuleContextRequirement` 只保留旧兼容和诊断查询，不再作为新增字段的主扩展点。
 
+### 本轮收紧结论
+
+- `RuleMatchContext`、`RuleField.requirements`、`DevProbeContextResolver` 已删除，不再作为实现或文档参考。
+- 命令层保留 Forge 非空 override 签名；参数逻辑只做轻量验证，不依赖 `MinecraftServer` 测试替身。
+- `RuntimeContextRequirements` 的主查询是 `requires(...)`，`fromProviders` 只做保序去重；`ORE_NAMES` 不进入 cache key。
+- `RuleStateService` 继续承担三态契约：store unavailable 返回 `null`，state key missing 返回 `false`，`setState` 只反映底层写入是否改变文件。
+- `RuleRuntimeCoordinator` 成功路径发布 runtime + restore backup + lastReport；失败路径保留失败 report，不替换 runtime。
+- 不复活 `remainder-system`，吞物品问题仍优先修真实容量和写入语义。
+
 ## 已知限制
 
 1. 自定义容器若完全绕过 vanilla `Slot` / `Container` 流程，可能需要单独兼容。

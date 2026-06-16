@@ -18,8 +18,9 @@
 - Rules 运行态以 `StackContext` 为主入口；旧参数入口只保留兼容薄壳。
 - `RuleField` 继续保持静态 enum 自描述，不新增动态注册表。
 - `RuleField` matcher/cache 直接读取 `StackContext`，不要再复制 `RuleMatchContext` / 字段缓存上下文。
-- 昂贵/可选上下文走 `RuleField.contextProviders` 聚合成 `RuntimeContextRequirements` provider plan。
+- 昂贵/可选上下文走 `RuleField.contextProviders -> RuntimeContextRequirements` provider plan。
 - `StackContextResolver` 只执行已编译 plan，不按字段名硬编码分支。
 - `RuleContextRequirement` 只作旧兼容/诊断查询，不作为新增字段的主扩展点。
-- Dev 探针解析上下文必须使用当前 provider plan。
+- Dev 探针解析上下文必须使用当前 provider plan，旧探针薄包装不再作为入口。
+- 命令参数只做轻量验证，不要为了测试去补 `MinecraftServer` stub。
 - `reload` 不顺手刷新示例文件；示例同步是显式初始化动作。

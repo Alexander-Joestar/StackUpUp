@@ -123,6 +123,8 @@ The core safety rule is: **advertised capacity must not be larger than real writ
 
 For known mods, StackUpUp uses MixinBooter late mixins to raise the real `getInventoryStackLimit()` / `getSlotLimit()` style entry points, then lets slot limits follow that real capacity. Old ASM remains only as a legacy and early-loading fallback. New compatibility work should prefer mixins, and the old write-after-the-fact remainder-system is not part of the current design.
 
+Rule metadata stays on the static `RuleField` enum. Expensive or optional context comes from `RuleField.contextProviders`, merged into a `RuntimeContextRequirements` provider plan; `RuleContextRequirement` remains only for legacy compatibility and diagnostics.
+
 Current late mixin coverage includes:
 
 - Applied Energistics 2

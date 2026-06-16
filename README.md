@@ -123,6 +123,8 @@ StackUpUp 对遵循原版堆叠语义的模组通常直接生效。对自行写�
 
 对已知模组，StackUpUp 通过 MixinBooter late mixin 扩展真实 `getInventoryStackLimit()` / `getSlotLimit()` 等容量入口，再让槽位上限跟随。旧 ASM 只作为历史兼容和早期加载兜底，不再是新增兼容首选；也不会引入或复活写入后回填的 remainder-system。
 
+规则侧继续采用静态 `RuleField` 自描述，昂贵/可选上下文由 `RuleField.contextProviders` 汇总到 `RuntimeContextRequirements` provider plan；`RuleContextRequirement` 仅作旧兼容和诊断查询。
+
 当前 late mixin 覆盖范围包括：
 
 - Applied Energistics 2

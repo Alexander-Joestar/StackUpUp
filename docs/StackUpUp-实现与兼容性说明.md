@@ -71,6 +71,8 @@ MixinBooter 是当前兼容层的首选入口：
 
 AE2 经 `AdaptorItemHandler` 向未知或不安全 `IItemHandler` 插入大于 64 的堆叠时，若下游 handler 截断写入却返回空 remainder，可能吞物品。当前修复是在 AE2 late mixin 中包裹 `AdaptorItemHandler#addItems` 的 `insertItem` 调用：对 unknown handler 按 `min(64, getSlotLimit(slot))` 分片插入；已知 Forge fixed compat 基础 wrapper 保持直通。`CombinedInvWrapper` / `RangedWrapper` 可继续包任意第三方 handler，所以仍按 unknown 处理。本轮没有恢复 remainder-system，也没有扩大 dynamic ASM。
 
+AE2 样板终端的空白样板输入槽由 AE 自己的 `SlotRestrictedInput` 管理，不完全走通用 Forge slot 广告路径。当前用 late mixin 在普通、扩展处理、无线样板终端构造结束后提升 `patternSlotIN` 的 `setStackLimit`，只影响空白样板输入槽；encoded pattern 输出槽仍保持 AE 原本的 1 个限制。
+
 ## ASM 边界
 
 ASM 仍可能存在，但它的定位已经降级：

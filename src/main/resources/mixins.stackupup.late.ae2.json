@@ -7,7 +7,8 @@
   "mixins": [
     "AppEngAdaptorItemHandlerMixin",
     "AppEngInternalAEInventoryMixin",
-    "AppEngInternalInventoryMixin"
+    "AppEngInternalInventoryMixin",
+    "AppEngPatternTermMixin"
   ],
   "client": [],
   "server": []

@@ -136,6 +136,7 @@ AE2 相关风险：
 - 已知 Forge fixed compat 基础 wrapper 直通。
 - `CombinedInvWrapper` / `RangedWrapper` 可包第三方 handler，仍按 unknown。
 - 不恢复 remainder-system，也不扩大 dynamic ASM。
+- 样板终端空白样板输入槽单独提升 `patternSlotIN`，encoded pattern 输出槽保持 1。
 
 TR 结论：
 

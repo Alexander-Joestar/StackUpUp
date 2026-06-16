@@ -1,7 +1,6 @@
 package io.alexjoest.stackupup.rules
 
 import io.alexjoest.stackupup.rules.field.MissingValuePolicy
-import io.alexjoest.stackupup.rules.field.RuleFieldCacheKeyExtractor
 import io.alexjoest.stackupup.rules.field.RuleFieldContextProvider
 import io.alexjoest.stackupup.rules.field.RuleFieldMatcherFactory
 import io.alexjoest.stackupup.rules.field.RuleFieldMatchers
@@ -24,7 +23,7 @@ enum class RuleField(
     val fieldType: FieldType,
     aliases: Set<String> = emptySet(),
     val contextProviders: Set<RuleFieldContextProvider> = emptySet(),
-    private val cacheKeyExtractor: RuleFieldCacheKeyExtractor? = null,
+    private val cacheKeyExtractor: ((StackContext) -> String)? = null,
     private val matcherFactory: RuleFieldMatcherFactory,
 ) {
     ITEM(FieldType.ITEM, matcherFactory = RuleFieldMatchers.item()),
@@ -38,7 +37,7 @@ enum class RuleField(
     MATERIAL(
         FieldType.STRING,
         contextProviders = setOf(RuleFieldContextProvider.MATERIAL),
-        cacheKeyExtractor = RuleFieldCacheKeyExtractor { it.material },
+        cacheKeyExtractor = StackContext::material,
         matcherFactory = RuleFieldMatchers.string(StackContext::material, MissingValuePolicy.NEVER_MATCH),
     ),
     META(FieldType.NUMERIC, setOf("metadata"), matcherFactory = RuleFieldMatchers.numeric(StackContext::metadata)),
@@ -46,23 +45,13 @@ enum class RuleField(
     TAB(
         FieldType.STRING,
         contextProviders = setOf(RuleFieldContextProvider.TAB),
-        cacheKeyExtractor = RuleFieldCacheKeyExtractor { it.tab },
+        cacheKeyExtractor = StackContext::tab,
         matcherFactory = RuleFieldMatchers.string(StackContext::tab),
     ),
     ;
 
     val id: String by lazy { name.lowercase() }
     private val matchers: Set<String> by lazy { aliases.mapTo(mutableSetOf(name)) { it.uppercase() } }
-
-    @Deprecated("Use contextProviders; kept for legacy diagnostics/tests.")
-    val requirements: Set<RuleContextRequirement>
-        get() = contextProviders.mapNotNullTo(LinkedHashSet()) { provider ->
-            when (provider) {
-                RuleFieldContextProvider.ORE_NAMES -> RuleContextRequirement.ORE_NAMES
-                RuleFieldContextProvider.MATERIAL -> RuleContextRequirement.MATERIAL
-                RuleFieldContextProvider.TAB -> null
-            }
-        }
 
     fun contributesToCacheKey(): Boolean = cacheKeyExtractor != null
 
@@ -82,7 +71,7 @@ enum class RuleField(
      * 提取该字段贡献给规则缓存键的值。
      */
     internal fun cacheKeyValue(context: StackContext): String =
-        cacheKeyExtractor?.extract(context).orEmpty()
+        cacheKeyExtractor?.invoke(context).orEmpty()
 
     companion object {
         private val byName: Map<String, RuleField> by lazy {

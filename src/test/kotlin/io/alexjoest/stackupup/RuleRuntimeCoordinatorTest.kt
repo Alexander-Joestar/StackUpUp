@@ -65,6 +65,35 @@ class RuleRuntimeCoordinatorTest {
     }
 
     @Test
+    fun `reload_shouldCacheFailureReportWithoutPublishingRuntimeWhenLoadFails`() {
+        val tempDir = createTempDirectory("stackupup-runtime-failure").toFile()
+        val configFile = File(tempDir, "config").apply {
+            writeText("not a directory", Charsets.UTF_8)
+        }
+        val expectedRulesFile = File(
+            File(configFile, StackUpUpIds.RULES_DIRECTORY_NAME),
+            StackUpUpIds.RULES_FILE_NAME,
+        )
+        val previousSnapshot = RuleRuntime.currentSnapshot()
+        val previousIndex = RuleRuntime.oreDictIndex()
+
+        RuleFileLocator.setConfigDirectory(configFile)
+
+        try {
+            val report = RuleRuntimeCoordinator.reload(enableDslRules = true)
+
+            assertEquals(expectedRulesFile.absolutePath, report.file.absolutePath)
+            assertEquals(0, report.snapshot.rules.size)
+            assertTrue(report.errors.isNotEmpty())
+            assertEquals(report, RuleRuntimeCoordinator.lastReport())
+            assertSame(previousSnapshot, RuleRuntime.currentSnapshot())
+            assertSame(previousIndex, RuleRuntime.oreDictIndex())
+        } finally {
+            RuleFileLocator.resetForTests()
+        }
+    }
+
+    @Test
     fun `replaceRuntime_shouldPublishSnapshotOreIndexAndLimitServiceTogether`() {
         val previousSnapshot = RuleRuntime.currentSnapshot()
         val previousIndex = RuleRuntime.oreDictIndex()

@@ -42,21 +42,28 @@ object RuleRuntimeCoordinator {
             } else {
                 RuleReloadPipeline.disabled(primaryRulesFile)
             }
-            val oreDictIndex = if (enableDslRules) OreDictIndex.createDefault() else RuleRuntime.oreDictIndex()
-            RuleRuntime.replaceRuntime(report.snapshot, oreDictIndex)
-            StackSizeBackupRegistry.restoreAll()
-            report.also { lastReportState = it }
+            publishSuccessfulReload(report, enableDslRules)
         } catch (ex: Exception) {
-            val report = RuleReloadReport(
-                file = primaryRulesFile,
-                snapshot = RuleSnapshot(version = 0L, rules = emptyList()),
-                errors = listOf(LocalizedMessage(ex.message ?: ex.javaClass.simpleName)),
-                warnings = emptyList(),
-            )
+            val report = failedReloadReport(primaryRulesFile, ex)
             lastReportState = report
             report
         }
     }
+
+    private fun publishSuccessfulReload(report: RuleReloadReport, enableDslRules: Boolean): RuleReloadReport {
+        val oreDictIndex = if (enableDslRules) OreDictIndex.createDefault() else RuleRuntime.oreDictIndex()
+        RuleRuntime.replaceRuntime(report.snapshot, oreDictIndex)
+        StackSizeBackupRegistry.restoreAll()
+        lastReportState = report
+        return report
+    }
+
+    private fun failedReloadReport(primaryRulesFile: File, ex: Exception): RuleReloadReport = RuleReloadReport(
+        file = primaryRulesFile,
+        snapshot = RuleSnapshot(version = 0L, rules = emptyList()),
+        errors = listOf(LocalizedMessage(ex.message ?: ex.javaClass.simpleName)),
+        warnings = emptyList(),
+    )
 
     /**
      * 显式同步规则示例文件，避免命令重载产生写文件副作用。

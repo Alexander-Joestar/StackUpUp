@@ -28,7 +28,7 @@ internal object RuleReloadPipeline {
         val stateErrors = parsedMarkdownFiles.flatMap { it.document.errors }
         val markdownResult = MarkdownRuleSource.fromParsedFiles(parsedMarkdownFiles, gateContext)
         val dslResult = DslRuleSource.fromFiles(dslFiles, gateContext)
-        val result = RuleLoadResult(
+        val mergedRules = RuleLoadResult(
             snapshot = RuleSnapshot(
                 version = maxOf(markdownResult.snapshot.version, dslResult.snapshot.version),
                 rules = markdownResult.snapshot.rules + dslResult.snapshot.rules,
@@ -37,9 +37,9 @@ internal object RuleReloadPipeline {
         )
         RuleReloadReport(
             file = primaryRulesFile,
-            snapshot = result.snapshot,
-            warnings = RuleComplexityAnalyzer.analyze(result.snapshot),
-            errors = result.errors + stateErrors.map { RuleMessages.message(RuleMessageKey.STATE_ERROR_PREFIX, it) },
+            snapshot = mergedRules.snapshot,
+            warnings = RuleComplexityAnalyzer.analyze(mergedRules.snapshot),
+            errors = mergedRules.errors + stateErrors.map { RuleMessages.message(RuleMessageKey.STATE_ERROR_PREFIX, it) },
         )
     } catch (ex: Exception) {
         RuleReloadReport(

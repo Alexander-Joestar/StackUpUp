@@ -131,6 +131,11 @@ AE2 相关风险：
 - AE2 走 capability。
 - AE2 信任 handler 返回的 remainder。
 - 如果 handler 返回 `ItemStack.EMPTY`，但 backing 只写入 64，就会吞物品。
+- 当前 AE2 修复包裹 `AdaptorItemHandler#addItems` 内的 `insertItem`。
+- unknown handler 按 `min(64, getSlotLimit(slot))` 分片插入。
+- 已知 Forge fixed compat 基础 wrapper 直通。
+- `CombinedInvWrapper` / `RangedWrapper` 可包第三方 handler，仍按 unknown。
+- 不恢复 remainder-system，也不扩大 dynamic ASM。
 
 TR 结论：
 

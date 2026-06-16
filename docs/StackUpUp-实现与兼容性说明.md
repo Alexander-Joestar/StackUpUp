@@ -67,6 +67,10 @@ MixinBooter 是当前兼容层的首选入口：
 
 这些模块可以通过 `config/stackupup.cfg` 的 `compatibility` 分类独立开关，修改后需要重启 Minecraft。
 
+### AE2 当前修复记录
+
+AE2 经 `AdaptorItemHandler` 向未知或不安全 `IItemHandler` 插入大于 64 的堆叠时，若下游 handler 截断写入却返回空 remainder，可能吞物品。当前修复是在 AE2 late mixin 中包裹 `AdaptorItemHandler#addItems` 的 `insertItem` 调用：对 unknown handler 按 `min(64, getSlotLimit(slot))` 分片插入；已知 Forge fixed compat 基础 wrapper 保持直通。`CombinedInvWrapper` / `RangedWrapper` 可继续包任意第三方 handler，所以仍按 unknown 处理。本轮没有恢复 remainder-system，也没有扩大 dynamic ASM。
+
 ## ASM 边界
 
 ASM 仍可能存在，但它的定位已经降级：

@@ -59,5 +59,8 @@
 14. 规则运行态协调统一收口到 `RuleRuntimeCoordinator`：`reload / lastReport / rulesFile / worldRulesFile / persistWorldRules` 不要再散回 `StackUpUp`、命令层或代理层。
 15. `StackUpUp` 继续只做 Forge 生命周期编排；新逻辑优先落到独立协调器或服务，不要把入口类重新养胖。
 16. `DslParser` 只负责语法结构；token 游标放在 `DslTokenCursor`，字面量 matcher 编译放在 `RuleLiteralMatcherCompiler`，不要把 parser/compiler/runtime 的细节重新揉回一个文件。
-17. `RuleField` 解耦保留 enum 自描述，不引入动态注册表；matcher/cache 直接读取 `StackContext`，不要恢复中间上下文复制层；昂贵上下文需求通过 `RuleContextRequirement` / `requirements` 查询扩展，不再复制 `needsXxx` 布尔。
-18. Dev 自动化探针必须使用当前 `RuleRuntime.limitService().contextRequirements()` 解析上下文，不能依赖 `StackContextResolver` 默认需求。
+17. `RuleField` 解耦保留静态 enum 自描述，不引入动态注册表；matcher/cache 直接读取 `StackContext`，不要恢复中间上下文复制层。
+18. 昂贵/可选上下文通过 `RuleField.contextProviders` 聚合成 `RuntimeContextRequirements` provider plan；`StackContextResolver` 只执行已编译 plan，不按字段名硬编码分支。
+19. `RuleContextRequirement` 只作旧兼容/诊断查询，不作为新增字段的主扩展点，也不要回退成 `needsXxx` 布尔。
+20. Dev 自动化探针必须使用当前 provider plan 解析上下文，不能依赖 `StackContextResolver` 默认需求。
+21. `reload` 不顺手刷新示例文件；示例同步是显式初始化动作。

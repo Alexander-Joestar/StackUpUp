@@ -9,6 +9,52 @@
 - unknown `IItemHandler` 不动态扩大。
 - 不恢复 remainder-system。
 - 机器类兼容先查真实写入容量。
+- `RuleField` 保持静态 enum 自描述。
+- 昂贵/可选上下文走 provider plan，不走字段名硬编码。
+- `reload` 不隐式刷新示例文件。
+
+## 规则字段上下文
+
+- 不引入动态 `RuleField` 注册表。
+- 新字段先写清 enum 自描述。
+- 昂贵/可选上下文由 `RuleField.contextProviders` 声明。
+- 运行时聚合成 `RuntimeContextRequirements` provider plan。
+- `StackContextResolver` 只执行已编译 plan。
+- 不在 resolver 里按字段名写分支。
+- `RuleContextRequirement` 只保留旧兼容和诊断查询。
+- 新字段不要把它当主扩展点。
+
+## GT material resolver
+
+- 只支持 public API 链。
+- 拒绝 private getter/field。
+- 拒绝任意 debug `toString`。
+- 优先用 registry id / `getName`。
+- 这是有意兼容边界收紧。
+
+## GroovyScript 参考结论
+
+可吸收：
+
+- 自描述 DSL 元素。
+- 初始化路径和热路径分离。
+- 冻结后的只读 registry 思想。
+
+不吸收：
+
+- Groovy runtime。
+- MetaClass。
+- 反射扫描。
+- 大型 ModSupport 总表。
+
+当前分支不做大 registry。
+等第二个 mod 字段出现后，再评估是否需要 registry。
+
+## 示例同步
+
+- `reload` 只重载规则。
+- 不顺手刷新示例文件。
+- 示例同步是显式初始化动作。
 
 ## 为什么禁用 unknown IItemHandler 动态 ASM
 

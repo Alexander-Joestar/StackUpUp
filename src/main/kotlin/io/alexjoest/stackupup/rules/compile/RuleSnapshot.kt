@@ -8,7 +8,8 @@ data class RuleSnapshot(
     val requirements: RuleContextRequirements = RuleContextRequirements.fromRules(rules),
 ) {
     val hasRules: Boolean = rules.isNotEmpty()
-    fun requires(requirement: RuleContextRequirement): Boolean = requirements.requires(requirement)
+    val runtimeRequirements: RuntimeContextRequirements = requirements.runtimeRequirements()
+    fun requires(requirement: RuleContextRequirement): Boolean = runtimeRequirements.requires(requirement)
     val needsOreNames: Boolean = requirements.needsOreNames
     val needsMaterial: Boolean = requirements.needsMaterial
 }

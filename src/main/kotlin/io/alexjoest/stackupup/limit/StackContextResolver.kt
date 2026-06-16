@@ -1,7 +1,7 @@
 package io.alexjoest.stackupup.limit
 
-import io.alexjoest.stackupup.rules.RuleContextRequirement
 import io.alexjoest.stackupup.rules.compile.RuntimeContextRequirements
+import io.alexjoest.stackupup.rules.field.StackContextFields
 import net.minecraft.item.ItemBlock
 import net.minecraft.item.ItemStack
 
@@ -9,7 +9,7 @@ import net.minecraft.item.ItemStack
  * 把运行时 ItemStack 规范化为统一的规则上下文。
  *
  * 这里只有规则求值真正需要的信息。
- * 当当前规则集不依赖矿辞时，可以跳过 oreDict 查询，避免热路径额外开销。
+ * 可选字段由 RuntimeContextRequirements 中的 provider plan 按需采集。
  */
 object StackContextResolver {
     @JvmStatic
@@ -24,25 +24,17 @@ object StackContextResolver {
 
         val registryName = stack.item.registryName ?: return null
         val type = if (stack.item is ItemBlock) "block" else "item"
-        val item = stack.item
-        val tabLabel = item.creativeTab?.tabLabel ?: ""
+        val fields = StackContextFields()
+        requirements.providers.forEach { it.collect(stack, fields) }
         return StackContext(
             itemId = registryName.toString(),
             modId = registryName.namespace,
             metadata = stack.metadata,
             type = type,
             baseLimit = baseLimit,
-            oreNames = if (requirements.requires(RuleContextRequirement.ORE_NAMES)) {
-                RuleRuntime.oreDictIndex().getOreNames(stack)
-            } else {
-                emptySet()
-            },
-            tab = tabLabel,
-            material = if (requirements.requires(RuleContextRequirement.MATERIAL)) {
-                GregTechMaterialResolver.resolveMaterial(stack)
-            } else {
-                ""
-            },
+            oreNames = fields.oreNames,
+            tab = fields.tab,
+            material = fields.material,
         )
     }
 }

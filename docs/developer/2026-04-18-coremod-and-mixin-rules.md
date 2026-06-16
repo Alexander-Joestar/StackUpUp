@@ -84,8 +84,10 @@
 6. `RuleConditionCompiler` 只做条件拼装；item/string 通配与 metadata 语法糖统一下沉到 `RuleLiteralMatcherCompiler`。
 7. `org.cyclops.cyclopscore.inventory.SimpleInventory` 已进入 `FixedCompatTargets`，其库存上限完全由 late mixin 负责，不再允许 dynamic ASM 重复补丁。
 8. `appeng.tile.inventory.AppEngInternalInventory` 与 `appeng.tile.inventory.AppEngInternalAEInventory` 已补齐构造期常量和 `getInventoryStackLimit` 返回值两条路径，现已进入 `FixedCompatTargets`。
-9. `RuleField` enum 保持字段自身描述能力，不引入动态注册表或散落字符串分发。
+9. `RuleField` 静态 enum 保持字段自描述能力，不引入动态注册表或散落字符串分发。
 10. 规则运行时字段解析以 `StackContext` 为主入口；旧参数式入口只作为兼容薄壳保留，不再承载新逻辑。
-11. 昂贵上下文按 `RuleContextRequirement` / `requirements` 查询声明和聚合，不再新增 `needsXxx` 布尔开关。
-12. `RuleField` matcher 与缓存键提取器直接读取 `StackContext`；不要重新引入 `RuleMatchContext` / 字段缓存上下文复制层。
-13. Dev 自动化探针必须按当前 `RuleRuntime.limitService().contextRequirements()` 解析上下文，避免 material 等可选字段与正式路径不一致。
+11. 昂贵或可选上下文由 `RuleField.contextProviders` 聚合到 `RuntimeContextRequirements` provider plan，不再新增 `needsXxx` 布尔开关。
+12. `StackContextResolver` 只执行已编译 provider plan，不承担字段扩展注册。
+13. `RuleContextRequirement` 只作旧兼容和诊断查询，不作为新增字段主扩展点。
+14. `RuleField` matcher 与缓存键提取器直接读取 `StackContext`；不要重新引入 `RuleMatchContext` / 字段缓存上下文复制层。
+15. Dev 自动化探针必须按当前 `RuleRuntime.limitService().contextRequirements()` 解析上下文，避免 material 等可选字段与正式路径不一致。

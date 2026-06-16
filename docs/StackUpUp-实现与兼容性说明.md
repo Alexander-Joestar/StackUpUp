@@ -84,6 +84,8 @@ ASM 仍可能存在，但它的定位已经降级：
 
 不要用模组特判绕过规则系统。如果需求可以用 DSL 表达，优先写规则；如果某个库存路径仍把数量截断到 64，优先修真实容量广告与写入容量的一致性。
 
+规则字段仍由静态 `RuleField` enum 自描述，不引入动态注册表。昂贵/可选上下文由 `RuleField.contextProviders` 聚合成 `RuntimeContextRequirements` provider plan，`StackContextResolver` 只执行已编译 plan。`RuleContextRequirement` 只保留旧兼容和诊断查询，不再作为新增字段的主扩展点。
+
 ## 已知限制
 
 1. 自定义容器若完全绕过 vanilla `Slot` / `Container` 流程，可能需要单独兼容。

@@ -33,10 +33,6 @@ object RuleRuntimeCoordinator {
      */
     fun reload(enableDslRules: Boolean = StackUpUpConfig.general.enableDslRules): RuleReloadReport {
         val primaryRulesFile = RuleFileLocator.resolve()
-        // Refresh the example syntax reference file on every reload,
-        // so it always reflects the latest DSL documentation regardless of user edits.
-        RuleFileExampleTemplate.refreshExample(primaryRulesFile.parentFile)
-        RuleFileExampleTemplate.refreshMarkdownExample(primaryRulesFile.parentFile)
         return try {
             val report = if (enableDslRules) {
                 RuleReloadPipeline.loadDslRules(
@@ -60,6 +56,15 @@ object RuleRuntimeCoordinator {
             lastReportState = report
             report
         }
+    }
+
+    /**
+     * 显式同步规则示例文件，避免命令重载产生写文件副作用。
+     */
+    fun syncExampleFiles() {
+        val rulesDirectory = RuleFileLocator.resolve().parentFile
+        RuleFileExampleTemplate.refreshExample(rulesDirectory)
+        RuleFileExampleTemplate.refreshMarkdownExample(rulesDirectory)
     }
 
     /**

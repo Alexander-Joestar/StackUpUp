@@ -94,6 +94,7 @@ class StackUpUp {
         if (StackUpUpCore.isDisabledForConflict()) {
             return
         }
+        RuleRuntimeCoordinator.syncExampleFiles()
         reload()
         hadPostInit = true
     }

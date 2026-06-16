@@ -1,7 +1,9 @@
 package io.alexjoest.stackupup.limit
 
 import io.alexjoest.stackupup.rules.RuleContextRequirement
+import io.alexjoest.stackupup.rules.RuleField
 import io.alexjoest.stackupup.rules.compile.RuntimeContextRequirements
+import net.minecraft.creativetab.CreativeTabs
 import net.minecraft.init.Bootstrap
 import net.minecraft.item.Item
 import net.minecraft.item.ItemStack
@@ -113,6 +115,40 @@ class StackContextResolverTest {
             assertEquals(setOf("ingotSteel"), context?.oreNames)
             assertEquals("steel", context?.material)
             assertEquals(1, materialCalls)
+        } finally {
+            RuleRuntime.replaceOreDictIndex(previousIndex)
+            restoreResolver()
+        }
+    }
+
+    @Test
+    fun `shouldCollectTabFromFieldPlanWithoutOtherOptionalLookups`() {
+        Bootstrap.register()
+        var materialCalls = 0
+        val restoreResolver = GregTechMaterialResolver.installResolverForTesting {
+            materialCalls++
+            "steel"
+        }
+        val item = Item()
+            .setRegistryName(ResourceLocation("minecraft", "stone"))
+            .setCreativeTab(CreativeTabs.BUILDING_BLOCKS)
+        val stack = ItemStack(item, 1, 0)
+        val previousIndex = RuleRuntime.oreDictIndex()
+
+        try {
+            RuleRuntime.replaceOreDictIndex(OreDictIndex.fromStackLoader { error("ore dict must not be queried") })
+
+            val context = StackContextResolver.fromStack(
+                stack = stack,
+                baseLimit = 64,
+                requirements = RuntimeContextRequirements.fromFields(setOf(RuleField.TAB)),
+            )
+
+            assertNotNull(context)
+            assertEquals("buildingBlocks", context?.tab)
+            assertTrue(context?.oreNames?.isEmpty() == true)
+            assertEquals("", context?.material)
+            assertEquals(0, materialCalls)
         } finally {
             RuleRuntime.replaceOreDictIndex(previousIndex)
             restoreResolver()

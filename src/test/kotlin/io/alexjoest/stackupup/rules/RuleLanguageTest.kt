@@ -1,6 +1,7 @@
 package io.alexjoest.stackupup.rules
 
 import io.alexjoest.stackupup.limit.StackContext
+import io.alexjoest.stackupup.rules.field.RuleFieldContextProvider
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
@@ -36,16 +37,16 @@ class RuleLanguageTest {
     @Test
     fun `fieldMetadata_shouldDeclareContextRequirements`() {
         assertEquals(FieldType.ITEM, RuleField.ITEM.fieldType)
-        assertEquals(emptySet<RuleContextRequirement>(), RuleField.ITEM.requirements)
+        assertEquals(emptySet<RuleFieldContextProvider>(), RuleField.ITEM.contextProviders)
         assertEquals(false, RuleField.ITEM.contributesToCacheKey())
 
-        assertEquals(setOf(RuleContextRequirement.ORE_NAMES), RuleField.ORE.requirements)
+        assertEquals(setOf(RuleFieldContextProvider.ORE_NAMES), RuleField.ORE.contextProviders)
         assertEquals(false, RuleField.ORE.contributesToCacheKey())
 
-        assertEquals(setOf(RuleContextRequirement.MATERIAL), RuleField.MATERIAL.requirements)
+        assertEquals(setOf(RuleFieldContextProvider.MATERIAL), RuleField.MATERIAL.contextProviders)
         assertEquals(true, RuleField.MATERIAL.contributesToCacheKey())
 
-        assertEquals(emptySet<RuleContextRequirement>(), RuleField.TAB.requirements)
+        assertEquals(setOf(RuleFieldContextProvider.TAB), RuleField.TAB.contextProviders)
         assertEquals(true, RuleField.TAB.contributesToCacheKey())
     }
 

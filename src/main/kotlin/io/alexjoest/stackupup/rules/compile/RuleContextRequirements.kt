@@ -1,22 +1,22 @@
 package io.alexjoest.stackupup.rules.compile
 
-import io.alexjoest.stackupup.rules.RuleContextRequirement
 import io.alexjoest.stackupup.rules.RuleField
+import io.alexjoest.stackupup.rules.field.RuleFieldContextProvider
 
 data class RuleContextRequirements(
     val referencedFields: Set<RuleField>,
     val cacheKeyFields: List<RuleField>,
 ) {
-    private val requirements: Set<RuleContextRequirement> =
-        referencedFields.flatMapTo(LinkedHashSet(), RuleField::requirements)
-
-    fun requires(requirement: RuleContextRequirement): Boolean = requirement in requirements
+    private val contextProviders: Set<RuleFieldContextProvider> =
+        referencedFields.flatMapTo(LinkedHashSet(), RuleField::contextProviders)
+    private val runtimeRequirementsCache: RuntimeContextRequirements =
+        RuntimeContextRequirements.fromProviders(contextProviders)
 
     fun runtimeRequirements(): RuntimeContextRequirements =
-        RuntimeContextRequirements.of(*requirements.toTypedArray())
+        runtimeRequirementsCache
 
-    val needsOreNames: Boolean = requires(RuleContextRequirement.ORE_NAMES)
-    val needsMaterial: Boolean = requires(RuleContextRequirement.MATERIAL)
+    val needsOreNames: Boolean = RuleFieldContextProvider.ORE_NAMES in contextProviders
+    val needsMaterial: Boolean = RuleFieldContextProvider.MATERIAL in contextProviders
 
     companion object {
         fun fromRules(rules: List<CompiledRule>): RuleContextRequirements {

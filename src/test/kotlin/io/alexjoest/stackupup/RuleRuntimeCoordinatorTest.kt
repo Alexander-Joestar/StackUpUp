@@ -5,16 +5,19 @@ import io.alexjoest.stackupup.limit.OreDictIndex
 import io.alexjoest.stackupup.limit.StackContext
 import io.alexjoest.stackupup.rules.compile.RuleCompiler
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
+import io.alexjoest.stackupup.rules.io.RuleFileExampleTemplate
 import io.alexjoest.stackupup.rules.io.RuleFileLocator
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertSame
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.io.File
 import kotlin.io.path.createTempDirectory
 
 class RuleRuntimeCoordinatorTest {
     @Test
-    fun `dslDisabled_shouldReturnEmptySnapshotAndRefresh`() {
+    fun `reload_shouldNotRefreshExampleFiles`() {
         val tempDir = createTempDirectory("stackupup-runtime-disabled").toFile()
         val configDir = File(tempDir, "config").apply { mkdirs() }
         val rulesDir = File(configDir, StackUpUpIds.RULES_DIRECTORY_NAME).apply { mkdirs() }
@@ -31,6 +34,31 @@ class RuleRuntimeCoordinatorTest {
             assertEquals(0, report.snapshot.rules.size)
             assertEquals(report, RuleRuntimeCoordinator.lastReport())
             assertEquals(0, RuleRuntime.currentSnapshot().rules.size)
+            assertFalse(File(rulesDir, StackUpUpIds.EXAMPLE_RULES_FILE_NAME).exists())
+            assertFalse(File(rulesDir, StackUpUpIds.EXAMPLE_MARKDOWN_RULES_FILE_NAME).exists())
+        } finally {
+            RuleFileLocator.resetForTests()
+        }
+    }
+
+    @Test
+    fun `syncExampleFiles_shouldRefreshExampleFiles`() {
+        val tempDir = createTempDirectory("stackupup-runtime-examples").toFile()
+        val configDir = File(tempDir, "config").apply { mkdirs() }
+        val rulesDir = File(configDir, StackUpUpIds.RULES_DIRECTORY_NAME).apply { mkdirs() }
+        File(rulesDir, StackUpUpIds.RULES_FILE_NAME).writeText("", Charsets.UTF_8)
+
+        RuleFileLocator.setConfigDirectory(configDir)
+
+        try {
+            RuleRuntimeCoordinator.syncExampleFiles()
+
+            val exampleFile = File(rulesDir, StackUpUpIds.EXAMPLE_RULES_FILE_NAME)
+            val markdownFile = File(rulesDir, StackUpUpIds.EXAMPLE_MARKDOWN_RULES_FILE_NAME)
+            assertTrue(exampleFile.exists())
+            assertTrue(markdownFile.exists())
+            assertEquals(RuleFileExampleTemplate.exampleContent, exampleFile.readText(Charsets.UTF_8))
+            assertEquals(RuleFileExampleTemplate.markdownExampleContent, markdownFile.readText(Charsets.UTF_8))
         } finally {
             RuleFileLocator.resetForTests()
         }

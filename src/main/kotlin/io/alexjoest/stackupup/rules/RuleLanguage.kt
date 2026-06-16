@@ -2,6 +2,7 @@ package io.alexjoest.stackupup.rules
 
 import io.alexjoest.stackupup.rules.field.MissingValuePolicy
 import io.alexjoest.stackupup.rules.field.RuleFieldCacheKeyExtractor
+import io.alexjoest.stackupup.rules.field.RuleFieldContextProvider
 import io.alexjoest.stackupup.rules.field.RuleFieldMatcherFactory
 import io.alexjoest.stackupup.rules.field.RuleFieldMatchers
 import io.alexjoest.stackupup.limit.StackContext
@@ -22,7 +23,7 @@ enum class RuleContextRequirement { ORE_NAMES, MATERIAL }
 enum class RuleField(
     val fieldType: FieldType,
     aliases: Set<String> = emptySet(),
-    val requirements: Set<RuleContextRequirement> = emptySet(),
+    val contextProviders: Set<RuleFieldContextProvider> = emptySet(),
     private val cacheKeyExtractor: RuleFieldCacheKeyExtractor? = null,
     private val matcherFactory: RuleFieldMatcherFactory,
 ) {
@@ -31,12 +32,12 @@ enum class RuleField(
     TYPE(FieldType.STRING, matcherFactory = RuleFieldMatchers.string(StackContext::type)),
     ORE(
         FieldType.STRING_SET,
-        requirements = setOf(RuleContextRequirement.ORE_NAMES),
+        contextProviders = setOf(RuleFieldContextProvider.ORE_NAMES),
         matcherFactory = RuleFieldMatchers.stringSet(StackContext::oreNames)
     ),
     MATERIAL(
         FieldType.STRING,
-        requirements = setOf(RuleContextRequirement.MATERIAL),
+        contextProviders = setOf(RuleFieldContextProvider.MATERIAL),
         cacheKeyExtractor = RuleFieldCacheKeyExtractor { it.material },
         matcherFactory = RuleFieldMatchers.string(StackContext::material, MissingValuePolicy.NEVER_MATCH),
     ),
@@ -44,6 +45,7 @@ enum class RuleField(
     SIZE(FieldType.NUMERIC, matcherFactory = RuleFieldMatchers.numeric(StackContext::baseLimit)),
     TAB(
         FieldType.STRING,
+        contextProviders = setOf(RuleFieldContextProvider.TAB),
         cacheKeyExtractor = RuleFieldCacheKeyExtractor { it.tab },
         matcherFactory = RuleFieldMatchers.string(StackContext::tab),
     ),
@@ -51,6 +53,16 @@ enum class RuleField(
 
     val id: String by lazy { name.lowercase() }
     private val matchers: Set<String> by lazy { aliases.mapTo(mutableSetOf(name)) { it.uppercase() } }
+
+    @Deprecated("Use contextProviders; kept for legacy diagnostics/tests.")
+    val requirements: Set<RuleContextRequirement>
+        get() = contextProviders.mapNotNullTo(LinkedHashSet()) { provider ->
+            when (provider) {
+                RuleFieldContextProvider.ORE_NAMES -> RuleContextRequirement.ORE_NAMES
+                RuleFieldContextProvider.MATERIAL -> RuleContextRequirement.MATERIAL
+                RuleFieldContextProvider.TAB -> null
+            }
+        }
 
     fun contributesToCacheKey(): Boolean = cacheKeyExtractor != null
 

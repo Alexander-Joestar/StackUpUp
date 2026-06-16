@@ -1,19 +1,14 @@
 package io.alexjoest.stackupup.limit
 
 import net.minecraft.item.ItemStack
+import net.minecraft.util.ResourceLocation
 import net.minecraftforge.fml.common.Loader
-import java.lang.reflect.Field
 import java.lang.reflect.Method
 
 object GregTechMaterialResolver {
     private const val GREGTECH_MOD_ID = "gregtech"
     private const val ORE_DICT_UNIFIER_CLASS_NAME = "gregtech.api.unification.OreDictUnifier"
-    private val MATERIAL_STACK_CLASS_NAMES = listOf(
-        "gregtech.api.unification.stack.MaterialStack",
-        "gregtech.api.unification.material.MaterialStack",
-    )
     private const val META_ITEM_CLASS_NAME = "gregtech.api.items.metaitem.MetaItem"
-    private const val MATERIAL_NAME_FIELD = "materialName"
 
     @Volatile
     private var handles: ReflectionHandles? = null
@@ -90,25 +85,18 @@ object GregTechMaterialResolver {
 
     private data class PrimaryHandles(
         private val getMaterial: Method,
-        private val materialField: Field,
     ) {
         fun resolve(stack: ItemStack): String =
             runCatching {
-                val materialStack = getMaterial.invoke(null, stack) ?: return@runCatching ""
-                val material = materialField.get(materialStack) ?: return@runCatching ""
-                materialName(material)
+                resolveMaterialStack(getMaterial.invoke(null, stack))
             }.getOrDefault("")
 
         companion object {
             fun create(): PrimaryHandles? =
                 runCatching {
-                    val oreDictUnifierClass = Class.forName(ORE_DICT_UNIFIER_CLASS_NAME)
-                    val materialStackClass = MATERIAL_STACK_CLASS_NAMES.firstNotNullOfOrNull { className ->
-                        runCatching { Class.forName(className) }.getOrNull()
-                    } ?: return@runCatching null
                     PrimaryHandles(
-                        getMaterial = oreDictUnifierClass.getMethod("getMaterial", ItemStack::class.java),
-                        materialField = materialStackClass.field("material"),
+                        getMaterial = Class.forName(ORE_DICT_UNIFIER_CLASS_NAME)
+                            .getMethod("getMaterial", ItemStack::class.java),
                     )
                 }.getOrNull()
         }
@@ -143,37 +131,37 @@ object GregTechMaterialResolver {
 
     private fun materialNameFromValueItem(valueItem: Any): String =
         materialObject(valueItem)?.let { materialName(it) }
-            ?: stringField(valueItem, MATERIAL_NAME_FIELD)
             ?: ""
 
     private fun materialObject(valueItem: Any): Any? =
         methodResult(valueItem, "getMaterial")
-            ?: methodResult(valueItem, "material")
-            ?: fieldValue(valueItem, "material")
+
+    private fun resolveMaterialStack(materialStack: Any?): String {
+        if (materialStack == null) {
+            return ""
+        }
+        return materialObject(materialStack)?.let { materialName(it) }.orEmpty()
+    }
 
     private fun materialName(material: Any): String =
-        methodResult(material, "getRegistryName")?.toStableMaterialId()
+        methodResult(material, "getRegistryName")?.toRegistryMaterialId()
             ?: stringMethod(material, "getName")
-            ?: stringField(material, "name")
-            ?: material.toString().takeUnless { it.isBlank() }
             ?: ""
 
-    private fun Any.toStableMaterialId(): String? =
-        toString().takeUnless { it.isBlank() }
+    private fun Any.toRegistryMaterialId(): String? =
+        when (this) {
+            is ResourceLocation -> toString()
+            else -> takeIf { it.javaClass.name.contains("ResourceLocation") }
+                ?.toString()
+                ?.takeIf { it.isRegistryLikeId() }
+        }
+
+    private fun String.isRegistryLikeId(): Boolean =
+        matches(Regex("[a-z0-9_.-]+:[a-z0-9_./-]+"))
 
     private fun stringMethod(target: Any, name: String): String? =
         (methodResult(target, name) as? String)?.takeUnless { it.isBlank() }
 
     private fun methodResult(target: Any, name: String): Any? =
-        runCatching { target.javaClass.getDeclaredMethod(name).apply { isAccessible = true }.invoke(target) }
-            .getOrNull()
-
-    private fun stringField(target: Any, name: String): String? =
-        (fieldValue(target, name) as? String)?.takeUnless { it.isBlank() }
-
-    private fun fieldValue(target: Any, name: String): Any? =
-        runCatching { target.javaClass.field(name).get(target) }.getOrNull()
-
-    private fun Class<*>.field(name: String): Field =
-        getDeclaredField(name).apply { isAccessible = true }
+        runCatching { target.javaClass.getMethod(name).invoke(target) }.getOrNull()
 }

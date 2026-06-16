@@ -2,7 +2,9 @@ package io.alexjoest.stackupup.rules.compile
 
 import io.alexjoest.stackupup.rules.RuleContextRequirement
 import io.alexjoest.stackupup.rules.RuleField
+import io.alexjoest.stackupup.rules.field.RuleFieldContextProvider
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Test
 
 class RuleSnapshotTest {
@@ -30,6 +32,7 @@ class RuleSnapshotTest {
         assertEquals(false, materialSnapshot.needsOreNames)
         assertEquals(true, materialSnapshot.requirements.runtimeRequirements().requires(RuleContextRequirement.MATERIAL))
         assertEquals(false, materialSnapshot.requirements.runtimeRequirements().requires(RuleContextRequirement.ORE_NAMES))
+        assertSame(materialSnapshot.runtimeRequirements, materialSnapshot.requirements.runtimeRequirements())
         assertEquals(true, materialSnapshot.requires(RuleContextRequirement.MATERIAL))
         assertEquals(false, materialSnapshot.requires(RuleContextRequirement.ORE_NAMES))
 
@@ -65,5 +68,46 @@ class RuleSnapshotTest {
         assertEquals(true, snapshot.needsMaterial)
         assertEquals(true, snapshot.needsOreNames)
         assertEquals(listOf(RuleField.MATERIAL, RuleField.TAB), snapshot.requirements.cacheKeyFields)
+    }
+
+    @Test
+    fun `requires_shouldReuseCompiledRuntimeRequirements`() {
+        val snapshot = RuleSnapshot(
+            version = 1L,
+            rules = listOf(
+                RuleCompiler.compileLine("material = steel && ore = ingotSteel -> 2048", 1),
+            ),
+        )
+
+        val runtimeRequirements = snapshot.runtimeRequirements
+
+        assertSame(runtimeRequirements, snapshot.requirements.runtimeRequirements())
+        assertEquals(true, snapshot.requires(RuleContextRequirement.MATERIAL))
+        assertSame(runtimeRequirements, snapshot.requirements.runtimeRequirements())
+        assertEquals(true, snapshot.requires(RuleContextRequirement.ORE_NAMES))
+        assertSame(runtimeRequirements, snapshot.requirements.runtimeRequirements())
+    }
+
+    @Test
+    fun `runtimeRequirements_fromFields_shouldDeduplicateProvidersAndKeepFieldOrder`() {
+        val requirements = RuntimeContextRequirements.fromFields(
+            listOf(
+                RuleField.TAB,
+                RuleField.MATERIAL,
+                RuleField.ORE,
+                RuleField.TAB,
+                RuleField.MATERIAL,
+                RuleField.ORE,
+            ),
+        )
+
+        assertEquals(
+            listOf(
+                RuleFieldContextProvider.TAB,
+                RuleFieldContextProvider.MATERIAL,
+                RuleFieldContextProvider.ORE_NAMES,
+            ),
+            requirements.providers,
+        )
     }
 }

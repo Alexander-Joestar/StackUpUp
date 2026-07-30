@@ -2,14 +2,13 @@ package io.alexjoest.stackupup.mixin.late;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import com.raoulvdberge.refinedstorage.apiimpl.network.grid.handler.ItemGridHandler;
 import io.alexjoest.stackupup.StackLimitHooks;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
 
 @Pseudo
-@Mixin(value = ItemGridHandler.class, remap = false)
+@Mixin(targets = "com.raoulvdberge.refinedstorage.apiimpl.network.grid.handler.ItemGridHandler", remap = false)
 public abstract class ItemGridHandlerMixin {
     @WrapOperation(
         method = "onExtract(Lnet/minecraft/entity/player/EntityPlayerMP;Ljava/util/UUID;II)V",

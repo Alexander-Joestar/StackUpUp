@@ -14,7 +14,7 @@ English documentation: [README.en.md](README.en.md)
 - 当前版本：**0.2.4**
 - 规则系统：DSL v2，支持 `.su` 与带 `state` / `gate` 的 `.su.md`
 - 兼容层：MixinBooter + Mixin 优先，ASM 仅保留为旧兼容/早期加载兜底
-- 新增 late mixin 兼容：IntegratedDynamics、LimeLib、ImmersiveEngineering
+- 已登记并尝试加载的 late mixin 目标（详见下方兼容性列表）
 
 ## 下载
 
@@ -24,8 +24,9 @@ English documentation: [README.en.md](README.en.md)
 
 1. 安装 Minecraft **1.12.2** 与 Forge **14.23.5.2847**。
 2. 安装依赖：
-   - [MixinBooter](https://www.curseforge.com/minecraft/mc-mods/mixin-booter) **10.0 或更高**
-   - [Forgelin-Continuous](https://www.curseforge.com/minecraft/mc-mods/forgelin-continuous) **2.1.0.0 或更高**
+   - [MixinBooter](https://www.curseforge.com/minecraft/mc-mods/mixin-booter) **10.7**
+   - [Forgelin-Continuous](https://www.curseforge.com/minecraft/mc-mods/forgelin-continuous) **2.3.0.0**
+   当前项目构建验证使用上述版本；其他版本未由本仓库验证。
 3. 将 StackUpUp 的 jar 放入 `mods/` 文件夹。
 4. 启动一次游戏或服务端，让模组生成配置与规则目录。
 
@@ -47,7 +48,7 @@ config/stackupup/main.su.md
 
 1. `<save>/data/stackupup/main.su.md`。
 2. `config/stackupup/*.su.md`，按文件名排序，排除示例文件。
-3. 旧兼容文件 `config/stackupup/stackupup-rules.su`，仅在 `main.su` 不存在时加载。
+3. 旧兼容文件 `config/stackupup-rules.su`，仅在 `main.su` 不存在时加载。
 4. `<save>/data/stackupup/world.su`。
 5. `config/stackupup/*.su`，按文件名排序，排除 `user.su` 和示例文件；`main.su` 也属于这一步。
 6. `config/stackupup/user.su`。
@@ -59,12 +60,16 @@ config/stackupup/main.su.md
 ```text
 /stackupup reload
 /stackupup edit
-/stackupup state
+/stackupup state get <name>
+/stackupup state set <name> <value>
 ```
 
 - `reload`：重新加载规则。
 - `edit`：打开主规则文件，仅客户端可用。
-- `state`：读取或修改 `.su.md` 中声明的状态开关。
+- `state get <name>`：读取当前存档 `<save>/data/stackupup/main.su.md` 中的 state；其他 `.su.md` 不共享这些 state。
+- `state set <name> <value>`：修改同一文件中的 state；`<value>` 接受不区分大小写的 `true` / `false`，也接受 `1` / `0`、`yes` / `no`、`on` / `off`；文件内容实际改变后会触发 `reload`。
+
+当 `config/stackupup/main.su` 尚不存在且旧 `config/stackupup-rules.su` 存在时，首次启用 DSL 的 `reload` 会把旧文件纳入 legacy fallback，并创建主文件。主文件创建后，后续 `reload` 可能不再加载该 legacy 文件，旧文件中的规则可能不再生效；详细迁移行为仍未定型。
 
 ## DSL 示例
 
@@ -121,11 +126,11 @@ StackUpUp 对遵循原版堆叠语义的模组通常直接生效。对自行写�
 
 核心安全原则：**对外广告容量不能大于真实写入容量。**动态 ASM 只保留给未知旧式 `IInventory` / `Slot` 路径；未知 `IItemHandler` 的动态 ASM 已故意禁用。即使某个 unknown `IItemHandler#getSlotLimit()` 字面返回 64，也不能据此证明真实写入容量可以扩大，否则 vanilla 可能投入超过库存真实承受能力的物品，进而触发截断、吞物品或和模组自己的溢出逻辑冲突。
 
-对已知模组，StackUpUp 通过 MixinBooter late mixin 扩展真实 `getInventoryStackLimit()` / `getSlotLimit()` 等容量入口，再让槽位上限跟随。旧 ASM 只作为历史兼容和早期加载兜底，不再是新增兼容首选；也不会引入或复活写入后回填的 remainder-system。
+对已登记并尝试加载的目标，StackUpUp 通过 MixinBooter late mixin 尝试作用于真实 `getInventoryStackLimit()` / `getSlotLimit()` 等容量入口，再让槽位上限跟随；第三方真实写入路径缺少源码时为“无源码不可判定”，不能仅凭目标类名或 mixin 注册推断写入能力。旧 ASM 只作为历史兼容和早期加载兜底，不再是新增兼容首选。当前 AE2 限流路径仍需独立审计，不能据此断言当前所有路径都没有 remainder 的分片或聚合，也不把写入后回填式 remainder-system 作为容量保证。
 
 规则侧继续采用静态 `RuleField` 自描述，昂贵/可选上下文由 `RuleField.contextProviders` 汇总到 `RuntimeContextRequirements` provider plan；`RuleContextRequirement` 仅作旧兼容和诊断查询。
 
-当前 late mixin 覆盖范围包括：
+当前已登记并尝试加载的 late mixin 目标包括：
 
 - Applied Energistics 2
 - Actually Additions
@@ -139,8 +144,6 @@ StackUpUp 对遵循原版堆叠语义的模组通常直接生效。对自行写�
 - IntegratedDynamics
 - LimeLib
 - ImmersiveEngineering
-
-这些兼容项可在 `config/stackupup.cfg` 的 `compatibility` 分类中单独启停，修改后需要重启游戏或服务端。
 
 更完整的实现说明见 [docs/StackUpUp-实现与兼容性说明.md](docs/StackUpUp-%E5%AE%9E%E7%8E%B0%E4%B8%8E%E5%85%BC%E5%AE%B9%E6%80%A7%E8%AF%B4%E6%98%8E.md)。
 

@@ -6,7 +6,7 @@
 
 StackUpUp is a stack-limit mod for Minecraft 1.12.2 modpacks and servers. It lets pack authors describe stack-size rules in text files, with first-class support for metadata items, Ore Dictionary names, vanilla inventory paths, and compatibility patches for common hard-coded `64` limits.
 
-中文说明：[README.md](README.md)
+Chinese README: [README.md](README.md) (Chinese)
 
 ## Status
 
@@ -14,7 +14,7 @@ StackUpUp is a stack-limit mod for Minecraft 1.12.2 modpacks and servers. It let
 - Current version: **0.2.4**
 - Rule system: DSL v2, using `.su` files or Markdown `.su.md` containers with `state` and `gate`
 - Compatibility layer: MixinBooter + Mixin first, with ASM kept only for legacy compatibility and early-loading fallbacks
-- New in 0.2.4: late mixin support for IntegratedDynamics, LimeLib, and ImmersiveEngineering
+- Registered late mixin targets currently attempted for loading (see the compatibility list below)
 
 ## Download
 
@@ -24,8 +24,9 @@ Download StackUpUp from [CurseForge](https://www.curseforge.com/minecraft/mc-mod
 
 1. Install Minecraft **1.12.2** and Forge **14.23.5.2847**.
 2. Install the required dependencies:
-   - [MixinBooter](https://www.curseforge.com/minecraft/mc-mods/mixin-booter) **10.0 or newer**
-   - [Forgelin-Continuous](https://www.curseforge.com/minecraft/mc-mods/forgelin-continuous) **2.1.0.0 or newer**
+   - [MixinBooter](https://www.curseforge.com/minecraft/mc-mods/mixin-booter) **10.7**
+   - [Forgelin-Continuous](https://www.curseforge.com/minecraft/mc-mods/forgelin-continuous) **2.3.0.0**
+   Current project build validation uses these versions; other versions have not been verified by this repository.
 3. Put the StackUpUp jar into the `mods/` folder.
 4. Start the game or server once so the config and rule directories are generated.
 
@@ -47,24 +48,28 @@ Later matching rules continue from or override the result produced by earlier ru
 
 1. `<save>/data/stackupup/main.su.md`.
 2. `config/stackupup/*.su.md`, sorted by file name, excluding example files.
-3. Legacy `config/stackupup/stackupup-rules.su`, only when `main.su` does not exist.
+3. Legacy `config/stackupup-rules.su`, only when `main.su` does not exist.
 4. `<save>/data/stackupup/world.su`.
 5. `config/stackupup/*.su`, sorted by file name, excluding `user.su` and example files; `main.su` is included in this step.
 6. `config/stackupup/user.su`.
 
-See [docs/DSL-v2-规则示例.md](docs/DSL-v2-%E8%A7%84%E5%88%99%E7%A4%BA%E4%BE%8B.md) for syntax examples.
+See [docs/DSL-v2-规则示例.md](docs/DSL-v2-%E8%A7%84%E5%88%99%E7%A4%BA%E4%BE%8B.md) (Chinese) for syntax examples.
 
 ## Commands
 
 ```text
 /stackupup reload
 /stackupup edit
-/stackupup state
+/stackupup state get <name>
+/stackupup state set <name> <value>
 ```
 
 - `reload`: reload rule files.
 - `edit`: open the main rule file on the client.
-- `state`: inspect or update state switches declared in `.su.md` rule files.
+- `state get <name>`: read a state from the current save's `<save>/data/stackupup/main.su.md`; other `.su.md` files do not share these states.
+- `state set <name> <value>`: update a state in the same file; `<value>` is case-insensitive and accepts `true` / `false`, as well as `1` / `0`, `yes` / `no`, and `on` / `off`; a `reload` is triggered when the file content actually changes.
+
+If `config/stackupup/main.su` is absent while the legacy `config/stackupup-rules.su` exists, the first DSL-enabled `reload` includes the legacy file through the fallback and creates the main file. Once the main file exists, later `reload`s may no longer load that legacy file, so its rules may stop taking effect; detailed migration behavior is not finalized.
 
 ## DSL Examples
 
@@ -121,11 +126,11 @@ StackUpUp usually works out of the box for mods that follow vanilla stack-size s
 
 The core safety rule is: **advertised capacity must not be larger than real write capacity.** Dynamic ASM is retained only for old unknown `IInventory`, `Slot`, and similar legacy inventory paths; dynamic ASM for unknown `IItemHandler` implementations is intentionally disabled. Even when an unknown `IItemHandler#getSlotLimit()` literally returns 64, that is not proof that the real write capacity can be raised. Advertising a higher value in that case lets vanilla push too many items into storage that cannot actually accept them, which can cause truncation, item loss, or conflicts with the mod's own overflow handling.
 
-For known mods, StackUpUp uses MixinBooter late mixins to raise the real `getInventoryStackLimit()` / `getSlotLimit()` style entry points, then lets slot limits follow that real capacity. Old ASM remains only as a legacy and early-loading fallback. New compatibility work should prefer mixins, and the old write-after-the-fact remainder-system is not part of the current design.
+For registered targets currently attempted for loading, StackUpUp uses MixinBooter late mixins to attempt to modify real `getInventoryStackLimit()` / `getSlotLimit()` style entry points and let slot limits follow; when third-party source is unavailable, the real write path is "无源码不可判定" (cannot be determined without source), and class names or mixin registration alone do not establish write capacity. Old ASM remains only as a legacy and early-loading fallback, not as the preferred way to add compatibility. The current AE2 limiting path still requires an independent audit; this does not establish that all current paths lack remainder splitting or aggregation, and write-after-the-fact remainder refill is not a capacity guarantee.
 
 Rule metadata stays on the static `RuleField` enum. Expensive or optional context comes from `RuleField.contextProviders`, merged into a `RuntimeContextRequirements` provider plan; `RuleContextRequirement` remains only for legacy compatibility and diagnostics.
 
-Current late mixin coverage includes:
+Current late mixin targets registered for attempted loading include:
 
 - Applied Energistics 2
 - Actually Additions
@@ -140,9 +145,7 @@ Current late mixin coverage includes:
 - LimeLib
 - ImmersiveEngineering
 
-Each compatibility module can be toggled under the `compatibility` section of `config/stackupup.cfg`. Changes require a game or server restart.
-
-For implementation notes, see [docs/StackUpUp-实现与兼容性说明.md](docs/StackUpUp-%E5%AE%9E%E7%8E%B0%E4%B8%8E%E5%85%BC%E5%AE%B9%E6%80%A7%E8%AF%B4%E6%98%8E.md).
+For implementation notes, see [docs/StackUpUp-实现与兼容性说明.md](docs/StackUpUp-%E5%AE%9E%E7%8E%B0%E4%B8%8E%E5%85%BC%E5%AE%B9%E6%80%A7%E8%AF%B4%E6%98%8E.md) (Chinese).
 
 ## Differences From StackUp
 
@@ -161,7 +164,7 @@ Common verification commands:
 .\gradlew.bat spotlessCheck
 ```
 
-The repository also includes local development auto-test tasks for server and client rule checks. See [docs/runServer-自动化回归.md](docs/runServer-%E8%87%AA%E5%8A%A8%E5%8C%96%E5%9B%9E%E5%BD%92.md).
+The repository also includes local development auto-test tasks for server and client rule checks. See [docs/runServer-自动化回归.md](docs/runServer-%E8%87%AA%E5%8A%A8%E5%8C%96%E5%9B%9E%E5%BD%92.md) (Chinese).
 
 ## Origin
 

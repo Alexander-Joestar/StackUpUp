@@ -157,11 +157,9 @@ class StackUpUp {
 
         @JvmStatic
         @Synchronized
-        fun getState(name: String): Boolean {
-            return stateService.getState(name) ?: run {
-                logger?.warn("Cannot read state '{}' because world markdown storage is unavailable", name)
-                false
-            }
+        fun getState(name: String): Boolean = stateService.getState(name) ?: run {
+            logger?.warn("Cannot read state '{}' because world markdown storage is unavailable", name)
+            false
         }
 
         @JvmStatic

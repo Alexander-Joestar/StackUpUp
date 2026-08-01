@@ -79,8 +79,7 @@ class WrapperCapacityDiagnosticTest {
         )
     }
 
-    private class LimitedInventory(private val stackLimit: Int) :
-        InventoryBasic("stackupup-diagnostic", false, 1) {
+    private class LimitedInventory(private val stackLimit: Int) : InventoryBasic("stackupup-diagnostic", false, 1) {
         override fun getInventoryStackLimit(): Int = stackLimit
     }
 

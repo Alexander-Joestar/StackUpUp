@@ -48,9 +48,7 @@ class RuleStateServiceTest {
         assertEquals(false, service.getState("phase2"))
     }
 
-    private fun createStateFile(content: String): File {
-        return tempDir.resolve("main.su.md").toFile().apply {
-            writeText(content + System.lineSeparator(), Charsets.UTF_8)
-        }
+    private fun createStateFile(content: String): File = tempDir.resolve("main.su.md").toFile().apply {
+        writeText(content + System.lineSeparator(), Charsets.UTF_8)
     }
 }

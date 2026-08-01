@@ -36,37 +36,31 @@ internal object RuleFieldMatchers {
         compileEqualityComparison(operator, matcher)
     }
 
-    fun string(
-        selector: (StackContext) -> String,
-        missingValuePolicy: MissingValuePolicy = MissingValuePolicy.EMPTY_VALUE,
-    ): RuleFieldMatcherFactory = RuleFieldMatcherFactory { operator, literal ->
-        val matcher = RuleLiteralMatcherCompiler.compileStringMatcher(literal)
-        return@RuleFieldMatcherFactory { context ->
-            val actual = selector(context)
-            if (actual.isEmpty() && missingValuePolicy == MissingValuePolicy.NEVER_MATCH) {
-                false
-            } else {
-                applyEqualityOperator(operator, matcher(actual))
-            }
-        }
-    }
-
-    fun stringSet(selector: (StackContext) -> Iterable<String>): RuleFieldMatcherFactory =
+    fun string(selector: (StackContext) -> String, missingValuePolicy: MissingValuePolicy = MissingValuePolicy.EMPTY_VALUE): RuleFieldMatcherFactory =
         RuleFieldMatcherFactory { operator, literal ->
             val matcher = RuleLiteralMatcherCompiler.compileStringMatcher(literal)
-            compileEqualityComparison(operator) { context -> selector(context).any(matcher) }
+            return@RuleFieldMatcherFactory { context ->
+                val actual = selector(context)
+                if (actual.isEmpty() && missingValuePolicy == MissingValuePolicy.NEVER_MATCH) {
+                    false
+                } else {
+                    applyEqualityOperator(operator, matcher(actual))
+                }
+            }
         }
 
-    fun numeric(selector: (StackContext) -> Int): RuleFieldMatcherFactory =
-        RuleFieldMatcherFactory { operator, literal ->
-            val expected = literal.toInt()
-            return@RuleFieldMatcherFactory { context -> matchesNumericComparison(operator, selector(context), expected) }
-        }
+    fun stringSet(selector: (StackContext) -> Iterable<String>): RuleFieldMatcherFactory = RuleFieldMatcherFactory { operator, literal ->
+        val matcher = RuleLiteralMatcherCompiler.compileStringMatcher(literal)
+        compileEqualityComparison(operator) { context -> selector(context).any(matcher) }
+    }
 
-    private fun compileEqualityComparison(
-        operator: ComparisonOperator,
-        matcher: (StackContext) -> Boolean,
-    ): (StackContext) -> Boolean = { applyEqualityOperator(operator, matcher(it)) }
+    fun numeric(selector: (StackContext) -> Int): RuleFieldMatcherFactory = RuleFieldMatcherFactory { operator, literal ->
+        val expected = literal.toInt()
+        return@RuleFieldMatcherFactory { context -> matchesNumericComparison(operator, selector(context), expected) }
+    }
+
+    private fun compileEqualityComparison(operator: ComparisonOperator, matcher: (StackContext) -> Boolean): (StackContext) -> Boolean =
+        { applyEqualityOperator(operator, matcher(it)) }
 
     private fun applyEqualityOperator(op: ComparisonOperator, matches: Boolean): Boolean = when (op) {
         ComparisonOperator.EQUALS -> matches

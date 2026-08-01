@@ -1,7 +1,7 @@
 package io.alexjoest.stackupup
 
-import io.alexjoest.stackupup.limit.OreDictIndex
 import io.alexjoest.stackupup.limit.GregTechMaterialResolver
+import io.alexjoest.stackupup.limit.OreDictIndex
 import io.alexjoest.stackupup.limit.RuleRuntime
 import io.alexjoest.stackupup.rules.compile.RuleCompiler
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot

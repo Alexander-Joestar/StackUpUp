@@ -1,7 +1,8 @@
 # Mixin 生态与注入最佳实践
 
 > 面向 StackUpUp 重构代理的执行规范。本文只规定调查、选择、实现和验证 Mixin 的方法；不表示项目已经升级
-> MixinBooter，也不把上游当前版本的行为倒灌为本项目事实。
+> MixinBooter，也不把上游当前版本的行为倒灌为本项目事实。按项目决策，升级到 MixinBooter 11 是计划内必选迁移；
+> 本文即该迁移的调查/验证方法，'不表示已升级'仅指当前事实。
 >
 > 文中每个结论使用以下标签：
 >
@@ -21,7 +22,7 @@
 
 1. **目标是什么**：要改的是方法入口/出口、某个表达式、某个调用参数、接收者、私有状态，还是完整控制流。
 2. **真实写入或业务路径是什么**：容量任务必须同时看到广告面和真实写入面，不能只改 GUI、slot 查询或返回值。
-3. **目标属于哪个加载阶段**：当前 10.7 项目的 early/late 事实与上游 11.x 的注册方式不能混写。
+3. **目标属于哪个加载阶段**：当前 10.7 项目的 early/late 事实与上游 11.x 的注册方式不能混写；11 迁移为计划内必选项，迁移时以 11.x 实际注册方式为准。
 4. **如何证明没有破坏其他 Mixin**：选择可共存的注入器，记录目标 descriptor、匹配数、原操作调用次数和行为结果。
 
 本文不授权代理修改代码；每个实现任务仍须由上层任务明确文件租约。本文也不把源码搜索、静态 `contains` 检查或类名相似性当作运行行为证明。
@@ -103,7 +104,7 @@ Mixin 类名、注释或历史方法名补足证据。Forge wrapper 和 vanilla 
 
 | 范围                      | 已核对版本/配置                                                                                                                                                                                                                                                                                                                                  | 当前可写成的事实                                                                                                                                                                                                                                                                                                              | 不得写成的结论                                                                                                                                                                         |
 |---------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 当前 StackUpUp            | Minecraft 1.12.2、Forge 14.23.5.2847；`zone.rong:mixinbooter:10.7`                                                                                                                                                                                                                                                                               | **[当前项目事实]** `build.gradle.kts:434` 通过 `modUtils.enableMixins` 锁定 MixinBooter 10.7；`build.gradle.kts:438-439` 使用 `io.github.llamalad7:mixinextras-common:0.5.0` 的 `compileOnly` 与 `annotationProcessor`。                                                                                                      | 不得写成项目已经升级到 11.x、CleanMix 0.6.0 或 CleanroomMC MixinExtras fork。                                                                                                          |
+| 当前 StackUpUp            | Minecraft 1.12.2、Forge 14.23.5.2847；`zone.rong:mixinbooter:10.7`                                                                                                                                                                                                                                                                               | **[当前项目事实]** `build.gradle.kts:434` 通过 `modUtils.enableMixins` 锁定 MixinBooter 10.7；`build.gradle.kts:438-439` 使用 `io.github.llamalad7:mixinextras-common:0.5.0` 的 `compileOnly` 与 `annotationProcessor`。                                                                                                      | 不得写成项目已经升级到 11.x、CleanMix 0.6.0 或 CleanroomMC MixinExtras fork。11 迁移是计划内必选项，本行是当前基线记录。                                                          |
 | MixinBooter 10.7 上游 tag | [README raw](https://raw.githubusercontent.com/CleanroomMC/MixinBooter/10.7/README.md)、[build.gradle raw](https://raw.githubusercontent.com/CleanroomMC/MixinBooter/10.7/build.gradle)、[MixinBooterPlugin.java raw](https://raw.githubusercontent.com/CleanroomMC/MixinBooter/10.7/src/main/java/zone/rong/mixinbooter/MixinBooterPlugin.java) | **[上游资料]** 官方 `10.7` tag README 写 `UniMix 0.15.3`（CleanroomMC fork，derived from 0.8.7）和 LlamaLad7 MixinExtras `0.5.0`；tag 的 build 使用 `com.github.CleanroomMC:UniMix:9d4b487ed3`，并 `embed 'io.github.llamalad7:mixinextras-common:0.5.0'`；source 的 `MixinBooterPlugin` 调用 `MixinExtrasBootstrap.init()`。 | 这些只是上游 10.7 README/build/source 资料，不是当前项目实际 jar 已核验；不能由此证明当前 provider、shading、manifest 或启动日志。                                                     |
 | 当前加载注册              | `StackUpUpCore.kt:3-13,88-93`；`StackUpUpLateMixinLoader.kt:5-15,18-35`                                                                                                                                                                                                                                                                          | **[当前项目事实]** core 入口实现 `IEarlyMixinLoader` 并注册 `mixins.stackupup.early.json`；late loader 按 `Context`、mod ID 和 `MixinToggles` 排队多个第三方配置。                                                                                                                                                            | 不得因为 11.x README 的 manifest 方式就直接删除当前 loader；10.7 的精确接口和运行阶段仍以本地依赖/运行验证为准。                                                                       |
 | 当前 jar manifest 注册    | `build.gradle.kts:490-507`                                                                                                                                                                                                                                                                                                                       | **[当前项目事实]** `tasks.withType<Jar> { manifest }` 条件写入 `FMLCorePlugin`；启用 mod 时写 `FMLCorePluginContainsFMLMod`、按 task 写 `ForceLoadAsMod`；启用 AT 时写 `FMLAT`。该段不含 `MixinConfigs` 或 `MixinConnector`，说明 11.x manifest 注册模型尚未进入当前项目构建配置。                                            | 不得把 11.x manifest attributes 当作当前已注册；最终 jar manifest、provider/shading 和启动路径仍需实际 artifact/log 核对。                                                             |
@@ -118,9 +119,9 @@ Mixin 类名、注释或历史方法名补足证据。Forge wrapper 和 vanilla 
 provider、shading/relocation、manifest/service 和启动日志均未由本地 jar 或启动证据确认，保持 **[UNKNOWN]**。不能把上游 10.7
 资料改写成当前 jar 已核验，也不能写成项目已采用 11.x 的 CleanroomMC fork。
 
-### 2.4 11.x 升级准入门
+### 2.4 MixinBooter 11 迁移准入门（必选迁移）
 
-升级不是“改一行坐标”。在任何 11.x 迁移前，代理必须完成以下独立记录：
+升级不是“改一行坐标”。在必选迁移执行前，代理必须完成以下独立记录：
 
 1. **版本和来源**：锁定 MixinBooter 具体版本、CleanMix 版本、MixinExtras provider/fork 版本、Maven 仓库和最终运行时 jar；列出所有
    compileOnly、annotationProcessor、runtime 和内嵌关系。
@@ -186,7 +187,7 @@ Forge/FML + LaunchWrapper
    gate、版本探针和注入匹配诊断一起使用。
 5. AP 通过但 refmap 缺失、错误或没有覆盖生产混淆名时，运行时仍可能找不到注入点。构建验证必须检查生成 refmap 内容和最终 jar
    内位置。
-6. MixinBooter、CleanMix 和 MixinExtras 的实际版本升级后，重新核对注解可用性、handler 签名、`order` 支持和
+6. MixinBooter 11 必选迁移落地后，重新核对注解可用性、handler 签名、`order` 支持和
    bootstrap；DeepWiki 示例版本不能代替本地依赖源码。
 
 ## 4. 注入器决策表
@@ -401,7 +402,7 @@ jar、其他 Mixin fork 或 11.x CleanMix；实际 provider/jar 未核验时必�
 | `src/main/java/io/alexjoest/stackupup/mixin/early/RenderItemMixin.java:13-29`                                                             | 渲染文本调用使用 `@WrapOperation` 但当前不调用 `original`                                                                                                  | 确认是否有意完全替换字体绘制；验证客户端渲染、颜色/坐标/空文本和其他渲染 Mixin 共存，不能仅凭注解名称认为它是保留原调用的 wrapper。                                    |
 | `src/main/java/io/alexjoest/stackupup/core/DynamicCompatMethodProbe.java:32-58`、`core/CompatibilityLimitPatch.java:56-85`                | 动态 ASM 只按方法名识别，并在命中方法中替换所有 `BIPUSH 64`；当前 probe 不按 descriptor、常量位置或语义确认                                                | 不能把方法名/常量命中写成目标闭合；逐个补 descriptor 和语义位置证据，确认 Mixin 已接管目标进入 `FixedCompatTargets`，并检查动态 transformer 不二次命中。               |
 | `src/test/kotlin/io/alexjoest/stackupup/mixin/RefinedStorageMixinSourceTest.kt:11-19`                                                     | 只检查源码含 WrapOperation 且不含 Redirect                                                                                                                 | 保留为结构护栏，但增加真实行为/变换后字节码/注入匹配验证；不能把测试名当运行时证明。                                                                                   |
-| `src/main/kotlin/io/alexjoest/stackupup/StackUpUpCore.kt:3-13,88-93`                                                                      | 当前 core 入口实现 `IEarlyMixinLoader` 并条件注册 early JSON                                                                                               | 只在确认 MixinBooter 版本后迁移；记录冲突 coremod、排除包和 LaunchWrapper classloader 影响。                                                                           |
+| `src/main/kotlin/io/alexjoest/stackupup/StackUpUpCore.kt:3-13,88-93`                                                                      | 当前 core 入口实现 `IEarlyMixinLoader` 并条件注册 early JSON                                                                                               | 按 MixinBooter 11 必选迁移准入执行迁移；记录冲突 coremod、排除包和 LaunchWrapper classloader 影响。                                                                           |
 | `src/main/kotlin/io/alexjoest/stackupup/bootstrap/StackUpUpLateMixinLoader.kt:5-15,18-35`                                                 | 当前 late loader 按 Context、mod presence、toggle 排队配置                                                                                                 | 11.x 不得直接沿用；迁移时保留每个 mod 的可选边界和失败诊断。                                                                                                           |
 
 ### 8.1 当前实现的额外已知限制
@@ -544,7 +545,8 @@ Mixin 失败。
   operation。
 - `@Inject` 的局部 callback 优于无理由的完整方法接管；`HEAD + cancellable`、`@Redirect` 和 `@Overwrite` 都要承担明确的共存与行为证明责任。
 - MixinBooter 10.7 是当前项目事实；MixinBooter 11.x 的 CleanMix、manifest 注册和 CleanroomMC MixinExtras fork
-  是上游资料，直到来源、API、打包、classloader 和运行矩阵全部完成前都不是当前实现。
+  是上游资料，直到来源、API、打包、classloader 和运行矩阵全部完成前都不是当前实现。MixinBooter 11 迁移已定为本项目计划内必选项；
+  '不是当前实现'指当前事实，不改变迁移计划。
 - 容量任务永远同时审查广告和真实写入：`storedDelta + remainderCount == offered`，区分 simulate，禁止写入后补偿；未知 handler
   不动态扩容。
 - Mixin 能表达时优先 Mixin，确实不能表达且证据闭合时才用窄范围 ASM；任何未验证项如实保持 `UNKNOWN`。

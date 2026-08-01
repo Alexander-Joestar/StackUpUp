@@ -121,12 +121,8 @@ class TestValueItem(private val material: Any) {
     fun getMaterial(): Any = material
 }
 
-class TestMaterial(
-    private val registryName: String?,
-    private val name: String,
-) {
-    fun getRegistryName(): ResourceLocation? =
-        registryName?.let { ResourceLocation(it) }
+class TestMaterial(private val registryName: String?, private val name: String) {
+    fun getRegistryName(): ResourceLocation? = registryName?.let { ResourceLocation(it) }
 
     fun getName(): String = name
 }

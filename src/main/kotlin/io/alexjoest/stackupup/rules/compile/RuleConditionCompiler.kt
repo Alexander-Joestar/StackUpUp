@@ -15,18 +15,13 @@ internal object RuleConditionCompiler {
         is OrConditionAst -> compileAny(compileNestedConditions(condition.conditions))
     }
 
-    private fun compileList(condition: ListConditionAst): (StackContext) -> Boolean =
-        condition.field.compileListMatcher(condition.literals)
+    private fun compileList(condition: ListConditionAst): (StackContext) -> Boolean = condition.field.compileListMatcher(condition.literals)
 
-    private fun compileField(condition: FieldComparisonAst): (StackContext) -> Boolean =
-        condition.field.compileMatcher(condition.operator, condition.literal)
+    private fun compileField(condition: FieldComparisonAst): (StackContext) -> Boolean = condition.field.compileMatcher(condition.operator, condition.literal)
 
-    private fun compileNestedConditions(conditions: List<ConditionAst>): List<(StackContext) -> Boolean> =
-        conditions.map { compile(it) }
+    private fun compileNestedConditions(conditions: List<ConditionAst>): List<(StackContext) -> Boolean> = conditions.map { compile(it) }
 
-    private fun compileAny(predicates: List<(StackContext) -> Boolean>): (StackContext) -> Boolean =
-        { ctx -> predicates.any { it(ctx) } }
+    private fun compileAny(predicates: List<(StackContext) -> Boolean>): (StackContext) -> Boolean = { ctx -> predicates.any { it(ctx) } }
 
-    private fun compileAll(predicates: List<(StackContext) -> Boolean>): (StackContext) -> Boolean =
-        { ctx -> predicates.all { it(ctx) } }
+    private fun compileAll(predicates: List<(StackContext) -> Boolean>): (StackContext) -> Boolean = { ctx -> predicates.all { it(ctx) } }
 }

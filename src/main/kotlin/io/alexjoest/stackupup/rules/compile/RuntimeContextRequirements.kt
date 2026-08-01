@@ -7,9 +7,7 @@ import io.alexjoest.stackupup.rules.field.RuleFieldContextProvider
 /**
  * 运行时构造 `StackContext` 时需要采集的昂贵字段集合。
  */
-data class RuntimeContextRequirements(
-    val providers: List<RuleFieldContextProvider>,
-) {
+data class RuntimeContextRequirements(val providers: List<RuleFieldContextProvider>) {
     /**
      * 判断指定昂贵字段是否需要在当前规则快照下采集。
      */
@@ -47,7 +45,6 @@ data class RuntimeContextRequirements(
         /**
          * 从编译期字段需求创建运行时需求集合。
          */
-        fun of(vararg requirements: RuleContextRequirement): RuntimeContextRequirements =
-            fromProviders(requirements.map(RuleContextRequirement::provider))
+        fun of(vararg requirements: RuleContextRequirement): RuntimeContextRequirements = fromProviders(requirements.map(RuleContextRequirement::provider))
     }
 }

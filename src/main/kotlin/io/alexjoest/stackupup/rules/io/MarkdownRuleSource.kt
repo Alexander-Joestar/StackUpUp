@@ -22,8 +22,8 @@ internal object MarkdownRuleSource {
     /**
      * 读取多个 Markdown 规则文件，并为每个文件独立合并本文件 state。
      */
-    fun fromFiles(files: List<File>, gateContext: RuleGateContext = RuleGateContext.EMPTY): RuleLoadResult {
-        return fromParsedFiles(files.mapNotNull { file ->
+    fun fromFiles(files: List<File>, gateContext: RuleGateContext = RuleGateContext.EMPTY): RuleLoadResult = fromParsedFiles(
+        files.mapNotNull { file ->
             if (!file.exists()) {
                 null
             } else {
@@ -32,16 +32,14 @@ internal object MarkdownRuleSource {
                     document = MarkdownStateParser.parse(file.readLines(Charsets.UTF_8)),
                 )
             }
-        }, gateContext)
-    }
+        },
+        gateContext,
+    )
 
     /**
      * 使用已解析的 Markdown state 文档加载规则，避免同一文件重复解析。
      */
-    fun fromParsedFiles(
-        files: List<ParsedMarkdownFile>,
-        gateContext: RuleGateContext = RuleGateContext.EMPTY,
-    ): RuleLoadResult {
+    fun fromParsedFiles(files: List<ParsedMarkdownFile>, gateContext: RuleGateContext = RuleGateContext.EMPTY): RuleLoadResult {
         val allRules = ArrayList<CompiledRule>()
         val allErrors = ArrayList<LocalizedMessage>()
         for (file in files) {
@@ -151,7 +149,4 @@ internal object MarkdownRuleSource {
 /**
  * 已解析的 Markdown 规则文件，用于在 reload 流程中复用 state 解析结果。
  */
-internal data class ParsedMarkdownFile(
-    val sourceName: String,
-    val document: MarkdownStateDocument,
-)
+internal data class ParsedMarkdownFile(val sourceName: String, val document: MarkdownStateDocument)

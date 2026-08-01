@@ -1,10 +1,10 @@
 package io.alexjoest.stackupup.rules
 
+import io.alexjoest.stackupup.limit.StackContext
 import io.alexjoest.stackupup.rules.field.MissingValuePolicy
 import io.alexjoest.stackupup.rules.field.RuleFieldContextProvider
 import io.alexjoest.stackupup.rules.field.RuleFieldMatcherFactory
 import io.alexjoest.stackupup.rules.field.RuleFieldMatchers
-import io.alexjoest.stackupup.limit.StackContext
 
 enum class FieldType { ITEM, STRING, STRING_SET, NUMERIC }
 
@@ -37,7 +37,7 @@ enum class RuleField(
     ORE(
         FieldType.STRING_SET,
         contextProviders = setOf(RuleFieldContextProvider.ORE_NAMES),
-        matcherFactory = RuleFieldMatchers.stringSet(StackContext::oreNames)
+        matcherFactory = RuleFieldMatchers.stringSet(StackContext::oreNames),
     ),
     MATERIAL(
         FieldType.STRING,
@@ -63,20 +63,17 @@ enum class RuleField(
     /**
      * 编译单值字段比较。
      */
-    fun compileMatcher(operator: ComparisonOperator, literal: String): (StackContext) -> Boolean =
-        matcherFactory.compile(operator, literal)
+    fun compileMatcher(operator: ComparisonOperator, literal: String): (StackContext) -> Boolean = matcherFactory.compile(operator, literal)
 
     /**
      * 编译列表字段比较，列表语义复用字段自身的等值 matcher。
      */
-    fun compileListMatcher(literals: List<String>): (StackContext) -> Boolean =
-        matcherFactory.compileList(literals)
+    fun compileListMatcher(literals: List<String>): (StackContext) -> Boolean = matcherFactory.compileList(literals)
 
     /**
      * 提取该字段贡献给规则缓存键的值。
      */
-    internal fun cacheKeyValue(context: StackContext): String =
-        cacheKeyExtractor?.invoke(context).orEmpty()
+    internal fun cacheKeyValue(context: StackContext): String = cacheKeyExtractor?.invoke(context).orEmpty()
 
     companion object {
         private val byName: Map<String, RuleField> by lazy {

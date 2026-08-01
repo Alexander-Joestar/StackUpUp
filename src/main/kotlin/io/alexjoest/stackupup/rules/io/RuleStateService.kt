@@ -2,9 +2,7 @@ package io.alexjoest.stackupup.rules.io
 
 import java.io.File
 
-internal class RuleStateService(
-    private val resolveFile: () -> File?,
-) {
+internal class RuleStateService(private val resolveFile: () -> File?) {
     /**
      * 读取指定状态键。
      *

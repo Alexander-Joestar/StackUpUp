@@ -152,7 +152,7 @@
 
 **当前实现**
 
-- MixinBooter 提供运行时 MixinExtras；源码侧不额外塞独立 runtime jar。
+- MixinBooter 提供运行时 MixinExtras；源码侧不额外塞独立 runtime jar。11 迁移后按目标版本打包关系重新核对本句。
 - 包裹原调用的现有样例使用 `@WrapOperation`，例如 `ContainerMixin`、`RenderItemMixin`、`ItemGridHandlerMixin` 和
   `ItemGridHandlerPortableMixin`。
 - 只修改表达式结果的现有样例使用 `@ModifyExpressionValue`，例如 `CommandGiveMixin`。

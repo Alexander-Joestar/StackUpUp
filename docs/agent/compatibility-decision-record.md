@@ -306,17 +306,18 @@ T13 的最终矩阵中的回扩处置状态只能是“已回扩”“决定不�
 
 - **当前构建事实（不是升级结果）：** `build.gradle.kts:434` 通过 `modUtils.enableMixins` 锁定 `zone.rong:mixinbooter:10.7`；
   `:438-439` 使用 `io.github.llamalad7:mixinextras-common:0.5.0`，分别作为 `compileOnly` 和 `annotationProcessor`
-  。当前不能据此宣称运行时 provider、bootstrap、service 或打包关系已经闭合。
+  。当前不能据此宣称运行时 provider、bootstrap、service 或打包关系已经闭合。该 10.7 锁定是当前基线；按项目决策，迁移至 11
+  为计划内必选项，此事实句不因计划改变。
 - 当前仍使用 early/late loader：`src/main/kotlin/io/alexjoest/stackupup/StackUpUpCore.kt:3-13,88-93` 注册 early 配置，
   `src/main/kotlin/io/alexjoest/stackupup/bootstrap/StackUpUpLateMixinLoader.kt:5-15,18-35` 按 mod presence 和开关排队
   late 配置。`src/main/resources/mixins.stackupup.early.json:1-7`、`mixins.stackupup.late.ae2.json:3-6`、
   `mixins.stackupup.late.brandonscore.json:4-6` 等配置使用 `JAVA_8`/`refmap`；late 配置字段并非全部一致，仍须逐个核对。
 - **上游候选事实：** [MixinBooter 官方 README](https://github.com/CleanroomMC/MixinBooter) 当前 11.x 说明其基于
   CleanMix，early/late divide 淡出，`IEarlyMixinLoader`/`ILateMixinLoader` deprecated，并支持 manifest 的 `MixinConfigs`/
-  `MixinConnector`；README 还记载 11.12 使用 CleanroomMC 自有 MixinExtras fork。这些是 11.x 升级候选事实，不是当前 10.7
+  `MixinConnector`；README 还记载 11.12 使用 CleanroomMC 自有 MixinExtras fork。这些是 11.x 迁移目标版本事实（迁移为计划内必选项），不是当前 10.7
   的注册事实，不能直接删除现有 loader 或改写配置。
-- 11.x 候选的版本、坐标、签名、manifest、classloader、Extras provider 和迁移结果必须分别按 T9-R1/R2/R3 取证；不能把 README
-  的注册示例写成已经完成的升级。当前版本矩阵见
+- 11.x 候选的版本、坐标、签名、manifest、classloader、Extras provider 和迁移结果必须分别按 T9-R1、T9-R3 取证；不能把 README
+  的注册示例写成已经完成的迁移。当前版本矩阵见
   `docs/agent/mixin-%E7%94%9F%E6%80%81%E4%B8%8E%E6%B3%A8%E5%85%A5%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5.md:87-108`。
 
 ### 8.2 已决策：生态职责、来源边界与证据等级
@@ -392,29 +393,26 @@ T13 的最终矩阵中的回扩处置状态只能是“已回扩”“决定不�
 - 两个参考仓库的结构启示都不能改变本记录的容量不变量：广告值仍不得大于真实写入能力；真实 `insertItem` 必须保留 remainder
   并接受守恒审计；没有 Forge 1.12.2 第三方写入源码或可重复行为证据的目标仍是 **无源码不可判定**。
 
-### 8.6 拟议任务、升级结论与关联链接
+### 8.6 拟议任务、MixinBooter 11 必选迁移计划与关联链接
 
-- 在 `T9-R1`、`T9-R2`、`T9-R3` 和 T14 完成前， **保持当前 MixinBooter 10.7，不修改依赖**。T9 的任务定义和证据门见
-  `docs/agent/%E9%87%8D%E6%9E%84%E4%BB%BB%E5%8A%A1%E6%B8%85%E5%8D%95.md:419-463`：R1 核对来源/坐标（`:421-432`），R2 核对
-  API/加载/Extras/refmap/classloader，并覆盖 `@Pseudo`/`targets`、`remap=false`、Java 8（`:434-448`），R3
-  才形成升级或保持现版决策、触发条件和回滚边界（`:450-463`）。T14（含 T14.0-T14.7）仍按任务清单的规划、证据审查与迁移准入门执行；未完成前任何关键
+- 在 `T9-R1`、`T9-R3` 和 T14 完成前，**保持当前 MixinBooter 10.7，不修改依赖**（当前事实）；11 迁移为计划内必选项，
+  T9-R3 决定目标版本与迁移顺序，T14.7 是迁移准入门。T14（含 T14.0-T14.7）仍按任务清单的规划、证据审查与迁移准入门执行；未完成前任何关键
   provider、注册、混淆、字节码或容量证据不闭合，都保持当前版本。
-- 后续升级必须同时具备官方来源 URL、候选与当前 jar/POM/manifest、compileOnly/AP/runtime/shaded
+- 后续 11 迁移必须同时具备官方来源 URL、候选与当前 jar/POM/manifest、compileOnly/AP/runtime/shaded
   关系、编译检查、运行时加载矩阵和变换后字节码矩阵。当前列出的官方仓库根 URL 只是研究入口，T9-R1 尚未补齐具体
   tag/release、README commit、候选 POM 或 Maven metadata URL，不能把它们当作版本化证据。缺任一关键证据时，结论只能是
   `UNKNOWN`；第三方源码或 jar 缺失时使用 **无源码不可判定**，不得用类名、DeepWiki 页面或新版本示例补猜。
 - **T14 状态：** [
   `T14 Mixin 生态与注入重构`](%E9%87%8D%E6%9E%84%E4%BB%BB%E5%8A%A1%E6%B8%85%E5%8D%95.md#t14-mixin-%E7%94%9F%E6%80%81%E4%B8%8E%E6%B3%A8%E5%85%A5%E9%87%8D%E6%9E%84)
   已在任务清单 `:465-577` 正式定义 T14（含 T14.0-T14.7）；这些仍是 **未执行的规划、证据审查与迁移准入任务**，不是生产实现、迁移或
-  MixinBooter 升级的完成证明。T14.7 完成前不得解锁生产迁移或升级；缺 jar、未运行生命周期验证或其他关键证据缺失时继续保留
+  MixinBooter 升级的完成证明。T14.7（迁移准入门）完成前不得解锁生产迁移或 MixinBooter 11 迁移；迁移为计划内必选项，本段不是'可选'表述。缺 jar、未运行生命周期验证或其他关键证据缺失时继续保留
   **无源码不可判定**或 `UNKNOWN`，不得写成通过。正式定义前的建议/UNKNOWN 证据及其对照记录仍保留于 [
   `T14 对照与验收门`](%E5%80%9F%E9%89%B4%E4%BB%93%E5%BA%93%E4%B8%8E%E9%87%8D%E6%9E%84%E5%AF%B9%E7%85%A7.md#51-t14mixin-%E7%94%9F%E6%80%81%E4%B8%8E%E6%B3%A8%E5%85%A5%E9%87%8D%E6%9E%84%E6%AD%A3%E5%BC%8F%E8%A7%84%E5%88%92%E7%8A%B6%E6%80%81)（
   `:309-319`），仅作历史/对照证据，不替代现行 T14 范围。
 - 关联资料：[
   `Mixin 生态与注入最佳实践`](mixin-%E7%94%9F%E6%80%81%E4%B8%8E%E6%B3%A8%E5%85%A5%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5.md)、[
   `借鉴仓库与重构对照`](%E5%80%9F%E9%89%B4%E4%BB%93%E5%BA%93%E4%B8%8E%E9%87%8D%E6%9E%84%E5%AF%B9%E7%85%A7.md)、[
-  `T9 MixinBooter 11 调研`](%E9%87%8D%E6%9E%84%E4%BB%BB%E5%8A%A1%E6%B8%85%E5%8D%95.md#t9-mixinbooter-11-%E8%B0%83%E7%A0%94)、[
-  `T9-R1`](%E9%87%8D%E6%9E%84%E4%BB%BB%E5%8A%A1%E6%B8%85%E5%8D%95.md#t9-r1-%E7%89%88%E6%9C%AC%E4%B8%8E%E6%9D%A5%E6%BA%90%E6%A0%B8%E9%AA%8C)、[
-  `T9-R2`](%E9%87%8D%E6%9E%84%E4%BB%BB%E5%8A%A1%E6%B8%85%E5%8D%95.md#t9-r2-api%E5%8A%A0%E8%BD%BD%E6%97%B6%E6%9C%BA%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E5%85%BC%E5%AE%B9%E6%A0%B8%E9%AA%8C)、[
-  `T9-R3`](%E9%87%8D%E6%9E%84%E4%BB%BB%E5%8A%A1%E6%B8%85%E5%8D%95.md#t9-r3-%E5%8D%87%E7%BA%A7%E5%86%B3%E7%AD%96%E4%B8%8E%E8%A7%A6%E5%8F%91%E6%9D%A1%E4%BB%B6)、[MixinBooter 官方仓库](https://github.com/CleanroomMC/MixinBooter)、[CleanMix 官方仓库](https://github.com/CleanroomMC/CleanMix)、[SpongePowered/Mixin](https://github.com/SpongePowered/Mixin)、[LlamaLad7/MixinExtras](https://github.com/LlamaLad7/MixinExtras)
+  `T9 MixinBooter 11 迁移取证`](%E9%87%8D%E6%9E%84%E4%BB%BB%E5%8A%A1%E6%B8%85%E5%8D%95.md#t9-mixinbooter-11-%E8%BF%81%E7%A7%BB%E5%8F%96%E8%AF%81%E5%BF%85%E9%80%89%E8%BF%81%E7%A7%BB)、[
+  `T9-R1`](%E9%87%8D%E6%9E%84%E4%BB%BB%E5%8A%A1%E6%B8%85%E5%8D%95.md#t9-r1-%E7%89%88%E6%9C%AC%E4%B8%8E-api-%E8%BF%81%E7%A7%BB%E5%8F%96%E8%AF%81%E5%90%88%E5%B9%B6%E5%8E%9F-r1-%E4%B8%8E-r2)、[
+  `T9-R3`](%E9%87%8D%E6%9E%84%E4%BB%BB%E5%8A%A1%E6%B8%85%E5%8D%95.md#t9-r3-%E8%BF%81%E7%A7%BB%E8%B7%AF%E5%BE%84%E5%86%B3%E7%AD%96%E4%B8%8E%E8%A7%A6%E5%8F%91%E6%9D%A1%E4%BB%B6)、[MixinBooter 官方仓库](https://github.com/CleanroomMC/MixinBooter)、[CleanMix 官方仓库](https://github.com/CleanroomMC/CleanMix)、[SpongePowered/Mixin](https://github.com/SpongePowered/Mixin)、[LlamaLad7/MixinExtras](https://github.com/LlamaLad7/MixinExtras)
   和 [CleanroomMC/MixinExtras](https://github.com/CleanroomMC/MixinExtras)。

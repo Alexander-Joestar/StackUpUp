@@ -134,10 +134,7 @@ class Ae2ItemHandlerInsertLimiterTest {
         override fun getSlotLimit(slot: Int): Int = slotLimit
     }
 
-    private class CapacityHandler(
-        private val slotLimit: Int,
-        private val capacity: Int,
-    ) : IItemHandler {
+    private class CapacityHandler(private val slotLimit: Int, private val capacity: Int) : IItemHandler {
         val calls = mutableListOf<Call>()
         var stored = 0
 

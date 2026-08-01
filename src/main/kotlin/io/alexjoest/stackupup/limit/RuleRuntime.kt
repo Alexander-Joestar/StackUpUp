@@ -32,10 +32,7 @@ object RuleRuntime {
         runtimeStateRef.set(RuntimeState(snapshot, oreDictIndex))
     }
 
-    private class RuntimeState(
-        val snapshot: RuleSnapshot,
-        val oreDictIndex: OreDictIndex,
-    ) {
+    private class RuntimeState(val snapshot: RuleSnapshot, val oreDictIndex: OreDictIndex) {
         // 规则快照或矿辞索引发生替换时，直接整体刷新服务实例，
         // 这样热路径缓存无需额外加版本判断，结构更简单，也更不容易漏失效。
         val limitService = StackLimitService(snapshot)

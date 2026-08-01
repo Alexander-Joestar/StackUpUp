@@ -1,0 +1,50 @@
+# 版本目录（version catalog）：由 Gradle 从 gradle/libs.versions.toml 自动加载为 libs。
+# 迁移自 build.gradle.kts / settings.gradle.kts / gradle.properties 的版本字面量，
+# 逐字搬运，不改变任何版本值或坐标语义。
+#
+# 注意：settings.gradle.kts 的 plugins 块不能使用版本目录 alias（Gradle 9.4 实测
+# 报 Unresolved reference 'libs'），因此 [plugins].foojayResolverConvention 的版本
+# 在 settings.gradle.kts 中仍以字面量 1.0.0 书写，改动时两处必须同步。
+#
+# forgelin_continuous_version 仍在 gradle.properties 中由 build.gradle.kts 直接读取，
+# 不进入本目录；kotlinVersion 已从 gradle.properties 迁入 [versions]。
+
+[versions]
+kotlinVersion = "2.3.0"
+ideaExt = "1.1.7"
+retrofuturagradle = "2.0.2"
+cursegradle = "1.4.0"
+spotless = "7.0.3"
+foojayResolverConvention = "1.0.0"
+assetmover = "2.5"
+mixinbooter = "10.7"
+mixinextrasCommon = "0.5.0"
+asmDebugAll = "5.2"
+guava = "24.1.1-jre"
+gson = "2.8.6"
+junitBom = "5.12.2"
+
+[libraries]
+assetmover = { module = "com.cleanroommc:assetmover", version.ref = "assetmover" }
+mixinextrasCommon = { module = "io.github.llamalad7:mixinextras-common", version.ref = "mixinextrasCommon" }
+asmDebugAll = { module = "org.ow2.asm:asm-debug-all", version.ref = "asmDebugAll" }
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+junitBom = { module = "org.junit:junit-bom", version.ref = "junitBom" }
+
+[plugins]
+ideaExt = { id = "org.jetbrains.gradle.plugin.idea-ext", version.ref = "ideaExt" }
+retrofuturagradle = { id = "com.gtnewhorizons.retrofuturagradle", version.ref = "retrofuturagradle" }
+cursegradle = { id = "com.matthewprenger.cursegradle", version.ref = "cursegradle" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+foojayResolverConvention = { id = "org.gradle.toolchains.foojay-resolver-convention", version.ref = "foojayResolverConvention" }
+
+# T15：build-logic 复合构建的 convention 插件（不写版本，由 includeBuild("build-logic") 解析）。
+conventionsJvm = { id = "stackupup.conventions.jvm" }
+conventionsRepositories = { id = "stackupup.conventions.repositories" }
+conventionsSpotless = { id = "stackupup.conventions.spotless" }
+conventionsTest = { id = "stackupup.conventions.test" }
+conventionsIdea = { id = "stackupup.conventions.idea" }
+conventionsMinecraft = { id = "stackupup.conventions.minecraft" }
+conventionsAutoTest = { id = "stackupup.conventions.auto-test" }
+conventionsLocalDevMods = { id = "stackupup.conventions.local-dev-mods" }

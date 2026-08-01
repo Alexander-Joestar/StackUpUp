@@ -7,6 +7,8 @@
 - 规则字段主路径统一为 `RuleField.contextProviders -> RuntimeContextRequirements` provider plan，`RuleContextRequirement` 仅作旧兼容和诊断投影
 - `RuntimeContextRequirements` 继续以 `requires(...)` 为主查询，`fromProviders` 保序去重，`ORE_NAMES` 不进入 cache key
 - `RuleStateService` 与 `RuleRuntimeCoordinator` 保持当前三态与成功/失败发布契约，不恢复 `remainder-system`
+- 修复 AE2 外部处理器大堆叠插入
+- 修复 AE2 样板终端空白样板槽上限
 
 ## 0.2.4
 

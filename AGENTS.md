@@ -38,9 +38,20 @@
 
 ## 代理分工
 
-- **Luna** 默认负责调查、文档、小任务和普通复核。
-- **Terra** 只用于跨模块冲突、容量或数据安全底线、高风险裁决；不得把普通工作默认升级给 Terra。
+[//]: # (- **gpt-5.6-luna xhigh/max, deepseek-v4-flash max** 默认负责调查、文档、小任务和普通复核。)
+
+[//]: # (- **gpt-5.6-terra xhigh** 只用于跨模块冲突、容量或数据安全底线、高风险裁决；不得把普通工作默认升级给 Terra。)
+
 - 代理层级可伸缩，不强制三级。若采用多层协作，主代理维护全局目标和最终边界，协调代理拆分任务并复核，执行代理只修改精确租约范围。任何层级都必须如实报告失败和未知，不得互相包庇。
+
+### 领导者编排与子代理库
+
+- 主代理是领导者：只负责拆分任务、分配精确写租约、汇总 lane 结论、调度独立复核，不亲自执行取证或实现子任务。
+- 子代理一律从 `docs/agent/子代理库.md` 选用预定义定义，共十个：源码事实审查、写入路径复核、调用点盘点、Mixin
+  inventory、字节码护栏、运行时验证、网络研究、文档收口、Terra 裁决、独立复核。
+- 并行编排：相互独立的取证拆成 lane 同时派发；所有 lane 只共享同一事实源（P0 源码事实台账与 T2 登记表），不得另造事实源。
+- 每个 lane 按 AGENTS 输出模板（状态/实际变更/证据/验证/剩余风险/复核）返回产出。
+- 执行代理只修改租约内精确路径；领导者负责合并 lane 产出，保留各 lane 的 `UNKNOWN` 与剩余风险，并对合并结果指派非作者独立复核。
 
 ## 文件租约与保护既有改动
 
@@ -74,17 +85,38 @@
 
 工具选择遵循“轻量文本工具 → 本地命令行 → IDE 语义工具”的顺序：
 
-- 简单文本读取、搜索、替换优先使用 `Read`、`Glob`、`Grep`、`Edit`；普通搜索和简单替换不得调用 IDE MCP。
-- Scoop 已提供 `rg`、`fd`、`bat`、`ast-grep`、`difft`、`tokei` 等本地工具，适合搜索、文件定位、带上下文查看、结构匹配、差异和统计；Windows shell 的复杂命令可使用 `pwsh`。
+- 简单文本读取、搜索、替换优先使用内置 `Read`、`Glob`、`Grep`、`Edit`；仅具备 Bash/Read 的子代理改用 shell 工具：搜索用 `rg`、文件定位用 `fd`、查看用 `bat`；普通搜索和简单替换不得调用 Workspace Agent Bridge（IDE MCP）。
+- Scoop 已提供 `rg`、`fd`、`bat`、`ast-grep`、`difft`、`tokei` 等本地工具，分别为搜索（rg）、文件定位（fd）、带上下文查看（bat）、结构化语法匹配（ast-grep）、差异对比（difft）、代码统计（tokei）的首选工具；Windows
+  shell 的复杂命令可使用 `pwsh`。
 - 需要 IDE 语义、Usages、符号解析、跨文件重命名或改签名、检查、格式化、Gradle 同步、构建或运行配置时，优先使用地址为
-  `http://127.0.0.1:63441/api/v1` 的 Workspace Agent Bridge。依赖/SDK 查询以工具返回的真实来源为准，跨文件变更先确认 Usages。
+  `http://127.0.0.1:63441/api/v1` 的 Workspace Agent Bridge。依赖/SDK 查询以工具返回的真实来源为准，跨文件变更先确认
+  Usages。
+- **Bridge 用法（REST，会话化）**：先 `POST /sessions`（body `{"pathPrefix":"C:/dev/mc/1.12.2/StackUpUp"}`，Windows 用正斜杠路径，
+  参考 `~/.zcode/skills/workspace-agent-bridge/SKILL.md`），取响应 `sessionId`，此后每个请求带
+  `X-Ghostflyby-Workspace-Session-Id: <sessionId>` 头。常用端点：`/search/symbols?query=X&libraries=true`（符号声明）、
+  `/glob?glob=**/*.kt`（路径模式）、`/search/text/{path}?query=...`（文本搜索）、`/files/{path}?meta=true|structure=true|aroundLine=N&radius=M`
+  （文件读取，可带 problems）、`/navigation/{path}`（Goto/Usages/Documentation）、`/inspections/{path}`（问题检查）。
+  响应默认 Markdown；外部 jar/库用返回的 `encodedFileUrl` 读取，不要臆造路径。
+- **Bridge REST 与 IDE MCP 是同一 IntelliJ 插件的互补暴露面，不是超集关系**：Gradle 生命周期（test/build/spotlessCheck/run* 系列）只有 `mcp__idea__*` 提供（`run_gradle_tasks`/`execute_run_configuration`/`sync_gradle_projects`），REST 无此能力；会话化范围控制（`POST /sessions` + pathPrefix + `X-Ghostflyby-Workspace-Session-Id` 头）只有 REST 提供；符号/文本搜索、导航（Usages/Goto）、检查、格式化两者重叠，任选其一，优先用已注入会话的通道。子代理不得在 shell 中裸跑 gradle 或模拟 IDE 语义操作。
+- Gradle 生命周期与 IDE 语义操作（符号搜索、Usages、重命名、检查、格式化、构建/运行配置）优先走 Bridge 的 `mcp__idea__*` 工具；子代理收到此类任务时不得退回 shell 命令模拟（如 shell 裸跑 gradle、grep 替代符号搜索）。
+- GitHub 相关操作（issue/PR/repo 查询等）使用 GitHub MCP（`mcp__github__*`），不装 `gh` CLI；MCP 工具在会话启动时注入，未注入时如实记录并降级（如用 WebFetch 读取公开页面），不得假装可用。涉及推送、创建、修改等外部状态变更的操作仍需用户明确授权。
 - Bridge 不可用时必须记录失败原因，再采用安全的替代方案；不得默默假设 Bridge 可用或任务已完成。
 
-Windows 的 Gradle 入口是 `.\gradlew.bat`；常用任务包括 `test`、`test --tests "*StackLimitServiceTest"`、`spotlessCheck`、
-`spotlessApply`、`runClient`、`runServer` 和 `runServerAutoTestMatrix`。Gradle 生命周期任务优先通过 Bridge/IDE 生命周期能力执行，
-不要在 shell 中裸跑长任务。`runClient`、`runServer` 和自动验收默认不自动开启；自动验收可用 `run*AutoTest` 任务或
-`-PstackupupDevAutoTest=true` 开启。参数链使用 `-PstackupupDevAutoTest*` 到 `-Dstackupup.dev.autoTest.*`；旧的 `stackup*` 前缀只作
-fallback，不得扩散。修改 mapping 相关的 `gradle.properties` 后运行 `setupDecompWorkspace`。文档或计划引用验证项时，必须说明实际运行的
+### CLI 工具与 Git Bash
+
+- **强制规则**：搜索一律 `rg`、文件定位一律 `fd`、查看用 `bat`/Read、差异用 `difft`/`jj diff`、统计用 `tokei`；禁止裸 `grep`、`find` 与 `cat` 翻看大文件。
+- **Gradle 与 IDE 语义不归 shell 管**：构建/测试/运行生命周期走 Workspace Agent Bridge（`mcp__idea__*`）；shell 只用于文件检索、文本处理与只读调查，不用于构建执行。
+- **现状即结论**：Git Bash 只给 agent 使用，不是人类交互终端。Scoop 已装 `rg`、`fd`、`bat`、`ast-grep`、`difft`、`tokei`、`fzf`、
+  `zoxide`、`eza`、`pwsh`、`python`、`node`、`jj`、`starship`，满足项目需要。
+- **不新增工具**：本项目不涉及大 JSON 处理，不装 `jq`；不装 `gh` CLI（GitHub 操作经 GitHub MCP `mcp__github__*` 执行，不引入需交互登录的 CLI）、`shellcheck`（仓库无
+  shell 脚本）、`delta`（difft 已覆盖）、`yq`；不装独立 gradle（项目强制 wrapper）。
+- **不做 shell 配置**：不创建 `~/.bashrc`/`~/.bash_profile` 别名与集成，不启用 `starship` 提示符等视觉系内容，不执行 `fzf`/
+  `zoxide` 交互 shell 集成，不改 `~/.gitconfig`。agent 直接使用完整命令即可。
+
+Git Bash（agent 默认 shell）的 Gradle 入口是 `./gradlew`，cmd/PowerShell 才用 `.\gradlew.bat`；常用任务包括 `test`、`test --tests "*StackLimitServiceTest"`、`spotlessCheck`、
+`spotlessApply`、`runClient`、`runServer` 和 `runServerAutoTestMatrix`。**Gradle 生命周期任务（test、build、spotlessCheck、run* 系列等）一律通过 Workspace Agent Bridge 的 IDE 语义能力执行**：用 `mcp__idea__run_gradle_tasks`（任意 Gradle 任务）、`mcp__idea__execute_run_configuration`（既有运行配置，如 Run Server AutoTest Matrix）或 `mcp__idea__sync_gradle_projects`（同步）；IDE 使用项目 JDK 运行 Gradle，**子代理不得在 shell 中裸跑 `JAVA_HOME=... ./gradlew ...` 执行生命周期任务**。仅在 Bridge 不可用且记录失败原因后，才允许 shell 兜底（使用 `./gradlew`，并注意运行 JVM 要求）。`runClient`、`runServer` 和自动验收默认不自动开启；自动验收可用 `run*AutoTest` 任务或
+`-PstackupupDevAutoTest=true` 开启。参数链使用 `-PstackupupDevAutoTest*` 到 `-Dstackupup.dev.autoTest.*`；旧的 `stackup*`
+前缀只作 fallback，不得扩散。修改 mapping 相关的 `gradle.properties` 后运行 `setupDecompWorkspace`。文档或计划引用验证项时，必须说明实际运行的
 是 Gradle 测试、自动验收任务还是静态检查；未执行不得写成已通过。
 
 ## 规则数据流与 DSL 边界
@@ -136,6 +168,7 @@ proxy。`StackUpUp` 只负责 Forge 生命周期编排。
 - Forge 或第三方转发 wrapper 不能因为 wrapper 自身返回某个数就擅自扩大；广告值和写入面的数值来源必须一致。
 - 禁止在真实写入后重新计算余量、回填、重试、补偿，或以这些动作改变业务结果。守恒审计只能观察和报告，不能修正结果；必须区分
   `simulate` 与真实写入，并对真实写入记录 `offered`、落库量、`remainder`、目标类和 `slot`，产出机器可读报告。
+- 真实 `insertItem(..., false)` 必须满足 `storedDelta + remainderCount == offered`；它只是只读审计公式，不是写入后补偿算法。
 - 机器类兼容先查真实写入容量，再考虑 `Slot#getItemStackLimit` 或 GUI 广告。
 - `resolveInventoryClampLimit` 仍有两个调用方；删除或改动前必须逐一定位和处理，不能按“没有调用方”删除。
 
@@ -147,22 +180,37 @@ proxy。`StackUpUp` 只负责 Forge 生命周期编排。
 
 ### 核心参考与 DeepWiki 研究规则
 
-- 所有涉及 `Mixin`、`ASM`、`classloading`、`transformer`、`refmap`、`mappings`、`MixinBooter`、`CleanMix` 或 `MixinExtras` 的任务，必须先使用 DeepWiki MCP 做架构、生命周期和调用链调查；优先 `read_wiki_structure`、`read_wiki_contents`，必要时再用 `ask_question`，随后用三个官方仓库及本项目代码、依赖核对事实。
+- 所有涉及 `Mixin`、`ASM`、`classloading`、`transformer`、`refmap`、`mappings`、`MixinBooter`、`CleanMix` 或 `MixinExtras`
+  的任务，使用 DeepWiki MCP 做架构、生命周期和调用链调查，随后用三个官方仓库及本项目代码、依赖核对事实。
+- DeepWiki MCP 作为架构研究入口，提供页面结构、内容读取与问答等查询能力（具体工具名随会话注入而定，不在本规范写死底层函数名）；
+  查询前先确认对应工具在当前会话可用。查询未索引、失败或结果不完整时，记录仓库、调用类型/页面、失败原因和缺口，再按既有降级链
+  （官方仓库 README/源码、本项目依赖、本地构建产物）核对，不得假装 DeepWiki 已使用。
 - 固定参考入口及职责：
-  - [CleanroomMC/MixinBooter](https://github.com/CleanroomMC/MixinBooter)：Minecraft 1.12.2 旧 Forge 侧的 bootstrap、early/late loading 与兼容桥；
-  - [CleanroomMC/CleanMix](https://github.com/CleanroomMC/CleanMix)：`MixinBootstrap/bootstrap`、Mixin 核心、launcher service、transform pipeline、refmap 与 annotation processor（AP）；其中 `MixinBootstrap/bootstrap` 属于 Mixin 核心/launcher 层，不是 MixinBooter 的 Forge 侧 bootstrap/兼容桥；
-  - [CleanroomMC/MixinExtras](https://github.com/CleanroomMC/MixinExtras)：扩展注入 API 与版本兼容边界。
-    三者职责和依赖边界不同，不得混写为同一个库；具体 API、配置及早/晚加载状态可能随版本变化，必须核对官方 README/源码和本项目实际依赖，不得把 DeepWiki 示例版本当作事实。
-- 当前项目在 `build.gradle.kts:434` 的构建配置中使用并锁定 `zone.rong:mixinbooter:10.7`；early/late 接口与加载阶段规则必须以该锁定版本为准。若上游 11.x 已改变或淡化 early/late 机制，升级到该版本时不得把旧规则无条件套用到升级后的版本，必须核对该版本实际 manifest、`MixinConnector`、注册路径和官方源码；不得把未来版本写成当前项目已使用。
-- DeepWiki 仅作为架构、生命周期、调用链和设计意图的研究入口；精确 API、版本、配置和行为以官方仓库 README/源码、当前依赖及本地构建产物为准。发现冲突时必须记录冲突，并以本项目实际运行版本和源码为准；不得凭记忆臆测 API。
-- 若 DeepWiki 未索引、不可用或结果不完整，必须记录仓库、调用类型/页面、失败原因和缺口，并安全降级到官方 GitHub README/源码、本项目当前依赖及本地构建产物；尤其 `CleanroomMC/MixinExtras` 当前未被 DeepWiki 索引时，仍须将其官方仓库作为一等参考，禁止因失败而跳过核对。
+    - [CleanroomMC/MixinBooter](https://github.com/CleanroomMC/MixinBooter)：Minecraft 1.12.2 旧 Forge 侧的
+      bootstrap、early/late loading 与兼容桥；
+    - [CleanroomMC/CleanMix](https://github.com/CleanroomMC/CleanMix)：`MixinBootstrap/bootstrap`、Mixin 核心、launcher
+      service、transform pipeline、refmap 与 annotation processor（AP）；其中 `MixinBootstrap/bootstrap` 属于 Mixin
+      核心/launcher 层，不是 MixinBooter 的 Forge 侧 bootstrap/兼容桥；
+    - [CleanroomMC/MixinExtras](https://github.com/CleanroomMC/MixinExtras)：扩展注入 API 与版本兼容边界。
+      三者职责和依赖边界不同，不得混写为同一个库；具体 API、配置及早/晚加载状态可能随版本变化，必须核对官方
+      README/源码和本项目实际依赖，不得把 DeepWiki 示例版本当作事实。
+- 当前项目在 `build.gradle.kts:434` 的构建配置中使用并锁定 `zone.rong:mixinbooter:10.7`；early/late
+  接口与加载阶段规则必须以该锁定版本为准（10.7 为当前基线；按项目决策，迁移到 MixinBooter 11 是计划内必选迁移，由 T9/T14 取证、T14.7 准入门把关）。若上游 11.x 已改变或淡化 early/late 机制，迁移到该版本时不得把旧规则无条件套用到升级后的版本，必须核对该版本实际
+  manifest、`MixinConnector`、注册路径和官方源码；不得把未来版本写成当前项目已使用。
+- DeepWiki 仅作为架构、生命周期、调用链和设计意图的研究入口；精确 API、版本、配置和行为以官方仓库
+  README/源码、当前依赖及本地构建产物为准。发现冲突时必须记录冲突，并以本项目实际运行版本和源码为准；不得凭记忆臆测 API。
+- 若 DeepWiki 未索引、不可用或结果不完整，必须记录仓库、调用类型/页面、失败原因和缺口，并安全降级到官方 GitHub
+  README/源码、本项目当前依赖及本地构建产物；尤其 `CleanroomMC/MixinExtras` 当前未被 DeepWiki
+  索引时，仍须将其官方仓库作为一等参考，禁止因失败而跳过核对。
 - L2/L3 子代理调查优先使用 DeepWiki；仅在复杂问题需要时扩大到源码搜索或 IDE 语义调查。DeepWiki 失败或不完整时按上一条安全降级，不得把推测写成事实。
-- 涉及上述三个仓库的任何变更，任务交接与验证记录必须列明查阅的官方仓库、DeepWiki 页面/问答、失败记录（如有）以及版本依据；缺少版本或运行证据时必须标为 `UNKNOWN`，不得宣称通过。
+- 涉及上述三个仓库的任何变更，任务交接与验证记录必须列明查阅的官方仓库、DeepWiki 页面/问答、失败记录（如有）以及版本依据；缺少版本或运行证据时必须标为
+  `UNKNOWN`，不得宣称通过。
 
 ### Mixin 与 ASM 分层
 
-仅当当前依赖版本仍提供 early/late 接口且目标处于对应生命周期时，优先采用对应的 Mixin；若该版本已废弃或取消
-early/late 分层，则按该版本实际注册路径实现。仅当 Mixin 能力不足时才使用窄范围 ASM 兜底。新增兼容按“目标类、方法、签名明确 → late Mixin；原版或 Forge 基础路径 → early Mixin；已被 Mixin 接管 → 核对
+仅当当前依赖版本仍提供 early/late 接口且目标处于对应生命周期时，优先采用对应的 Mixin；若该版本已废弃或取消 early/late
+分层，则按该版本实际注册路径实现。仅当 Mixin 能力不足时才使用窄范围 ASM 兜底。新增兼容按“目标类、方法、签名明确 → late
+Mixin；原版或 Forge 基础路径 → early Mixin；已被 Mixin 接管 → 核对
 `FixedCompatTargets` 跳过表”的顺序判断。
 
 - `mixin/early/` 覆盖 `ItemStack`、`Item`、`Container`、`Slot`、`SlotItemHandler`、玩家库存、`EntityItem` 合并、`PacketBuffer`
@@ -173,8 +221,10 @@ early/late 分层，则按该版本实际注册路径实现。仅当 Mixin 能�
 - late 模块表不等于 `FixedCompatTargets`；只有需要让动态 ASM 主动避让的固定类才进入跳过表。
 - 静态目标方法的 Mixin handler 使用 Java `private static`，不用 Kotlin `companion object + @JvmStatic`。重载方法写完整
   descriptor，例如 `getInventoryStackLimit()I` 与 `getInventoryStackLimit(I)I` 必须区分。
-- 当前项目按 MixinBooter `10.7` 的运行时打包关系使用 MixinExtras；升级 MixinBooter 或单独引入 MixinExtras 时，必须核对实际 provider、坐标、
-  版本和 shaded/standalone 打包方式；继续保留包裹原调用使用 `@WrapOperation`、修改表达式结果使用 `@ModifyExpressionValue`，不得新增
+- 当前项目按 MixinBooter `10.7` 的运行时打包关系使用 MixinExtras；升级 MixinBooter 或单独引入 MixinExtras 时，必须核对实际
+  provider、坐标、 版本和 shaded/standalone 打包方式；MixinBooter 11 迁移已在计划内（必选），执行迁移时按此规则重核 Extras
+  打包关系（11.12 起为 Cleanroom fork，同包名）；继续保留包裹原调用使用 `@WrapOperation`、修改表达式结果使用
+  `@ModifyExpressionValue`，不得新增
   `@Redirect`。
 - `StackCountCodec` 以魔数字节加 int 扩展数量编码，数量 `≤64` 保持原版单字节。
 
@@ -231,6 +281,8 @@ jj new
 jj bookmark set master -r @-
 ```
 
+jj diff 输出不清晰时用 `difft` 做并排对比（不修改任何配置）。
+
 用 `jj describe` 替代提交操作；只有用户明确要求时才执行 `jj git push`。不得用 git 或 jj 恢复、清理或绕过既有改动。
 
 ### 格式与最终验证
@@ -242,14 +294,48 @@ jj bookmark set master -r @-
 - 改动 coremod、Mixin 或自动化参数后至少覆盖 `CoremodHierarchyBytecodeSafetyTest`、`EarlyMixinBytecodeSafetyTest`、
   `MixinBooterIntegrationTest` 和 `runServerAutoTest`；不得把仅静态检查写成测试通过。
 
+### Kotlin 现代风格规范
+
+本节约束 `src/main/kotlin` 的现代 Kotlin 写法：语言版本 Kotlin 2.3.0、目标 Java 8 字节码；Spotless/ktlint `intellij_idea`
+风格（缩进 4、最大行宽 160）已由上一节约束，本节只规定写法。
+
+1. **累积用 `buildList`/`buildMap`/`buildString(容量)`，不用 `ArrayList` + `+=` 手写累积**。动机：一次性构建不可变结果，类型推断完整，且避免
+   `+=` 对可变集合的语义含混。对照 `DslParser.kt:27`（`buildList`）vs `DevAutomationServerDriver.kt:86`（`ArrayList`）。
+2. **受限层次用 `sealed interface`/`sealed class` + `data class`/`data object` 表达**。动机：编译器参与分支穷尽检查，层次封闭便于安全演进。对照
+   `rules/ast/ConditionAst.kt:7`。
+3. **`sealed`/`enum` 的 `when` 必须穷尽，不加 `else`**。动机：新增子类/枚举值时编译器强制更新所有使用点，`else` 会静默吞掉漏项。对照
+   `RuleConditionCompiler.kt:11`（穷尽）；反面 `RuleFieldMatcherFactory.kt:65-68`（`else -> false`）。
+4. **能 `when` 不写长 `if/else`；区间夹取用 `coerceIn`/`coerceAtLeast`/`coerceAtMost`**。动机：声明式表达夹取意图，`when`
+   比多层 `else if` 更可读且不易漏分支。对照 `StackCountTextLayout.kt:154-159`（`else if` 夹取可改 `coerceIn`）。
+5. **禁止 `!!`（全仓当前零使用）；空安全用 `?.let { return it }`、`?:`、`takeIf`；前置条件用 `require`/`requireNotNull`/
+   `check`**。动机：`!!` 掩盖可空性真实来源，`require`/`check` 让失败点与不变量声明相邻，符合 Fail Fast。对照
+   `StackLimitService.kt:29`。
+6. **单抽象方法（SAM）接口用 `fun interface`，实现一律写 lambda**。动机：实现贴近调用点，避免匿名对象样板。对照
+   `RuleFieldMatcherFactory.kt:11-17`。
+7. **只读缓存用 `ConcurrentHashMap.computeIfAbsent` 一次性填充；全局运行态用 `AtomicReference` 持有不可变快照整体换新**
+   。动机：免显式锁，整体换新保证热路径读到一致快照。对照 `OreDictIndex.kt:14`、`RuleRuntime.kt:9-33`。
+8. **热路径避免字符串模板/`String.format` 临时分配；已知上界用 `buildString(n)` 预分配**。动机：高频路径减少 GC 压力。对照
+   `StackCountTextLayout.kt:245-268`。
+9. **辅助逻辑用扩展函数收拢在所属文件，不散落成工具类**。动机：调用面贴近接收者语义，避免 `XxxUtils` 膨胀。对照
+   `CommandStackUpUp.kt:139`。
+10. **`when (val x = ...)` 主体绑定一次取值；可失败调用用 `runCatching { ... }.getOrNull()`/`getOrDefault`**。动机：避免重复求值与
+    try-catch 样板，失败显式化为可空结果。对照 `DslParser.kt:38`、`GregTechMaterialResolver.kt:88-93`。
+11. **本节只约束 `src/main/kotlin`；`src/main/java` 的 core/early transformer 与 Mixin 保持纯 Java**。动机：coremod early
+    path 已由「coremod early path」一节的纯 Java 约束限定，混用会破坏字节码护栏。
+12. **不炫技：现代语法以可读性为前提，可读性存疑时退回朴素写法，并用中文注释说明动机**。动机：1.12.2 + Kotlin 2.3.0 + Java 8
+    字节码组合兼容面窄，技巧性语法抬高评审成本。
+
 ### 现行文档
 
 - `AGENTS.md` 是唯一的代理协作规范；其他文档不取代它。
 - [START_HERE](docs/agent/START_HERE.md)
+- [子代理库](docs/agent/%E5%AD%90%E4%BB%A3%E7%90%86%E5%BA%93.md)：主代理编排时可复用子代理定义（取证/复核/实现/裁决/复核十类）；现行编排参考。
 - [硬约束](docs/agent/2026-04-18-hard-rules.md)（hard-rules）：领域门槛。
 - [兼容性决策记录](docs/agent/compatibility-decision-record.md)（decision record）：证据与决策。
-- [Mixin 生态与注入最佳实践](docs/agent/mixin-%E7%94%9F%E6%80%81%E4%B8%8E%E6%B3%A8%E5%85%A5%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5.md)：MixinBooter/CleanMix/MixinExtras/Sponge Mixin、Shadow/Inject/Redirect/WrapOperation 等代理操作手册；现行代理参考。
-- [借鉴仓库与重构对照](docs/agent/%E5%80%9F%E9%89%B4%E4%BB%93%E5%BA%93%E4%B8%8E%E9%87%8D%E6%9E%84%E5%AF%B9%E7%85%A7.md)：`C:\dev\mc\_tmp\StackUp` 与 `biggerstacks-Unofficial` 的只读证据对照；现行研究记录。
+- [Mixin 生态与注入最佳实践](docs/agent/mixin-%E7%94%9F%E6%80%81%E4%B8%8E%E6%B3%A8%E5%85%A5%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5.md)
+  ：MixinBooter/CleanMix/MixinExtras/Sponge Mixin、Shadow/Inject/Redirect/WrapOperation 等代理操作手册；现行代理参考。
+- [借鉴仓库与重构对照](docs/agent/%E5%80%9F%E9%89%B4%E4%BB%93%E5%BA%93%E4%B8%8E%E9%87%8D%E6%9E%84%E5%AF%B9%E7%85%A7.md)：
+  `C:\dev\mc\_tmp\StackUp` 与 `biggerstacks-Unofficial` 的只读证据对照；现行研究记录。
 - [重构任务清单](docs/agent/%E9%87%8D%E6%9E%84%E4%BB%BB%E5%8A%A1%E6%B8%85%E5%8D%95.md)：仅为规划。
 - [runServer 自动化回归](docs/runServer-%E8%87%AA%E5%8A%A8%E5%8C%96%E5%9B%9E%E5%BD%92.md)
 - [实现与兼容性说明](docs/StackUpUp-%E5%AE%9E%E7%8E%B0%E4%B8%8E%E5%85%BC%E5%AE%B9%E6%80%A7%E8%AF%B4%E6%98%8E.md)

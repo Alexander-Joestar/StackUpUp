@@ -41,13 +41,7 @@ class StackLimitService(private val snapshot: RuleSnapshot) {
     }
 
     @Deprecated("Use resolve(StackContext)")
-    fun resolve(
-        identity: StackIdentity,
-        baseLimit: Int,
-        oreNames: Set<String>,
-        tab: String = "",
-        material: String = "",
-    ): Int = resolve(
+    fun resolve(identity: StackIdentity, baseLimit: Int, oreNames: Set<String>, tab: String = "", material: String = ""): Int = resolve(
         StackContext(
             itemId = identity.itemId,
             modId = identity.modId,
@@ -57,7 +51,7 @@ class StackLimitService(private val snapshot: RuleSnapshot) {
             oreNames = oreNames,
             tab = tab,
             material = material,
-        )
+        ),
     )
 
     fun hasRules(): Boolean = snapshot.hasRules
@@ -84,28 +78,22 @@ class StackLimitService(private val snapshot: RuleSnapshot) {
                 cacheKeyFields[0].cacheKeyValue(context),
                 cacheKeyFields[1].cacheKeyValue(context),
             )
-            else -> MultiFieldCacheKey(Array(cacheKeyFields.size) { index ->
-                cacheKeyFields[index].cacheKeyValue(context)
-            })
+            else -> MultiFieldCacheKey(
+                Array(cacheKeyFields.size) { index ->
+                    cacheKeyFields[index].cacheKeyValue(context)
+                },
+            )
         }
     }
 
-    private data class ResolvedLimitKey(
-        val itemId: String,
-        val modId: String,
-        val metadata: Int,
-        val type: String,
-        val baseLimit: Int,
-        val fieldValues: Any,
-    )
+    private data class ResolvedLimitKey(val itemId: String, val modId: String, val metadata: Int, val type: String, val baseLimit: Int, val fieldValues: Any)
 
     private object EmptyFieldCacheKey
 
     private data class PairFieldCacheKey(val first: String, val second: String)
 
     private class MultiFieldCacheKey(private val values: Array<String>) {
-        override fun equals(other: Any?): Boolean =
-            this === other || other is MultiFieldCacheKey && values.contentEquals(other.values)
+        override fun equals(other: Any?): Boolean = this === other || other is MultiFieldCacheKey && values.contentEquals(other.values)
 
         override fun hashCode(): Int = values.contentHashCode()
     }

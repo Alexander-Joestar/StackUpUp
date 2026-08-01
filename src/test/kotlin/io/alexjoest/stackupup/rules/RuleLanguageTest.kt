@@ -54,7 +54,7 @@ class RuleLanguageTest {
     fun `cacheKeyField_shouldExtractDeclaredFieldValue`() {
         assertEquals(
             "steel",
-            RuleField.MATERIAL.cacheKeyValue(cacheCtx(material = "steel"))
+            RuleField.MATERIAL.cacheKeyValue(cacheCtx(material = "steel")),
         )
     }
 

@@ -154,9 +154,6 @@ object StackLimitHooks {
 
     @JvmStatic
     fun beginInventoryWrite(stack: ItemStack) {
-        if (stack.isEmpty) {
-            return
-        }
         inventoryWriteContext.get().addLast(stack)
     }
 

@@ -1,5 +1,6 @@
 package io.alexjoest.stackupup.mixin
 
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -70,6 +71,25 @@ class EarlyMixinConfigTest {
         assertTrue(source.contains("combineItems"))
         assertTrue(source.contains("getMaxStackSize()I"))
         assertTrue(source.contains("Math.max"))
+    }
+
+    @Test
+    fun `resolveInventoryClampLimit_shouldKeepTwoCallSites`() {
+        // P0 事实 c：迁移后 resolveInventoryClampLimit 调用方仍为 2（useMergeLimit + usePickedStackLimit）。
+        val source = readMixinSource("InventoryPlayerAddResourceMixin.java")
+
+        assertEquals(2, source.split("resolveInventoryClampLimit").size - 1, "resolveInventoryClampLimit 调用次数应保持 2")
+    }
+
+    @Test
+    fun `migratedMixin_shouldNotUseRedirectOrOverwrite`() {
+        // T14.7 M1/M2：@Redirect -> @ModifyExpressionValue 后不得回退到 @Redirect/@Overwrite。
+        listOf("EntityItemMergeMixin.java", "InventoryPlayerAddResourceMixin.java").forEach { name ->
+            val source = readMixinSource(name)
+
+            assertFalse(source.contains("@Redirect"), "$name 不应使用 @Redirect")
+            assertFalse(source.contains("@Overwrite"), "$name 不应使用 @Overwrite")
+        }
     }
 
     @Test

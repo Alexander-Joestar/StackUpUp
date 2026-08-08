@@ -53,23 +53,25 @@ vanilla/Forge 源码前缀 `build/rfg/minecraft-src/java/net/minecraft`（以下
 | 站点 | 目标类 | 方法（完整 descriptor） | 写入路径 | 分类 | 证据（file:line） | 缺失 jar |
 | --- | --- | --- | --- | --- | --- | --- |
 | SlotLimitMixin | net.minecraft.inventory.Slot | `getItemStackLimit(Lnet/minecraft/item/ItemStack;)I` | `Slot.putStack` → `inventory.setInventorySlotContents`（:97；多数 vanilla 库存落盘前重读同一上限夹取）；广告值再取 `min(dynamic, inventory.getInventoryStackLimit())`（`invLimit > 0` 时；非正值路径安全性当前未被保证，AGENTS.md） | 自洽（广告被库存真实上限夹取；写入面同源） | src/main/java/.../mixin/early/SlotLimitMixin.java:12-27；`.../net/minecraft/inventory/Slot.java:97`（putStack）、`:113-120`（getSlotStackLimit/getItemStackLimit）；src/main/kotlin/io/alexjoest/stackupup/StackLimitHooks.kt:123-135 | — |
-| SlotItemHandlerMixin.getSlotStackLimit | net.minecraftforge.items.SlotItemHandler | `getSlotStackLimit()I` | `putStack` → `handler.setStackInSlot`（Forge SlotItemHandler.java:89）；insert 路径由 handler 自算 limit（ItemStackHandler.java:88,164） | 转发（广告转发自 `itemHandler.getSlotLimit(index)`，Forge SlotItemHandler.java:109；handler 侧仍为 64 时不提升，避免虚报——`original == 64` 哨兵为待替换判据） | src/main/java/.../mixin/early/SlotItemHandlerMixin.java:24-30；`.../net/minecraftforge/items/SlotItemHandler.java:89`、`:109` | — |
-| SlotItemHandlerMixin.getItemStackLimit | net.minecraftforge.items.SlotItemHandler | `getItemStackLimit(Lnet/minecraft/item/ItemStack;)I` | 广告值经 handler 侧 `insertItem(..., true)` simulate 求得（:118-134），再由 `resolveItemHandlerSlotLimit` 按 `min(slotLimit, itemLimit)` 收敛 | 自洽（基于真实 simulate 结果，与写入面同源）。已知限制（AGENTS.md）：原值恰 64 保持原值，其他值走 `Math.max(original, dynamic)` | src/main/java/.../mixin/early/SlotItemHandlerMixin.java:32-39；`.../net/minecraftforge/items/SlotItemHandler.java:118-134`；src/main/kotlin/io/alexjoest/stackupup/StackLimitHooks.kt:137-151 | — |
+| SlotItemHandlerMixin.getSlotStackLimit | net.minecraftforge.items.SlotItemHandler | `getSlotStackLimit()I` | `putStack` → `handler.setStackInSlot`（Forge SlotItemHandler.java:89）；insert 路径由 handler 自算 limit（ItemStackHandler.java:88,164） | 转发（广告转发自 `itemHandler.getSlotLimit(index)`，Forge SlotItemHandler.java:109）。**T3 §3.5：已移除独立动态上限注入（原 `Math.max(original, compat)` 会把广告抬到 handler 真实上限之上），仅保留 @Shadow 读取；槽位广告自然跟随 handler 侧真实来源** | src/main/java/.../mixin/early/SlotItemHandlerMixin.java:28-29（仅 @Shadow）；`.../net/minecraftforge/items/SlotItemHandler.java:89`、`:109` | — |
+| SlotItemHandlerMixin.getItemStackLimit | net.minecraftforge.items.SlotItemHandler | `getItemStackLimit(Lnet/minecraft/item/ItemStack;)I` | 广告值经 handler 侧 `insertItem(..., true)` simulate 求得（:118-134），再由 `resolveItemHandlerSlotLimit` 按 `min(slotLimit, itemLimit)` 收敛 | 自洽（基于真实 simulate 结果，与写入面同源）。已知限制（AGENTS.md）：原值恰 64 保持原值，其他值走 `Math.max(original, dynamic)`。**T3 §3.5：保留** | src/main/java/.../mixin/early/SlotItemHandlerMixin.java:31-38；`.../net/minecraftforge/items/SlotItemHandler.java:118-134`；src/main/kotlin/io/alexjoest/stackupup/StackLimitHooks.kt:137-151 | — |
 | ContainerMixin | net.minecraft.inventory.Container | `mergeItemStack(Lnet/minecraft/item/ItemStack;IIZ)Z` 内 `Slot.getSlotStackLimit()I` 调用 | 合并写入前置：wrap 取 `min(declaredSlotLimit, inventory.getInventoryStackLimit())` 后经 `resolveDynamicSlotLimit` 收紧；merge 写入上界 `maxSize = min(slot.getSlotStackLimit(), stack.getMaxStackSize())`，随后 `setCount`/`shrink` 落库 | 自洽（merge 写入上界与广告同源，夹取后 ≤ 真实库存上限） | src/main/java/.../mixin/early/ContainerMixin.java:14-26；src/main/kotlin/io/alexjoest/stackupup/ContainerInsertHooks.kt:8-13；`.../net/minecraft/inventory/Container.java:610`（mergeItemStack）、`:644-655`（maxSize 与 setCount/shrink）、`:700-706`（空槽 putStack 路径） | — |
 
-### 2.3 `ForgeItemHandlerLimitMixin`（`getSlotLimit(I)I`，6 个 Forge 类）
+### 2.3 `ForgeItemHandlerLimitMixin`（`getSlotLimit(I)I`，T3 收敛后 2 个 Forge 类，原 6 类）
 
-站点：`ForgeItemHandlerLimitMixin.stackupup$replaceCompatibilityLimit`（src/main/java/.../mixin/early/ForgeItemHandlerLimitMixin.java:29-32），
-当前实现含 `original == 64` 哨兵（同文件 :31；待替换判据，见 §6）。
+站点：`ForgeItemHandlerLimitMixin.stackupup$replaceCompatibilityLimit`（src/main/java/.../mixin/early/ForgeItemHandlerLimitMixin.java:43-46，
+`@Mixin` 列表 :33-39）。T3 收敛（决策记录 §3.5）后目标集合为 2 个自洽类（ItemStackHandler、EntityEquipmentInvWrapper）；
+四个转发 wrapper 已移出注入（下行标注）。`:45` 的 `original == 64` 值检查是目标类的取值语义（装甲槽 1 必须保持），
+不再是「该目标是否可 patch」的准入判据（§3.5）；§6 规则 7 的哨兵行号已按 T11/T3 后状态刷新，见 §9.3。
 
 | 目标类 | 写入路径 | 分类 | 证据（file:line） |
 | --- | --- | --- | --- |
 | net.minecraftforge.items.ItemStackHandler | `insertItem` 写入前用 `getStackLimit = min(getSlotLimit, itemMax)` 重读同一上限（:88、:162-164）；`getSlotLimit` 自有字段 64（:157-160） | 自洽（写入前读取同一上限来源） | `.../net/minecraftforge/items/ItemStackHandler.java:79-100`、`:157-164` |
-| net.minecraftforge.items.wrapper.EntityEquipmentInvWrapper | `insertItem` 内 `limit = getStackLimit(slot, stack)`（:95），`simulate == false` 时经 `setItemStackToSlot`/`grow` 落库（:108-120），达上限返回 remainder（:122）；`getSlotLimit` 装甲槽 1 / 其余 64（:162-165），`getStackLimit = min(getSlotLimit, maxStackSize)`（:168-171） | 自洽（P0 事实 a：非「无余量必吞」，Forge wrapper 层上限计算与 remainder 闭合；装甲槽返回 1 不被提升）。vanilla 实体 setter 路径：`EntityLivingBase#setItemStackToSlot` 为抽象声明（`EntityLivingBase.java:1852-1856`），具体子类真实容量由 T3/T13.2 另行闭合，不得由 wrapper 数值推导 | `.../net/minecraftforge/items/wrapper/EntityEquipmentInvWrapper.java:86-122`、`:162-171`；`.../net/minecraft/entity/EntityLivingBase.java:1852-1856` |
-| net.minecraftforge.items.wrapper.InvWrapper | `getSlotLimit` 转发 `inv.getInventoryStackLimit()`（:202-204）；写入转发 wrapped `IInventory` 的 `setInventorySlotContents`（其 clamp 重读同一来源） | 转发（查询转发；包装器不是独立容量来源，安全依赖 wrapped inventory 写入面） | `.../net/minecraftforge/items/wrapper/InvWrapper.java:73-135`（insertItem）、`:202-204` |
-| net.minecraftforge.items.wrapper.SidedInvWrapper | `getSlotLimit` 转发 `inv.getInventoryStackLimit()`（:231-233）；写入转发 inv | 转发 | `.../net/minecraftforge/items/wrapper/SidedInvWrapper.java:88-148`、`:231-233` |
-| net.minecraftforge.items.wrapper.CombinedInvWrapper | `getSlotLimit` 按 index 转发子 handler（:128-133）；写入/insertItem 转发（:83-88、:109-114） | 转发 | `.../net/minecraftforge/items/wrapper/CombinedInvWrapper.java:109-114`、`:128-133` |
-| net.minecraftforge.items.wrapper.RangedWrapper | `getSlotLimit` 转发 compose（:98-102）；insertItem 转发（:66-70） | 转发 | `.../net/minecraftforge/items/wrapper/RangedWrapper.java:66-70`、`:98-102` |
+| net.minecraftforge.items.wrapper.EntityEquipmentInvWrapper | `insertItem` 内 `limit = getStackLimit(slot, stack)`（:95），`simulate == false` 时经 `setItemStackToSlot`/`grow` 落库（:108-120），达上限返回 remainder（:122）；`getSlotLimit` 装甲槽 1 / 其余 64（:162-165），`getStackLimit = min(getSlotLimit, maxStackSize)`（:168-171） | 自洽（P0 事实 a：非「无余量必吞」，Forge wrapper 层上限计算与 remainder 闭合；装甲槽返回 1 不被提升）。vanilla 实体 setter 路径已由 T3 闭合（决策记录 §3.5：`EntityLiving.java:1012-1022`、`EntityPlayer.java:2432-2449`、`EntityArmorStand.java:155-167` 为无截断列表直写），不得由 wrapper 数值推导 | `.../net/minecraftforge/items/wrapper/EntityEquipmentInvWrapper.java:86-122`、`:162-171`；`.../net/minecraft/entity/EntityLivingBase.java:1852-1856` |
+| net.minecraftforge.items.wrapper.InvWrapper | `getSlotLimit` 转发 `inv.getInventoryStackLimit()`（:202-204）；写入转发 wrapped `IInventory` 的 `setInventorySlotContents`（其 clamp 重读同一来源） | 转发（查询转发；包装器不是独立容量来源，安全依赖 wrapped inventory 写入面）。**T3 §3.5：已移出 ForgeItemHandlerLimitMixin 注入，不再作为独立容量来源**；**T10 §3.6：已移出 AE2 白名单，走 `min(64, getSlotLimit)` 限流分片**；保留登记供写入面核对 | `.../net/minecraftforge/items/wrapper/InvWrapper.java:73-135`（insertItem）、`:202-204` |
+| net.minecraftforge.items.wrapper.SidedInvWrapper | `getSlotLimit` 转发 `inv.getInventoryStackLimit()`（:231-233）；写入转发 inv | 转发。**T3 §3.5：已移出 ForgeItemHandlerLimitMixin 注入**；**T10 §3.6：已移出 AE2 白名单，走 `min(64, getSlotLimit)` 限流分片**；保留登记供写入面核对 | `.../net/minecraftforge/items/wrapper/SidedInvWrapper.java:88-148`、`:231-233` |
+| net.minecraftforge.items.wrapper.CombinedInvWrapper | `getSlotLimit` 按 index 转发子 handler（:128-133）；写入/insertItem 转发（:83-88、:109-114） | 转发。**T3 §3.5：已移出 ForgeItemHandlerLimitMixin 注入**；保留登记供写入面核对 | `.../net/minecraftforge/items/wrapper/CombinedInvWrapper.java:109-114`、`:128-133` |
+| net.minecraftforge.items.wrapper.RangedWrapper | `getSlotLimit` 转发 compose（:98-102）；insertItem 转发（:66-70） | 转发。**T3 §3.5：已移出 ForgeItemHandlerLimitMixin 注入**；保留登记供写入面核对 | `.../net/minecraftforge/items/wrapper/RangedWrapper.java:66-70`、`:98-102` |
 
 补充（不在本 mixin 目标内、同属 Forge 面）：`VanillaDoubleChestItemHandler#getSlotLimit` 转发箱体 `getInventoryStackLimit`
 （`VanillaDoubleChestItemHandler.java:184-187`，底层两半由 §2.1 覆盖）；`EmptyHandler#getSlotLimit` 返回 0（`EmptyHandler.java:66`，不扩容）。
@@ -205,11 +207,75 @@ late 目标 12 个模组 jar 均缺失（文件名/版本未登记，不得补�
   （`rg -n "resolveInventoryWriteLimit" src/main` 无命中；`VanillaInventoryWriteMixin` 已删除），因此当前调用面只有上述两个直接 clamp 注入点。
 - **P0 事实 a**：`EntityEquipmentInvWrapper` 不是无余量必吞——上限计算（`EntityEquipmentInvWrapper.java:86-105`、`:168-171`）、
   真实写入（`:108-120`）、remainder 返回（`:122`）均可由源码确认；本表 §2.3 该行判定基于此。vanilla 实体 setter 路径
-  （`EntityLivingBase#setItemStackToSlot` 抽象声明，`EntityLivingBase.java:1852-1856`）由 T3/T13.2 另行闭合。
+  （`EntityLivingBase#setItemStackToSlot` 抽象声明，`EntityLivingBase.java:1852-1856`）已由 T3 闭合
+  （决策记录 §3.5：`EntityLiving.java:1012-1022`、`EntityPlayer.java:2432-2449`、`EntityArmorStand.java:155-167` 为无截断列表直写）。
 
-## 9. 复核记录
+## 9. T13 回填：证据来源标注与收缩刷新（2026-08-08 追加）
+
+> 任务：T13「覆盖面收缩与回填」的 T2 登记表回填部分（T12.5 第三种状态的关键动作；决策记录 §3.7 配套）。
+> 证据来源三态：`源码` = build/rfg 反编译源码行号（已有关联保持）；`运行时` = T12.5 守恒报告事件
+> （run/logs/stackupup-conservation.jsonl，注明事件号与 handler 类名）；`UNKNOWN` = 无源码第三方
+> （保持无源码不可判定，红线：不得按类名/注释补猜，AGENTS.md 与 §6 规则 4）。
+> 本回填只追加标注与刷新 T3/T10 后的判定引用，未修改任何生产代码、测试或构建配置（写租约：本文档与
+> compatibility-decision-record.md）。
+
+### 9.1 运行时报告事件（run/logs/stackupup-conservation.jsonl，2026-08-09 03:20 落盘，schema v1）
+
+| 事件号 | callSite | handlerClassName | slot | simulate | offered | storedDelta | remainderCount | balanced |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| #1 | DevAutomationServerDriver#probeTarget | net.minecraftforge.items.ItemStackHandler | 0 | false | 128 | 128 | 0 | true |
+| #2 | Ae2ItemHandlerInsertLimiter#insertCapped | example.TruncatingThirdPartyHandler | 2 | false | 128 | 64 | 0 | false |
+| #3 | DevAutomationServerDriver#probeTarget | net.minecraftforge.items.ItemStackHandler | 0 | true | 128 | 0 | 128 | true |
+
+汇总（run/logs/stackupup-conservation-summary.json）：`totalEvents=3`、`simulateEvents=1`、
+`unbalancedRealEvents=1`、`unbalanced=[{handlerClassName:"example.TruncatingThirdPartyHandler",
+callSite:"Ae2ItemHandlerInsertLimiter#insertCapped",eventCount:1}]`，与 JSONL 逐条一致。
+
+- 事件 #1/#3：offered=128 与 DevAutomationConfig 默认 count=128（src/main/kotlin/io/alexjoest/stackupup/dev/DevAutomationConfig.kt:76）
+  一致，属开发自动验收探针投喂（`DevAutomationServerDriver#probeTarget`，DevAutomationServerDriver.kt:150-179）。
+- 事件 #2：类名在项目源码/测试/dev 探针中无任何声明（`rg -n "example.TruncatingThirdPartyHandler" src dev` 无命中），
+  `run/mods/` 与 `local-dev-mods/` 均为空，**归属 UNKNOWN（疑似探针合成名或外部合成类，决策记录 §3.7 与
+  t14.7-发布前矩阵.md:288 同记）**。该事件不归属任何登记站点，不得据其升级任何 late/Forge 条目。
+
+### 9.2 逐站点证据来源标注
+
+| 站点/分组 | 证据来源 | 依据 |
+| --- | --- | --- |
+| §2.0 ItemMixin、ItemStackMixin | 源码 | 行号已关联（§2.0 表）；无对应 JSONL 事件 |
+| §2.1 VanillaInventoryLimitMixin 12 类 + InventoryEnderChest 继承项 | 源码 | 行号已关联（§2.1 表；t2b §2 显式表）；探针只投喂 ItemStackHandler，无 vanilla 站点运行时事件 |
+| §2.1 InventoryLargeChest（转发，出表） | 源码 | 行号已关联（§2.1 表；t2b §3.1） |
+| §2.2 SlotLimitMixin | 源码 | 行号已关联 |
+| §2.2 SlotItemHandlerMixin.getSlotStackLimit | 源码（T3 收缩） | 独立动态上限注入已移除（决策记录 §3.5）；当前仅 @Shadow 读取（SlotItemHandlerMixin.java:28-29） |
+| §2.2 SlotItemHandlerMixin.getItemStackLimit | 源码（T3 保留） | 行号已刷新（SlotItemHandlerMixin.java:31-38） |
+| §2.2 ContainerMixin | 源码 | 行号已关联 |
+| §2.3 ItemStackHandler | 源码 + 运行时 | 源码（ItemStackHandler.java:88、:157-165 等）；运行时事件 #1（真实写 128 全量落库、余量 0，balanced）与 #3（simulate，仅记录不计守恒） |
+| §2.3 EntityEquipmentInvWrapper | 源码（P0 事实 a） | 行号已关联；vanilla 实体 setter 已由 T3 闭合（§3.5）；无运行时事件 |
+| §2.3 InvWrapper / SidedInvWrapper / CombinedInvWrapper / RangedWrapper | 源码（已移出注入） | T3 §3.5 移出 ForgeItemHandlerLimitMixin；InvWrapper/SidedInvWrapper 另由 T10 §3.6 移出 AE2 白名单；无运行时事件 |
+| §2.4 InventoryPlayerAddResourceMixin 两调用点 | 源码 | 行号已关联（P0 事实 c，必须保留）；无运行时事件 |
+| §2.5 CommandGive / CommandReplaceItem / EntityItemMerge / ServerRecipeBookHelper | 源码 | 行号已关联；无运行时事件 |
+| §2.6 非容量站点 | 不标注 | 非容量广告/写入站点，不进入证据标注范围（§6 规则 8） |
+| §3 late mixin 18 项 | UNKNOWN（无源码） | 缺失 jar（§5）；JSONL 无事件对应任一登记目标类（#2 类名非任何登记目标，不得据其升级） |
+| §4 动态兼容层（profile/probe/patch/FixedCompatTargets） | 源码（项目自身 core 代码） | 行号已关联（§4）；无运行时事件（ITEM_HANDLER profile 直接返回空，CompatibilityLimitPatch.java:43-46） |
+
+### 9.3 T3/T10 收缩后的判定引用刷新（2026-08-08）
+
+- §2.3 标题「6 个 Forge 类」→ 2 个自洽目标（ItemStackHandler、EntityEquipmentInvWrapper），四个转发 wrapper
+  移出注入（决策记录 §3.5）；`ForgeItemHandlerLimitMixin.java:29-32` 刷新为 `:33-46`（`@Mixin` 列表 :33-39、
+  handler :43-46）；`:45` 值检查为取值语义，非准入判据。
+- §2.2 getSlotStackLimit 行：独立动态上限注入已移除（§3.5），仅保留 @Shadow；证据行号刷新为
+  SlotItemHandlerMixin.java:28-29。
+- §2.3 EntityEquipmentInvWrapper 行：vanilla 实体 setter 由 T3 闭合（EntityLiving.java:1012-1022、
+  EntityPlayer.java:2432-2449、EntityArmorStand.java:155-167，§3.5），不再标注「由 T3/T13.2 另行闭合」。
+- §6 规则 7 所列哨兵行号（VanillaInventoryLimitMixin.java:47、ForgeItemHandlerLimitMixin.java:31、
+  SlotItemHandlerMixin.java:26）为 T11/T3 前状态：T11 已删除 VanillaInventoryLimitMixin 哨兵（t2b §5）；
+  T3 后 ForgeItemHandlerLimitMixin 的值检查是取值语义（§3.5）、SlotItemHandlerMixin 哨兵随独立注入移除。
+  规则 7「不得再以哨兵作为准入判据」的口径不变，具体行号以本节与 t2b 为准。
+
+## 10. 复核记录
 
 - 作者（本登记表建立/重写代理）：只做只读取证 + 本文档写入；未修改任何生产代码、测试或构建配置。
+- T13 回填（§9，2026-08-08 文档收口代理执行）：只做只读取证（JSONL/summary、决策记录 §3.5/§3.6、当前工作副本
+  源码行号复核）+ 本文档与 compatibility-decision-record.md 写入；未修改任何生产代码、测试或构建配置。
 - 本文档重写原因：先前草稿引用 T4a 前状态（`VanillaInventoryWriteMixin`、`resolveInventoryWriteLimit`、旧 StackLimitHooks.kt
   行号），与当前工作副本不符；本次按 T4a 后现状逐行复核重写。
 - 独立复核：待指派（未完成独立复核前，本登记表不得宣称 PASS）。

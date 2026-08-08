@@ -233,6 +233,71 @@ Forge 写入链源码后重排。判定规则：白名单只直通写入链全�
 - `WrapperCapacityDiagnosticTest#ae2Limiter_trustedInvWrapper_overUnexpandedInventory_conservesItems`（T3
   端到端，租约外未改动）只断言守恒公式、不断言调用次数，移出后仍通过。
 
+### 3.7 T13 回填记录（2026-08-08 执行）
+
+> 本小节是 T13「覆盖面收缩与回填」的 T2 回填收口产出（T12.5 第三种状态的关键动作）：只回填证据与判定引用，
+> 不修改生产实现；运行时事件逐条引用 run/logs/stackupup-conservation.jsonl 原始行（schema v1，事件号按行序）。
+> 配套回填：docs/agent/t2a-容量站点登记表.md §9（证据来源标注与收缩刷新）。
+
+**实际收缩内容（T3/T10 已执行，本回填登记）：**
+
+- T3（§3.5）：`ForgeItemHandlerLimitMixin` 目标 6→2——移除 InvWrapper、SidedInvWrapper、CombinedInvWrapper、
+  RangedWrapper 四个转发 wrapper 的独立注入；`SlotItemHandler#getSlotStackLimit` 移除独立动态上限注入
+  （仅保留 @Shadow 读取，槽位广告自然跟随 handler 侧真实来源）。
+- T10（§3.6）：AE2 投喂白名单移出 InvWrapper/SidedInvWrapper（转发 wrapper，delegate 任意
+  IInventory/ISidedInventory，第三方写入面无源码不可判定），进入 `min(64, getSlotLimit)` 限流分片；
+  白名单保留 ItemStackHandler、VanillaDoubleChestItemHandler、EntityEquipmentInvWrapper、EmptyHandler，移入 0 项。
+
+**守恒收益（T12.5 JSONL 逐条关联调用点）：**
+
+| 事件 | callSite | handler 类名 | slot | simulate | offered | storedDelta | remainderCount | balanced | 关联调用点（我方源码） |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| #1 | DevAutomationServerDriver#probeTarget | net.minecraftforge.items.ItemStackHandler | 0 | false | 128 | 128 | 0 | true | DevAutomationServerDriver.kt:161-178（probeTarget 真实写入 + audit）；T2a §2.3 ItemStackHandler / ForgeItemHandlerLimitMixin.java:43-46 |
+| #2 | Ae2ItemHandlerInsertLimiter#insertCapped | example.TruncatingThirdPartyHandler | 2 | false | 128 | 64 | 0 | false | Ae2ItemHandlerInsertLimiter.java:18-24（trusted 直通）、:64-82（insertWithAudit）；仅经 AppEngAdaptorItemHandlerMixin.java:29-31 的 wrap 可达 |
+| #3 | DevAutomationServerDriver#probeTarget | net.minecraftforge.items.ItemStackHandler | 0 | true | 128 | 0 | 128 | true | 同 #1；simulate 只记录，不计守恒、不构成真实写入证据 |
+
+- 事件 #1：ItemStackHandler 在提升态下单次真实写 128 全量落库、余量 0、守恒成立——运行时确认 T3 保留注入的
+  ItemStackHandler 站点真实写入面闭合。offered=128 与 DevAutomationConfig 默认 count=128
+  （DevAutomationConfig.kt:76）一致。
+- 事件 #2：唯一不平衡真实事件。offered=128 以单事件出现 ⇒ 走 `insertCapped` trusted 直通分支（untrusted
+  分片每次 ≤ `min(64, getSlotLimit)` ≤ 64，Ae2ItemHandlerInsertLimiter.java:26-32），即该 handler 经
+  `isTrusted` 的 instanceof 命中白名单四类之一（或其子类），但实际只落 64 且不返回余量——是 §3.6 记录在案的
+  「instanceof 信任第三方子类覆盖的 insertItem/getStackLimit，子类行为无源码不可判定」残余风险的一次运行时
+  实例（此句由调用点源码 + 事件数值推断，非直接类源码证据）。类名 `example.TruncatingThirdPartyHandler` 在
+  项目源码/测试/dev 探针中无任何声明，`run/mods/` 与 `local-dev-mods/` 均为空，**归属 UNKNOWN（疑似探针
+  合成名或外部合成类，t14.7-发布前矩阵.md:288 同记）**；不可据其升级任何 T2a 登记条目，也不改变任何三分类。
+- 事件 #3：simulate 事件，按 §6 T12 规则只记录、不参与守恒统计/判定/告警。
+- 汇总文件（stackupup-conservation-summary.json）与 JSONL 逐条一致：totalEvents=3、simulateEvents=1、
+  unbalancedRealEvents=1、unbalanced=[{example.TruncatingThirdPartyHandler, Ae2ItemHandlerInsertLimiter#insertCapped, 1}]。
+
+**功能缺口：** 无。T3/T10 收缩未引入功能缺口：移除项均有测试覆盖（WrapperCapacityDiagnosticTest 覆盖四个
+转发 wrapper 不注入与 remainder 闭合、SlotItemHandler 独立注入移除护栏；Ae2ItemHandlerInsertLimiterTest 与
+Ae2ItemHandlerInsertLimiterConservationAuditTest 覆盖移出项守恒）；本回填未修改任何生产代码、测试或构建配置。
+
+**结论三态标注（T13 矩阵口径：已回扩 / 决定不回扩（附理由）/ 等 T12 审计数据）：**
+
+- ItemStackHandler：未收缩（T3 保留注入）。运行时事件 #1（真实写 128 守恒成立）与 #3（simulate）支持现状；
+  按未收缩项登记，无回扩处置。
+- EntityEquipmentInvWrapper：未收缩（T3 保留注入，装甲槽 1 不提升）。手部槽回扩按 T13 准入需所有实际投喂
+  入口通过真实守恒测试；当前 JSONL 无该类的运行时事件 → **等 T12 审计数据**。
+- InvWrapper / SidedInvWrapper / CombinedInvWrapper / RangedWrapper（T3 移出）：**决定不回扩**——转发语义，
+  delegate 为任意 IInventory/ISidedInventory/子 handler，包装器不是独立容量来源；JSONL 无任何 wrapper 类事件。
+  InvWrapper/SidedInvWrapper 回扩须按 T13 准入「T12 观测到具体内层类 + 该版本源码或可重复守恒证据」，当前无此输入。
+- InvWrapper / SidedInvWrapper AE2 白名单（T10 移出）：**决定不回扩**——§3.6 判定（instanceof 无法区分
+  delegate 类型，第三方写入面无源码不可判定）；事件 #2 类名不是白名单外 wrapper 类，不构成回扩依据。
+- late 第三方 18 项：保持 **无源码不可判定**（缺失 jar，§5.4 台账），回填不改变。
+- InventoryLargeChest：不在表（t2b §3.1，转发/条件断链），维持不回扩；T13 回扩准入（`min(upper, lower)` 且
+  两半一致）当前无运行时数据输入。
+
+**T12.5 三态诚实声明（本回填后的状态）：**
+
+- 已闭合：报告可生成/可解析/可追溯（schema v1，3 事件逐条可回到调用点与 handler 类名）；T2a 登记表逐站点
+  标注证据来源（t2a §9.2，无源码项保持 UNKNOWN）；本小节回填完成。
+- 未闭合（如实标注，不得写成第三种状态）：服务端矩阵 `runServerAutoTestMatrix` **未全量执行**
+  （t14.7-发布前矩阵.md §5.2「runServerAutoTest 未执行」），当前 JSONL 仅 3 事件、覆盖 ItemStackHandler
+  单站点；T12.4 关闭态门运行时判定 UNKNOWN（t14.7 §5.5）；事件 #2 归属 UNKNOWN。因此 **T12.5 第三种状态
+  未完全达成，本回填为部分闭合（PARTIAL）**；T13 完整解锁仍需全量矩阵生成可解析报告 + 关闭态门运行时验证。
+
 ## 4. 当前限制
 
 1. 动态 patch 基类可能传播到没有覆盖方法的第三方子类；静态目标表不能穷举第三方实现。没有源码或可重复运行证据的条目统一为
@@ -372,6 +437,10 @@ T12 只能提供运行时证据，不能把没有源码的第三方条目静态�
 
 T13 的最终矩阵中的回扩处置状态只能是“已回扩”“决定不回扩（附理由）”或“等 T12
 审计数据”；这不替代“自洽/转发/断链”三分类或独立证据状态“无源码不可判定”。在矩阵闭合前，本文不把任何一项写成已回扩。
+
+**执行状态（2026-08-08）：**T2 回填部分闭合，见 §3.7（t2a 登记表 §9 配套）：T3/T10 收缩内容登记、
+T12.5 JSONL 事件逐条关联调用点、结论三态标注完成；无源码项保持 **无源码不可判定**。全量矩阵
+（`runServerAutoTestMatrix`）与 T12.4 关闭态门运行时验证未完成前，T13 矩阵不得宣称闭合。
 
 ## 7. 发布前验证门
 

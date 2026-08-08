@@ -8,6 +8,10 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Paths
 
+/**
+ * 结构检查（非行为验证）：核对 early mixin 配置与注入形态的静态不变量。
+ * 行为等价由 StackLimitHooksTest / VanillaInventoryConservationTest 等行为测试承担。
+ */
 class EarlyMixinConfigTest {
 
     private fun readSource(relativePath: String) = String(

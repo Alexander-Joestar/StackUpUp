@@ -1,6 +1,9 @@
 package io.alexjoest.stackupup
 
+import io.alexjoest.stackupup.bootstrap.MixinConfigRegistrationValidator
 import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin
+import org.apache.logging.log4j.LogManager
+import org.apache.logging.log4j.Logger
 import zone.rong.mixinbooter.IEarlyMixinLoader
 
 @IFMLLoadingPlugin.Name("StackUpUpCore")
@@ -12,6 +15,7 @@ class StackUpUpCore :
     IFMLLoadingPlugin,
     IEarlyMixinLoader {
     companion object {
+        private val logger: Logger = LogManager.getLogger("stackupup.coremod")
         private const val COREMOD_ACTIVE_PROPERTY: String = "${StackUpUpIds.MOD_ID}.coremod.active"
         private const val CONFLICT_DISABLED_PROPERTY: String = "${StackUpUpIds.MOD_ID}.conflict.disabled"
         private const val CONFLICT_MODS_PROPERTY: String = "${StackUpUpIds.MOD_ID}.conflict.mods"
@@ -33,8 +37,14 @@ class StackUpUpCore :
             .orEmpty()
 
         private fun detectConflictingCoremods(): List<String> {
+            val managerClass = try {
+                Class.forName("net.minecraftforge.fml.relauncher.CoreModManager")
+            } catch (e: ClassNotFoundException) {
+                // 非 Forge 环境（如单元测试）没有 CoreModManager，冲突检测不可用；按无冲突处理并留痕，不算检测失败。
+                logger.warn("CoreModManager not found - conflict detection unavailable (non-Forge environment), skipping conflict check", e)
+                return emptyList()
+            }
             return try {
-                val managerClass = Class.forName("net.minecraftforge.fml.relauncher.CoreModManager")
                 val loadPluginsField = managerClass.getDeclaredField("loadPlugins")
                 loadPluginsField.isAccessible = true
                 val wrappers = loadPluginsField.get(null) as? Iterable<*> ?: return emptyList()
@@ -44,8 +54,10 @@ class StackUpUpCore :
                     val coremodName = nameField.get(wrapper) as? String ?: return@mapNotNull null
                     conflictingCoremodNames[coremodName]
                 }.distinct()
-            } catch (_: Throwable) {
-                emptyList()
+            } catch (e: Throwable) {
+                // T14.5：冲突检测失败不再静默按“无冲突”继续——冲突禁用是安全机制，检测坏了必须明确失败。
+                logger.error("Conflict detection failed: {}", e.toString())
+                throw IllegalStateException("StackUpUp conflict detection failed: ${e.message}", e)
             }
         }
 
@@ -85,9 +97,20 @@ class StackUpUpCore :
 
     override fun getAccessTransformerClass(): String? = null
 
-    override fun getMixinConfigs(): List<String> = if (ensureConflictState().isEmpty()) {
-        listOf(StackUpUpIds.EARLY_MIXIN_CONFIG)
-    } else {
-        emptyList()
+    override fun getMixinConfigs(): List<String> {
+        val conflicts = ensureConflictState()
+        if (conflicts.isNotEmpty()) {
+            // 冲突禁用是既有设计（AGENTS「冲突时禁用是设计」），但必须 ERROR 说明原因，不再静默返回空表（T14.5 停止条件 1/5）。
+            logger.error(
+                "Early mixin config '{}' is NOT queued: conflicting stacking mods detected [{}]; " +
+                    "all early mixins disabled by conflict-disable design",
+                StackUpUpIds.EARLY_MIXIN_CONFIG,
+                conflicts.joinToString(", "),
+            )
+            return emptyList()
+        }
+        // 核心 early 配置缺失/注册无效必须 fail-fast（T14.5 停止条件 1），不再让核心配置静默失效。
+        MixinConfigRegistrationValidator.requireCoreConfigValid(StackUpUpIds.EARLY_MIXIN_CONFIG, javaClass.classLoader)
+        return listOf(StackUpUpIds.EARLY_MIXIN_CONFIG)
     }
 }

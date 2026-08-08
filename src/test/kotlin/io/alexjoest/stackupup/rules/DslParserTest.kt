@@ -1,7 +1,10 @@
 package io.alexjoest.stackupup.rules
 
+import io.alexjoest.stackupup.rules.ast.FieldComparisonAst
+import io.alexjoest.stackupup.rules.ast.RangeConditionAst
 import io.alexjoest.stackupup.rules.parse.DslParser
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 
 class DslParserTest {
@@ -52,5 +55,67 @@ class DslParserTest {
         val rule = DslParser.parseLine("size > 1 -> *2 -> +10 -> /2")
         assertEquals(listOf("multiply", "add", "divide"), rule.action.steps.map { it.debugName })
         assertEquals(listOf(2, 10, 2), rule.action.steps.map { it.value })
+    }
+
+    @Test
+    fun `unknownFieldSingleComparison_shouldThrowUnsupportedField`() {
+        val error = assertThrows(LocalizedRuleException::class.java) {
+            DslParser.parseLine("bogus = 1 -> 64")
+        }
+
+        assertEquals(RuleMessageKey.UNSUPPORTED_FIELD.translationKey, error.messageData.translationKey)
+    }
+
+    @Test
+    fun `compactChainedRange_shouldProduceRangeConditionAst`() {
+        val range = DslParser.parseLine("1<meta<3 -> 512").condition as RangeConditionAst
+
+        assertEquals(RuleField.META, range.field)
+        assertEquals("1", range.lower)
+        assertEquals(false, range.lowerInclusive)
+        assertEquals("3", range.upper)
+        assertEquals(false, range.upperInclusive)
+    }
+
+    @Test
+    fun `closedChainedRange_shouldProduceInclusiveBounds`() {
+        val range = DslParser.parseLine("1 <= meta <= 3 -> 512").condition as RangeConditionAst
+
+        assertEquals(RuleField.META, range.field)
+        assertEquals("1", range.lower)
+        assertEquals(true, range.lowerInclusive)
+        assertEquals("3", range.upper)
+        assertEquals(true, range.upperInclusive)
+    }
+
+    @Test
+    fun `reversedChainedRange_shouldNormalizeToLowerAndUpperBounds`() {
+        // 3 >= meta > 1 与 1 < meta <= 3 是同一区间，边界方向统一归一到 lower/upper
+        val range = DslParser.parseLine("3 >= meta > 1 -> 512").condition as RangeConditionAst
+
+        assertEquals(RuleField.META, range.field)
+        assertEquals("1", range.lower)
+        assertEquals(false, range.lowerInclusive)
+        assertEquals("3", range.upper)
+        assertEquals(true, range.upperInclusive)
+    }
+
+    @Test
+    fun `chainLongerThanTwoComparisons_shouldNotSilentlyTruncate`() {
+        val error = assertThrows(LocalizedRuleException::class.java) {
+            DslParser.parseLine("1 < meta < 3 < 5 -> 512")
+        }
+
+        assertEquals(RuleMessageKey.TRAILING_CONTENT.translationKey, error.messageData.translationKey)
+    }
+
+    @Test
+    fun `singleComparisonStartingWithLiteral_shouldReverseOperator`() {
+        // literal cmp field 单比较等价于 field cmp.reverse() literal，产出 FieldComparisonAst
+        val comparison = DslParser.parseLine("3 > meta -> 512").condition as FieldComparisonAst
+
+        assertEquals(RuleField.META, comparison.field)
+        assertEquals(ComparisonOperator.LESS, comparison.operator)
+        assertEquals("3", comparison.literal)
     }
 }

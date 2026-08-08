@@ -1,8 +1,10 @@
 package io.alexjoest.stackupup.limit
 
 import io.alexjoest.stackupup.StackUpUpConfig
+import io.alexjoest.stackupup.rules.ComparisonOperator
 import io.alexjoest.stackupup.rules.compile.RuleCompiler
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
+import io.alexjoest.stackupup.rules.field.RuleFieldMatchers
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -47,11 +49,13 @@ class StackLimitServiceTest {
             rules = listOf(
                 RuleCompiler.compileLine("ore = ingotSteel -> 512", 1),
                 RuleCompiler.compileLine("ore = ingotSteel -> *2", 2).let { compiled ->
+                    // sealed matcher 不允许测试模块实现委托包装，改为在 selector 处计数：
+                    // 与 ORE 字段编译产物的求值路径一致，且每次 matches 只调用一次 selector。
                     compiled.copy(
-                        predicate = { context ->
+                        matcher = RuleFieldMatchers.stringSet { context ->
                             evaluations++
-                            compiled.matches(context)
-                        },
+                            context.oreNames
+                        }.compile(ComparisonOperator.EQUALS, "ingotSteel"),
                     )
                 },
             ),
@@ -70,7 +74,7 @@ class StackLimitServiceTest {
         val snapshot = RuleSnapshot(
             version = 3L,
             rules = listOf(
-                RuleCompiler.compileLine("item = gregtech:gt.metaitem.01:11305 -> 1024", 1),
+                RuleCompiler.compileLine("item = gregtech:gt.metaitem.01@11305 -> 1024", 1),
             ),
         )
         val service = StackLimitService(snapshot)

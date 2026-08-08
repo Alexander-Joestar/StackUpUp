@@ -69,7 +69,7 @@ class RuleCompilerTest {
 
     @Test
     fun `shouldSupportItemWithMetadataSugar`() {
-        val compiled = RuleCompiler.compileLine("item = gregtech:gt.metaitem.01:11305 -> 1024", 12)
+        val compiled = RuleCompiler.compileLine("item = gregtech:gt.metaitem.01@11305 -> 1024", 12)
         val matched = ctx("gregtech:gt.metaitem.01", meta = 11305)
         val otherMeta = ctx("gregtech:gt.metaitem.01", meta = 42)
 
@@ -116,7 +116,7 @@ class RuleCompilerTest {
     @Test
     fun `shouldSupportItemListWithMeta`() {
         val compiled = RuleCompiler.compileLine(
-            "item in [gregtech:gt.metaitem.01:1, gregtech:gt.metaitem.01:2] && mod = gregtech -> 1024",
+            "item in [gregtech:gt.metaitem.01@1, gregtech:gt.metaitem.01@2] && mod = gregtech -> 1024",
             16,
         )
 

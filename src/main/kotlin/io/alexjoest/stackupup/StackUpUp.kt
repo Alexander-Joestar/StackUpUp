@@ -74,6 +74,10 @@ class StackUpUp {
             throw RuntimeException("Cannot load StackUpUp - coremod not present!")
         }
 
+        // 自有不可变译表显式初始化：缺语言文件/缺键/重复键/坏格式在此 fail-fast，
+        // 客户端与服务端共用同一入口，不依赖客户端事件。
+        LocalizedMessages.initialize()
+
         RuleFileLocator.setConfigDirectory(event.modConfigurationDirectory)
         handleConfigChanged(activateReloadControlledValues = true)
 

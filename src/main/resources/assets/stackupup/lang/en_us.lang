@@ -40,6 +40,7 @@ message.stackupup.rule_complexity.total_length=Ruleset text is getting large: %s
 message.stackupup.rule_limit.clamp=Line %s sets a stack size above the global max of %s and will be clamped.
 message.stackupup.rule_error.unsupported_reverse_operator=Unsupported reverse operator: %s
 message.stackupup.rule_error.unsupported_comparison_operator=Unsupported comparison operator: %s
+message.stackupup.rule_error.unsupported_operator_for_field=Field type %s does not support operator %s
 message.stackupup.rule_error.missing_comparison_operator=Condition is missing a comparison operator.
 message.stackupup.rule_error.missing_action_operator=Rule must contain an action operator.
 message.stackupup.rule_error.trailing_content=Rule has unrecognized trailing content.
@@ -79,5 +80,11 @@ message.stackupup.rule_error.gate_unterminated_string=Unterminated string
 message.stackupup.rule_error.gate_parse_error=[%s:%s] Gate parse error: %s
 message.stackupup.rule_error.state_invalid_declaration=Line %s: invalid state declaration '%s' - expected '- name = true|false'
 message.stackupup.rule_error.state_error_prefix=[state] %s
+message.stackupup.rule_error.invalid_item_literal=Invalid item literal '%s' at column %s: %s
+message.stackupup.rule_error.item_meta_not_integer=expected an integer or * after @, got '%s'
+message.stackupup.rule_error.item_meta_negative=metadata cannot be negative: %s
+message.stackupup.rule_error.item_meta_missing_item_id=missing item id before @
+message.stackupup.rule_error.unterminated_quoted_literal=unterminated quoted literal at column %s
+message.stackupup.rule_error.empty_quoted_literal=empty quoted literal at column %s
 
 tooltip.stackupup.current_max=Stack: %s/%s

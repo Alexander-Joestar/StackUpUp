@@ -1,5 +1,6 @@
 package io.alexjoest.stackupup.rules
 
+import io.alexjoest.stackupup.LocalizedMessages
 import net.minecraft.util.text.ITextComponent
 import net.minecraft.util.text.TextComponentTranslation
 
@@ -10,7 +11,8 @@ import net.minecraft.util.text.TextComponentTranslation
  * 到最终边界再决定是落成日志字符串还是聊天组件。
  */
 data class LocalizedMessage(val translationKey: String, val args: List<Any> = emptyList()) {
-    fun format(): String = RuleMessages.formatRaw(translationKey, *mapArgs(::formatArgument))
+    // 格式化走自有不可变译表（统一入口），不依赖全局 LanguageMap；缺键 fail-fast。
+    fun format(): String = LocalizedMessages.format(translationKey, *mapArgs(::formatArgument))
 
     fun toTextComponent(): ITextComponent = TextComponentTranslation(translationKey, *mapArgs(::componentArgument))
 

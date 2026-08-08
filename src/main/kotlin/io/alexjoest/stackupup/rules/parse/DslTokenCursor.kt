@@ -8,12 +8,6 @@ import io.alexjoest.stackupup.rules.RuleMessages
 internal class DslTokenCursor(private val tokens: List<DslToken>) {
     private var index: Int = 0
 
-    fun mark(): Int = index
-
-    fun restore(mark: Int) {
-        index = mark
-    }
-
     fun match(type: DslTokenType): Boolean {
         if (peekType() != type) {
             return false
@@ -39,22 +33,26 @@ internal class DslTokenCursor(private val tokens: List<DslToken>) {
         return tokens[index - 1]
     }
 
-    fun consumeLiteral(message: LocalizedMessage): String {
+    fun consumeLiteral(message: LocalizedMessage): String = consumeLiteralToken(message).lexeme
+
+    fun consumeLiteralToken(message: LocalizedMessage): DslToken {
         val token = currentToken()
         if (token.type != DslTokenType.IDENTIFIER && token.type != DslTokenType.NUMBER) {
             throw LocalizedRuleException(message)
         }
         index++
-        return token.lexeme
+        return token
     }
 
-    fun tryConsumeLiteral(): String? {
+    fun tryConsumeLiteral(): String? = tryConsumeLiteralToken()?.lexeme
+
+    fun tryConsumeLiteralToken(): DslToken? {
         val token = currentToken()
         if (token.type != DslTokenType.IDENTIFIER && token.type != DslTokenType.NUMBER) {
             return null
         }
         index++
-        return token.lexeme
+        return token
     }
 
     fun consumeComparisonOperator(): DslToken {
@@ -84,7 +82,11 @@ internal class DslTokenCursor(private val tokens: List<DslToken>) {
         return token
     }
 
-    fun peekType(): DslTokenType = currentToken().type
+    /**
+     * 前瞻查看距当前位置 [offset] 个 token 的类型；越过 token 末尾（EOF 之后）返回 null。
+     * 解析器用纯前瞻做分支判定，任何失败分支都不会消费 token。
+     */
+    fun peekType(offset: Int = 0): DslTokenType? = tokens.getOrNull(index + offset)?.type
 
     fun peekLexeme(): String = currentToken().lexeme
 

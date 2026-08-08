@@ -1,5 +1,7 @@
 package io.alexjoest.stackupup
 
+import io.alexjoest.stackupup.rules.RuleMessageKey
+
 object StackUpUpIds {
     const val MOD_ID: String = Tags.MOD_ID
     const val CONFIG_ID: String = MOD_ID
@@ -47,23 +49,25 @@ object StackUpUpIds {
     const val LATE_LIMELIB_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.limelib.json"
     const val LATE_IMMERSIVEENGINEERING_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.immersiveengineering.json"
 
-    const val CONFIG_TITLE_KEY: String = "$CONFIG_LANG_ROOT.title"
-    const val COMMAND_USAGE_KEY: String = "$COMMAND_LANG_ROOT.usage"
-    const val COMMAND_STATE_GET_KEY: String = "$COMMAND_LANG_ROOT.state.get"
-    const val COMMAND_STATE_SET_KEY: String = "$COMMAND_LANG_ROOT.state.set"
-    const val COMMAND_STATE_MISSING_KEY: String = "$COMMAND_LANG_ROOT.state.missing"
-    const val COMMAND_RELOAD_SUCCESS_KEY: String = "$COMMAND_LANG_ROOT.reload.success"
-    const val COMMAND_EDIT_SUCCESS_KEY: String = "$COMMAND_LANG_ROOT.edit.success"
-    const val COMMAND_EDIT_MISSING_KEY: String = "$COMMAND_LANG_ROOT.edit.missing"
-    const val COMMAND_EDIT_UNSUPPORTED_KEY: String = "$COMMAND_LANG_ROOT.edit.unsupported"
-    const val COMMAND_EDIT_FAILED_KEY: String = "$COMMAND_LANG_ROOT.edit.failed"
-    const val RULE_COMPLEXITY_PREFIX_KEY: String = "$MESSAGE_LANG_ROOT.rule_complexity.prefix"
-    const val RULE_COMPLEXITY_RULE_COUNT_KEY: String = "$MESSAGE_LANG_ROOT.rule_complexity.rule_count"
-    const val RULE_COMPLEXITY_RULE_LENGTH_KEY: String = "$MESSAGE_LANG_ROOT.rule_complexity.rule_length"
-    const val RULE_COMPLEXITY_TOTAL_LENGTH_KEY: String = "$MESSAGE_LANG_ROOT.rule_complexity.total_length"
-    const val RULE_LIMIT_CLAMP_KEY: String = "$MESSAGE_LANG_ROOT.rule_limit.clamp"
-    const val RULE_RELOAD_ERROR_PREFIX_KEY: String = "$MESSAGE_LANG_ROOT.rule_reload_error.prefix"
-    const val TOOLTIP_CURRENT_MAX_KEY: String = "$TOOLTIP_LANG_ROOT.current_max"
+    // B 类裸字符串键已收敛为 RuleMessageKey 统一键模型（T8.1）；
+    // 以下投影仅为既有调用方兼容，不再维护独立字面量，值由枚举唯一决定。
+    val CONFIG_TITLE_KEY: String = RuleMessageKey.CONFIG_TITLE.translationKey
+    val COMMAND_USAGE_KEY: String = RuleMessageKey.COMMAND_USAGE.translationKey
+    val COMMAND_STATE_GET_KEY: String = RuleMessageKey.COMMAND_STATE_GET.translationKey
+    val COMMAND_STATE_SET_KEY: String = RuleMessageKey.COMMAND_STATE_SET.translationKey
+    val COMMAND_STATE_MISSING_KEY: String = RuleMessageKey.COMMAND_STATE_MISSING.translationKey
+    val COMMAND_RELOAD_SUCCESS_KEY: String = RuleMessageKey.COMMAND_RELOAD_SUCCESS.translationKey
+    val COMMAND_EDIT_SUCCESS_KEY: String = RuleMessageKey.COMMAND_EDIT_SUCCESS.translationKey
+    val COMMAND_EDIT_MISSING_KEY: String = RuleMessageKey.COMMAND_EDIT_MISSING.translationKey
+    val COMMAND_EDIT_UNSUPPORTED_KEY: String = RuleMessageKey.COMMAND_EDIT_UNSUPPORTED.translationKey
+    val COMMAND_EDIT_FAILED_KEY: String = RuleMessageKey.COMMAND_EDIT_FAILED.translationKey
+    val RULE_COMPLEXITY_PREFIX_KEY: String = RuleMessageKey.RULE_COMPLEXITY_PREFIX.translationKey
+    val RULE_COMPLEXITY_RULE_COUNT_KEY: String = RuleMessageKey.RULE_COMPLEXITY_RULE_COUNT.translationKey
+    val RULE_COMPLEXITY_RULE_LENGTH_KEY: String = RuleMessageKey.RULE_COMPLEXITY_RULE_LENGTH.translationKey
+    val RULE_COMPLEXITY_TOTAL_LENGTH_KEY: String = RuleMessageKey.RULE_COMPLEXITY_TOTAL_LENGTH.translationKey
+    val RULE_LIMIT_CLAMP_KEY: String = RuleMessageKey.RULE_LIMIT_CLAMP.translationKey
+    val RULE_RELOAD_ERROR_PREFIX_KEY: String = RuleMessageKey.RULE_RELOAD_ERROR_PREFIX.translationKey
+    val TOOLTIP_CURRENT_MAX_KEY: String = RuleMessageKey.TOOLTIP_CURRENT_MAX.translationKey
 }
 
 object Constants {

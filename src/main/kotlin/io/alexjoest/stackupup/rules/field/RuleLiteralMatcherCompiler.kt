@@ -1,23 +1,15 @@
 package io.alexjoest.stackupup.rules.field
 
-import io.alexjoest.stackupup.limit.StackContext
+import io.alexjoest.stackupup.rules.RuleMessages
+import io.alexjoest.stackupup.rules.parse.ItemLiteralSyntax
 
 internal object RuleLiteralMatcherCompiler {
-    fun compileItemMatcher(literal: String): (StackContext) -> Boolean {
-        if (literal == "*") {
-            // "item = *" 匹配所有可堆叠物品（原版 baseSize > 1）
-            return { context -> context.baseLimit > 1 }
-        }
-        val itemLiteral = parseItemLiteral(literal)
-        val itemIdMatcher = compileStringMatcher(itemLiteral.itemIdPattern)
-        return { context ->
-            itemIdMatcher(context.itemId) && (itemLiteral.meta == null || itemLiteral.meta == context.metadata)
-        }
-    }
-
-    fun compileStringMatcher(pattern: String): (String) -> Boolean {
+    /**
+     * 字符串 pattern 编译：无通配 → 精确匹配节点；含通配 → 锚定正则节点。
+     */
+    fun compileStringMatcher(pattern: String): StringMatcher {
         if ('*' !in pattern) {
-            return { actual -> actual == pattern }
+            return ExactStringMatcher(pattern)
         }
 
         val regex = buildString(pattern.length * 2) {
@@ -34,38 +26,25 @@ internal object RuleLiteralMatcherCompiler {
             }
             append('$')
         }.let(::Regex)
-        return regex::matches
+        return WildcardStringMatcher(regex)
     }
 
-    private fun parseItemLiteral(literal: String): ItemLiteral {
-        extractMetaLiteral(literal)?.let { return it }
-
-        val lastColon = literal.lastIndexOf(':')
-        if (lastColon <= literal.indexOf(':')) {
-            return ItemLiteral(itemIdPattern = literal, meta = null)
+    /**
+     * item 字面量解析：itemId pattern + 可选精确 meta。
+     *
+     * 字面量语法已在解析阶段一次定型并校验；这里只接受 Valid，
+     * 非法输入按 fail-fast 直接抛错，不再静默回落为 pattern。
+     */
+    fun parseItemPattern(literal: String): ItemPattern {
+        val itemLiteral = when (val parsed = ItemLiteralSyntax.parse(literal)) {
+            is ItemLiteralSyntax.Valid -> parsed
+            is ItemLiteralSyntax.Invalid -> throw RuleMessages.exception(parsed.reasonKey, *parsed.reasonArgs.toTypedArray())
         }
-
-        val meta = literal.substring(lastColon + 1).toIntOrNull()
-            ?: return ItemLiteral(itemIdPattern = literal, meta = null)
-        return ItemLiteral(
-            itemIdPattern = literal.substring(0, lastColon),
-            meta = meta,
+        return ItemPattern(
+            itemIdMatcher = compileStringMatcher(itemLiteral.itemIdPattern),
+            meta = itemLiteral.meta,
         )
     }
 
-    private fun extractMetaLiteral(literal: String): ItemLiteral? {
-        val separatorIndex = literal.lastIndexOf('@')
-        if (separatorIndex <= 0) {
-            return null
-        }
-
-        val meta = literal.substring(separatorIndex + 1).toIntOrNull()
-            ?: return ItemLiteral(itemIdPattern = literal, meta = null)
-        return ItemLiteral(
-            itemIdPattern = literal.substring(0, separatorIndex),
-            meta = meta,
-        )
-    }
-
-    private data class ItemLiteral(val itemIdPattern: String, val meta: Int?)
+    internal data class ItemPattern(val itemIdMatcher: StringMatcher, val meta: Int?)
 }

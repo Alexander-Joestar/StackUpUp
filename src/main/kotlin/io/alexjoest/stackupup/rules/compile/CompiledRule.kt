@@ -2,6 +2,7 @@ package io.alexjoest.stackupup.rules.compile
 
 import io.alexjoest.stackupup.limit.StackContext
 import io.alexjoest.stackupup.rules.RuleField
+import io.alexjoest.stackupup.rules.field.FieldMatcher
 import io.alexjoest.stackupup.rules.model.RuleAction
 
 data class CompiledRule(
@@ -9,7 +10,7 @@ data class CompiledRule(
     val sourceLine: String,
     val action: RuleAction,
     val referencedFields: Set<RuleField>,
-    val predicate: (StackContext) -> Boolean,
+    internal val matcher: FieldMatcher,
 ) {
-    fun matches(context: StackContext): Boolean = predicate(context)
+    fun matches(context: StackContext): Boolean = matcher.matches(context)
 }

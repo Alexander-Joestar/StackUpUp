@@ -160,12 +160,44 @@ armor 槽必须分别测试，armor 的 slot limit 为 1 的不可堆叠语义�
   `replaceWith()` 会清空全局语言表后重新放入传入表，缺键时 `:131-137` 回退为 key。任何本地化兼容改动都必须先通过真实客户端
   F3+T 观察完整 Forge 资源重载链；单独调用 `LanguageMap.replaceWith` 只能作辅助回归，不能冒充真实 F3+T 基线。
 
+### 3.5 T3 Forge handler 目标收敛判定（2026-08-08 执行）
+
+按 T2a 登记表（docs/agent/t2a-容量站点登记表.md §2.3）三分类，对 `ForgeItemHandlerLimitMixin` 的 6 个目标与
+`SlotItemHandlerMixin` 的 2 个方法逐一定位 Forge/vanilla 写入路径源码后收敛。Forge 路径与 vanilla 实体路径分开取证：
+
+| 目标（方法） | 分类 | 关键证据（build/rfg/minecraft-src/java/net/minecraftforge|minecraft/） | T3 动作 |
+| --- | --- | --- | --- |
+| `ItemStackHandler#getSlotLimit(I)I` | 自洽 | `items/ItemStackHandler.java:88`（insertItem 写入前读 `getStackLimit`）、`:107-116`（落库+remainder）、`:157-165`（getSlotLimit=64、getStackLimit=min(getSlotLimit, maxStackSize)） | 保留注入（64→compat） |
+| `wrapper/EntityEquipmentInvWrapper#getSlotLimit(I)I` | 自洽（P0 事实 a） | `:95`（limit=getStackLimit）、`:108-120`（setItemStackToSlot/grow 落库）、`:122`（remainder）、`:162-166`（装甲 1/手部 64）、`:168-171`；vanilla 实体 setter 为无截断列表直写：`entity/EntityLiving.java:1012-1022`、`entity/player/EntityPlayer.java:2432-2449`、`entity/item/EntityArmorStand.java:155-167` | 保留注入（装甲槽 1 不提升） |
+| `wrapper/InvWrapper#getSlotLimit(I)I` | 转发 | `:73-135`（insertItem 转发 setInventorySlotContents）、`:202-204`（getSlotLimit 转发 `inv.getInventoryStackLimit()`） | 移除注入 |
+| `wrapper/SidedInvWrapper#getSlotLimit(I)I` | 转发 | `:88-168`（insertItem 转发 inv）、`:231-233`（getSlotLimit 转发） | 移除注入 |
+| `wrapper/CombinedInvWrapper#getSlotLimit(I)I` | 转发 | `:109-115`（insertItem 转发子 handler）、`:128-134`（getSlotLimit 按 index 转发） | 移除注入 |
+| `wrapper/RangedWrapper#getSlotLimit(I)I` | 转发 | `:66-74`（insertItem 转发 compose）、`:98-106`（getSlotLimit 转发） | 移除注入 |
+| `items/SlotItemHandler#getSlotStackLimit()I` | 转发 | `:107-110`（广告转发 `itemHandler.getSlotLimit(index)`） | 移除独立动态上限注入（原 `Math.max(original, compat)` 会把广告抬到 handler 真实上限之上；槽位上限自然跟随 handler 真实来源） |
+| `items/SlotItemHandler#getItemStackLimit(ItemStack)I` | 自洽 | `:112-140`（广告由 handler 侧 `insertItem(..., true)` simulate 求得），再由 `StackLimitHooks.resolveItemHandlerSlotLimit`（src/main/kotlin/io/alexjoest/stackupup/StackLimitHooks.kt:137-151）按 min(slotLimit, itemLimit) 收敛 | 保留 |
+
+判定结论与红线核对：
+
+- 四个转发 wrapper 与 `SlotItemHandler#getSlotStackLimit` 不再作为独立容量来源注入；`EntityEquipmentInvWrapper`
+  未写成「无余量必吞」（Forge `insertItem` 上限计算与 remainder 由源码闭合，vanilla setter 为无截断直写）。
+- 实现后 `ForgeItemHandlerLimitMixin` 的 `original == 64` 值检查是目标类的取值语义（两个自洽目标的
+  `getSlotLimit` 只返回 1 或 64，装甲槽 1 必须保持），不再是「该目标是否可 patch」的准入判据——目标集合由本表
+  三分类固定。
+- 未使用 `@Accessor` 猜 delegate 容量；未引入写入后余量补偿。
+- 守恒护栏：`src/test/kotlin/io/alexjoest/stackupup/core/WrapperCapacityDiagnosticTest.kt` 覆盖
+  ItemStackHandler（64 与提升态）、四个转发 wrapper（不注入、remainder 闭合、提升的底层来源自然跟随）、
+  EntityEquipment（手部提升态与装甲槽 1）、未 patch 的 `IInventory` stub 包装场景，以及两个 mixin 的
+  字节码结构检查（转发目标已移除、slot 独立注入已移除）。
+- 未决事项：`src/main/kotlin/io/alexjoest/stackupup/dev/DevWrapperCompatProbes.kt` 的 wrapper/SlotItemHandler
+  探针期望仍按旧语义（getSlotLimit == compat），T3 租约外未改动，需后续任务按其转发酵更新期望；
+  T2a 登记表 §2.3 的 mixin 目标行数（6→2）需随之刷新。
+
 ## 4. 当前限制
 
 1. 动态 patch 基类可能传播到没有覆盖方法的第三方子类；静态目标表不能穷举第三方实现。没有源码或可重复运行证据的条目统一为
    **无源码不可判定**。
-2. 当前 Forge mixin 仍把多个 wrapper 和 `EntityEquipmentInvWrapper` 放在同一目标集合中；这只是现状，不是已经完成的安全分类。T3
-   必须按上面的真实调用链重新登记。
+2. `ForgeItemHandlerLimitMixin` 已按 §3.5 收敛为两个自洽目标（ItemStackHandler、EntityEquipmentInvWrapper），
+   四个转发 wrapper 与 `SlotItemHandler#getSlotStackLimit` 的独立注入已移除（T3 执行，2026-08-08）。
 3. 当前 AE2 限流器的白名单同时包含 Forge wrapper、`ItemStackHandler` 和装备 wrapper；白名单理由不能由 `instanceof` 取代，T10
    必须补齐每项查询、写入、`simulate` 和 remainder 证据。AE2 的 `AdaptorItemHandler`、三个 pattern terminal
    目标及其第三方内部写入链在本记录中没有对应第三方源码，统一记为 **无源码不可判定**，不能用项目自己的 mixin 名称补出结论。
@@ -240,6 +272,11 @@ wrapper 当独立容量来源，不得使用 `@Accessor` 猜 delegate 容量，�
 
 **准入条件：**每个保留目标都要有真实 `simulate=false` 插入、写入前后状态和 remainder 守恒证据；EntityEquipment 必须分别覆盖
 armor 与手部，并同时说明 Forge wrapper 插入路径和 vanilla setter 路径。无法闭合的目标保持安全收缩。
+
+**执行状态（2026-08-08）：**判定与实现完成，见 §3.5。保留目标（ItemStackHandler、EntityEquipmentInvWrapper、
+SlotItemHandler#getItemStackLimit）的真实 `simulate=false` 守恒测试与转发目标（四个 wrapper、SlotItemHandler#getSlotStackLimit）
+的移除护栏在 `WrapperCapacityDiagnosticTest` 中落地；`DevWrapperCompatProbes` 的旧语义探针期望与 T2a 登记表 §2.3 行数刷新
+属租约外未决事项。
 
 ### T10：AE2 白名单重排
 

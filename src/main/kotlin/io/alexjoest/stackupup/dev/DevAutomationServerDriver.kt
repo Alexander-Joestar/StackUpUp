@@ -2,6 +2,8 @@ package io.alexjoest.stackupup.dev
 
 import io.alexjoest.stackupup.StackLimitHooks
 import io.alexjoest.stackupup.StackUpUp
+import io.alexjoest.stackupup.audit.ConservationAuditor
+import io.alexjoest.stackupup.audit.ConservationEvent
 import io.alexjoest.stackupup.limit.RuleRuntime
 import io.alexjoest.stackupup.limit.StackContext
 import io.alexjoest.stackupup.limit.StackContextResolver
@@ -157,8 +159,24 @@ object DevAutomationServerDriver {
         val resolvedLimit = RuleRuntime.limitService().resolve(context)
         val insertionStack = probeStack.copy().also { it.count = DevAutomationConfig.itemCount }
         val handler = ItemStackHandler(1)
+        val auditEnabled = ConservationAuditor.enabled()
+        val before = if (auditEnabled) handler.getStackInSlot(0).count else 0
         val remainder = handler.insertItem(0, insertionStack, false)
         val stored = handler.getStackInSlot(0)
+        if (auditEnabled) {
+            ConservationAuditor.audit(
+                ConservationEvent(
+                    callSite = "DevAutomationServerDriver#probeTarget",
+                    handlerClassName = handler.javaClass.name,
+                    slot = 0,
+                    simulate = false,
+                    offered = insertionStack.count,
+                    before = before,
+                    after = stored.count,
+                    remainderCount = remainder.count,
+                ),
+            )
+        }
         val actualLimit = probeStack.maxStackSize
         val slotLimit = handler.getSlotLimit(0)
         val evaluation = evaluateProbeResult(

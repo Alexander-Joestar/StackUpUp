@@ -1,6 +1,7 @@
 package io.alexjoest.stackupup.rules
 
 import io.alexjoest.stackupup.limit.StackContext
+import io.alexjoest.stackupup.rules.field.FieldMatcher
 import io.alexjoest.stackupup.rules.field.MissingValuePolicy
 import io.alexjoest.stackupup.rules.field.RuleFieldContextProvider
 import io.alexjoest.stackupup.rules.field.RuleFieldMatcherFactory
@@ -63,12 +64,12 @@ enum class RuleField(
     /**
      * 编译单值字段比较。
      */
-    fun compileMatcher(operator: ComparisonOperator, literal: String): (StackContext) -> Boolean = matcherFactory.compile(operator, literal)
+    fun compileMatcher(operator: ComparisonOperator, literal: String): FieldMatcher = matcherFactory.compile(operator, literal)
 
     /**
      * 编译列表字段比较，列表语义复用字段自身的等值 matcher。
      */
-    fun compileListMatcher(literals: List<String>): (StackContext) -> Boolean = matcherFactory.compileList(literals)
+    fun compileListMatcher(literals: List<String>): FieldMatcher = matcherFactory.compileList(literals)
 
     /**
      * 提取该字段贡献给规则缓存键的值。

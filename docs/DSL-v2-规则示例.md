@@ -73,7 +73,7 @@ item = minecraft:egg -> *2
 
 | 字段                | 求值上下文                                                                               | 单值比较                        | 备注                                                    |
 |---------------------|------------------------------------------------------------------------------------------|---------------------------------|---------------------------------------------------------|
-| `item`              | 完整 item registry ID                                                                    | `=`、`!=`                       | 支持 item 字面量、列表和 `*` 通配；可附加 metadata 简写 |
+| `item`              | 完整 item registry ID                                                                    | `=`、`!=`                       | 支持 item 字面量、列表和 `*` 通配；`@整数`/`@*` 附加 metadata |
 | `mod`               | registry ID 的 namespace/mod ID                                                          | `=`、`!=`                       | 支持字符串 `*` 通配                                     |
 | `type`              | `item` 或 `block`                                                                        | `=`、`!=`                       | 不是通用物品分类                                        |
 | `ore`               | 当前栈的矿物辞典名称集合                                                                 | `=`、`!=`                       | 集合中任意名称命中即视为等值命中                        |
@@ -116,23 +116,30 @@ size > 2 && size < 64 -> 256
 item = minecraft:wool -> 128
 ```
 
-**`@meta` 简写**只有在 `@` 后面是整数时才按 metadata 解释，并匹配指定 metadata；其他情况当前可能静默作为普通 pattern：
+**`@meta` 简写**是 item 字面量的唯一 metadata 写法：`@` 后必须是整数或 `*`。`@整数` 匹配指定
+metadata；`@*` 明确表示任意 metadata（与不约束等价）：
 
 ```su
 item = minecraft:wool@14 -> 256
+item = minecraft:wool@* -> 256
 ```
 
-**旧的 `:meta` 简写**仍由当前 matcher 兼容。当字面量至少有两个冒号且最后一段能解析为整数时，最后一个冒号后的整数被当作
-metadata：
+`@` 后不是整数也不是 `*`（如 `@abc`）、meta 为负数（如 `@-1`）、`@` 前没有 item ID（如 `@14`）时，
+加载直接报错并指向出错列和原因；不再把整串静默当作普通 pattern。
+
+列表中的 item 字面量复用同一套规则：
 
 ```su
-item = minecraft:wool:14 -> 256
+item in [minecraft:wool@14, minecraft:wool@15] -> 256
 ```
 
-列表中的 item 字面量复用同一套规则，因此也能使用 `@meta` 或旧的 `:meta` 写法：
+**旧的 `:meta` 简写已移除**（如 `minecraft:wool:14` 不再表示 wool 加 metadata 14）。按 1.12.2
+`ResourceLocation.splitObjectName` 的实际行为（只按第一个冒号分割），整串是 item ID pattern，path
+可以含冒号；需要精确 metadata 时请改用 `@14`。多冒号字面量保持原值，不按冒号数量拒绝，也不把冒号
+后的第三段当 meta：
 
 ```su
-item in [minecraft:wool@14, minecraft:wool:15] -> 256
+item = minecraft:wool:14 -> 256   # item ID pattern 为 minecraft:wool:14，不约束 meta
 ```
 
 `item = *` 是特殊写法，只匹配原始 `baseLimit > 1` 的可堆叠物品；它不会把工具、装备或其他原始上限为 `1` 的物品变成可堆叠物品：
@@ -151,14 +158,19 @@ mod = your_mod_id* -> 256
 
 `your_mod_id` 这类写法只是需要替换为整合包实际 ID 的语法示意，不代表某个第三方模组一定存在。
 
-1.12.2 的 `ResourceLocation` path 可以含多个冒号；当前 item matcher 不按冒号数量把字面量判为非法。与此同时，旧 `:meta`
-逻辑会检查最后一个冒号后的部分：
+`minecraft:wool:*` 是 path 含 `*` 通配的 item ID pattern（匹配 `minecraft:wool:...` 开头的 ID），
+不是 `minecraft:wool` 加任意 meta，也不会被编译成永不命中的整串精确匹配。
 
-- `namespace:path:part` 的最后一段不是整数时，当前实现把整串当作 item ID pattern。
-- `namespace:path:14` 的最后一段是整数时，当前实现把它解释为 item ID `namespace:path` 加 metadata `14`。
+**引号**可以包住 item 字面量或字段值：引号只改变词法边界，不改变值。引号内的空白和运算符符号按
+字面量内容处理，引号本身不进入值：
 
-因此，多冒号 path 与旧 `:meta` 语法在末段为整数时存在歧义；不要用冒号数量判断 ResourceLocation 是否有效。`@*` 当前也不是“任意
-metadata”的写法，不能当作已实现语法。
+```su
+item = "minecraft:wool" -> 128
+item = "minecraft:wool@14" -> 128
+item in ["minecraft:egg", "minecraft:snowball"] -> 128
+```
+
+未闭合的引号（如 `"minecraft:wool`）或空引号（`""`）会直接报错并指向开引号所在列。
 
 ### `.su` 中的注释和模组条件
 
@@ -170,7 +182,7 @@ item = minecraft:egg -> 128 // 行尾注释
 /* 可以跨行的块注释 */
 ```
 
-当前没有 DSL 字面量引号，因此不要用引号包住 item ID 或字段值。
+当前 DSL 字面量支持引号（见「item 字面量、metadata 与通配」），可以用引号包住 item ID 或字段值。
 
 当前 `.su` 还保留了按已加载模组过滤的条件块：
 
@@ -227,7 +239,8 @@ Gate 当前支持：
 ```
 
 `state` 必须有一个字符串参数；`modLoaded` 的参数会全部检查。Gate 支持 `!`、`&&`、`||`，其中 `&&` 优先于 `||`
-；当前不支持用于分组的括号。注意：双引号在 gate 参数中是当前实现的一部分，但 DSL 规则字面量本身还没有引号语法。
+；当前不支持用于分组的括号。注意：双引号在 gate 参数和 DSL 规则字面量中都是当前实现的一部分，但 gate 引号与 DSL 字面量引号
+是两个独立语法。
 
 `.su.md` 的规则代码块仍使用 `.su` 的字段、动作、item 字面量和注释规则，但 `#` 有额外的 Markdown 含义。扫描器遇到 fenced code
 block 内一行去掉前导空格后以 `# ` 开头的内容时，会把它当作新的 Markdown 标题并结束当前 fence。因此，`.su.md` 的 DSL
@@ -272,21 +285,21 @@ reload。直接编辑规则文件、修改 `.su` 或修改配置目录中的 `.s
 ### 当前实现和已知限制
 
 - DSL 解析错误和 gate 错误当前带来源文件名和行号；state 声明错误目前以 `[state]` 报告，不带 Markdown
-  来源文件名。所有这些错误都没有可供作者依赖的列号或 token 精确位置。
+  来源文件名。item 字面量错误（非法 `@` meta、引号问题）额外带出错列号与原因；其他 DSL 错误仍没有可供作者依赖的列号。
 - 同一个 `RuleLineLoader` 输入批次内，规则解析遇到第一个错误后停止继续编译该批；错误前已经成功编译的规则仍会保留在报告中。
   `DslRuleSource.fromFiles` 会把纯 `.su` 文件合并到同一批，而 Markdown 文件分别处理。
 - `material` 只有在运行时成功解析出 material 时才有值；缺失值不会命中 `material = ...`、`material != ...` 或
   `material in [...]`。
 - `ore = ...` 会检查 ore 名称集合中的任意元素；`ore != ...` 是对该命中判断取反，因此空集合也可能命中负比较。
-- 多冒号 ResourceLocation path 当前不会按冒号数量拒绝，但与旧 `:meta` 简写的整数后缀存在歧义。
-- DSL 字面量中不支持引号；`@` 或旧 `:` 后跟非整数时，当前实现可能把整串静默保留为 pattern，而不是给出专门的非法 metadata
-  诊断。
+- 多冒号 ResourceLocation path 按 1.12.2 语义保持为完整 item ID pattern；旧 `:meta` 简写已移除，`@` 是唯一
+  meta 语法，歧义已消除。
+- DSL 字面量引号已支持；`@` 后跟非整数或负数、`@` 前后缺失内容、未闭合或空引号都会 fail-fast 报错并带列号，
+  不再静默回落为 pattern。
 
 ### 测试覆盖边界
 
 以下行为目前尚无完整独立的行为测试；相关说明来自源码核对和部分测试覆盖：
 
-- 多冒号 ResourceLocation path 与旧 `:meta` 简写的歧义。
 - `legacy reload`：旧 `config/stackupup-rules.su` 仅在 `config/stackupup/main.su` 缺失时加载的回退路径。
 - fence `# `：fenced code block 内去掉前导空格后以 `# ` 开头的行结束当前 fence 的行为。
 - state reload：`state set` 改变值时触发自动 reload、设置为相同值时不触发 reload 的行为。
@@ -298,11 +311,9 @@ reload。直接编辑规则文件、修改 `.su` 或修改配置目录中的 `.s
 以下内容只作为后续解析器/诊断任务的边界记录，不能用于判断当前版本已经支持：
 
 - T7.1 的两段式 tokenizer 仍未实现：尚未先按 `->` 分出条件侧与动作侧，再分别使用条件字面量模式和动作表达式模式；`+`、`-`、
-  `*`、`/` 的条件/动作边界（条件侧字面量字符、动作侧运算符）以及 DSL 规则字面量的引号词法仍未实现。当前文中的动作和 gate
-  示例只描述现有实现，不代表 T7.1 已完成。
-- 为 DSL 字面量增加经过定义的引号语法，并对显式非法 metadata 进行 fail-fast 诊断。
-- 增加真实的精确位置（尤其列号）诊断；当前的文件名和行号不能冒充列级定位。
+  `*`、`/` 的条件/动作边界（条件侧字面量字符、动作侧运算符）仍未实现。当前文中的动作和 gate 示例只描述现有实现，
+  不代表 T7.1 已完成。DSL 字面量引号词法已由 T7.2 实现，不属于本项缺口。
+- 其余 DSL 错误的列级定位仍待实现；当前只有 item 字面量错误（非法 `@` meta、引号问题）带列号。
 - 增加专用 `RangeConditionAst` 并重新定义比较链的 AST 产出；当前范围链只是由现有比较条件组合得到。
-- 在保留 1.12.2 多冒号 ResourceLocation path 的前提下，解决旧 `:meta` 语法的歧义。
 
 本页此次只更新文档，不实现上述后续任务，也不改变 README 中已有的文档路径。

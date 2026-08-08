@@ -40,6 +40,7 @@ message.stackupup.rule_complexity.total_length=规则总文本较长：总计 %s
 message.stackupup.rule_limit.clamp=第 %s 行设置的堆叠上限超过了全局最大值 %s，运行时会被钳制。
 message.stackupup.rule_error.unsupported_reverse_operator=不支持反转运算符：%s
 message.stackupup.rule_error.unsupported_comparison_operator=不支持的比较运算符：%s
+message.stackupup.rule_error.unsupported_operator_for_field=字段类型 %s 不支持运算符 %s
 message.stackupup.rule_error.missing_comparison_operator=条件缺少比较运算符。
 message.stackupup.rule_error.missing_action_operator=规则必须包含动作运算符。
 message.stackupup.rule_error.trailing_content=规则末尾存在无法识别的多余内容。
@@ -79,5 +80,11 @@ message.stackupup.rule_error.gate_unterminated_string=未终止的字符串
 message.stackupup.rule_error.gate_parse_error=[%s:%s] gate 解析错误：%s
 message.stackupup.rule_error.state_invalid_declaration=第 %s 行：无效的状态声明 '%s' - 预期 '- name = true|false'
 message.stackupup.rule_error.state_error_prefix=[state] %s
+message.stackupup.rule_error.invalid_item_literal=非法 item 字面量 '%s'（列 %s）：%s
+message.stackupup.rule_error.item_meta_not_integer=@ 后应为整数或 *，实际为 '%s'
+message.stackupup.rule_error.item_meta_negative=metadata 不能为负数：%s
+message.stackupup.rule_error.item_meta_missing_item_id=@ 前缺少 item ID
+message.stackupup.rule_error.unterminated_quoted_literal=第 %s 列存在未闭合的引号字面量
+message.stackupup.rule_error.empty_quoted_literal=第 %s 列存在空的引号字面量
 
 tooltip.stackupup.current_max=堆叠：%s/%s

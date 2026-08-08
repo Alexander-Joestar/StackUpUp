@@ -58,4 +58,7 @@ enum class DslTokenType(val lexeme: String? = null, val isComparisonOperator: Bo
     }
 }
 
-data class DslToken(val type: DslTokenType, val lexeme: String)
+/**
+ * DSL token；`column` 是 1-based 起始列，EOF token 为 0。
+ */
+data class DslToken(val type: DslTokenType, val lexeme: String, val column: Int = 0)

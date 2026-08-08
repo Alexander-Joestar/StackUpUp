@@ -10,7 +10,7 @@ object RuleCompiler {
             sourceLine = line,
             action = ast.action,
             referencedFields = ast.condition.debugFields().toSet(),
-            predicate = RuleConditionCompiler.compile(ast.condition),
+            matcher = RuleConditionCompiler.compile(ast.condition),
         )
     }
 }

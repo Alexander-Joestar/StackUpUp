@@ -416,3 +416,103 @@ T13 的最终矩阵中的回扩处置状态只能是“已回扩”“决定不�
   `T9-R1`](%E9%87%8D%E6%9E%84%E4%BB%BB%E5%8A%A1%E6%B8%85%E5%8D%95.md#t9-r1-%E7%89%88%E6%9C%AC%E4%B8%8E-api-%E8%BF%81%E7%A7%BB%E5%8F%96%E8%AF%81%E5%90%88%E5%B9%B6%E5%8E%9F-r1-%E4%B8%8E-r2)、[
   `T9-R3`](%E9%87%8D%E6%9E%84%E4%BB%BB%E5%8A%A1%E6%B8%85%E5%8D%95.md#t9-r3-%E8%BF%81%E7%A7%BB%E8%B7%AF%E5%BE%84%E5%86%B3%E7%AD%96%E4%B8%8E%E8%A7%A6%E5%8F%91%E6%9D%A1%E4%BB%B6)、[MixinBooter 官方仓库](https://github.com/CleanroomMC/MixinBooter)、[CleanMix 官方仓库](https://github.com/CleanroomMC/CleanMix)、[SpongePowered/Mixin](https://github.com/SpongePowered/Mixin)、[LlamaLad7/MixinExtras](https://github.com/LlamaLad7/MixinExtras)
   和 [CleanroomMC/MixinExtras](https://github.com/CleanroomMC/MixinExtras)。
+
+- **T9-R3 迁移路径决策（2026-08-08 追加）：** 本节是 T9-R3 的决策产出，只决定迁移路径、触发条件与回滚边界，
+  不实施迁移；实施由 T9-R3 授权、T14.7 通过后创建的独立迁移实现任务执行（`重构任务清单.md:446-457,571-582`）。
+  本段与 8.1 的「当前构建事实」分层一致：10.7 是当前事实，11.13 是计划迁移目标；本文不把计划写成已使用。
+- **目标版本与坐标：** 目标为 `zone.rong:mixinbooter:11.13`（2026-08-05 发布），坐标不变。证据：11.13 POM
+  （https://maven.cleanroommc.com/zone/rong/mixinbooter/11.13/mixinbooter-11.13.pom）声明依赖
+  `com.cleanroommc:cleanmix:0.7.1`、`com.cleanroommc:mixinextras-common:0.5.5`、`gson:2.8.0`、`guava:21.0`、
+  `asm-debug-all:5.2`，无 relocation；官方 README
+  （https://raw.githubusercontent.com/CleanroomMC/MixinBooter/master/README.md）以 11.13 为当前 Maven 示例版本，
+  并写明「As of 11.0, MixinBooter is built on CleanMix」「As of 11.12, MixinBooter uses CleanroomMC's own MixinExtras
+  fork」「As of 11.0, early/late divide is no longer present, therefore IEarly/ILateMixinLoaders are deprecated」。
+  README 正文的「CleanMix 0.6.0」表述与 11.13 POM 的 0.7.1 不一致，判定 README 文字滞后，以 POM 为准。
+- **注册路径决策：保留现有 loader，不迁 manifest。** 项目 loader 实际只使用：`StackUpUpCore.kt:88-92` 的
+  `getMixinConfigs()`（IEarlyMixinLoader 成员；`StackUpUpCore.kt:78` 的 `injectData` 是 `IFMLLoadingPlugin` 的成员，
+  不是 loader 接口成员）与 `StackUpUpLateMixinLoader.kt:9,11-15` 的 `getMixinConfigs()`/`shouldMixinConfigQueue(Context)`。
+  11.x main 分支源码
+  （https://raw.githubusercontent.com/CleanroomMC/MixinBooter/main/src/main/java/zone/rong/mixinbooter/IEarlyMixinLoader.java、
+  https://raw.githubusercontent.com/CleanroomMC/MixinBooter/main/src/main/java/zone/rong/mixinbooter/ILateMixinLoader.java）
+  确认两个接口带 `@Deprecated`（javadoc 注明「as of 11.0, the line of 'early' and 'late' mixin loading no longer is
+  present」），但 `getMixinConfigs`/`shouldMixinConfigQueue(Context|String)`/`onMixinConfigQueued(Context|String)`
+  成员仍存在且签名与项目使用点逐点一致；T9-R1 已核实运行时路径与 10.7 逐点一致（`loadEarlyLoaders` 与
+  LoadControllerMixin CONSTRUCTING 阶段未变）。因此首次迁移保留两个 loader 类，代码零改动，仅产生 deprecation
+  编译警告（无 `-Werror`）；manifest `MixinConfigs`/`MixinConnector` 注册模型列为后续可选清理项，不并入本次版本迁移，
+  避免一次改动叠加两个变量。main 分支可能超前于 11.13 tag，上述 raw 源码属佐证；tag 级证据以 T9-R1 账本为准。
+- **迁移顺序（实施任务按序执行）：** ① 版本号 `gradle/libs.versions.toml:20` 的 `mixinbooter = "10.7"` 改为
+  `"11.13"`（版本值唯一一处；`build.gradle.kts:53` 的字符串插值不变；8.1 所引 `build.gradle.kts:434/438-439`
+  行号已随 T15 build-logic 重构过期，实际触点以本段为准）→ ② 删除外部 mixinextras 声明：`build.gradle.kts:57-58`
+  的 `compileOnly`/`annotationProcessor` 与 `gradle/libs.versions.toml:21,29` 的 `mixinextrasCommon` 条目
+  （`io.github.llamalad7:mixinextras-common:0.5.0`，改用 11.13 内嵌的 Cleanroom fork 0.5.5；17 个 mixin 文件的
+  `com.llamalad7.mixinextras.*` import 同包名不变）→ ③ 编译验证：记录 deprecation 警告集合，跑 `test` 与
+  `spotlessCheck` → ④ `runServerAutoTest` 全量回归，另覆盖 `CoremodHierarchyBytecodeSafetyTest`/
+  `EarlyMixinBytecodeSafetyTest`/`MixinBooterIntegrationTest` → ⑤ T14.7 准入门复核，实施任务不自宣通过。
+- **回滚边界：** 步骤①为单值回退（`gradle/libs.versions.toml:20` 改回 `10.7`）；步骤②为两处恢复
+  （`build.gradle.kts:57-58` 与 `gradle/libs.versions.toml:21,29`）；两步相互独立、可分别回退；回退按 jj 工作区快照
+  语义处理，不执行 `git restore`/`git reset` 等清理命令，不覆盖既有改动。
+- **触发条件与停止条件：** 触发条件：T9-R1 取证已闭合、本决策记录生效、T14.0–T14.6 复核完成且 T14.7 通过后，
+  创建独立迁移实现任务（build.gradle.kts 红线例外，`重构任务清单.md:451,582`）。停止条件（任一命中即停止，
+  T14.7 未通过前一律不实施）：provider/注册/refmap/classloader/容量证据未闭合；`runServerAutoTest` 或字节码护栏
+  失败；删除外部 mixinextras 后 `com.llamalad7.mixinextras.*` import 编译解析失败；11.13 内嵌 MixinExtras 的运行时
+  bootstrap 无启动日志证据。
+- **UNKNOWN 账本（交接 T14.0 复核）：** ① CleanMix 0.7.1 对 `minVersion: "0.8"` 配置的兼容性未实测（项目全部 mixin
+  配置均为 `"minVersion": "0.8"`，如 `mixins.stackupup.early.json:5`；DeepWiki/README 显示 CleanMix fork 自 Mixin
+  0.8.7，原则可满足，但具体版本字符串与 config 解析未以运行验证）→ UNKNOWN；② 11.13 内嵌 MixinExtras 是否自动完成
+  provider 初始化（README 称 AP 依赖无需自声明，但运行时 bootstrap 机制未以启动日志核实）→ UNKNOWN；③ 现有 jar
+  manifest（`build-logic/convention/src/main/kotlin/minecraft.gradle.kts:103-108`，含 `FMLCorePlugin` 等、不含
+  `MixinConfigs`/`MixinConnector`）与 `required-after:mixinbooter@[10.0,)`（`StackUpUp.kt:34`）在 11.13 下的行为未验证
+  → UNKNOWN；④ `CoremodClassFilter.java:19-20` 的 `zone/rong/mixinbooter/` 跳过前缀在 11.13 下是否需扩展到
+  CleanMix/mixinextras 类包未验证 → UNKNOWN（`org/spongepowered/` 已在跳过表 :17）。
+- **DeepWiki 与来源访问失败记录：** 本会话未注入 DeepWiki MCP 工具，降级为 DeepWiki 网站页面与官方 GitHub。
+  `https://deepwiki.com/CleanroomMC/MixinBooter` 页面存在但版本表止于 10.0，不含 11.x 内容，属旧索引，不能作为
+  11.x 注册事实（与 `mixin-生态与注入最佳实践.md:89-92` 既有冲突记录一致）；`https://deepwiki.com/CleanroomMC/CleanMix`
+  首次提取无文本、重试成功：CleanMix 为 Fabric Mixin 0.17.3 / SpongePowered Mixin 0.8.7 的 fork，经 MixinBootstrap
+  多阶段生命周期（PREINIT/INIT/DEFAULT）接入可插拔 classloading service（Cleanroom 原生、Forge 1.12.2 LaunchWrapper +
+  MixinBooter、ModLauncher 7+），转换引擎使用 ASM 9.x 与 legacy 5.x，AP 生成 refmap；GitHub API tree 请求 403
+  rate limit，降级 raw 文件直取成功。
+
+### 8.7 T14.0 来源与版本账本复核（2026-08-08 追加）
+
+本节是 T14.0「来源与版本账本复核」的窄复核产出：只交叉核对 T9 账本与当前构建配置、本地产物、DeepWiki/官方来源，不改依赖、不改 build 文件、不改 Mixin。复核方式为 DeepWiki MCP（https://mcp.deepwiki.com/mcp，HTTP JSON-RPC/SSE）、官方 Maven（maven.cleanroommc.com / Maven Central）、官方 GitHub（页面/raw，GitHub REST API 被限流）与本机 gradle 缓存、build/ 产物交叉核对。
+
+**T9 账本复核结论：** T9-R1/T9-R3 的版本决定、坐标、发布事实、回滚边界与 4 项 UNKNOWN 与本复核逐条一致，未发现冲突；以下仅新增证据精度与 2 项新 UNKNOWN。当前构建触点复核：`gradle/libs.versions.toml:20` `mixinbooter = "10.7"`、`:21` `mixinextrasCommon = "0.5.0"`、`:29` `io.github.llamalad7:mixinextras-common`；`build.gradle.kts:53-54` `modUtils.enableMixins("zone.rong:mixinbooter:${...}")` 字符串插值、`:57-58` `compileOnly`/`annotationProcessor(libs.mixinextrasCommon)`、`:59-62` AP 追加 `asmDebugAll`/`guava`/`gson`/mixin（与 10.7 tag 上游 AP 集合一致）。
+
+**本地产物账本（当前 10.7 基线，全部实际核对）：**
+
+- `zone.rong:mixinbooter:10.7` 位于 `~/.gradle/caches/modules-2/files-2.1/zone.rong/mixinbooter/10.7/`：jar（`3fdfffe4…/mixinbooter-10.7.jar`，5564093 B，1665 条目）、sources jar（`3b37a075…`）、POM（`7ec886c0…`，**无任何依赖声明**，运行时内容全部内嵌）。MANIFEST.MF 全字段：`TweakClass: org.spongepowered.asm.launch.MixinTweaker`、`FMLCorePlugin: zone.rong.mixinbooter.MixinBooterPlugin`、`FMLCorePluginContainsFMLMod: true`、`ForceLoadAsMod: false`、`Premain-Class`/`Agent-Class: org.spongepowered.tools.agent.MixinAgent`、`Can-Redefine-Classes`/`Can-Retransform-Classes: true`。jar 内容统计：`org/spongepowered/` 1064 类（嵌入 UniMix/Sponge Mixin 核心）、`com/llamalad7/mixinextras/` 类（**内嵌 LlamaLad7 MixinExtras 0.5.0**，含 `MixinExtrasBootstrap`、`ap/MixinExtrasAP`）、`org/objectweb/asm/`、`zone/rong/mixinbooter/` 26 类（含 `fix/mixinextras/MixinExtrasFixer`）。`META-INF/services/`：`javax.annotation.processing.Processor` → `com.llamalad7.mixinextras.ap.MixinExtrasAP` + `org.spongepowered.tools.obfuscation.MixinObfuscationProcessorInjection/Targets`；`IMixinService` → `org.spongepowered.asm.service.mojang.MixinServiceLaunchWrapper`；`IMixinServiceBootstrap` → `…LaunchWrapperBootstrap`；另有 `IGlobalPropertyService`、`IObfuscationService`。条目时间戳：sponge 类 2025-01-08、mixinextras 类 2025-07-27、jar 打包 2025-09-30。与上游 10.7 tag build.gradle（https://raw.githubusercontent.com/CleanroomMC/MixinBooter/10.7/build.gradle，`enableMixins('com.github.CleanroomMC:UniMix:9d4b487ed3')`、`embed 'io.github.llamalad7:mixinextras-common:0.5.0'`）一致：当前 jar 即按该 tag 构建的内嵌形态。
+- `io.github.llamalad7:mixinextras-common:0.5.0` 位于 `~/.gradle/caches/modules-2/files-2.1/io.github.llamalad7/mixinextras-common/0.5.0/`：jar（`286da960…`）、sources jar（`8db1dbef…`）、POM（`e6bfe617…`，MIT，无依赖）。jar 的 MANIFEST 仅 `Manifest-Version: 1.0`。Maven Central metadata（https://repo1.maven.org/maven2/io/github/llamalad7/mixinextras-common/maven-metadata.xml）版本 0.4.0→0.5.4，`0.5.0` 存在，最新 0.5.4（lastUpdated 2026-04-15）。
+- `build/` 产物：`build/resources/main/mixins.StackUpUp.refmap.json` 与 `build/tmp/mixins/mixins.StackUpUp.refmap.json` **逐字节一致**（refmap 由当前 AP 链生成，含 SRG `func_` 映射，如 `CommandGiveMixin` 的 `execute → func_184881_a`）；`build/resources/main/` 下 20 个 mixin 配置 JSON（early 1 + late 19）。AP 链（编译期）为 `build.gradle.kts:57-62` 的 mixinextras 0.5.0 + asm-debug-all 5.2 + guava + gson + mixinbooter 内嵌 AP。
+- **候选版本不在本地缓存：** `~/.gradle/caches/modules-2/files-2.1/` 下无 `com.cleanroommc`（cleanmix 0.7.1、mixinextras-common 0.5.5），无 `mixinbooter/11.13`；11.13 候选 jar 仅本次在线下载核对（见下），不构成本地运行证据。
+
+**10.7 vs 11.13 对照表（版本/坐标/职责/early-late/manifest/CleanMix/Extras/Sponge）：**
+
+| 维度 | 当前 10.7（本地产物） | 候选 11.13（官方 Maven 产物，2026-08-05 发布） |
+|---|---|---|
+| 坐标 | `zone.rong:mixinbooter:10.7` | `zone.rong:mixinbooter:11.13`（坐标不变；metadata lastUpdated 20260805224202，GitHub releases 页 11.13 = Aug 5 22:42，与 T9-R3 一致） |
+| 职责 | Forge 1.12.2 bridge/bootstrap + 配置发现 + 兼容修复（UniMix 0.15.3 内嵌） | 同职责，改基于 CleanMix 0.7.1（11.13 POM：`com.cleanroommc:cleanmix:0.7.1`、`com.cleanroommc:mixinextras-common:0.5.5`、`gson:2.8.0`、`guava:21.0`、`asm-debug-all:5.2`，无 relocation；cleanmix metadata 0.2.6→0.7.1，lastUpdated 2026-08-05 22:24，与 11.13 同批次发布） |
+| early/late | `IEarlyMixinLoader`/`ILateMixinLoader` + `Context`（项目使用点见 8.6） | 接口仍存在但 `@Deprecated`（main 分支源码已核实，见 8.6）；DeepWiki 索引声称"未弃用"为陈旧索引，不作 11.x 证据 |
+| manifest | `TweakClass`（MixinTweaker）+ `FMLCorePlugin` + `FMLCorePluginContainsFMLMod: true` + `ForceLoadAsMod` + Premain/Agent | 11.13 jar manifest 实测：`FMLCorePlugin: zone.rong.mixinbooter.MixinBooterPlugin` + `Premain/Agent` + `Can-Redefine/Retransform` + **`MixinConfigs: mixin.mixinbooter.init.json`**；**无 `TweakClass`**、**无 `FMLCorePluginContainsFMLMod`** |
+| MixinConnector | 项目无 connector；10.7 不扫描 manifest connector | CleanMix 支持 manifest `MixinConfigs`/`MixinConnector` 扫描（DeepWiki：`MixinPlatformAgentDefault` 读取两属性，`MixinConnectorManager` 装载）；项目是否使用仍为未验证项 |
+| CleanMix | 不涉及（10.7 内嵌 UniMix 0.15.3，派生自 Mixin 0.8.7；DeepWiki/README 一致） | `cleanmix-0.7.1.jar` 实测：716 条目，`org/spongepowered/` 708 类（即 Mixin 核心 fork 本体），`Implementation-Title: CleanMix`、`Implementation-Version: 0.7.1`、vendor cleanroommc.com；不内嵌 ASM/Extras；POM 依赖 guava 21.0、gson 2.2.4、asm-tree/commons/util 9.8（均 runtime）；DeepWiki：fork 自 Fabric Mixin 0.17.3 / SpongePowered Mixin 0.8.7，`MixinBootstrap.VERSION = "0.8.7"` |
+| Extras | 10.7 jar 内嵌 LlamaLad7 MixinExtras 0.5.0（`com.llamalad7.mixinextras.*`）；项目另声明 compileOnly/AP 0.5.0 | 11.13 jar 内嵌 Cleanroom fork 0.5.5（`mixinextras-common-0.5.5.jar` 实测 565 条目，559 类仍为 `com.llamalad7.mixinextras.*` **同包名、无 relocation**，`META-INF/services/javax.annotation.processing.Processor` 同名指向 `MixinExtrasAP`）；`com.cleanroommc:mixinextras-common` metadata 仅 0.5.5（lastUpdated 2026-07-28）；CleanroomMC/MixinExtras GitHub 页确认 fork 自 LlamaLad7/MixinExtras，README 坐标 `com.cleanroommc:mixinextras-common:0.5.5` |
+| Sponge | 10.7 内嵌 org/spongepowered 1064 类（UniMix 0.15.3） | 11.13 jar 内嵌 org/spongepowered 594 类（CleanMix 0.7.1 核心）；SpongePowered/Mixin 上游 tag `0.8.7` 存在（raw `https://raw.githubusercontent.com/SpongePowered/Mixin/0.8.7/build.gradle` HTTP 200；注意 `/releases/tag/0.8.7` 页面 404，tag 存在但可能无对应 GitHub release 条目） |
+| ASM | 10.7 jar 内嵌 org/objectweb/asm | 11.13/0.7.1 jar **均不内嵌 ASM**；11.13 POM 声明 asm-debug-all 5.2，cleanmix 0.7.1 POM 声明 asm 9.8（runtime）→ 运行时两套 ASM 并存的实际装载未验证（见 UNKNOWN ⑥） |
+
+**DeepWiki 查询/失败记录（可追溯）：** 调用类型为 DeepWiki MCP 端点 `https://mcp.deepwiki.com/mcp` 的 HTTP JSON-RPC（SSE 响应），`initialize`/`tools/list` 成功（serverInfo DeepWiki 2.14.3）。
+
+- CleanroomMC/MixinBooter：`read_wiki_structure` 成功（9 页：Overview/Getting Started/Core Architecture/Mixin Loading System/Compatibility System/Enhanced Debugging/Context System/API Reference/Build and Deployment）；`ask_question` 成功但索引**陈旧**：changelog 止于 10.6、无任何 11.x/CleanMix 内容、声称 `IEarly/ILateMixinLoader` "not deprecated"（与官方 README 11.x 声明冲突）→ 判定为旧索引，不作 11.x 注册事实（与 `mixin-生态与注入最佳实践.md:89-92` 既有冲突记录一致）；其 10.6=0.5.0-rc.1、10.4=0.5.0-beta.5 的记载交叉印证 10.7 嵌入 MixinExtras 0.5.0。
+- CleanroomMC/CleanMix：`read_wiki_structure` 成功（8 节）；`ask_question` **首次调用连接超时（WinError 10060）**，重试成功：fork 自 Fabric Mixin 0.17.3 / SpongePowered Mixin 0.8.7，职责为 Mixin 核心转换（MixinTransformer/ASM）、可插拔 classloading service（IMixinService）、注入器、AP 与 refmap 生成；Forge 1.12.2 LaunchWrapper + MixinBooter 原生支持（MixinTweaker 生产路径）、ModLauncher 7–10+；manifest `MixinConfigs`/`MixinConnector` 由 `MixinPlatformAgentDefault` 扫描；wiki 无 0.6.0→0.7.1 差异明细（gradle.properties 的 buildVersion=0.2.4 与模块版本 0.7.1 并存，属版本号体系内部事项）。
+- CleanroomMC/MixinExtras：`read_wiki_structure` **失败：`Repository not found`（DeepWiki 未索引该 wiki）**；降级官方 GitHub 成功：仓库存在、标注 "forked from LlamaLad7/MixinExtras"、README 仅示例坐标 `com.cleanroommc:mixinextras-common:0.5.5`。
+- LlamaLad7/MixinExtras：`ask_question` 成功：经 `MixinExtrasBootstrap.init()` 单次初始化，`InjectionInfo`/`IExtension` 注册 + "take control" 多版本协商（新版本接管）；当前上游版本 0.5.4（README）；「任何其他平台」（含旧 Forge）需手动 shade + 显式 init。
+- GitHub REST API（api.github.com）：MixinBooter releases、CleanroomMC/MixinExtras repo 信息、SpongePowered/Mixin tags 三请求均 **403 rate limit**；降级 GitHub HTML 页面、releases 页、raw 文件与 maven-metadata.xml 均成功。
+**UNKNOWN 账本逐条（来源/缺口/影响/停止条件）：**
+
+- ① **CleanMix 0.7.1 对 `minVersion: "0.8"` 配置的兼容性未实测**（T9-R3 交接）。来源：DeepWiki（CleanMix fork 自 Mixin 0.8.7，`MixinBootstrap.VERSION="0.8.7"`，原则可满足）+ 11.13 POM（cleanmix 0.7.1）。缺口：`src/main/resources/mixins.stackupup.early.json:5` 等全部配置 `"minVersion": "0.8"`，但 0.7.1 的具体版本字符串解析与 config 校验未以运行验证。影响：迁移后 config 解析失败或 minVersion 告警。停止条件：11.13 启动日志显示全部配置装载成功且无 minVersion 错误。
+- ② **11.13 内嵌 MixinExtras 的 provider 初始化未以启动日志核实**（T9-R3 交接）。来源：11.13 jar 内嵌 `com/llamalad7` 559 类（Cleanroom fork 0.5.5，同包名）；当前 10.7 jar 内嵌 MixinExtras 0.5.0 且上游 10.7 tag 由 `MixinBooterPlugin` 调 `MixinExtrasBootstrap.init()`（10.7 tag build.gradle 已复核）。缺口：11.13 的 bootstrap 是否自动完成（README 称 AP 依赖无需自声明），无启动日志证据；`com.llamalad7.mixinextras.*` import 在删除外部 0.5.0 声明后能否解析也未验证。影响：`@WrapOperation` 等注入器不注册 → 目标不命中或静默失效。停止条件：11.13 启动日志含 MixinExtras bootstrap/init 证据 + 编译期 import 解析成功。
+- ③ **现有 jar manifest 与 `required-after` 在 11.13 下的行为未验证**（T9-R3 交接）。来源：`build-logic/convention/src/main/kotlin/minecraft.gradle.kts:106-116`（`FMLCorePlugin`/`FMLCorePluginContainsFMLMod`/`ForceLoadAsMod`/`FMLAT`，无 `MixinConfigs`/`MixinConnector`，本复核已重核）；`StackUpUp.kt:34` `required-after:mixinbooter@[10.0,)`；新增对照事实：11.13 自身 manifest 含 `MixinConfigs` 且无 `TweakClass`/`FMLCorePluginContainsFMLMod`。缺口：项目 jar 的 FML 版本依赖区间与 coremod 装载在 11.13 运行时未验证。影响：装载失败或版本区间解析异常。停止条件：`runServerAutoTest` 全量回归 + 启动日志。
+- ④ **`CoremodClassFilter.java:17-24` 跳过前缀是否需扩展**（T9-R3 交接）。来源：当前 `SKIPPED_PREFIXES` 含 `org/spongepowered/` 与 `zone/rong/mixinbooter/`，**无 `com/llamalad7/`**（本复核重核）；11.13 候选类分布：org/spongepowered 594（已被跳过表覆盖）、com/llamalad7 559（**未覆盖**）、zone/rong 41（mixinbooter 已覆盖）。缺口：com/llamalad7 类是否进入 coremod 早期处理链未验证。影响：coremod 早期路径无谓处理/类加载风险。停止条件：字节码护栏 + 启动日志确认 com/llamalad7 类不进入 coremod 链或证实无影响。
+- ⑤ **11.13 无 `TweakClass` manifest 的启动路径未验证**（本复核新增）。来源：10.7 manifest `TweakClass: org.spongepowered.asm.launch.MixinTweaker` vs 11.13 manifest 无该属性（CleanMix 平台 manager 替代 MixinTweaker 的架构，DeepWiki 佐证）。缺口：无 11.13 实际启动日志证明 CleanMix 平台装载替代路径生效。影响：tweak 阶段类加载路径变化。停止条件：11.13 服务端/客户端启动日志 + 字节码护栏。
+- ⑥ **11.13 运行时 ASM 版本并存未验证**（本复核新增）。来源：11.13 jar 与 cleanmix-0.7.1.jar 均不内嵌 ASM（实测条目统计为 0）；11.13 POM 声明 asm-debug-all 5.2、cleanmix 0.7.1 POM 声明 asm-tree/commons/util 9.8（runtime）。缺口：classpath 上 5.2 与 9.8 并存时转换链实际使用哪套未验证。影响：转换期 ClassReader/ClassWriter 行为差异。停止条件：11.13 启动日志 + 转换后字节码矩阵（T14.4/T14.7 范围）。
+
+**无源码不可判定与迁移行为边界：** 11.13/cleanmix-0.7.1/mixinextras-0.5.5 候选 jar 仅在线下载核对 manifest 与内容统计，未保留本地副本、未运行加载矩阵；其运行行为证据（provider/refmap/classloader/容量写入）仍为**无源码不可判定**，本复核不改变 8.6 的停止条件：T14.7 通过前不实施迁移。第三方容量写入目标缺口维持既有台账（`compatibility-decision-record.md:156-163`、`mixin-生态与注入最佳实践.md:97-101`），本复核不重列。DeepWiki 全部查询只作架构/职责佐证，不作版本化运行事实；GitHub API 限流与 DeepWiki 未索引均已按上表逐条记录，未把失败项写成通过。

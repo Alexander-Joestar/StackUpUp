@@ -4,13 +4,11 @@ import io.alexjoest.stackupup.limit.RuleRuntime
 import io.alexjoest.stackupup.limit.StackContext
 import io.alexjoest.stackupup.limit.StackContextResolver
 import net.minecraft.item.ItemStack
-import java.util.ArrayDeque
 import java.util.IdentityHashMap
 import java.util.Random
 
 object StackLimitHooks {
     private const val VANILLA_STACK_LIMIT: Int = Constants.VANILLA_STACK_LIMIT
-    private val inventoryWriteContext: ThreadLocal<ArrayDeque<ItemStack>> = ThreadLocal.withInitial(::ArrayDeque)
     private val itemLimitResolutionMarkers: ThreadLocal<IdentityHashMap<ItemStack, Int>> =
         ThreadLocal.withInitial(::IdentityHashMap)
 
@@ -150,31 +148,6 @@ object StackLimitHooks {
             currentItemLimit < slotLimit && currentItemLimit != VANILLA_STACK_LIMIT -> currentItemLimit
             else -> slotLimit
         }
-    }
-
-    @JvmStatic
-    fun beginInventoryWrite(stack: ItemStack) {
-        if (stack.isEmpty) {
-            return
-        }
-        inventoryWriteContext.get().addLast(stack)
-    }
-
-    @JvmStatic
-    fun endInventoryWrite() {
-        val context = inventoryWriteContext.get()
-        if (context.isNotEmpty()) {
-            context.removeLast()
-        }
-        if (context.isEmpty()) {
-            inventoryWriteContext.remove()
-        }
-    }
-
-    @JvmStatic
-    fun resolveInventoryWriteLimit(inventoryLimit: Int): Int {
-        val currentStack = inventoryWriteContext.get().peekLast() ?: return inventoryLimit
-        return resolveInventoryClampLimit(currentStack, inventoryLimit)
     }
 
     @JvmStatic

@@ -44,11 +44,6 @@ abstract class VanillaInventoryLimitMixin {
         require = 0
     )
     private int stackupup$replaceCompatibilityLimit(int original) {
-        int limit = StackLimitHooks.resolveInventoryWriteLimit(original);
-        if (limit != original) {
-            return limit;
-        }
-
         return original == VANILLA_STACK_LIMIT ? StackLimitHooks.getCompatibilityStackSize() : original;
     }
 }

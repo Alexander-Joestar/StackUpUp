@@ -478,7 +478,9 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `inventoryClamp_shouldAllowCompatFallbackToDynamic`() {
+    fun `useMergeLimit_shouldAllowCompatFallbackToDynamicItemLimit`() {
+        // 覆盖 InventoryPlayerAddResourceMixin.stackupup$useMergeLimit（canMergeStacks 路径）
+        // 对 resolveInventoryClampLimit 的调用语义：合并时按 incoming 堆叠的动态上限放行。
         Bootstrap.register()
         val item = object : Item() {
             override fun getItemStackLimit(stack: ItemStack): Int = 10240
@@ -494,7 +496,9 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `inventoryClamp_shouldNotAmplifySmallLimit`() {
+    fun `usePickedStackLimit_shouldNotAmplifySmallInventoryLimit`() {
+        // 覆盖 InventoryPlayerAddResourceMixin.stackupup$usePickedStackLimit（addResource 路径）
+        // 对 resolveInventoryClampLimit 的调用语义：拾取时按库存真实容量收紧，不做放大。
         Bootstrap.register()
         val item = object : Item() {
             override fun getItemStackLimit(stack: ItemStack): Int = 10240
@@ -507,6 +511,28 @@ class StackLimitHooksTest {
         )
 
         assertEquals(1, result)
+    }
+
+    @Test
+    fun `inventoryLimitQuery_shouldBeStableBeforeDuringAndAfterWrite`() {
+        // inventory-write 通道已删除：库存上限查询不再依赖写入线程状态，
+        // 同一对象在真实写入前、写入中和写入后读取 clamp 结果必须一致。
+        Bootstrap.register()
+        val item = object : Item() {
+            override fun getItemStackLimit(stack: ItemStack): Int = 10240
+        }.setRegistryName(ResourceLocation("stackupup_test", "write_stability_item"))
+        val stack = ItemStack(item, 1, 0)
+        val inventory = InventoryBasic("test", false, 1)
+
+        val before = StackLimitHooks.resolveInventoryClampLimit(stack, StackLimitHooks.getCompatibilityStackSize())
+        inventory.setInventorySlotContents(0, stack)
+        val during = StackLimitHooks.resolveInventoryClampLimit(stack, StackLimitHooks.getCompatibilityStackSize())
+        inventory.setInventorySlotContents(0, ItemStack.EMPTY)
+        val after = StackLimitHooks.resolveInventoryClampLimit(stack, StackLimitHooks.getCompatibilityStackSize())
+
+        assertEquals(before, during)
+        assertEquals(during, after)
+        assertEquals(10240, before)
     }
 
     @Test

@@ -1,6 +1,7 @@
 package io.alexjoest.stackupup.core
 
 import io.alexjoest.stackupup.audit.ConservationAuditor
+import io.alexjoest.stackupup.audit.ConservationReportWriter
 import net.minecraft.init.Bootstrap
 import net.minecraft.inventory.InventoryBasic
 import net.minecraft.item.Item
@@ -18,21 +19,31 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.io.File
+import java.nio.file.Files
 
 /**
  * 守恒审计在 Ae2ItemHandlerInsertLimiter 真实插入循环上的集成测试。
  */
 class Ae2ItemHandlerInsertLimiterConservationAuditTest {
+    private lateinit var reportDir: File
+
     @BeforeEach
     fun enableAudit() {
         // 开关改为类加载单次读取（T12.4），运行期不再读系统属性；测试经内部钩子显式切换。
         ConservationAuditor.setEnabledForTesting(true)
+        // 报告文件重定向到临时目录（T12.5），避免测试写入默认 run/logs 路径。
+        reportDir = Files.createTempDirectory("stackupup-conservation-ae2").toFile()
+        ConservationReportWriter.setReportFileForTesting(File(reportDir, "stackupup-conservation.jsonl"))
+        ConservationReportWriter.resetForTesting()
     }
 
     @AfterEach
     fun resetAudit() {
         ConservationAuditor.setEnabledForTesting(false)
         ConservationAuditor.clearRecordedWarnings()
+        ConservationReportWriter.resetForTesting()
+        reportDir.deleteRecursively()
     }
 
     @Test

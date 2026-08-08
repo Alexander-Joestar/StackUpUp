@@ -22,6 +22,7 @@ import org.objectweb.asm.tree.TypeInsnNode
  * - `Ae2ItemHandlerInsertLimiter` 全类零次 `System.getProperty`（单次读取在 ConservationAuditor 类加载时）；
  * - `ConservationAuditor`：系统属性恰好读取一次（`<clinit>`，类加载时），`enabled()` 只读缓存字段，
  *   日志器只在 `<clinit>` 构造一次，默认关闭按字符串 `"true"` 比较；
+ * - `ConservationReportWriter`：报告路径属性在类加载初始化路径中恰好读取一次，`write()` 不读配置（T12.5）；
  * - `DevAutomationServerDriver.probeTarget`：先单次判定开关再构造事件，不读系统属性。
  *
  * 结构检查通过只证明字节码形态，不证明运行行为；行为验证由 [ConservationAuditorTest] 与
@@ -96,6 +97,28 @@ class ConservationAuditorBytecodeTest {
         }.toList()
 
         assertEquals(listOf("<clinit>"), reads, "系统属性必须且只能在类加载（<clinit>）时读取一次")
+    }
+
+    @Test
+    fun `reportWriter_shouldReadReportPathPropertyOnlyDuringInitialization`() {
+        val clazz = classNode("io.alexjoest.stackupup.audit.ConservationReportWriter")
+        val reads = clazz.methods.flatMap { method ->
+            method.instructions.iterator().asSequence()
+                .filterIsInstance<MethodInsnNode>()
+                .filter { it.owner == "java/lang/System" && it.name == "getProperty" }
+                .map { method.name }
+        }.toList()
+
+        assertEquals(1, reads.size, "报告路径必须且只能在类加载时读取一次，实际: $reads")
+        assertTrue(
+            reads.all { it == "<clinit>" || it == "<init>" || it == "resolveReportFile" },
+            "报告路径读取必须位于初始化路径内（write 热路径不得读配置），实际: $reads",
+        )
+        val write = clazz.methods.single { it.name == "write" }
+        assertTrue(
+            write.insnText().none { it == "INVOKE java/lang/System.getProperty" },
+            "write() 不得读取系统属性，实际指令: ${write.insnText()}",
+        )
     }
 
     @Test

@@ -15,18 +15,28 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.io.File
+import java.nio.file.Files
 
 class ConservationAuditorTest {
+    private lateinit var reportDir: File
+
     @BeforeEach
     fun enableAudit() {
         // 开关改为类加载单次读取（T12.4），运行期不再读系统属性；测试经内部钩子显式切换。
         ConservationAuditor.setEnabledForTesting(true)
+        // 报告文件重定向到临时目录（T12.5），避免测试写入默认 run/logs 路径。
+        reportDir = Files.createTempDirectory("stackupup-conservation-auditor").toFile()
+        ConservationReportWriter.setReportFileForTesting(File(reportDir, "stackupup-conservation.jsonl"))
+        ConservationReportWriter.resetForTesting()
     }
 
     @AfterEach
     fun resetAudit() {
         ConservationAuditor.setEnabledForTesting(false)
         ConservationAuditor.clearRecordedWarnings()
+        ConservationReportWriter.resetForTesting()
+        reportDir.deleteRecursively()
     }
 
     @Test

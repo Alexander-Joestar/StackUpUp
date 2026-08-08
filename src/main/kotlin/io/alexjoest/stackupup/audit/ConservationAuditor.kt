@@ -10,6 +10,7 @@ import java.util.concurrent.CopyOnWriteArrayList
  * - 默认关闭：系统属性 `stackupup.audit.conservation=true` 才开启，开关在类加载时单次读取，
  *   运行期热路径不再读取配置；
  * - 开启后对每次真实投喂（simulate=false）按守恒公式判定，不平衡时产出结构化 WARN；
+ *   同时把每条事件（含平衡与 simulate）写入 JSONL 报告（见 [ConservationReportWriter]）；
  * - 只读审计：不修正不平衡结果、不回填、不重试、不补偿，也不强制截断余量。
  */
 object ConservationAuditor {
@@ -32,12 +33,17 @@ object ConservationAuditor {
     }
 
     /**
-     * 对一次投喂做守恒判定。未开启、simulate=true 或守恒时产出 null（不告警、不记录）；
-     * 不平衡且开启时产出结构化告警文本，记录 WARN 并加入机器可读记录。
+     * 对一次投喂做守恒判定。未开启时不产生任何事件与告警（关闭态零开销，不写报告文件）；
+     * 开启时先把原始事件写入 JSONL 报告（不丢弃平衡/模拟事件，T12.5），
+     * 仅对 simulate=false 且不平衡的事件产出结构化告警文本，记录 WARN 并加入机器可读记录。
      */
     @JvmStatic
     fun audit(event: ConservationEvent): ConservationAuditOutcome {
-        if (!enabled() || event.simulate || event.balanced) {
+        if (!enabled()) {
+            return ConservationAuditOutcome(warning = null)
+        }
+        ConservationReportWriter.write(event)
+        if (event.simulate || event.balanced) {
             return ConservationAuditOutcome(warning = null)
         }
         val warning = buildString(160) {

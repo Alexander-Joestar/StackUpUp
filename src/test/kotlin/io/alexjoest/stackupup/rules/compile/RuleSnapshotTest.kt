@@ -43,6 +43,12 @@ class RuleSnapshotTest {
         assertEquals(false, oreSnapshot.requires(RuleContextRequirement.MATERIAL))
         assertEquals(emptyList<RuleField>(), oreSnapshot.requirements.cacheKeyFields)
 
+        // T6：readFields 由 matcher 树机械推导，readsOre 由推导结果显式判定
+        assertEquals(setOf(RuleField.MATERIAL), materialSnapshot.requirements.readFields)
+        assertEquals(false, materialSnapshot.requirements.readsOre)
+        assertEquals(setOf(RuleField.ORE), oreSnapshot.requirements.readFields)
+        assertEquals(true, oreSnapshot.requirements.readsOre)
+
         assertEquals(setOf(RuleField.ITEM), itemRule.referencedFields)
         assertEquals(false, itemSnapshot.needsMaterial)
 
@@ -68,6 +74,7 @@ class RuleSnapshotTest {
         assertEquals(true, snapshot.needsMaterial)
         assertEquals(true, snapshot.needsOreNames)
         assertEquals(listOf(RuleField.MATERIAL, RuleField.TAB), snapshot.requirements.cacheKeyFields)
+        assertEquals(true, snapshot.requirements.readsOre)
     }
 
     @Test

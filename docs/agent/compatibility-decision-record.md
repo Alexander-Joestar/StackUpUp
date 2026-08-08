@@ -91,10 +91,10 @@ descriptor。
 - `src/main/java/io/alexjoest/stackupup/mixin/early/VanillaInventoryLimitMixin.java:22-53` 当前覆盖多类 vanilla
   `IInventory`，并先调用 `StackLimitHooks.resolveInventoryWriteLimit`，再处理 64 哨兵。这个运行时目标集合仍需 T11
   的编译期登记表收敛。
-- `src/main/java/io/alexjoest/stackupup/core/Ae2ItemHandlerInsertLimiter.java:18-75` 当前对不在白名单的 handler 使用
-  `min(64, getSlotLimit(slot))` 分片投喂；`simulate=false` 的 `:42-55` 会把每个不超过 cap 的 chunk 作为独立真实插入，遇到
-  remainder 或零进度就停止并返回原始剩余量。它不是对已写入数量的事后回填，但也不因此自动获准；T10 必须证明这是预先限幅而非补偿式重试，并让
-  T12 按每次真实调用审计。白名单由 `:77-84` 的类型判断决定，类型列表和真实写入契约必须重新核验，不能把类型名当作安全证据。
+- `src/main/java/io/alexjoest/stackupup/core/Ae2ItemHandlerInsertLimiter.java:20-60` 当前对不在白名单的 handler 使用
+  `min(64, getSlotLimit(slot))` 分片投喂；`simulate=false` 的 `:44-57` 会把每个不超过 cap 的 chunk 作为独立真实插入，遇到
+  remainder 或零进度就停止并返回原始剩余量。它是预先限幅而非写入后回填（T10 已逐调用点核对，§3.6）；每次真实调用由
+  T12 审计。白名单由 `isTrusted` 的类型判断决定，已按 §3.6 重排并给出每项写入链证据；类型列表不替代 T12 运行时审计。
 - `src/main/java/io/alexjoest/stackupup/mixin/late/AppEngPatternTermMixin.java:15-29` 当前只在 AE2 三类 pattern terminal
   构造结束后提升空白 pattern 输入槽 `patternSlotIN`；该项目代码不证明 AE2 其他槽或第三方内部写入容量，相关目标仍须按源码和运行证据审查。
 - `StackLimitHooks.resolveInventoryClampLimit` 定义于
@@ -192,14 +192,55 @@ armor 槽必须分别测试，armor 的 slot limit 为 1 的不可堆叠语义�
   探针期望仍按旧语义（getSlotLimit == compat），T3 租约外未改动，需后续任务按其转发酵更新期望；
   T2a 登记表 §2.3 的 mixin 目标行数（6→2）需随之刷新。
 
+### 3.6 T10 AE2 投喂白名单重排判定（2026-08-08 执行）
+
+按 T2a 登记表三分类与 §3.5 收敛结果，对 `Ae2ItemHandlerInsertLimiter#isTrusted` 的 6 个白名单项逐项核验
+Forge 写入链源码后重排。判定规则：白名单只直通写入链全部由项目源码闭合的实现；转发 wrapper 的 delegate
+为任意第三方可构造类型时，其写入面无源码不可判定，不得由 `instanceof` 直通（红线：不将转发安全性与
+未知第三方混同）。
+
+| 白名单项 | T2a/T3 分类 | 写入链源码证据（build/rfg/minecraft-src/java/） | T10 判定 | 动作 |
+| --- | --- | --- | --- | --- |
+| ItemStackHandler | 自洽 | `net/minecraftforge/items/ItemStackHandler.java:79-117`（insertItem 写前读 `getStackLimit`、落库并返回 remainder）、`:157-165`（getSlotLimit=64、getStackLimit=min） | 自洽，写入面无 delegate | 保留 trusted |
+| VanillaDoubleChestItemHandler | 转发但 delegate 固定 | `.../items/VanillaDoubleChestItemHandler.java:142-160`（insertItem 转发 `getSingleChestHandler`）；`net/minecraft/tileentity/TileEntityChest.java:431-434`（getSingleChestHandler = super.getCapability）；`TileEntityLockable.java:75-78`（createUnSidedHandler = `new InvWrapper(this)`，delegate 固定为原版箱体）；`TileEntityLockableLoot.java:155-166`（setter 按同一 `getInventoryStackLimit` 夹取）；我方 `src/main/java/.../mixin/early/VanillaInventoryLimitMixin.java:28-41`（TileEntityChest 在编译期表内） | 链路由项目源码闭合且自洽 | 保留 trusted |
+| EntityEquipmentInvWrapper | 自洽（P0 事实 a） | `.../items/wrapper/EntityEquipmentInvWrapper.java:86-123`（limit=getStackLimit、落库、remainder）、`:162-171`（装甲 1/手部 64） | 自洽；不得写成无余量必吞 | 保留 trusted |
+| EmptyHandler | 零容量拒绝目标 | `.../items/wrapper/EmptyHandler.java:47-50`（原样返回输入 stack）、`:66-69`（slot limit 0） | 无写入路径，返回完整余量 | 保留 trusted |
+| InvWrapper | 转发 | `.../items/wrapper/InvWrapper.java:73-158`（insertItem 计算 m 后转发任意 `IInventory#setInventorySlotContents`）、`:202-204`（getSlotLimit 转发） | wrapper 自身计算 limit 并返回 remainder，但 delegate 为任意 IInventory；第三方写入面无源码不可判定，instanceof 无法区分 delegate 类型 | **移出 trusted** → `min(64, getSlotLimit)` 限流分片 |
+| SidedInvWrapper | 转发 | `.../items/wrapper/SidedInvWrapper.java:88-172`（insertItem 转发任意 ISidedInventory）、`:231-233`（getSlotLimit 转发） | 同上，delegate 为任意 ISidedInventory | **移出 trusted** → `min(64, getSlotLimit)` 限流分片 |
+
+判定结论与红线核对：
+
+- 移入 0 项：自洽集合（ItemStackHandler、EntityEquipmentInvWrapper）与零容量拒绝目标（EmptyHandler）原已在
+  白名单内，无新的自洽 IItemHandler 类需要移入；未为功能便利扩大白名单。
+- 移出后行为：InvWrapper/SidedInvWrapper 进入 untrusted 分片路径（cap=`min(64, getSlotLimit)`）。对原版
+  自洽 delegate（InventoryBasic/TileEntityLockableLoot 系 setter 按同一上限夹取）分片全部接受，结果与直通
+  等价；对未知第三方 delegate 单次投喂上限更紧，且每次真实分片仍产生 T12 守恒事件。
+- `EntityEquipmentInvWrapper` 未移出、未写成「无余量必吞」：Forge insertItem 的上限计算与 remainder 由源码
+  闭合（引用 P0 事实 a）；白名单只决定投喂方是否直通，不影响其自洽写入。
+- 静态白名单不替代 T12：`insertCapped` 的三处真实插入点（trusted 直通、小量直通、分片循环）仍全部经
+  `insertWithAudit` 产生守恒事件，重排不改变审计调用点与 handler 类名上报。
+- 剩余风险：`instanceof ItemStackHandler` 会信任第三方子类覆盖的 `insertItem`/`getStackLimit`，子类行为
+  无源码不可判定，由 T12 按实际类名观测；该静态性风险与重排前一致，不因本任务扩大。
+
+测试：
+
+- `Ae2ItemHandlerInsertLimiterTest`：白名单内（ItemStackHandler 真实/模拟插入与 remainder 86、EmptyHandler
+  完整余量、VanillaDoubleChestItemHandler 无邻箱直通）与白名单外（分片、cap=0 不调用、模拟单分片、部分
+  接受 remainder）覆盖；原 InvWrapper 信任断言更新为分片断言（150 → [64,64,22]）。
+- `Ae2ItemHandlerInsertLimiterConservationAuditTest`：移出项守恒测试（InvWrapper、SidedInvWrapper 各一条，
+  audit 开启无告警且 `stored + remainder == offered`）与保留项守恒测试（ItemStackHandler trusted 直通在
+  64 上限处闭合 remainder）。
+- `WrapperCapacityDiagnosticTest#ae2Limiter_trustedInvWrapper_overUnexpandedInventory_conservesItems`（T3
+  端到端，租约外未改动）只断言守恒公式、不断言调用次数，移出后仍通过。
+
 ## 4. 当前限制
 
 1. 动态 patch 基类可能传播到没有覆盖方法的第三方子类；静态目标表不能穷举第三方实现。没有源码或可重复运行证据的条目统一为
    **无源码不可判定**。
 2. `ForgeItemHandlerLimitMixin` 已按 §3.5 收敛为两个自洽目标（ItemStackHandler、EntityEquipmentInvWrapper），
    四个转发 wrapper 与 `SlotItemHandler#getSlotStackLimit` 的独立注入已移除（T3 执行，2026-08-08）。
-3. 当前 AE2 限流器的白名单同时包含 Forge wrapper、`ItemStackHandler` 和装备 wrapper；白名单理由不能由 `instanceof` 取代，T10
-   必须补齐每项查询、写入、`simulate` 和 remainder 证据。AE2 的 `AdaptorItemHandler`、三个 pattern terminal
+3. 当前 AE2 限流器白名单已按 §3.6 重排（保留四个自洽/零容量项，移出 InvWrapper/SidedInvWrapper 两个转发
+   wrapper），白名单不替代 T12 运行时审计。AE2 的 `AdaptorItemHandler`、三个 pattern terminal
    目标及其第三方内部写入链在本记录中没有对应第三方源码，统一记为 **无源码不可判定**，不能用项目自己的 mixin 名称补出结论。
 4. `InventoryLargeChest` 的上限转发与按 index 写入存在结构性不一致风险；T11 不能仅保留现有 mixin 目标而跳过两半箱验证。
 5. NuclearCraft、Tech Reborn、RebornCore 等第三方内部写入链不因方法名或历史注释自动获得分类。当前缺少对应版本源码时，记录为
@@ -285,6 +326,13 @@ SlotItemHandler#getItemStackLimit）的真实 `simulate=false` 守恒测试与�
 
 **准入条件： **白名单内外分别覆盖真实插入、模拟插入和 remainder；第三方源码缺失时写**无源码不可判定**并维持 64 安全上限。T10
 的静态白名单不能替代 T12 的运行时审计。
+
+**执行状态（2026-08-08）：**判定与重排完成，见 §3.6。移出 InvWrapper、SidedInvWrapper（转发 wrapper，
+delegate 任意 IInventory/ISidedInventory，第三方写入面无源码）；保留 ItemStackHandler、
+VanillaDoubleChestItemHandler、EntityEquipmentInvWrapper、EmptyHandler；移入 0 项。白名单内外真实/
+模拟/remainder 测试与移出项守恒测试落地于 `Ae2ItemHandlerInsertLimiterTest` 与
+`Ae2ItemHandlerInsertLimiterConservationAuditTest`；`WrapperCapacityDiagnosticTest` 的端到端守恒测试
+（租约外未改动）只断言守恒公式，移出后仍通过。
 
 ### T11：vanilla 目标表
 

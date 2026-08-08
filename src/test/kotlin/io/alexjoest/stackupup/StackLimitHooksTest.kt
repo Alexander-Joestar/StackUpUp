@@ -11,11 +11,15 @@ import net.minecraft.inventory.InventoryBasic
 import net.minecraft.inventory.Slot
 import net.minecraft.item.Item
 import net.minecraft.item.ItemStack
+import net.minecraft.nbt.NBTTagCompound
 import net.minecraft.util.ResourceLocation
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.lang.ref.WeakReference
 
 class StackLimitHooksTest {
     private var previousMaxStackSize: Int = 10240
@@ -610,5 +614,208 @@ class StackLimitHooksTest {
                 slotLimit = 66,
             ),
         )
+    }
+
+    // ---- T4b：内容键缓存（替代 mark/consume 实例身份 ThreadLocal） ----
+
+    @Test
+    fun `contentKeyCache_shouldReturnCachedValueForUnchangedContent`() {
+        Bootstrap.register()
+        val item = Item().setRegistryName(ResourceLocation("stackupup_test", "cache_hit_item"))
+        val stack = ItemStack(item, 1, 0)
+
+        StackLimitHooks.cacheResolvedItemLimit(stack, 512)
+
+        assertEquals(512, StackLimitHooks.lookupResolvedItemLimit(stack))
+    }
+
+    @Test
+    fun `resolutionResult_shouldBeReusableViaContentKeyCache`() {
+        // 模拟 ItemMixin(写) + ItemStackMixin(读) 的 getMaxStackSize 契约：
+        // 内层 getItemStackLimit 已按规则解析并写入内容键缓存，外层直接复用，不得在 128 上再乘 2。
+        Bootstrap.register()
+        RuleRuntime.replaceSnapshot(
+            RuleSnapshot(
+                version = 42L,
+                rules = listOf(
+                    RuleCompiler.compileLine("item = stackupup_test:reuse_item -> *2", 1),
+                ),
+            ),
+        )
+        RuleRuntime.replaceOreDictIndex(OreDictIndex.fromStackLoader { emptySet() })
+        val item = Item().setRegistryName(ResourceLocation("stackupup_test", "reuse_item"))
+        val stack = ItemStack(item, 1, 0)
+
+        val inner = StackLimitHooks.applyDynamicStackLimit(stack, 64)
+        StackLimitHooks.cacheResolvedItemLimit(stack, inner)
+
+        assertEquals(128, StackLimitHooks.lookupResolvedItemLimit(stack))
+        assertNotEquals(256, StackLimitHooks.lookupResolvedItemLimit(stack))
+    }
+
+    @Test
+    fun `sameInstanceMetaMutation_shouldResolveNewValueByContent`() {
+        Bootstrap.register()
+        RuleRuntime.replaceSnapshot(
+            RuleSnapshot(
+                version = 30L,
+                rules = listOf(
+                    RuleCompiler.compileLine("item = stackupup_test:mut_item@0 -> 128", 1),
+                    RuleCompiler.compileLine("item = stackupup_test:mut_item@1 -> 256", 2),
+                ),
+            ),
+        )
+        RuleRuntime.replaceOreDictIndex(OreDictIndex.fromStackLoader { emptySet() })
+        val item = Item().setRegistryName(ResourceLocation("stackupup_test", "mut_item"))
+        val stack = ItemStack(item, 1, 0)
+
+        val first = StackLimitHooks.applyDynamicStackLimit(stack, 64)
+        StackLimitHooks.cacheResolvedItemLimit(stack, first)
+        assertEquals(128, first)
+
+        stack.setItemDamage(1)
+
+        // 同一实例变更 meta 后，旧内容键不得复用旧值；重新解析得到新内容的值。
+        assertNull(StackLimitHooks.lookupResolvedItemLimit(stack))
+        val second = StackLimitHooks.applyDynamicStackLimit(stack, 64)
+        assertEquals(256, second)
+        assertNotEquals(first, second)
+    }
+
+    @Test
+    fun `sameInstanceNbtMutation_shouldResolveNewValueByContent`() {
+        // 基线随 NBT 变化（模拟 modded item 的 getItemStackLimit 读取 NBT）。
+        Bootstrap.register()
+        val item = object : Item() {
+            override fun getItemStackLimit(stack: ItemStack): Int = if (stack.tagCompound?.getBoolean("large") == true) 512 else 64
+        }.setRegistryName(ResourceLocation("stackupup_test", "nbt_mut_item"))
+        val stack = ItemStack(item, 1, 0)
+
+        val first = StackLimitHooks.applyDynamicStackLimit(stack, 64)
+        StackLimitHooks.cacheResolvedItemLimit(stack, first)
+        assertEquals(64, first)
+
+        val tag = NBTTagCompound()
+        tag.setBoolean("large", true)
+        stack.setTagCompound(tag)
+
+        assertNull(StackLimitHooks.lookupResolvedItemLimit(stack))
+        val second = StackLimitHooks.applyDynamicStackLimit(stack, 64)
+        assertEquals(512, second)
+        assertNotEquals(first, second)
+    }
+
+    @Test
+    fun `sameInstanceInPlaceNbtMutation_shouldNotReuseOldValue`() {
+        // 原地变异同一 NBT 实例：内容变化后旧条目不可达，读取必须 miss 并重新解析。
+        Bootstrap.register()
+        val item = object : Item() {
+            override fun getItemStackLimit(stack: ItemStack): Int = if (stack.tagCompound?.getBoolean("large") == true) 512 else 64
+        }.setRegistryName(ResourceLocation("stackupup_test", "nbt_inplace_mut_item"))
+        val stack = ItemStack(item, 1, 0)
+        val tag = NBTTagCompound()
+        tag.setBoolean("large", true)
+        stack.setTagCompound(tag)
+
+        val first = StackLimitHooks.applyDynamicStackLimit(stack, 64)
+        StackLimitHooks.cacheResolvedItemLimit(stack, first)
+        assertEquals(512, first)
+
+        stack.tagCompound?.setBoolean("large", false)
+
+        assertNull(StackLimitHooks.lookupResolvedItemLimit(stack))
+        assertEquals(64, StackLimitHooks.applyDynamicStackLimit(stack, 64))
+    }
+
+    @Test
+    fun `writeOnlyCacheCall_shouldNotRetainStackInstance`() {
+        // 模拟 isEnchantable / LootEntryItem.addLoot 的只写调用：
+        // 只调用 getItemStackLimit（写缓存）而不经 getMaxStackSize 读取，
+        // 内容键缓存不得留下对 ItemStack 实例的强引用。
+        Bootstrap.register()
+        val item = Item().setRegistryName(ResourceLocation("stackupup_test", "weak_ref_item"))
+
+        val weak = cacheAndDropStack(item)
+
+        assertNull(awaitCollection(weak))
+    }
+
+    @Test
+    fun `writeOnlyCalls_shouldNotGrowCacheForSameContent`() {
+        Bootstrap.register()
+        val item = Item().setRegistryName(ResourceLocation("stackupup_test", "count_item"))
+        val stack = ItemStack(item, 1, 0)
+
+        repeat(50) { index -> StackLimitHooks.cacheResolvedItemLimit(stack, index) }
+
+        assertEquals(1, StackLimitHooks.debugResolvedContentCacheSize())
+    }
+
+    @Test
+    fun `contentKeyCache_shouldBeInvalidatedOnSnapshotReplacement`() {
+        Bootstrap.register()
+        val item = Item().setRegistryName(ResourceLocation("stackupup_test", "epoch_item"))
+        val stack = ItemStack(item, 1, 0)
+        StackLimitHooks.cacheResolvedItemLimit(stack, 512)
+
+        RuleRuntime.replaceSnapshot(RuleSnapshot(version = 40L, rules = emptyList()))
+
+        assertNull(StackLimitHooks.lookupResolvedItemLimit(stack))
+        assertEquals(0, StackLimitHooks.debugResolvedContentCacheSize())
+    }
+
+    @Test
+    fun `cachedLimit_shouldNotBeServedInsideOriginalBaselineBypass`() {
+        Bootstrap.register()
+        val item = object : Item() {
+            override fun getItemStackLimit(stack: ItemStack): Int = StackLimitHooks.lookupResolvedItemLimit(stack) ?: 64
+        }.setRegistryName(ResourceLocation("stackupup_test", "bypass_cache_item"))
+        val stack = ItemStack(item, 1, 0)
+        StackLimitHooks.cacheResolvedItemLimit(stack, 512)
+
+        // 基线解析在 bypass 中运行：不得把规则化缓存值泄漏进原始基线。
+        assertEquals(64, StackLimitHooks.resolveOriginalBaseline(stack))
+    }
+
+    @Test
+    fun `reentrantResolution_shouldShortCircuitWhenEnteringItemMixin`() {
+        Bootstrap.register()
+        RuleRuntime.replaceSnapshot(
+            RuleSnapshot(
+                version = 41L,
+                rules = listOf(
+                    RuleCompiler.compileLine("item = stackupup_test:reentry_item -> 1024", 1),
+                ),
+            ),
+        )
+        RuleRuntime.replaceOreDictIndex(OreDictIndex.fromStackLoader { emptySet() })
+        val item = Item().setRegistryName(ResourceLocation("stackupup_test", "reentry_item"))
+
+        StackLimitHooks.enteringItemMixin.set(true)
+        try {
+            // 重入：enteringItemMixin 置位时不得再次应用规则，基线按原样返回。
+            val result = StackLimitHooks.applyDynamicStackLimit(ItemStack(item, 1, 0), 1024)
+            assertEquals(1024, result)
+        } finally {
+            StackLimitHooks.enteringItemMixin.remove()
+        }
+    }
+
+    private fun cacheAndDropStack(item: Item): WeakReference<ItemStack> {
+        val stack = ItemStack(item, 1, 0)
+        val weak = WeakReference(stack)
+        StackLimitHooks.cacheResolvedItemLimit(stack, 512)
+        return weak
+    }
+
+    private fun awaitCollection(weak: WeakReference<ItemStack>): ItemStack? {
+        repeat(20) {
+            if (weak.get() == null) {
+                return null
+            }
+            System.gc()
+            Thread.sleep(5)
+        }
+        return weak.get()
     }
 }

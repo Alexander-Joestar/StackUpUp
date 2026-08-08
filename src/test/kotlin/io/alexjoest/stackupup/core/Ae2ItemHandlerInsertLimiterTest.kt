@@ -7,7 +7,10 @@ import net.minecraft.item.ItemStack
 import net.minecraft.util.ResourceLocation
 import net.minecraftforge.items.IItemHandler
 import net.minecraftforge.items.IItemHandlerModifiable
+import net.minecraftforge.items.ItemStackHandler
+import net.minecraftforge.items.VanillaDoubleChestItemHandler
 import net.minecraftforge.items.wrapper.CombinedInvWrapper
+import net.minecraftforge.items.wrapper.EmptyHandler
 import net.minecraftforge.items.wrapper.InvWrapper
 import net.minecraftforge.items.wrapper.RangedWrapper
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -57,12 +60,50 @@ class Ae2ItemHandlerInsertLimiterTest {
     }
 
     @Test
-    fun `insertCapped_shouldTrustFixedForgeInventoryWrapper`() {
+    fun `insertCapped_shouldChunkForwardingInvWrapperEvenAroundKnownInventory`() {
         val handler = RecordingInvWrapper(slotLimit = 256)
         val result = Ae2ItemHandlerInsertLimiter.insertCapped(handler, 0, stack(150), false)
 
         assertTrue(result.isEmpty)
+        assertEquals(listOf(64, 64, 22), handler.calls.map { it.count })
+        assertEquals(listOf(false, false, false), handler.calls.map { it.simulate })
+    }
+
+    @Test
+    fun `insertCapped_shouldTrustItemStackHandlerAndReturnRealRemainder`() {
+        val handler = RecordingItemStackHandler(slotLimit = 64)
+        val result = Ae2ItemHandlerInsertLimiter.insertCapped(handler, 0, stack(150), false)
+
         assertEquals(listOf(150), handler.calls.map { it.count })
+        assertEquals(86, result.count)
+        assertEquals(64, handler.getStackInSlot(0).count)
+    }
+
+    @Test
+    fun `insertCapped_shouldTrustItemStackHandlerOnSimulateWithoutWrite`() {
+        val handler = RecordingItemStackHandler(slotLimit = 64)
+        val result = Ae2ItemHandlerInsertLimiter.insertCapped(handler, 0, stack(150), true)
+
+        assertEquals(listOf(150), handler.calls.map { it.count })
+        assertEquals(listOf(true), handler.calls.map { it.simulate })
+        assertEquals(86, result.count)
+        assertTrue(handler.getStackInSlot(0).isEmpty)
+    }
+
+    @Test
+    fun `insertCapped_shouldTrustEmptyHandlerAndReturnFullRemainder`() {
+        val handler = EmptyHandler()
+        val result = Ae2ItemHandlerInsertLimiter.insertCapped(handler, 0, stack(150), false)
+
+        assertEquals(150, result.count)
+    }
+
+    @Test
+    fun `insertCapped_shouldTrustVanillaDoubleChestHandlerWithoutAdjacentChest`() {
+        val handler = VanillaDoubleChestItemHandler(null, null, false)
+        val result = Ae2ItemHandlerInsertLimiter.insertCapped(handler, 0, stack(150), false)
+
+        assertEquals(150, result.count)
     }
 
     @Test
@@ -181,6 +222,18 @@ class Ae2ItemHandlerInsertLimiterTest {
 
     private class RecordingInvWrapper(slotLimit: Int) : InvWrapper(LimitedInventory(slotLimit)) {
         val calls = mutableListOf<Call>()
+
+        override fun insertItem(slot: Int, stack: ItemStack, simulate: Boolean): ItemStack {
+            calls += Call(stack.count, simulate)
+            return super.insertItem(slot, stack, simulate)
+        }
+    }
+
+    /** 真实 ItemStackHandler 的调用记录子类：仍属白名单内 trusted 直通。 */
+    private class RecordingItemStackHandler(private val slotLimit: Int) : ItemStackHandler(1) {
+        val calls = mutableListOf<Call>()
+
+        override fun getSlotLimit(slot: Int): Int = slotLimit
 
         override fun insertItem(slot: Int, stack: ItemStack, simulate: Boolean): ItemStack {
             calls += Call(stack.count, simulate)

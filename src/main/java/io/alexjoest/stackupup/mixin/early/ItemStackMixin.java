@@ -14,7 +14,7 @@ public abstract class ItemStackMixin {
     )
     private int stackupup$applyRules(int original) {
         final ItemStack stack = (ItemStack) (Object) this;
-        Integer resolved = StackLimitHooks.consumeResolvedItemLimit(stack);
+        Integer resolved = StackLimitHooks.lookupResolvedItemLimit(stack);
         return resolved != null ? resolved : StackLimitHooks.applyDynamicStackLimit(stack, original);
     }
 }

@@ -7,8 +7,11 @@ import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import io.alexjoest.stackupup.rules.field.RuleFieldMatchers
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.lang.management.ManagementFactory
 
 class StackLimitServiceTest {
     private var previousMaxStackSize: Int = 10240
@@ -211,6 +214,108 @@ class StackLimitServiceTest {
         assertEquals(64, service.resolve(identity.copy(tab = "materials", material = "copper")))
         assertEquals(64, service.resolve(identity.copy(tab = "tools", material = "steel")))
         assertEquals(3, service.debugResolvedCacheSize())
+    }
+
+    // ---- T6：缓存键机械推导与零分配快路径 ----
+
+    @Test
+    fun `contextsDifferingOnlyInReadField_shouldNotShareCacheEntries`() {
+        // 规则读取 tab，tab 必须进入字段缓存键：只差 tab 的两个上下文不得共享条目。
+        val snapshot = RuleSnapshot(
+            version = 20L,
+            rules = listOf(
+                RuleCompiler.compileLine("tab = buildingBlocks -> 256", 1),
+            ),
+        )
+        val service = StackLimitService(snapshot)
+        val base = context("minecraft:stone", "minecraft", 0, "block", tab = "buildingBlocks")
+
+        assertEquals(256, service.resolve(base))
+        assertEquals(64, service.resolve(base.copy(tab = "materials")))
+        assertEquals(2, service.debugResolvedCacheSize())
+    }
+
+    @Test
+    fun `fastAndSlowPath_shouldResolveIdentically`() {
+        // 同一快照分别走快路径（自动定型）与强制慢路径，结果必须逐上下文一致。
+        val snapshot = RuleSnapshot(
+            version = 21L,
+            rules = listOf(
+                RuleCompiler.compileLine("material = steel -> 1024", 1),
+            ),
+        )
+        val fast = StackLimitService(snapshot)
+        val slow = StackLimitService(snapshot, forceSlowPath = true)
+        assertTrue(fast.usesFastPath())
+        assertFalse(slow.usesFastPath())
+
+        val cases = listOf(
+            context("gregtech:meta_item_1", "gregtech", 1000, "item", material = "steel"),
+            context("gregtech:meta_item_1", "gregtech", 1000, "item", material = "copper"),
+            context("gregtech:meta_item_1", "gregtech", 1001, "item", material = "steel"),
+            context("minecraft:egg", "minecraft", 0, "item", material = ""),
+        )
+        for (case in cases) {
+            assertEquals(fast.resolve(case), slow.resolve(case), "context=$case")
+        }
+    }
+
+    @Test
+    fun `oreRules_shouldNotUseFastPath`() {
+        // ORE 的身份稳定性契约（索引替换失效）由慢路径承载，含 ORE 的快照不得走快路径。
+        val snapshot = RuleSnapshot(
+            version = 22L,
+            rules = listOf(
+                RuleCompiler.compileLine("ore = ingotSteel -> 512", 1),
+            ),
+        )
+        val service = StackLimitService(snapshot)
+        assertFalse(service.usesFastPath())
+    }
+
+    @Test
+    fun `oreRules_shouldKeyCacheByIdentityNotOreNames`() {
+        // ORE 显式声明 STABLE_VIA_IDENTITY：缓存键只含身份，不含矿辞集合。
+        // 生产路径矿辞集合由 OreDictIndex 按 itemId+metadata 稳定决定，同一身份不会出现不同矿辞。
+        val snapshot = RuleSnapshot(
+            version = 23L,
+            rules = listOf(
+                RuleCompiler.compileLine("ore = ingotSteel -> 512", 1),
+            ),
+        )
+        val service = StackLimitService(snapshot)
+        val identity = context("gregtech:meta_ingot", "gregtech", 324, "item", oreNames = setOf("ingotSteel"))
+
+        assertEquals(512, service.resolve(identity))
+        assertEquals(512, service.resolve(identity.copy(oreNames = setOf("ingotGold"))))
+        assertEquals(1, service.debugResolvedCacheSize())
+    }
+
+    @Test
+    fun `fastPathHit_shouldNotAllocateObjects`() {
+        // 命中路径零分配：用线程分配字节计数验证快路径命中不构造任何中间对象。
+        val snapshot = RuleSnapshot(
+            version = 24L,
+            rules = listOf(
+                RuleCompiler.compileLine("material = steel -> 1024", 1),
+            ),
+        )
+        val service = StackLimitService(snapshot)
+        assertTrue(service.usesFastPath())
+        val hit = context("gregtech:meta_item_1", "gregtech", 1000, "item", material = "steel")
+
+        // 预热：填充缓存条目并触发 JIT 编译
+        repeat(50_000) { service.resolve(hit) }
+
+        val bean = ManagementFactory.getThreadMXBean()
+        if (bean !is com.sun.management.ThreadMXBean || !bean.isThreadAllocatedMemorySupported) {
+            return // 环境不支持线程分配计数，跳过断言（无法测量）
+        }
+        val threadId = Thread.currentThread().id
+        val before = bean.getThreadAllocatedBytes(threadId)
+        repeat(50_000) { service.resolve(hit) }
+        val allocated = bean.getThreadAllocatedBytes(threadId) - before
+        assertEquals(0, allocated, "快路径命中不应分配任何对象，实际分配 $allocated 字节")
     }
 
     private fun context(

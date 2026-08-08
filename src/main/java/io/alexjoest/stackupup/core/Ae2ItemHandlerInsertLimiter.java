@@ -8,8 +8,6 @@ import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.items.VanillaDoubleChestItemHandler;
 import net.minecraftforge.items.wrapper.EntityEquipmentInvWrapper;
 import net.minecraftforge.items.wrapper.EmptyHandler;
-import net.minecraftforge.items.wrapper.InvWrapper;
-import net.minecraftforge.items.wrapper.SidedInvWrapper;
 
 public final class Ae2ItemHandlerInsertLimiter {
     private static final int VANILLA_STACK_LIMIT = 64;
@@ -101,12 +99,18 @@ public final class Ae2ItemHandlerInsertLimiter {
     }
 
     private static boolean isTrusted(IItemHandler handler) {
-        // 保守白名单：只直通 Forge fixed compat 已覆盖且不会委托任意第三方 handler 的基础实现。
+        // 保守白名单（T10 重排，证据见 docs/agent/compatibility-decision-record.md §3.6）：
+        // 只直通写入链全部由项目源码闭合的实现：
+        // - ItemStackHandler / EntityEquipmentInvWrapper：insertItem 自行计算 limit 并返回 remainder（自洽）；
+        // - VanillaDoubleChestItemHandler：delegate 固定为原版箱体 TileEntityChest
+        //   （TileEntityChest#getSingleChestHandler → TileEntityLockable#createUnSidedHandler 的 InvWrapper(chest)），
+        //   写入面经 TileEntityLockableLoot#setInventorySlotContents 按同一 getInventoryStackLimit 夹取闭合；
+        // - EmptyHandler：零容量拒绝目标，无写入路径，原样返回输入。
+        // 转发 wrapper（InvWrapper/SidedInvWrapper）的 delegate 是任意 IInventory/ISidedInventory，
+        // 第三方写入面无源码不可判定，不再直通；走 min(64, getSlotLimit) 限流分片并交由 T12 审计。
         return handler instanceof ItemStackHandler
             || handler instanceof VanillaDoubleChestItemHandler
             || handler instanceof EntityEquipmentInvWrapper
-            || handler instanceof EmptyHandler
-            || handler instanceof InvWrapper
-            || handler instanceof SidedInvWrapper;
+            || handler instanceof EmptyHandler;
     }
 }

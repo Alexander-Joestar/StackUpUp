@@ -20,6 +20,6 @@ public abstract class ItemMixin {
         }
 
         int resolved = StackLimitHooks.applyDynamicStackLimit(stack, original);
-        return StackLimitHooks.markResolvedItemLimit(stack, resolved);
+        return StackLimitHooks.cacheResolvedItemLimit(stack, resolved);
     }
 }

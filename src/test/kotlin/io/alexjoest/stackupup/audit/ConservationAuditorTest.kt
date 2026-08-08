@@ -19,12 +19,13 @@ import org.junit.jupiter.api.Test
 class ConservationAuditorTest {
     @BeforeEach
     fun enableAudit() {
-        System.setProperty(ConservationAuditor.ENABLE_PROPERTY, "true")
+        // 开关改为类加载单次读取（T12.4），运行期不再读系统属性；测试经内部钩子显式切换。
+        ConservationAuditor.setEnabledForTesting(true)
     }
 
     @AfterEach
     fun resetAudit() {
-        System.clearProperty(ConservationAuditor.ENABLE_PROPERTY)
+        ConservationAuditor.setEnabledForTesting(false)
         ConservationAuditor.clearRecordedWarnings()
     }
 
@@ -108,7 +109,7 @@ class ConservationAuditorTest {
 
     @Test
     fun `disabledByDefault_shouldNotWarnOnUnbalanced`() {
-        System.clearProperty(ConservationAuditor.ENABLE_PROPERTY)
+        ConservationAuditor.setEnabledForTesting(false)
         val event = unbalancedLookingEvent(handlerClassName = "disabled-handler", after = 64, remainderCount = 0)
 
         val outcome = ConservationAuditor.audit(event)

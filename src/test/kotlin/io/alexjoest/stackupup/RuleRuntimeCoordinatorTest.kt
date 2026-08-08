@@ -125,4 +125,52 @@ class RuleRuntimeCoordinatorTest {
             RuleRuntime.replaceRuntime(previousSnapshot, previousIndex)
         }
     }
+
+    @Test
+    fun `oreDictIndexReplacement_shouldResetLimitServiceCache`() {
+        // T6 ORE 失效条件：矿辞索引刷新（replaceOreDictIndex）→ replaceRuntime →
+        // 整体换新 StackLimitService 实例，解析缓存随之清空（机制在代码中，不是注释约定）。
+        val previousSnapshot = RuleRuntime.currentSnapshot()
+        val previousIndex = RuleRuntime.oreDictIndex()
+        try {
+            val snapshot = RuleSnapshot(
+                version = 50L,
+                rules = listOf(RuleCompiler.compileLine("ore = ingotSteel -> 32", 1)),
+            )
+            RuleRuntime.replaceRuntime(snapshot, OreDictIndex({ _, _ -> setOf("ingotSteel") }))
+            val firstService = RuleRuntime.limitService()
+            firstService.resolve(
+                StackContext(
+                    itemId = "gregtech:meta_ingot",
+                    modId = "gregtech",
+                    metadata = 0,
+                    type = "item",
+                    baseLimit = 64,
+                    oreNames = RuleRuntime.oreDictIndex().getOreNames("gregtech:meta_ingot", 0),
+                ),
+            )
+            assertEquals(1, firstService.debugResolvedCacheSize())
+
+            // 索引内容变化（不再有 ingotSteel）：刷新索引后旧缓存不得残留。
+            RuleRuntime.replaceOreDictIndex(OreDictIndex({ _, _ -> emptySet() }))
+            val secondService = RuleRuntime.limitService()
+            assertFalse(firstService === secondService)
+            assertEquals(0, secondService.debugResolvedCacheSize())
+            assertEquals(
+                64,
+                secondService.resolve(
+                    StackContext(
+                        itemId = "gregtech:meta_ingot",
+                        modId = "gregtech",
+                        metadata = 0,
+                        type = "item",
+                        baseLimit = 64,
+                        oreNames = RuleRuntime.oreDictIndex().getOreNames("gregtech:meta_ingot", 0),
+                    ),
+                ),
+            )
+        } finally {
+            RuleRuntime.replaceRuntime(previousSnapshot, previousIndex)
+        }
+    }
 }

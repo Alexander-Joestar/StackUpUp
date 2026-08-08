@@ -2,6 +2,7 @@ package io.alexjoest.stackupup.rules.field
 
 import io.alexjoest.stackupup.limit.StackContext
 import io.alexjoest.stackupup.rules.LocalizedRuleException
+import io.alexjoest.stackupup.rules.RuleField
 import io.alexjoest.stackupup.rules.RuleMessageKey
 import io.alexjoest.stackupup.rules.compile.RuleCompiler
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -230,6 +231,33 @@ class FieldMatcherTest {
         assertFalse(typeRule.matches(ctx(type = "item")))
         assertTrue(tabRule.matches(ctx(tab = "buildingBlocks")))
         assertFalse(tabRule.matches(ctx(tab = "tools")))
+    }
+
+    // ---- T6：缓存键读取字段机械推导 ----
+
+    @Test
+    fun `matcherTree_shouldMechanicallyDeriveReadFieldsForSingleField`() {
+        assertEquals(setOf(RuleField.MATERIAL), RuleCompiler.compileLine("material = steel -> 512", 1).matcher.readFields())
+        assertEquals(setOf(RuleField.META), RuleCompiler.compileLine("1 < meta < 5 -> 512", 1).matcher.readFields())
+        assertEquals(setOf(RuleField.ITEM), RuleCompiler.compileLine("item = * -> 512", 1).matcher.readFields())
+        assertEquals(setOf(RuleField.ITEM), RuleCompiler.compileLine("item = minecraft:wool@14 -> 512", 1).matcher.readFields())
+        assertEquals(setOf(RuleField.ORE), RuleCompiler.compileLine("ore in [ingotIron, ingotGold] -> 512", 1).matcher.readFields())
+        assertEquals(setOf(RuleField.MOD), RuleCompiler.compileLine("mod != thermal -> 512", 1).matcher.readFields())
+    }
+
+    @Test
+    fun `matcherTree_shouldMechanicallyDeriveReadFieldsForCompoundConditions`() {
+        val compiled = RuleCompiler.compileLine("mod = gregtech && material = steel || tab = tools -> 512", 1)
+
+        assertEquals(setOf(RuleField.MOD, RuleField.MATERIAL, RuleField.TAB), compiled.matcher.readFields())
+    }
+
+    @Test
+    fun `matcherTree_shouldDeduplicateRepeatedFieldsInReadFields`() {
+        // 区间编译为同一字段的两条比较（AllOf），去重后仍只有一个字段。
+        val interval = RuleCompiler.compileLine("1 <= meta <= 5 -> 512", 1)
+
+        assertEquals(setOf(RuleField.META), interval.matcher.readFields())
     }
 
     private fun ctx(

@@ -2,6 +2,7 @@ package io.alexjoest.stackupup.rules.field
 
 import io.alexjoest.stackupup.limit.StackContext
 import io.alexjoest.stackupup.rules.ComparisonOperator
+import io.alexjoest.stackupup.rules.RuleField
 
 /**
  * 字段条件 matcher 的 sealed 表达式树。
@@ -11,6 +12,30 @@ import io.alexjoest.stackupup.rules.ComparisonOperator
  */
 sealed interface FieldMatcher {
     fun matches(context: StackContext): Boolean
+
+    /**
+     * 该 matcher 子树读取的规则字段集合（T6 缓存键机械推导的唯一事实源）。
+     *
+     * 叶子节点不持有字段身份（只持 selector lambda），字段身份由
+     * [RuleField.compileMatcher] 在编译点绑定为 [FieldScopedMatcher]；
+     * 组合节点机械并集，不做手工维护。新增节点必须实现本方法（抽象成员强制）。
+     */
+    fun readFields(): Set<RuleField>
+}
+
+/**
+ * 字段作用域节点：把 matcher 子树与它读取的 [RuleField] 绑定（T6）。
+ *
+ * 叶子节点只持有 `(StackContext) -> ...` selector，无法自我描述字段身份；
+ * 字段身份在 [RuleField.compileMatcher]/[RuleField.compileListMatcher] 处已知，
+ * 由该处包一层作用域节点，`readFields()` 才能沿树机械收集，杜绝手工维护 cacheKeyExtractor。
+ */
+internal class FieldScopedMatcher(val field: RuleField, private val inner: FieldMatcher) : FieldMatcher {
+    private val fields: Set<RuleField> = setOf(field)
+
+    override fun matches(context: StackContext): Boolean = inner.matches(context)
+
+    override fun readFields(): Set<RuleField> = fields
 }
 
 /**
@@ -21,6 +46,9 @@ internal class ItemStackableMatcher(private val negate: Boolean) : FieldMatcher 
         val matched = context.baseLimit > 1
         return if (negate) !matched else matched
     }
+
+    // 无字段绑定的裸叶子：生产路径恒由 FieldScopedMatcher 包裹，此实现仅供工厂直接构造（测试）使用。
+    override fun readFields(): Set<RuleField> = emptySet()
 }
 
 /**
@@ -31,6 +59,9 @@ internal class ItemPatternMatcher(private val itemIdMatcher: StringMatcher, priv
         val matched = itemIdMatcher.matches(context.itemId) && (meta == null || meta == context.metadata)
         return if (negate) !matched else matched
     }
+
+    // 无字段绑定的裸叶子：生产路径恒由 FieldScopedMatcher 包裹，此实现仅供工厂直接构造（测试）使用。
+    override fun readFields(): Set<RuleField> = emptySet()
 }
 
 /**
@@ -52,6 +83,9 @@ internal class StringFieldMatcher(
         val matched = valueMatcher.matches(actual)
         return if (negate) !matched else matched
     }
+
+    // 无字段绑定的裸叶子：生产路径恒由 FieldScopedMatcher 包裹，此实现仅供工厂直接构造（测试）使用。
+    override fun readFields(): Set<RuleField> = emptySet()
 }
 
 /**
@@ -62,6 +96,9 @@ internal class StringFieldMatcher(
  */
 internal class StringMembershipMatcher(private val selector: (StackContext) -> String, private val members: Set<String>) : FieldMatcher {
     override fun matches(context: StackContext): Boolean = selector(context) in members
+
+    // 无字段绑定的裸叶子：生产路径恒由 FieldScopedMatcher 包裹，此实现仅供工厂直接构造（测试）使用。
+    override fun readFields(): Set<RuleField> = emptySet()
 }
 
 /**
@@ -76,6 +113,9 @@ internal class StringSetAnyMatcher(
         val matched = selector(context).any { valueMatcher.matches(it) }
         return if (negate) !matched else matched
     }
+
+    // 无字段绑定的裸叶子：生产路径恒由 FieldScopedMatcher 包裹，此实现仅供工厂直接构造（测试）使用。
+    override fun readFields(): Set<RuleField> = emptySet()
 }
 
 /**
@@ -94,6 +134,9 @@ internal class ComparisonFieldMatcher(private val operator: ComparisonOperator, 
             ComparisonOperator.LESS_EQUALS -> actual <= expected
         }
     }
+
+    // 无字段绑定的裸叶子：生产路径恒由 FieldScopedMatcher 包裹，此实现仅供工厂直接构造（测试）使用。
+    override fun readFields(): Set<RuleField> = emptySet()
 }
 
 /**
@@ -101,6 +144,8 @@ internal class ComparisonFieldMatcher(private val operator: ComparisonOperator, 
  */
 internal class AllOfFieldMatcher(private val matchers: List<FieldMatcher>) : FieldMatcher {
     override fun matches(context: StackContext): Boolean = matchers.all { it.matches(context) }
+
+    override fun readFields(): Set<RuleField> = collectReadFields(matchers)
 }
 
 /**
@@ -108,6 +153,19 @@ internal class AllOfFieldMatcher(private val matchers: List<FieldMatcher>) : Fie
  */
 internal class AnyOfFieldMatcher(private val matchers: List<FieldMatcher>) : FieldMatcher {
     override fun matches(context: StackContext): Boolean = matchers.any { it.matches(context) }
+
+    override fun readFields(): Set<RuleField> = collectReadFields(matchers)
+}
+
+/**
+ * 机械并集：按子节点顺序去重收集，保证缓存键字段顺序确定（插入序 = 子节点序）。
+ */
+private fun collectReadFields(matchers: List<FieldMatcher>): Set<RuleField> {
+    val fields = LinkedHashSet<RuleField>()
+    for (matcher in matchers) {
+        fields += matcher.readFields()
+    }
+    return fields
 }
 
 /**

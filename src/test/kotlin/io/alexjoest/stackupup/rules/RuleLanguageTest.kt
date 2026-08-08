@@ -4,6 +4,7 @@ import io.alexjoest.stackupup.limit.StackContext
 import io.alexjoest.stackupup.rules.field.RuleFieldContextProvider
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class RuleLanguageTest {
@@ -56,6 +57,23 @@ class RuleLanguageTest {
             "steel",
             RuleField.MATERIAL.cacheKeyValue(cacheCtx(material = "steel")),
         )
+    }
+
+    @Test
+    fun `fieldCacheKeyStrategies_shouldBeExplicitlyDeclared`() {
+        // T6：每个字段显式声明缓存键贡献策略（必填构造参数），ORE 由身份稳定性契约覆盖而非注释。
+        assertEquals(CacheKeyStrategy.IDENTITY_FIXED, RuleField.ITEM.cacheKeyStrategy)
+        assertEquals(CacheKeyStrategy.IDENTITY_FIXED, RuleField.MOD.cacheKeyStrategy)
+        assertEquals(CacheKeyStrategy.IDENTITY_FIXED, RuleField.TYPE.cacheKeyStrategy)
+        assertEquals(CacheKeyStrategy.IDENTITY_FIXED, RuleField.META.cacheKeyStrategy)
+        assertEquals(CacheKeyStrategy.IDENTITY_FIXED, RuleField.SIZE.cacheKeyStrategy)
+        assertEquals(CacheKeyStrategy.VALUE_CONTRIBUTED, RuleField.MATERIAL.cacheKeyStrategy)
+        assertEquals(CacheKeyStrategy.VALUE_CONTRIBUTED, RuleField.TAB.cacheKeyStrategy)
+        assertEquals(CacheKeyStrategy.STABLE_VIA_IDENTITY, RuleField.ORE.cacheKeyStrategy)
+
+        for (field in RuleField.entries) {
+            assertTrue(field.isCacheKeyCovered(), "${field.name} 必须被缓存键覆盖")
+        }
     }
 
     private fun cacheCtx(

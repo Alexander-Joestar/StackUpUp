@@ -17,8 +17,10 @@ cursegradle = "1.4.0"
 spotless = "7.0.3"
 foojayResolverConvention = "1.0.0"
 assetmover = "2.5"
-mixinbooter = "10.7"
-mixinextrasCommon = "0.5.0"
+mixinbooter = "11.13"
+# refmap 修复（8.6.1）：11.13 fat jar 不内嵌 obfuscation AP，需在编译期挂载 cleanmix 0.7.1 的
+# MixinObfuscationProcessor{Injection,Targets} 才能生成 refmap；与 mixinbooter 11.13 POM 声明的版本一致。
+cleanmix = "0.7.1"
 asmDebugAll = "5.2"
 guava = "24.1.1-jre"
 gson = "2.8.6"
@@ -26,7 +28,7 @@ junitBom = "5.12.2"
 
 [libraries]
 assetmover = { module = "com.cleanroommc:assetmover", version.ref = "assetmover" }
-mixinextrasCommon = { module = "io.github.llamalad7:mixinextras-common", version.ref = "mixinextrasCommon" }
+cleanmix = { module = "com.cleanroommc:cleanmix", version.ref = "cleanmix" }
 asmDebugAll = { module = "org.ow2.asm:asm-debug-all", version.ref = "asmDebugAll" }
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }

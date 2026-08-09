@@ -442,6 +442,48 @@ handler 一次判断零分配）；未 clone 类不写 mixin（D/F）。运行�
   名）可命中，生产 SRG 混淆下不重映射会静默不命中；`require=0` 使失败方向安全（维持 mod 原掉落，不引入新丢失），
   建议生产部署验证时处理 refmap/remap。NC mixin 的 `@Inject HEAD` 无 vanilla 成员目标，不受影响。
 
+### 3.11 Colossal Chests / GregTech late mixin 新增（2026-08-09 执行，用户要求兼容）
+
+基于 `mods-under-test/` 源码审阅（Colossal Chests 1.12.2 1.7.3 在 `master-1.12` 的 `origin/master-1.12`
+分支，`git describe` = `1.12.2-1.7.3-3-g4ce3e729`；GregTech CEu 2.8.7-beta 工作树），新增 3 个 late
+mixin 与 2 个 JSON 配置。
+
+**A. Colossal Chests：`ColossalChestsTileMixin`（字段级源头修正）。**
+- 事实：`org.cyclops.colossalchests.tileentity.TileColossalChest` 的 `constructInventory()`（:232-238）
+  与 `constructInventoryDebug()`（:240-248）共 4 处 `new IndexedInventory/LargeInventory(size, name, 64)`
+  第三参即栈上限（:236/:237/:241/:242），是 TE 库存容量的唯一构造来源：`getInventory()`（:422-433）
+  在 inventory 为 null 或尺寸变化时懒重建；NBT 持久化不存上限字段（`readFromNBT` :267-284 只处理客户端
+  跳过）；`setSize` 迁移（:186-200）经 `setInventorySlotContents` 夹取，上限变大后无截断。两方法内
+  64 字面量逐行核对恰好 4 处且全部是栈上限，无其他 64。
+- 实现：`@ModifyConstant(method={"constructInventory","constructInventoryDebug"},
+  constant=@Constant(intValue=64), require=0, remap=false)` 一个 handler 覆盖 4 处，无条件替换为
+  `StackLimitHooks.getCompatibilityStackSize()`。`:211` 的 `new LargeInventory(0, "invalid", 0)` 是
+  0 上限占位，intValue=0 不匹配，不在范围。
+- 与 `SimpleInventoryMixin`（cyclopscore 配置，使用期 clamp）并存一致：前者使用期夹取、这里是字段级
+  源头修正，广告值与真实写入面同源。副作用保全：setSize 迁移截断、IndexedInventory.createIndex
+  （:138-162 无栈校验）、onInventoryChanged/hash、NBT 持久化均不触碰。
+
+**B. GregTech：`GregTechMetaItemMixin` / `GregTechMetaPrefixItemMixin`（直呼面归一 + 结果缓存增强）。**
+- 事实：`MetaItem.getItemStackLimit(ItemStack)I`（gregtech/api/items/metaitem/MetaItem.java:323-330，
+  MetaItem extends Item :107）按 meta 区分，meta 无效返回 64（:327），否则 `MetaValueItem.getMaxStackSize`
+  （默认 `maxStackSize=64` :781，电池 8/工具 1 等显式覆盖）；`MetaPrefixItem`（:44 extends StandardMetaItem）
+  覆写同签名方法（gregtech/api/items/materialitem/MetaPrefixItem.java:145-147），按 OrePrefix 返回
+  （prefix 为 null 时 64 :146，否则 `prefix.maxStackSize`，plateDense=7 等显式覆盖）。early `ItemMixin`
+  只改写基类 `Item.getItemStackLimit` 方法体，对两个覆写（独立字节码）不生效；`ItemStackMixin` 覆盖
+  `getMaxStackSize()` 调用点层。本 mixin 补直呼面：`item.getItemStackLimit(stack)` 直接调用返回与
+  ItemStack 层一致的动态上限。
+- 实现：两个 mixin 同构 ItemMixin——`@ModifyReturnValue(method="getItemStackLimit(Lnet/minecraft/item/ItemStack;)I",
+  remap=false, require=0, at=@At("RETURN"))`，handler 顺序 `lookupResolvedItemLimit`（直呼面复用
+  ItemStack 层已解析缓存，避免重算）→ 未命中 `applyDynamicStackLimit`（内部基线解析经
+  `shouldBypassDynamicItemRules` 直读底层 per-meta 值，无递归、无双重应用）→ `cacheResolvedItemLimit`。
+  规则未命中返回 original（= 各 per-meta/OrePrefix 原始上限），电池 8/工具 1/plateDense=7 语义无损。
+- 机器/总线已由 ForgeItemHandlerLimitMixin 覆盖，本批不动。
+
+**红线核对：** 未新增 @Redirect/@Overwrite；只替换上限广告值，未触碰写入副作用（Colossal Chests 构造
+参数、GT 返回值三处均为容量来源/广告面）；注入均 @Pseudo + require=0（mod 缺失静默跳过，失败方向安全）；
+未改 ItemMixin/ItemStackMixin 既有逻辑。运行时行为（真实 MC 装载与应用）因 `run/mods` 无对应 mod
+无法本批验证，只做源文本断言与编译产物字节码结构检查（SourceTest），如实记录。
+
 ## 4. 当前限制
 
 1. 动态 patch 基类可能传播到没有覆盖方法的第三方子类；静态目标表不能穷举第三方实现。没有源码或可重复运行证据的条目统一为

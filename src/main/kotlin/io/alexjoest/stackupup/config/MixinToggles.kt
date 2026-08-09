@@ -26,4 +26,8 @@ object MixinToggles {
     @JvmField var immersiveEngineering = true
 
     @JvmField var nuclearCraft = true
+
+    @JvmField var colossalChests = true
+
+    @JvmField var gregTech = true
 }

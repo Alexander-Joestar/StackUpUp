@@ -63,6 +63,8 @@ class StackUpUpLateMixinLoader : ILateMixinLoader {
                 MixinToggles.immersiveEngineering
             },
             LateMixinModule(StackUpUpIds.LATE_NUCLEARCRAFT_MIXIN_CONFIG, "nuclearcraft", "nuclearCraft") { MixinToggles.nuclearCraft },
+            LateMixinModule(StackUpUpIds.LATE_COLOSSALCHESTS_MIXIN_CONFIG, "colossalchests", "colossalChests") { MixinToggles.colossalChests },
+            LateMixinModule(StackUpUpIds.LATE_GREGTECH_MIXIN_CONFIG, "gregtech", "gregTech") { MixinToggles.gregTech },
         )
     }
 

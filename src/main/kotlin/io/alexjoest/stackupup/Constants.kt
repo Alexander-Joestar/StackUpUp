@@ -49,6 +49,8 @@ object StackUpUpIds {
     const val LATE_LIMELIB_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.limelib.json"
     const val LATE_IMMERSIVEENGINEERING_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.immersiveengineering.json"
     const val LATE_NUCLEARCRAFT_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.nuclearcraft.json"
+    const val LATE_COLOSSALCHESTS_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.colossalchests.json"
+    const val LATE_GREGTECH_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.gregtech.json"
 
     // B 类裸字符串键已收敛为 RuleMessageKey 统一键模型（T8.1）；
     // 以下投影仅为既有调用方兼容，不再维护独立字面量，值由枚举唯一决定。

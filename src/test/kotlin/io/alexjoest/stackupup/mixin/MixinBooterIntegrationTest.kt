@@ -33,6 +33,8 @@ class MixinBooterIntegrationTest {
                 "mixins.stackupup.late.limelib.json",
                 "mixins.stackupup.late.immersiveengineering.json",
                 "mixins.stackupup.late.nuclearcraft.json",
+                "mixins.stackupup.late.colossalchests.json",
+                "mixins.stackupup.late.gregtech.json",
             ),
             StackUpUpLateMixinLoader().getMixinConfigs(),
         )
@@ -151,6 +153,28 @@ class MixinBooterIntegrationTest {
         assertFalse(
             loader.shouldMixinConfigQueue(
                 Context("mixins.stackupup.late.immersiveengineering.json", emptyList()),
+            ),
+        )
+
+        assertTrue(
+            loader.shouldMixinConfigQueue(
+                Context("mixins.stackupup.late.colossalchests.json", listOf("colossalchests")),
+            ),
+        )
+        assertFalse(
+            loader.shouldMixinConfigQueue(
+                Context("mixins.stackupup.late.colossalchests.json", emptyList()),
+            ),
+        )
+
+        assertTrue(
+            loader.shouldMixinConfigQueue(
+                Context("mixins.stackupup.late.gregtech.json", listOf("gregtech")),
+            ),
+        )
+        assertFalse(
+            loader.shouldMixinConfigQueue(
+                Context("mixins.stackupup.late.gregtech.json", emptyList()),
             ),
         )
     }

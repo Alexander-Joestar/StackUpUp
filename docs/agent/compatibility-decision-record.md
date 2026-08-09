@@ -484,6 +484,33 @@ mixin 与 2 个 JSON 配置。
 未改 ItemMixin/ItemStackMixin 既有逻辑。运行时行为（真实 MC 装载与应用）因 `run/mods` 无对应 mod
 无法本批验证，只做源文本断言与编译产物字节码结构检查（SourceTest），如实记录。
 
+### 3.12 转发 wrapper 探针预期修正（2026-08-09 执行）
+
+按 §3.5 未决事项（wrapper 探针期望仍按旧语义 `getSlotLimit == compat`），修正
+`src/main/kotlin/io/alexjoest/stackupup/dev/DevWrapperCompatProbes.kt` 两个转发 wrapper 探针的断言预期：
+
+- 事实：`InvWrapper#getSlotLimit(I)I` 与 `SidedInvWrapper#getSlotLimit(I)I` 是转发 wrapper，运行期直接
+  返回 delegate 的 `getInventoryStackLimit()`（§3.5 三分类"转发"，`ForgeItemHandlerLimitMixin` 已收敛
+  移除注入；`FixedCompatTargets` 以 probeCovered=true 显式跳过）。探针代理库存
+  `createInventoryProxy`/`createSidedInventoryProxy` 的 `getInventoryStackLimit` 硬编码 64，当
+  `activeMaxStackSize`=10000 时旧预期（== compat）必然失败——该失败为预存问题（§8.6.2 记录，与
+  MixinBooter 迁移无关），本修正属探针预期而非生产容量逻辑。
+- 变更：`verifySingleSlotLimit` 增加 `expected` 参数；`InvWrapperLimitProbe`/`SidedInvWrapperLimitProbe`
+  预期改为 `delegateInventoryStackLimit(inventory)`（反射读取代理库存实际广告的
+  `getInventoryStackLimit`，运行期 SRG 名 `func_70297_j_`，固定 64），断言语义改为
+  "wrapper 广告 == delegate 上限"。`CombinedInvWrapperLimitProbe`/`RangedWrapperLimitProbe`
+  （ItemStackHandler 提升场景）与 `SlotItemHandlerLimitProbe`（handler 广告跟随）保持
+  `getCompatibilityStackSize()` 预期不变；`FixedCompatTargets` 与生产容量逻辑未改动。
+- 验证（实际执行）：`runServerAutoTestMatrix` BUILD SUCCESSFUL（exit 0，外层 Exec 与子 Gradle
+  `runServerAutoTest` 均通过，无 autotest-failed marker）：activeMaxStackSize=10000 下 5 个 wrapper
+  探针全绿——`combined_inv_wrapper_limit 槽位上限=[10000,10000]`、`inv_wrapper_limit 槽位上限=64`、
+  `ranged_wrapper_limit 槽位上限=[10000,10000]`、`sided_inv_wrapper_limit 槽位上限=64`、
+  `slot_item_handler_limit 槽位上限=10000 物品上限=10000`；未装 mod 探针按规则跳过、GT 矩阵跳过、
+  探针结束自动停服。`./gradlew test` 全量 BUILD SUCCESSFUL（0 failures）；spotlessCheck 仅剩
+  `RuleFieldContextProvider.kt` 预存违规（租约外，未修），本任务改动文件无 spotless 违规。
+- 剩余风险：inv/sided 探针只观测广告值、不覆盖写入路径（写入面判定仍按 §3.1/§3.5 源码事实）；
+  `activeMaxStackSize`=64 时新预期与旧预期等价（64==64），行为不变，无回归面。
+
 ## 4. 当前限制
 
 1. 动态 patch 基类可能传播到没有覆盖方法的第三方子类；静态目标表不能穷举第三方实现。没有源码或可重复运行证据的条目统一为

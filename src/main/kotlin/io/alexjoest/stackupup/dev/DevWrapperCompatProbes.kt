@@ -13,7 +13,11 @@ internal object InvWrapperLimitProbe : DevCompatProbe {
 
     override fun run(server: MinecraftServer): DevCompatProbeResult {
         val inventory = createInventoryProxy()
-        return verifySingleSlotLimit(primaryTargetClass) { wrapperClass ->
+        // T3 判定（decision-record §3.5）：InvWrapper 是转发 wrapper，getSlotLimit 转发 delegate 的
+        // getInventoryStackLimit；FixedCompatTargets 显式跳过下，探针验证的正是"转发到 delegate 上限"，
+        // 预期取代理库存实际广告的 getInventoryStackLimit（固定 64），而非全局 compat 上限。
+        val expected = delegateInventoryStackLimit(inventory)
+        return verifySingleSlotLimit(primaryTargetClass, expected) { wrapperClass ->
             wrapperClass.getDeclaredConstructor(loadClass("net.minecraft.inventory.IInventory")).newInstance(inventory)
         }
     }
@@ -44,7 +48,10 @@ internal object SidedInvWrapperLimitProbe : DevCompatProbe {
 
     override fun run(server: MinecraftServer): DevCompatProbeResult {
         val inventory = createSidedInventoryProxy()
-        return verifySingleSlotLimit(primaryTargetClass) { wrapperClass ->
+        // 同 InvWrapperLimitProbe：SidedInvWrapper 是转发 wrapper，getSlotLimit 转发 delegate 的
+        // getInventoryStackLimit，预期取代理库存实际广告的上限（固定 64）。
+        val expected = delegateInventoryStackLimit(inventory)
+        return verifySingleSlotLimit(primaryTargetClass, expected) { wrapperClass ->
             wrapperClass.getDeclaredConstructor(loadClass("net.minecraft.inventory.ISidedInventory"), EnumFacing::class.java)
                 .newInstance(inventory, EnumFacing.NORTH)
         }
@@ -101,9 +108,8 @@ internal object SlotItemHandlerLimitProbe : DevCompatProbe {
     }
 }
 
-private fun verifySingleSlotLimit(className: String, createTarget: (Class<*>) -> Any): DevCompatProbeResult {
+private fun verifySingleSlotLimit(className: String, expected: Int, createTarget: (Class<*>) -> Any): DevCompatProbeResult {
     val wrapperClass = loadClass(className)
-    val expected = StackLimitHooks.getCompatibilityStackSize()
     val slotLimit = wrapperClass.getMethod("getSlotLimit", Int::class.javaPrimitiveType).invoke(createTarget(wrapperClass), 0) as Int
     return if (slotLimit == expected) {
         DevCompatProbeResult.passed("槽位上限=$slotLimit")
@@ -111,6 +117,11 @@ private fun verifySingleSlotLimit(className: String, createTarget: (Class<*>) ->
         DevCompatProbeResult.failed("槽位上限=$slotLimit 预期=$expected")
     }
 }
+
+/** 读取转发 wrapper 的 delegate 库存实际广告的 getInventoryStackLimit（运行期为 SRG 名 func_70297_j_）。 */
+private fun delegateInventoryStackLimit(inventory: Any): Int =
+    findMethod(loadClass("net.minecraft.inventory.IInventory"), arrayOf("getInventoryStackLimit", "func_70297_j_"))
+        .invoke(inventory) as Int
 
 private fun verifyPairSlotLimit(className: String, createTarget: (Class<*>) -> Any): DevCompatProbeResult {
     val wrapperClass = loadClass(className)

@@ -7,6 +7,7 @@
   "mixins": [
     "EnderIOMachineInventoryLimitMixin",
     "EnderIOSlottedInventoryLimitMixin",
-    "EnderIOInventorySlotLimitMixin"
+    "EnderIOInventorySlotLimitMixin",
+    "EnderIOInventoryNoDropMixin"
   ]
 }

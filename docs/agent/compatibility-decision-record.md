@@ -397,6 +397,51 @@ EnderIO 广告值三处均为广告/容量来源替换）；热路径零逻辑�
 handler 一次判断零分配）；未 clone 类不写 mixin（D/F）。运行时行为（NC/EnderIO 目标在真实 MC 启动中的
 装载与应用）因 `run/mods` 无对应 mod 无法在本批验证，只做结构检查与字节码级静态验证，如实记录。
 
+### 3.10 EnderIO/NC 溢出掉落移除（2026-08-09 执行，用户明确：不允许掉落、塞不下就不塞、不吞；NC 不裁不丢靠自然排空）
+
+用户明确移除 EnderIO legacy 机器与 NC Distributor 的"溢出掉落"行为，且不允许用吞并/补偿掩盖（遵循
+§1.5 否决写入后余量补偿）。历史一致性：最早 EnderIO mixin（提交 058e128）只提升上限广告，从未处理掉落，
+本批是首次主动移除掉落分支。
+
+**A. EnderIO legacy 机器 setter 掉落分支。**
+- 事实（mods-under-test/EnderIO-1.5-1.12/enderio-base/src/main/java/crazypants/enderio/base/machine/
+  baselegacy/AbstractInventoryMachineEntity.java:183-190；EnderIO-CEu 同文件 :182-190，两版签名一致）：
+  `setInventorySlotContents` 溢出分支 = 槽内 `setCount(limit)` 夹取（:186/:185，写入面既有行为）+ 调用方栈
+  `contents.shrink(limit)`（:187/:186）+ `Block.spawnAsEntity(world, pos, contents)` 掉落（:188/:187）。
+  该分支在 wrapper（`LegacyMachineWrapper.doInsertItem` :75-115，已夹取 min(itemMax, limit) 并返回
+  remainder）下不可达；但第三方直调 IInventory setter 时掉落与吞并真实可达，按用户要求主动消除。
+- 实现：`EnderIOInventoryNoDropMixin`，@Pseudo + require=0，两个 `@WrapOperation` 分别把
+  `ItemStack.shrink(I)V` 与 `Block.spawnAsEntity(...)V`（方法内各仅一处调用，无需 ordinal）替换为 no-op：
+  剩余物既不 shrink（不吞，留在调用方传入栈），也不掉落；`setCount` 夹取分支与 `markDirty` 原样保留
+  （不触碰写入面其他副作用）。注入器选择：按 §8.3 不新增 @Redirect；抑制语义刻意不调用 original，
+  属明确可选目标（mod gate + @Pseudo + require=0 缺失诊断），失败方向安全（注入不生效维持原掉落，不引入
+  新丢失）。
+
+**B. NC Distributor 裁减与掉落。**
+- 事实（mods-under-test/NuclearCraft/src/main/java/nc/multiblock/distributor/Distributor.java）：
+  `cullInventory`（:204-216）存量 > itemStackLimit 时 `setCount(itemStackLimit)` 裁减（:211）+
+  `dropOverflow` 掉落（:214）；触发场景是容量收缩事件（部件拆装 `refreshCapacity` :192、NBT 装载
+  `syncDataFrom` :532），非投喂。`dropOverflow`（:218-226）第二调用点 `onAssimilate` :131（多块合并时
+  `insertIntoInventory` 剩余，:478-506 按 itemStackLimit 夹取后返回 remainder）。
+- 实现：`NuclearCraftDistributorNoDropMixin`，@Pseudo + require=0，两个 `@Inject(HEAD, cancellable)`：
+  `cullInventory()Z` 恒 `setReturnValue(false)`（不裁不丢，保留超限存量，靠 `distributeItems` :289-352
+  每 tick 自然排空；入口满限时 remainder 由投喂方路径自行退回）；`dropOverflow(Ljava/util/List;)V`
+  HEAD 取消，一处注入覆盖两个调用点（用户要求"不允许掉落"同样适用于合并场景）。`changed` 返回值只影响
+  同步频率，恒 false 不影响功能。两方法体除裁减/掉落外无其他副作用（逐行核对），取消不波及其他副作用。
+- 合并场景观察（如实记录，非本次新增行为）：vanilla 合并路径 `Multiblock.assimilate`（:462-491）先
+  `_disassembleMachine()` 弃置被吸收方（不触碰其 inventoryStacks，`_disassembleMachine` :442-449 与
+  `onMachineDisassembled` :94 均不处理物品），`insertIntoInventory` 收到的只是 `assimilatedStack.copy()`
+  （:129），原栈本就随被吸收方对象弃置——本 mixin 只取消了"剩余 copy 掉落为实体"这一动作，不改变原栈
+  弃置路径，也不引入新的物品丢失机制。
+
+**红线核对：** 未新增 @Redirect/@Overwrite；未改上限广告 mixin；未触碰写入面其他副作用（EnderIO 保留
+`setCount` 夹取与 `markDirty`；NC 保留 distributeItems 排空路径）；注入均 @Pseudo + require=0；
+失败方向安全（注入不生效维持 mod 原行为，不引入新丢失）。运行时行为（真实 MC 装载与应用）因 `run/mods`
+无 EnderIO/NC mod 无法本批验证，只做源文本断言与编译产物字节码结构检查，如实记录。
+- 生产环境 refmap 风险：EnderIO mixin 的 vanilla `@At`（`ItemStack.shrink` / `Block.spawnAsEntity`）在 dev 运行（MCP
+  名）可命中，生产 SRG 混淆下不重映射会静默不命中；`require=0` 使失败方向安全（维持 mod 原掉落，不引入新丢失），
+  建议生产部署验证时处理 refmap/remap。NC mixin 的 `@Inject HEAD` 无 vanilla 成员目标，不受影响。
+
 ## 4. 当前限制
 
 1. 动态 patch 基类可能传播到没有覆盖方法的第三方子类；静态目标表不能穷举第三方实现。没有源码或可重复运行证据的条目统一为
@@ -630,6 +675,12 @@ T12.5 JSONL 事件逐条关联调用点、结论三态标注完成；无源码�
 - `src/main/java/io/alexjoest/stackupup/mixin/late/ItemGridHandlerMixin.java:13-24` 使用 `require=0` 的 `@WrapOperation`
   ，且当前 handler 不调用传入的原 operation；必须证明它是明确可选目标、补齐缺失诊断，并验证多个 wrapper 共存和 `Math.min`
   替换语义。`require=0` 不能成为核心目标的静默成功门。
+- `src/main/java/io/alexjoest/stackupup/mixin/late/EnderIOInventoryNoDropMixin.java`：抑制型 `@WrapOperation` +
+  `require=0`（不调用 original，抑制 `ItemStack.shrink` / `Block.spawnAsEntity`）；由 CDR §3.10 正当化，属明确可选目标；
+  另注意其 vanilla `@At` 在生产 SRG 混淆下不重映射会静默不命中（详见 §3.10 生产环境 refmap 风险），失败方向安全。
+- `src/main/java/io/alexjoest/stackupup/mixin/late/NuclearCraftDistributorNoDropMixin.java`：`HEAD + cancellable`
+  完整控制流接管（`cullInventory` 恒 `setReturnValue(false)` / `dropOverflow` HEAD 取消）；由 CDR §3.10 正当化；
+  无 vanilla 成员目标，生产映射不受影响。
 
 ### 8.5 已决策：参考仓库只借鉴结构，不借鉴未经闭合的容量行为
 

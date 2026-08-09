@@ -8,9 +8,9 @@ import java.nio.file.Paths
 
 class Ae2MixinSourceTest {
     @Test
-    fun `ae2Mixin_shouldCoverConstructorConstantAndReturnLimit`() {
-        assertCoversConstructorAndReturnLimit("src/main/java/io/alexjoest/stackupup/mixin/late/AppEngInternalInventoryMixin.java")
-        assertCoversConstructorAndReturnLimit("src/main/java/io/alexjoest/stackupup/mixin/late/AppEngInternalAEInventoryMixin.java")
+    fun `ae2Mixin_shouldCoverConstructorConstantAndNotDeadInjectMissingMethod`() {
+        assertCoversConstructorOnly("src/main/java/io/alexjoest/stackupup/mixin/late/AppEngInternalInventoryMixin.java")
+        assertCoversConstructorOnly("src/main/java/io/alexjoest/stackupup/mixin/late/AppEngInternalAEInventoryMixin.java")
     }
 
     @Test
@@ -48,12 +48,20 @@ class Ae2MixinSourceTest {
         assertTrue(source.contains("StackLimitHooks.getCompatibilityStackSize()"), "空白样板槽应使用兼容堆叠上限")
     }
 
-    private fun assertCoversConstructorAndReturnLimit(path: String) {
+    /**
+     * 仅断言构造期常量补丁：AE2 两个内部库存类的真实容量源是 getSlotLimit(int)（热路径零逻辑原则下
+     * 不注入），getInventoryStackLimit 在目标类中不存在，旧 ModifyReturnValue 属死注入，必须不再出现。
+     */
+    private fun assertCoversConstructorOnly(path: String) {
         val source = String(Files.readAllBytes(Paths.get(path)), Charsets.UTF_8)
         assertTrue(source.contains("@ModifyConstant"), "应继续覆盖构造期常量: $path")
         assertTrue(source.contains("<init>*"), "应继续覆盖构造器: $path")
         assertTrue(source.contains("private static int replaceCompatibilityLimit"), "构造器常量补丁必须使用 static handler: $path")
-        assertTrue(source.contains("getInventoryStackLimit"), "应覆盖 getInventoryStackLimit: $path")
-        assertTrue(source.contains("ModifyReturnValue"), "应使用 ModifyReturnValue 收口返回值: $path")
+        assertTrue(source.contains("StackLimitHooks.getCompatibilityStackSize()"), "构造器常量应替换为兼容堆叠上限: $path")
+        assertFalse(
+            source.contains("getInventoryStackLimit"),
+            "AE2 AppEngInternal( AE)Inventory 无 getInventoryStackLimit（真实容量源为 getSlotLimit(int)），不得保留死注入: $path",
+        )
+        assertFalse(source.contains("ModifyReturnValue"), "热路径零逻辑：不得对不存在的方法做 ModifyReturnValue 死注入: $path")
     }
 }

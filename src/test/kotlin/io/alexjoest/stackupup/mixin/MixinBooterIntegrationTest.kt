@@ -32,6 +32,7 @@ class MixinBooterIntegrationTest {
                 "mixins.stackupup.late.integrateddynamics.json",
                 "mixins.stackupup.late.limelib.json",
                 "mixins.stackupup.late.immersiveengineering.json",
+                "mixins.stackupup.late.nuclearcraft.json",
             ),
             StackUpUpLateMixinLoader().getMixinConfigs(),
         )

@@ -5,8 +5,6 @@
   "target": "@env(DEFAULT)",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
-    "EnderIOMachineInventoryLimitMixin",
-    "EnderIOSlottedInventoryLimitMixin",
-    "EnderIOInventorySlotLimitMixin"
+    "NuclearCraftTileInventoryLimitMixin"
   ]
 }

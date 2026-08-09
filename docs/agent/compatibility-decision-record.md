@@ -332,6 +332,71 @@ Forge 写入链源码后重排。判定规则：白名单只直通写入链全�
   `insertItem(N)` 全部存入（remainder=0）+ 追加 `insertItem(1)` 被拒（remainder=1），N 为规则解析值。
 - **删除的文档**：`docs/agent/t12.5-报告schema.md`（JSONL 报告 schema 随审计器废弃）。
 
+### 3.9 六 mod 源码审阅后的 late mixin 修正与新增（2026-08-08 执行）
+
+本批次基于 `C:\dev\mc\1.12.2\mods-under-test\` 下六个 mod 的 1.12.2 源码审阅结论执行。DeepWiki MCP 工具
+不在本会话可用工具列表中（无 `mcp__deepwiki__*` 注入），按降级链使用官方仓库/运行时依赖字节码核对，缺口如实记录。
+
+**A. AE2 两个内部库存 mixin 的死注入修正（必须项）。**
+- 事实：`appeng/tile/inventory/AppEngInternalInventory.java:70` 与 `AppEngInternalAEInventory.java:225`
+  的真实容量源是 `getSlotLimit(int)`，两类均无 `getInventoryStackLimit` 方法；`<init>` 处的字面量 64 真实
+  （AppEngInternalInventory.java:62、AppEngInternalAEInventory.java:51）。
+- 修正：删除两个 mixin 中 `@ModifyReturnValue(method = "getInventoryStackLimit")`（require=0 静默死注入），
+  保留 `<init>*` 的 `@ModifyConstant(intValue=64)` 补丁；不改写 `getSlotLimit` 热路径（热路径零逻辑原则）。
+  同步重写 `Ae2MixinSourceTest` 的断言（只覆盖构造常量 + 断言死注入不再出现）。
+
+**B. NuclearCraft：接口 default 注入可行性验证与最小方案选择。**
+- 事实：`nc/tile/inventory/ITileInventory.java:95-97` 的接口 default `getInventoryStackLimit()=64` 是所有夹取点
+  的唯一来源：`setInventorySlotContents` 写前截断（:78-80）、`nc/tile/internal/inventory/ItemHandler.java:157-159`
+  的 `getSlotLimit`、vanilla GUI Slot 跟随。直接实现 ITileInventory 的 6 个类中，4 个抽象基类
+  （TileInventory/TileFluidInventory/TileEnergyInventory/TileEnergyFluidInventory）未覆写该方法；
+  深层显式覆写（TileDistributorOutlet/Inlet、TilePassiveAbstract、TileDummy、fission 单元、
+  InfoProcessorElement 等）与 TileBin（vanilla IInventory）语义各异，必须保持。
+- 可行性验证（mixinbooter 11.13 运行时 jar 反编译字节码，非推测）：
+  1. **类 mixin 注入接口 → 应用期硬抛异常**：`MixinInfo$SubType$Standard` 继承基类
+     `validateTarget`（`targetMustBeInterface=false`），接口目标触发 `InvalidMixinException("target type
+     mismatch: ... is an interface")`，发生在 `MixinProcessor.applyMixins` 的 `mixin.validate()`（异常非
+     required 配置不吞，直接传播为 MixinTransformerError）。
+  2. **接口 mixin（mixin 类=interface）+ 注入器 → Java 8 toolchain 下 ClassFormatError**：`SubType.Interface`
+     （`targetMustBeInterface=true`）允许接口目标，`INJECTORS_IN_INTERFACE_MIXINS` 在 JAVA_8 配置下启用
+     （`MixinApplicatorInterface.applyInjections` 放行）；但 `MixinPreProcessorInterface.prepareMethod` 对
+     Java 8 编译的公开 handler 置 `private+synthetic`，handler 经 `applyMethods/mergeMethod` 合并进目标接口，
+     而 `applyAttributes` 只抬升不降低 class version（Java 8 mixin → minRequiredClassVersion=52）——
+     private 接口方法要求 class file >= 53，v52 接口加载即 ClassFormatError。
+- 结论：**接口 default 注入在本项目（Java 8 toolchain）不可行**，按任务降级链选「a) patch 具体实现类链上的
+  公共基类」：`NuclearCraftTileInventoryLimitMixin` 对 4 个抽象基类各合并一个与接口同签名的具体覆写
+  `getInventoryStackLimit()`（`findTargetMethod` 按 name+desc 匹配，基类未声明 → 作为新方法合并，无需
+  @Overwrite；class 目标加方法任意版本合法）。「b) ItemHandler.getSlotLimit」单独不成立：`setInventorySlotContents`
+  的写前截断仍按 `getInventoryStackLimit()`=64，广告大于真实写入容量（违反容量不变量）。
+- 配套：新增 `mixins.stackupup.late.nuclearcraft.json`（required:false、JAVA_8）、
+  `Constants.LATE_NUCLEARCRAFT_MIXIN_CONFIG`、`MixinToggles.nuclearCraft`、loader 模块登记（modid
+  "nuclearcraft"，`nc.Global.MOD_ID` 证据）；重写 `NuclearCraftMixinSourceTest`（原测试断言配置不存在，
+  现断言基类收敛 + 禁止 split-only/ItemHandler-only patch）。
+
+**C. EnderIO（CEu 内置 EnderCore）InventorySlot 新增 mixin。**
+- 事实：`endercore/.../common/inventory/InventorySlot.java:233-235` 的 `getMaxStackSize()` 返回 limit
+  （构造默认 `limit > 0 ? limit : 64` :96），是槽容量单一事实源：`getSlotLimit(int)` 委托它（:246-248）、
+  机器 `AbstractCapabilityMachineEntity.java:134` 直接读它、GUI `EnderSlot.getSlotStackLimit` 委托它
+  （EnderSlot.java:86）；写入面 `insertItem` 以 `min(getMaxStackSize(), stack.getMaxStackSize())` 夹取
+  （:120/:139）——广告值与真实写入容量同源。
+- 实现：`EnderIOInventorySlotLimitMixin`，`@ModifyReturnValue(method="getMaxStackSize()I", require=0)`，
+  `original == 64 ? compat : original` 守卫；@Pseudo 兼容旧 EnderIO 1.5-1.12（无该类，目标缺失静默跳过）。
+- 子类覆写语义（验证结论）：Mixin 只改写目标类目标方法的方法体字节码；TileCrafter 匿名覆写
+  （TileCrafter.java:96-101，`bufferStacks ? 64 : 1`）有独立字节码并遮蔽基类实现，基类注入对其不生效——
+  该覆写与显式 limit（电容槽 1）原样保留，本次不改 TileCrafter 缓冲槽语义。
+
+**D. Colossal Chests：不实现。** 工作树是现代版（1.8.16/MC26），1.12.2 源码在 `origin/master-1.12` 分支；
+本批次不 clone/切换，目标类签名无 1.12.2 版本源码证据，待单独处理（无源码不可判定，不写 mixin）。
+
+**F. IE / IC2：不实现。** `mods-under-test/` 未 clone ImmersiveEngineering 与 IC2（IndustrialCraft 2），
+现有 `IEInventoryHandlerMixin`/`IEMachineSlotLimitMixin`/`InvSlotMixin` 等目标签名无法与 1.12.2 版本源码
+核对，维持无源码不可判定，本批次不动。
+
+**红线核对：** 未新增 @Redirect/@Overwrite；未触碰写入副作用（AE2 构造常量、NC 基类广告值、
+EnderIO 广告值三处均为广告/容量来源替换）；热路径零逻辑（AE2 删死注入后仅构造期常量补丁；NC/EnderIO
+handler 一次判断零分配）；未 clone 类不写 mixin（D/F）。运行时行为（NC/EnderIO 目标在真实 MC 启动中的
+装载与应用）因 `run/mods` 无对应 mod 无法在本批验证，只做结构检查与字节码级静态验证，如实记录。
+
 ## 4. 当前限制
 
 1. 动态 patch 基类可能传播到没有覆盖方法的第三方子类；静态目标表不能穷举第三方实现。没有源码或可重复运行证据的条目统一为
@@ -344,7 +409,8 @@ Forge 写入链源码后重排。判定规则：白名单只直通写入链全�
    目标及其第三方内部写入链在本记录中没有对应第三方源码，统一记为 **无源码不可判定**，不能用项目自己的 mixin 名称补出结论。
 4. `InventoryLargeChest` 的上限转发与按 index 写入存在结构性不一致风险；T11 不能仅保留现有 mixin 目标而跳过两半箱验证。
 5. NuclearCraft、Tech Reborn、RebornCore 等第三方内部写入链不因方法名或历史注释自动获得分类。当前缺少对应版本源码时，记录为
-   **无源码不可判定**，不写成断链，也不允许据此新增 patch。
+   **无源码不可判定**，不写成断链，也不允许据此新增 patch。NuclearCraft 的 1.12.2 源码已在本批次取得
+   （§3.9 B），其 `ITileInventory` 基类链按源码事实收敛；Tech Reborn / RebornCore 仍无源码。
 6. 本记录没有真实客户端 F3+T 的运行证据，因此真实资源重载基线当前视为 **尚未建立**。`LanguageMap.replaceWith()`
    的源码只能证明清空/替换行为，不能填补 T8.0 的行为证据缺口。
 

@@ -24,4 +24,6 @@ object MixinToggles {
     @JvmField var limeLib = true
 
     @JvmField var immersiveEngineering = true
+
+    @JvmField var nuclearCraft = true
 }

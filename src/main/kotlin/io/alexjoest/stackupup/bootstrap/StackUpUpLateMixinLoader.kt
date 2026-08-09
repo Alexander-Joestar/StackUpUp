@@ -62,6 +62,7 @@ class StackUpUpLateMixinLoader : ILateMixinLoader {
             LateMixinModule(StackUpUpIds.LATE_IMMERSIVEENGINEERING_MIXIN_CONFIG, "immersiveengineering", "immersiveEngineering") {
                 MixinToggles.immersiveEngineering
             },
+            LateMixinModule(StackUpUpIds.LATE_NUCLEARCRAFT_MIXIN_CONFIG, "nuclearcraft", "nuclearCraft") { MixinToggles.nuclearCraft },
         )
     }
 

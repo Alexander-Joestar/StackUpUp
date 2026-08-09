@@ -32,6 +32,12 @@ class DevAutomationController(private val confirmationRetryTicks: Int = 40) {
         }
 
         if (snapshot.atMainMenu) {
+            // T8.0：若启用资源重载观察，先输出客户端操作指示（由人工按 F3+T 完成真实重载），再进世界。
+            // 客户端操作无法在锁屏/无头环境下自动化，操作指示写入日志与指导文件。
+            if (snapshot.resourceReloadRequested) {
+                state = DevAutomationState.WAITING_FOR_WORLD
+                return listOf(DevAutomationAction.ReloadResources, DevAutomationAction.LaunchWorld)
+            }
             state = DevAutomationState.WAITING_FOR_WORLD
             return listOf(DevAutomationAction.LaunchWorld)
         }
@@ -84,9 +90,14 @@ data class DevAutomationSnapshot(
     val hasWorld: Boolean = false,
     val hasPlayer: Boolean = false,
     val targetItemObserved: Boolean = false,
+    /** T8.0：是否请求在主菜单输出资源重载操作指示（由人工按 F3+T 完成真实重载）。 */
+    val resourceReloadRequested: Boolean = false,
 )
 
 sealed class DevAutomationAction {
     data object LaunchWorld : DevAutomationAction()
     data object GiveTargetItem : DevAutomationAction()
+
+    /** T8.0：输出客户端操作指示（人工按 F3+T 触发真实资源重载）并记录重载前消息状态。 */
+    data object ReloadResources : DevAutomationAction()
 }

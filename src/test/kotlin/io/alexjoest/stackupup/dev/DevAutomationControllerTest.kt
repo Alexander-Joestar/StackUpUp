@@ -51,4 +51,19 @@ class DevAutomationControllerTest {
         assertEquals(emptyList<DevAutomationAction>(), completionActions)
         assertEquals(emptyList<DevAutomationAction>(), laterActions)
     }
+
+    @Test
+    fun `resourceReloadRequested_atMainMenu_shouldEmitReloadGuidanceThenLaunchWorld`() {
+        val controller = DevAutomationController()
+
+        val firstActions = controller.advance(
+            DevAutomationSnapshot(atMainMenu = true, resourceReloadRequested = true),
+        )
+        val secondActions = controller.advance(
+            DevAutomationSnapshot(atMainMenu = true, resourceReloadRequested = true),
+        )
+
+        assertEquals(listOf(DevAutomationAction.ReloadResources, DevAutomationAction.LaunchWorld), firstActions)
+        assertEquals(emptyList<DevAutomationAction>(), secondActions)
+    }
 }

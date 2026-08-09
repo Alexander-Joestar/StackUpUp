@@ -22,6 +22,9 @@ object DevAutomationConfig {
     val itemCount: Int = settings.itemCount
     val compatProbeIds: Set<String> = settings.compatProbeIds
 
+    /** 客户端自动化：进入主菜单后触发一次完整资源重载（等价 F3+T 的 refreshResources 链路），用于 T8.0 基线观察。 */
+    val resourceReload: Boolean = settings.resourceReload
+
     val builtInMatrix: List<DevProbeTargetSpec> =
         listOf(
             DevProbeTargetSpec(name = "IngotSteel", oreName = "ingotSteel"),
@@ -48,6 +51,7 @@ internal data class DevAutomationSettings(
     val tempRule: String,
     val itemCount: Int,
     val compatProbeIds: Set<String>,
+    val resourceReload: Boolean,
 )
 
 internal fun readSettings(getProperty: (String) -> String?): DevAutomationSettings {
@@ -75,6 +79,7 @@ internal fun readSettings(getProperty: (String) -> String?): DevAutomationSettin
         tempRule = readSetting("rule", "ore = ingotSteel -> 1024"),
         itemCount = readSetting("count", "128").toIntOrNull() ?: 128,
         compatProbeIds = parseRequestedProbeIds(readSetting("compat", "")),
+        resourceReload = readSetting("resourceReload", "false").toBoolean(),
     )
 }
 

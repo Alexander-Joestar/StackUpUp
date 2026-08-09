@@ -20,6 +20,7 @@ class DevAutomationClientDriver(private val controller: DevAutomationController 
     private var resolvedTarget: ResolvedDevTarget? = null
     private var observationLogged: Boolean = false
     private var inventoryCleared: Boolean = false
+    private var reloadGuidanceLogged: Boolean = false
 
     @SubscribeEvent
     fun onClientTick(event: TickEvent.ClientTickEvent) {
@@ -34,6 +35,7 @@ class DevAutomationClientDriver(private val controller: DevAutomationController 
             hasWorld = minecraft.world != null,
             hasPlayer = player != null,
             targetItemObserved = player?.inventory?.mainInventory?.any(::matchesTargetItem) == true,
+            resourceReloadRequested = DevAutomationConfig.resourceReload,
         )
 
         if (player != null && snapshot.targetItemObserved && !observationLogged) {
@@ -44,8 +46,51 @@ class DevAutomationClientDriver(private val controller: DevAutomationController 
             when (action) {
                 DevAutomationAction.LaunchWorld -> launchTestWorld(minecraft)
                 DevAutomationAction.GiveTargetItem -> giveTargetItem(minecraft)
+                DevAutomationAction.ReloadResources -> logReloadResourcesGuidance()
             }
         }
+    }
+
+    /**
+     * T8.0：输出客户端操作指示。客户端资源重载（F3+T）必须由人工在真实窗口操作——锁屏/无头环境下
+     * 自动化注入不可行，且 F3+T 属于真实交互。本方法把「请在客户端主菜单按 F3+T」写入日志与指导文件，
+     * 并记录重载前自有消息解析状态，供人工操作后对比。
+     */
+    private fun logReloadResourcesGuidance() {
+        if (reloadGuidanceLogged) {
+            return
+        }
+        reloadGuidanceLogged = true
+        val message = resolveLocalizedMessageOrUnavailable()
+        StackUpUp.logger?.info(
+            "开发自动验收[T8.0]：请在客户端主菜单按 F3+T 触发完整资源重载（SimpleReloadableResourceManager 链路）；" +
+                "重载前自有消息 key=message.stackupup.command.reload.success -> {}",
+            message,
+        )
+        val guidanceFile = java.io.File("run/logs/t8.0-client-guidance.txt")
+        try {
+            guidanceFile.parentFile?.mkdirs()
+            guidanceFile.writeText(
+                buildString {
+                    appendLine("T8.0 客户端资源重载基线（人工操作指引）")
+                    appendLine("1. 在客户端主菜单（本日志出现时）按 F3+T 触发完整资源重载。")
+                    appendLine("2. 观察游戏内消息/日志，确认资源重载完成（第二次 Reloading ResourceManager）。")
+                    appendLine("3. 重载前自有消息状态：$message")
+                    appendLine("4. 重载完成后（进世界后）在日志中查看 '重载后自有消息' 记录。")
+                    appendLine("参考判据：run/logs/latest.log 出现第二次 'Reloading ResourceManager' 行。")
+                },
+            )
+            StackUpUp.logger?.info("开发自动验收[T8.0]：操作指引已写入 {}", guidanceFile.absolutePath)
+        } catch (t: Throwable) {
+            StackUpUp.logger?.error("开发自动验收[T8.0]：写入操作指引失败：{}", t.message)
+        }
+    }
+
+    private fun resolveLocalizedMessageOrUnavailable(): String = try {
+        val message = io.alexjoest.stackupup.LocalizedMessages.format("message.stackupup.command.reload.success")
+        message.ifBlank { "<blank>" }
+    } catch (t: Throwable) {
+        "<unavailable:${t.javaClass.simpleName}>"
     }
 
     private fun launchTestWorld(minecraft: Minecraft) {

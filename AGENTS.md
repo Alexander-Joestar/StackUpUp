@@ -270,7 +270,7 @@ Mixin；原版或 Forge 基础路径 → early Mixin；已被 Mixin 接管 → �
 
 ### jj 纪律
 
-本项目使用 jj 管理 working-copy 快照，禁止用 git 绕过 jj；没有 staging area，改文件即属于当前 change。
+本项目使用 jj 管理 working-copy 快照，禁止用 git 绕过 jj；没有 staging area，改文件即属于当前 change。jj 底层是 git 存储（`.jj/repo/store/git_target`），git 命令能看到 jj 历史只是因为两者共享提交库——这**不是**使用 git 的理由；git 仅用于 `jj git push` 等显式远程操作，其余一律 jj。
 
 ```text
 jj st
@@ -282,6 +282,8 @@ jj bookmark set master -r @-
 ```
 
 jj diff 输出不清晰时用 `difft` 做并排对比（不修改任何配置）。
+
+**子代理一律使用 jj 命令**（`jj st`/`jj diff`/`jj log`/`jj describe`/`jj new`），不得用 `git status`/`git diff`/`git log`/`git checkout`/`git restore` 查看或操作工作区；`git` 只出现在 `jj git push` 与提交信息引用中。
 
 用 `jj describe` 替代提交操作；只有用户明确要求时才执行 `jj git push`。不得用 git 或 jj 恢复、清理或绕过既有改动。
 

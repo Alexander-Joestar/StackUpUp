@@ -27,14 +27,25 @@ object DevAutomationConfig {
 
     val builtInMatrix: List<DevProbeTargetSpec> =
         listOf(
-            DevProbeTargetSpec(name = "IngotSteel", oreName = "ingotSteel"),
-            DevProbeTargetSpec(name = "PlateSteel", oreName = "plateSteel"),
-            DevProbeTargetSpec(name = "DustSteel", oreName = "dustSteel"),
-            DevProbeTargetSpec(name = "VacuumTube", itemId = "gregtech:meta_item_1", metadata = 516),
+            DevProbeTargetSpec(name = "IngotSteel", oreName = "ingotSteel", rule = "ore = ingotSteel -> 1024"),
+            DevProbeTargetSpec(name = "PlateSteel", oreName = "plateSteel", rule = "ore = plateSteel -> 1024"),
+            DevProbeTargetSpec(name = "DustSteel", oreName = "dustSteel", rule = "ore = dustSteel -> 1024"),
+            DevProbeTargetSpec(
+                name = "VacuumTube",
+                itemId = "gregtech:meta_item_1",
+                metadata = 516,
+                rule = "item = gregtech:meta_item_1 && meta = 516 -> 512",
+            ),
         )
 }
 
-data class DevProbeTargetSpec(val name: String, val oreName: String? = null, val itemId: String? = null, val metadata: Int? = null)
+/**
+ * 矩阵场景规格。
+ *
+ * [rule] 是场景自带的临时 DSL 规则：矩阵模式下由驱动批量注入后再求值，
+ * 与 `runServerAutoTestMatrix` 传入的空 `Rule` 参数配合，避免矩阵模式误走单场景临时规则注入。
+ */
+data class DevProbeTargetSpec(val name: String, val oreName: String? = null, val itemId: String? = null, val metadata: Int? = null, val rule: String? = null)
 
 internal data class DevAutomationSettings(
     val enabled: Boolean,

@@ -189,7 +189,8 @@ data class AutoTestTaskSpec(
     val properties: List<Pair<String, String>>,
 )
 
-// 矩阵任务数据表：任务名与描述逐字保留；Matrix 的空 Rule 为有意空值，不得改为默认；
+// 矩阵任务数据表：任务名与描述逐字保留；Matrix 的 Rule 传空是避免矩阵模式误走单场景临时规则注入，
+// 矩阵所需规则由 DevAutomationConfig.builtInMatrix 各场景 spec.rule 携带，并在服务端驱动内批量注入；
 // -P 键拼装顺序（Matrix/Rule/WorldFolder/WorldName 或 Ore/Rule/... 或 Item/Meta/Rule/...）保留。
 val serverAutoTestTaskSpecs: List<AutoTestTaskSpec> =
     listOf(
@@ -260,6 +261,10 @@ fun registerServerAutoTestTask(
         group = "modded minecraft"
         description = descriptionText
         workingDir = project.projectDir
+        doFirst {
+            // 每次运行前清理旧失败标记，避免上次失败污染本次结果。
+            file("run/logs/autotest-failed.marker").delete()
+        }
         commandLine(
             gradlew(
                 "--no-daemon",
@@ -272,6 +277,14 @@ fun registerServerAutoTestTask(
                 "--stacktrace",
             ),
         )
+        doLast {
+            // 服务端自动化失败时由 DevAutomationBridge 写失败标记；子 Gradle 可能以退出码 0 结束，
+            // 只有标记能可靠表达自动化失败，这里把标记升级为任务失败。
+            val marker = file("run/logs/autotest-failed.marker")
+            if (marker.exists()) {
+                throw GradleException("服务端自动化失败，见 marker：${marker.readText(Charsets.UTF_8)}")
+            }
+        }
     }
 }
 

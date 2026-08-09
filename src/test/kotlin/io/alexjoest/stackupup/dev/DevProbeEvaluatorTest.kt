@@ -1,6 +1,7 @@
 package io.alexjoest.stackupup.dev
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class DevProbeEvaluatorTest {
@@ -53,5 +54,67 @@ class DevProbeEvaluatorTest {
 
         assertEquals(true, result.passed)
         assertEquals(emptyList<String>(), result.reasons)
+    }
+
+    @Test
+    fun `boundary_insertNFullAndNPlusOneRejected_shouldPass`() {
+        val result = evaluateBoundaryProbe(
+            resolvedLimit = 1024,
+            actualLimit = 1024,
+            storedAfterN = 1024,
+            remainderAfterN = 0,
+            storedAfterOne = 1024,
+            remainderAfterOne = 1,
+        )
+
+        assertEquals(true, result.passed)
+        assertEquals(emptyList<String>(), result.reasons)
+    }
+
+    @Test
+    fun `boundary_ruleNotEffective_shouldFail`() {
+        val result = evaluateBoundaryProbe(
+            resolvedLimit = 64,
+            actualLimit = 64,
+            storedAfterN = 64,
+            remainderAfterN = 0,
+            storedAfterOne = 64,
+            remainderAfterOne = 1,
+        )
+
+        assertEquals(false, result.passed)
+        assertTrue(result.reasons.any { it.contains("边界探针规则未生效") })
+    }
+
+    @Test
+    fun `boundary_nPlusOneNotRejected_shouldFail`() {
+        val result = evaluateBoundaryProbe(
+            resolvedLimit = 1024,
+            actualLimit = 1024,
+            storedAfterN = 1024,
+            remainderAfterN = 0,
+            storedAfterOne = 1025,
+            remainderAfterOne = 0,
+        )
+
+        assertEquals(false, result.passed)
+        assertTrue(result.reasons.any { it.contains("remainder=1") })
+        assertTrue(result.reasons.any { it.contains("存量保持 1024") })
+    }
+
+    @Test
+    fun `boundary_insertNPartial_shouldFail`() {
+        val result = evaluateBoundaryProbe(
+            resolvedLimit = 1024,
+            actualLimit = 1024,
+            storedAfterN = 64,
+            remainderAfterN = 960,
+            storedAfterOne = 64,
+            remainderAfterOne = 1,
+        )
+
+        assertEquals(false, result.passed)
+        assertTrue(result.reasons.any { it.contains("期望全部存入 1024") })
+        assertTrue(result.reasons.any { it.contains("期望 remainder=0") })
     }
 }

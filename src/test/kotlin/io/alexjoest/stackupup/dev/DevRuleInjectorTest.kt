@@ -13,18 +13,23 @@ import org.junit.jupiter.api.Test
 
 class DevRuleInjectorTest {
     private var previousMaxStackSize: Int = 10240
+    private var previousSnapshot: RuleSnapshot = RuleSnapshot(version = 0L, rules = emptyList())
 
     @BeforeEach
-    fun setUpMaxStackSize() {
+    fun setUp() {
         previousMaxStackSize = StackUpUpConfig.activeMaxStackSize
         StackUpUpConfig.general.maxStackSize = 10240
         StackUpUpConfig.activeMaxStackSize = 10240
+        previousSnapshot = RuleRuntime.currentSnapshot()
+        DevRuleInjector.resetForTests()
     }
 
     @AfterEach
-    fun restoreMaxStackSize() {
+    fun restoreState() {
         StackUpUpConfig.general.maxStackSize = previousMaxStackSize
         StackUpUpConfig.activeMaxStackSize = previousMaxStackSize
+        RuleRuntime.replaceSnapshot(previousSnapshot)
+        DevRuleInjector.resetForTests()
     }
 
     @Test
@@ -53,6 +58,59 @@ class DevRuleInjectorTest {
 
         assertEquals(2, snapshot.rules.size)
         assertEquals(1024, resolved)
-        assertEquals(DevRuleInjectionResult.Applied("ore = ingotSteel -> *2", 1, 2), result)
+        assertEquals(DevRuleInjectionResult.Applied(listOf("ore = ingotSteel -> *2"), 1, 2), result)
+        assertEquals("ore = ingotSteel -> *2", (result as DevRuleInjectionResult.Applied).ruleLine)
+    }
+
+    @Test
+    fun `sameRuleInjectedTwice_shouldNotStack`() {
+        RuleRuntime.replaceSnapshot(
+            RuleSnapshot(
+                version = 1L,
+                rules = listOf(
+                    RuleCompiler.compileLine("ore = ingotSteel -> 512", 1),
+                ),
+            ),
+        )
+
+        val first = DevRuleInjector.ensureInjected("ore = ingotSteel -> 1024")
+        val second = DevRuleInjector.ensureInjected("ore = ingotSteel -> 1024")
+
+        assertEquals(DevRuleInjectionResult.Applied(listOf("ore = ingotSteel -> 1024"), 1, 2), first)
+        assertEquals(DevRuleInjectionResult.Skipped, second)
+        assertEquals(2, RuleRuntime.currentSnapshot().rules.size)
+    }
+
+    @Test
+    fun `batchInjection_shouldApplyAllDistinctRulesOnce`() {
+        RuleRuntime.replaceSnapshot(RuleSnapshot(version = 1L, rules = emptyList()))
+
+        val first = DevRuleInjector.ensureInjected(listOf("ore = ingotSteel -> 1024", "item = minecraft:stick -> 512"))
+        val second = DevRuleInjector.ensureInjected(listOf("ore = ingotSteel -> 1024", "item = minecraft:stick -> 512"))
+
+        assertEquals(
+            DevRuleInjectionResult.Applied(listOf("ore = ingotSteel -> 1024", "item = minecraft:stick -> 512"), 0, 2),
+            first,
+        )
+        assertEquals(DevRuleInjectionResult.Skipped, second)
+        assertEquals(2, RuleRuntime.currentSnapshot().rules.size)
+    }
+
+    @Test
+    fun `batchInjection_withParseError_shouldFailAndInjectNothing`() {
+        RuleRuntime.replaceSnapshot(RuleSnapshot(version = 1L, rules = emptyList()))
+
+        val result = DevRuleInjector.ensureInjected(listOf("ore = ingotSteel -> 1024", "这不是合法规则"))
+
+        assertEquals(true, result is DevRuleInjectionResult.Failed)
+        assertEquals(0, RuleRuntime.currentSnapshot().rules.size)
+    }
+
+    @Test
+    fun `blankRule_shouldBeSkipped`() {
+        RuleRuntime.replaceSnapshot(RuleSnapshot(version = 1L, rules = emptyList()))
+
+        assertEquals(DevRuleInjectionResult.Skipped, DevRuleInjector.ensureInjected(""))
+        assertEquals(DevRuleInjectionResult.Skipped, DevRuleInjector.ensureInjected(listOf("", "  ")))
     }
 }

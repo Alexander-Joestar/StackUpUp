@@ -4,6 +4,7 @@ import io.alexjoest.stackupup.StackUpUpIds
 import net.minecraftforge.fml.common.FMLCommonHandler
 import java.io.File
 
+/** 用途：解析规则文件的实际加载顺序（单文件/多文件）。 */
 object RuleSourceLocator {
     @Volatile
     private var worldDirectoryOverride: File? = null

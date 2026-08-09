@@ -1,5 +1,6 @@
 package io.alexjoest.stackupup
 
+import io.alexjoest.stackupup.rules.RuleMessageKey
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -58,14 +59,14 @@ class StackUpUpConfigTest {
         assertEquals("config.stackupup", StackUpUpIds.CONFIG_LANG_ROOT)
         assertEquals("commands.stackupup", StackUpUpIds.COMMAND_LANG_ROOT)
         assertEquals("message.stackupup", StackUpUpIds.MESSAGE_LANG_ROOT)
-        assertEquals("config.stackupup.title", StackUpUpIds.CONFIG_TITLE_KEY)
+        assertEquals("config.stackupup.title", RuleMessageKey.CONFIG_TITLE.translationKey)
         assertEquals("io.alexjoest.stackupup.config.ConfigGuiFactory", StackUpUpIds.CONFIG_GUI_FACTORY_CLASS_NAME)
-        assertEquals("commands.stackupup.reload.success", StackUpUpIds.COMMAND_RELOAD_SUCCESS_KEY)
-        assertEquals("message.stackupup.rule_complexity.rule_count", StackUpUpIds.RULE_COMPLEXITY_RULE_COUNT_KEY)
-        assertEquals("message.stackupup.rule_complexity.rule_length", StackUpUpIds.RULE_COMPLEXITY_RULE_LENGTH_KEY)
-        assertEquals("message.stackupup.rule_complexity.total_length", StackUpUpIds.RULE_COMPLEXITY_TOTAL_LENGTH_KEY)
-        assertEquals("message.stackupup.rule_limit.clamp", StackUpUpIds.RULE_LIMIT_CLAMP_KEY)
-        assertEquals("tooltip.stackupup.current_max", StackUpUpIds.TOOLTIP_CURRENT_MAX_KEY)
+        assertEquals("commands.stackupup.reload.success", RuleMessageKey.COMMAND_RELOAD_SUCCESS.translationKey)
+        assertEquals("message.stackupup.rule_complexity.rule_count", RuleMessageKey.RULE_COMPLEXITY_RULE_COUNT.translationKey)
+        assertEquals("message.stackupup.rule_complexity.rule_length", RuleMessageKey.RULE_COMPLEXITY_RULE_LENGTH.translationKey)
+        assertEquals("message.stackupup.rule_complexity.total_length", RuleMessageKey.RULE_COMPLEXITY_TOTAL_LENGTH.translationKey)
+        assertEquals("message.stackupup.rule_limit.clamp", RuleMessageKey.RULE_LIMIT_CLAMP.translationKey)
+        assertEquals("tooltip.stackupup.current_max", RuleMessageKey.TOOLTIP_CURRENT_MAX.translationKey)
         assertEquals("io/alexjoest/stackupup/StackLimitHooks", StackUpUpIds.STACK_LIMIT_HOOKS_INTERNAL_NAME)
     }
 

@@ -1,7 +1,7 @@
 package io.alexjoest.stackupup.rules.io
 
 import io.alexjoest.stackupup.StackUpUpConfig
-import io.alexjoest.stackupup.StackUpUpIds
+import io.alexjoest.stackupup.rules.RuleMessageKey
 import net.minecraft.util.text.ITextComponent
 import net.minecraft.util.text.TextComponentTranslation
 
@@ -11,7 +11,7 @@ object RuleFeedback {
             return
         }
 
-        send(TextComponentTranslation(StackUpUpIds.RULE_RELOAD_ERROR_PREFIX_KEY))
+        send(TextComponentTranslation(RuleMessageKey.RULE_RELOAD_ERROR_PREFIX.translationKey))
         for (error in report.errors) {
             send(error.toTextComponent())
         }
@@ -22,7 +22,7 @@ object RuleFeedback {
             return
         }
 
-        send(TextComponentTranslation(StackUpUpIds.RULE_COMPLEXITY_PREFIX_KEY))
+        send(TextComponentTranslation(RuleMessageKey.RULE_COMPLEXITY_PREFIX.translationKey))
         for (warning in report.warnings) {
             send(warning.toTextComponent())
         }

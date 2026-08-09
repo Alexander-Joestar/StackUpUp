@@ -2,6 +2,7 @@ package io.alexjoest.stackupup
 
 import io.alexjoest.stackupup.client.StackCountTextLayout
 import io.alexjoest.stackupup.client.StackRenderHooks
+import io.alexjoest.stackupup.rules.RuleMessageKey
 import io.alexjoest.stackupup.rules.io.RuleFeedback
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.ScaledResolution
@@ -39,7 +40,7 @@ class ProxyClient : ProxyCommon() {
 
         event.toolTip.add(
             I18n.format(
-                StackUpUpIds.TOOLTIP_CURRENT_MAX_KEY,
+                RuleMessageKey.TOOLTIP_CURRENT_MAX.translationKey,
                 StackCountTextLayout.formatGroupedCount(event.itemStack.count),
                 StackCountTextLayout.formatGroupedCount(event.itemStack.maxStackSize),
             ),

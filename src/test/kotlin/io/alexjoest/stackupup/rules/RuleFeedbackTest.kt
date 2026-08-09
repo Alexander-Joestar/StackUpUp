@@ -1,7 +1,6 @@
 package io.alexjoest.stackupup.rules
 
 import io.alexjoest.stackupup.StackUpUpConfig
-import io.alexjoest.stackupup.StackUpUpIds
 import io.alexjoest.stackupup.rules.LocalizedMessage
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import io.alexjoest.stackupup.rules.io.RuleFeedback
@@ -39,7 +38,7 @@ class RuleFeedbackTest {
         }
 
         assertEquals(2, emitted.size)
-        assertEquals(StackUpUpIds.RULE_RELOAD_ERROR_PREFIX_KEY, emitted[0].key)
+        assertEquals(RuleMessageKey.RULE_RELOAD_ERROR_PREFIX.translationKey, emitted[0].key)
         assertEquals(RuleMessageKey.LOAD_FAILED_WITH_SOURCE.translationKey, emitted[1].key)
         assertEquals("pack.su", emitted[1].formatArgs[0])
         assertEquals(7, emitted[1].formatArgs[1])
@@ -58,7 +57,7 @@ class RuleFeedbackTest {
                 file = File("run/config/stackupup/main.su"),
                 snapshot = RuleSnapshot(version = 1L, rules = emptyList()),
                 errors = emptyList(),
-                warnings = listOf(LocalizedMessage(StackUpUpIds.RULE_COMPLEXITY_RULE_COUNT_KEY, listOf(80))),
+                warnings = listOf(LocalizedMessage(RuleMessageKey.RULE_COMPLEXITY_RULE_COUNT.translationKey, listOf(80))),
             )
             val emitted = mutableListOf<TextComponentTranslation>()
 
@@ -67,8 +66,8 @@ class RuleFeedbackTest {
             }
 
             assertEquals(2, emitted.size)
-            assertEquals(StackUpUpIds.RULE_COMPLEXITY_PREFIX_KEY, emitted[0].key)
-            assertEquals(StackUpUpIds.RULE_COMPLEXITY_RULE_COUNT_KEY, emitted[1].key)
+            assertEquals(RuleMessageKey.RULE_COMPLEXITY_PREFIX.translationKey, emitted[0].key)
+            assertEquals(RuleMessageKey.RULE_COMPLEXITY_RULE_COUNT.translationKey, emitted[1].key)
             assertArrayEquals(arrayOf(80), emitted[1].formatArgs)
         } finally {
             StackUpUpConfig.general.ruleComplexityWarnings = previous

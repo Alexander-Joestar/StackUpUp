@@ -1,7 +1,7 @@
 package io.alexjoest.stackupup.rules.io
 
 import io.alexjoest.stackupup.StackUpUpConfig
-import io.alexjoest.stackupup.StackUpUpIds
+import io.alexjoest.stackupup.rules.RuleMessageKey
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -44,7 +44,7 @@ class RuleReloadPipelineTest {
         }
 
         assertEquals(1, report.warnings.size)
-        assertEquals(StackUpUpIds.RULE_LIMIT_CLAMP_KEY, report.warnings.single().translationKey)
+        assertEquals(RuleMessageKey.RULE_LIMIT_CLAMP.translationKey, report.warnings.single().translationKey)
         assertEquals(listOf(1, 10240), report.warnings.single().args)
     }
 

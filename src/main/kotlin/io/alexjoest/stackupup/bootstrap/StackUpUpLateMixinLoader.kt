@@ -12,11 +12,11 @@ class StackUpUpLateMixinLoader : ILateMixinLoader {
         // T14.5 停止条件 3：启动期校验 loader 注册表 ↔ JSON 资源 ↔ 类登记（双向中的正向）。
         // late 是 optional 层：问题只按 ERROR 记录、不中止装载——MixinBooter 的 late loader 循环
         // 对抛出的异常整体中断（LoadControllerMixin 证据），抛异常会连带中止全部剩余 late 配置。
-        val problems = MixinConfigRegistrationValidator.validateConfigs(
+        val problems = MixinConfigValidator.validateConfigs(
             modules.map { it.config },
             javaClass.classLoader,
         )
-        MixinConfigRegistrationValidator.logProblems(problems)
+        MixinConfigValidator.logProblems(problems)
         // late 目标类全部来自第三方 mod（T2a §5 无 jar/源码），目标存在性不校验，记录 UNKNOWN。
         logger.info("Late mixin configs target third-party mod classes; target existence is not validated (UNKNOWN, no third-party sources)")
         return modules.map { it.config }

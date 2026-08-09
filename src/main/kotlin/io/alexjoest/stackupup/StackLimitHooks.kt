@@ -10,6 +10,7 @@ import java.util.Random
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
+/** 用途：Mixin/ASM 注入求取堆叠上限的唯一调用面。 */
 object StackLimitHooks {
     private const val VANILLA_STACK_LIMIT: Int = Constants.VANILLA_STACK_LIMIT
 

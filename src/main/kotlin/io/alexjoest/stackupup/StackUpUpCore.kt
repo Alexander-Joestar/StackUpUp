@@ -1,6 +1,6 @@
 package io.alexjoest.stackupup
 
-import io.alexjoest.stackupup.bootstrap.MixinConfigRegistrationValidator
+import io.alexjoest.stackupup.bootstrap.MixinConfigValidator
 import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
@@ -110,7 +110,7 @@ class StackUpUpCore :
             return emptyList()
         }
         // 核心 early 配置缺失/注册无效必须 fail-fast（T14.5 停止条件 1），不再让核心配置静默失效。
-        MixinConfigRegistrationValidator.requireCoreConfigValid(StackUpUpIds.EARLY_MIXIN_CONFIG, javaClass.classLoader)
+        MixinConfigValidator.requireCoreConfigValid(StackUpUpIds.EARLY_MIXIN_CONFIG, javaClass.classLoader)
         return listOf(StackUpUpIds.EARLY_MIXIN_CONFIG)
     }
 }

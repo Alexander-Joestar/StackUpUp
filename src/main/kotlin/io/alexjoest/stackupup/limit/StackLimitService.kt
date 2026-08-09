@@ -5,6 +5,7 @@ import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import io.alexjoest.stackupup.rules.compile.RuntimeContextRequirements
 import java.util.concurrent.ConcurrentHashMap
 
+/** 用途：按规则快照求值物品堆叠上限的热路径服务，带缓存。 */
 class StackLimitService internal constructor(private val snapshot: RuleSnapshot, private val forceSlowPath: Boolean) {
     constructor(snapshot: RuleSnapshot) : this(snapshot, forceSlowPath = false)
 

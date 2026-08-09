@@ -1,5 +1,6 @@
 package io.alexjoest.stackupup
 
+import io.alexjoest.stackupup.rules.RuleMessageKey
 import io.alexjoest.stackupup.rules.io.RuleFeedback
 import net.minecraft.command.CommandBase
 import net.minecraft.command.CommandException
@@ -29,7 +30,7 @@ class CommandStackUpUp internal constructor(
 
     override fun getAliases(): MutableList<String> = mutableListOf()
 
-    override fun getUsage(sender: ICommandSender): String = StackUpUpIds.COMMAND_USAGE_KEY
+    override fun getUsage(sender: ICommandSender): String = RuleMessageKey.COMMAND_USAGE.translationKey
 
     @Throws(CommandException::class)
     override fun execute(server: MinecraftServer, sender: ICommandSender, args: Array<out String>) {
@@ -76,7 +77,7 @@ class CommandStackUpUp internal constructor(
                 val name = args.getOrNull(2) ?: throw WrongUsageException(getUsage(sender))
                 val value = getState(name)
                 sender.reply(
-                    if (value) StackUpUpIds.COMMAND_STATE_GET_KEY else StackUpUpIds.COMMAND_STATE_MISSING_KEY,
+                    if (value) RuleMessageKey.COMMAND_STATE_GET.translationKey else RuleMessageKey.COMMAND_STATE_MISSING.translationKey,
                     name,
                     value,
                 )
@@ -85,7 +86,7 @@ class CommandStackUpUp internal constructor(
                 val name = args.getOrNull(2) ?: throw WrongUsageException(getUsage(sender))
                 val value = parseStateBoolean(args.getOrNull(3) ?: throw WrongUsageException(getUsage(sender)))
                 setState(name, value)
-                sender.reply(StackUpUpIds.COMMAND_STATE_SET_KEY, name, value)
+                sender.reply(RuleMessageKey.COMMAND_STATE_SET.translationKey, name, value)
             }
             else -> throw WrongUsageException(getUsage(sender))
         }
@@ -94,12 +95,12 @@ class CommandStackUpUp internal constructor(
     private fun parseStateBoolean(value: String): Boolean = when (value.lowercase()) {
         STATE_VALUE_TRUE, "1", "yes", "on" -> true
         STATE_VALUE_FALSE, "0", "no", "off" -> false
-        else -> throw WrongUsageException(StackUpUpIds.COMMAND_USAGE_KEY)
+        else -> throw WrongUsageException(RuleMessageKey.COMMAND_USAGE.translationKey)
     }
 
     private fun emitReloadFeedback(sender: ICommandSender) {
         val report = StackUpUp.reload()
-        sender.reply(StackUpUpIds.COMMAND_RELOAD_SUCCESS_KEY)
+        sender.reply(RuleMessageKey.COMMAND_RELOAD_SUCCESS.translationKey)
         RuleFeedback.emitReloadErrors(report, sender::sendMessage)
         RuleFeedback.emitWarnings(report, sender::sendMessage)
     }
@@ -107,13 +108,13 @@ class CommandStackUpUp internal constructor(
     private fun openRulesFile(sender: ICommandSender) {
         val file = RuleRuntimeCoordinator.getRulesFile()
         if (!file.exists()) {
-            sender.reply(StackUpUpIds.COMMAND_EDIT_MISSING_KEY, file.absolutePath)
+            sender.reply(RuleMessageKey.COMMAND_EDIT_MISSING.translationKey, file.absolutePath)
             return
         }
 
         val desktop = openCapableDesktop()
         if (desktop == null) {
-            sender.reply(StackUpUpIds.COMMAND_EDIT_UNSUPPORTED_KEY)
+            sender.reply(RuleMessageKey.COMMAND_EDIT_UNSUPPORTED.translationKey)
             return
         }
 
@@ -121,9 +122,9 @@ class CommandStackUpUp internal constructor(
             // 这里故意使用 OPEN，而不是 EDIT。
             // OPEN 会交给系统文件关联，尽量遵循用户自己的桌面默认行为，不强行指定编辑器。
             desktop.open(file)
-            sender.reply(StackUpUpIds.COMMAND_EDIT_SUCCESS_KEY, file.absolutePath)
+            sender.reply(RuleMessageKey.COMMAND_EDIT_SUCCESS.translationKey, file.absolutePath)
         } catch (e: IOException) {
-            sender.reply(StackUpUpIds.COMMAND_EDIT_FAILED_KEY, e.message ?: "unknown")
+            sender.reply(RuleMessageKey.COMMAND_EDIT_FAILED.translationKey, e.message ?: "unknown")
         }
     }
 

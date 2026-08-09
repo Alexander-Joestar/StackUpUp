@@ -18,7 +18,7 @@ import kotlin.streams.toList
  * - mixin 包内带 @Mixin 的类必须登记在某个 JSON（未注册目标 → 失败）。
  *
  * 运行时（打包 jar）无法枚举资源目录/类列表，这两个反向方向只在 dev/test 用文件系统覆盖，
- * 运行时只做正向校验（见 [MixinConfigRegistrationValidator.validateConfigs]）。
+ * 运行时只做正向校验（见 [MixinConfigValidator.validateConfigs]）。
  */
 class MixinConfigRegistrationAlignmentTest {
 
@@ -30,7 +30,7 @@ class MixinConfigRegistrationAlignmentTest {
                 .toList()
         }
         val registered = StackUpUpCore().getMixinConfigs() + StackUpUpLateMixinLoader().getMixinConfigs()
-        val unregistered = MixinConfigRegistrationValidator.findUnregisteredConfigFiles(configFiles, registered)
+        val unregistered = MixinConfigValidator.findUnregisteredConfigFiles(configFiles, registered)
         assertEquals(emptyList<String>(), unregistered, "存在 JSON 但 loader 未注册: $unregistered")
     }
 

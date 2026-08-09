@@ -1,5 +1,6 @@
 package io.alexjoest.stackupup
 
+import io.alexjoest.stackupup.rules.RuleMessageKey
 import io.alexjoest.stackupup.rules.io.RuleSourceLocator
 import io.alexjoest.stackupup.rules.io.RuleStateService
 import net.minecraft.command.CommandResultStats
@@ -48,7 +49,7 @@ class CommandStackUpUpTest {
 
         assertEquals(StackUpUpIds.MOD_ID, command.name)
         assertEquals(emptyList<String>(), command.aliases)
-        assertEquals(StackUpUpIds.COMMAND_USAGE_KEY, command.getUsage(sender))
+        assertEquals(RuleMessageKey.COMMAND_USAGE.translationKey, command.getUsage(sender))
     }
 
     @Test
@@ -85,7 +86,7 @@ class CommandStackUpUpTest {
         command.executeArguments(sender, arrayOf("state", "set", "feature", "yes"))
 
         assertWorldMarkdownContains("- feature = true")
-        sender.assertLastTranslation(StackUpUpIds.COMMAND_STATE_SET_KEY, "feature", true)
+        sender.assertLastTranslation(RuleMessageKey.COMMAND_STATE_SET.translationKey, "feature", true)
     }
 
     @Test
@@ -97,14 +98,14 @@ class CommandStackUpUpTest {
         command.executeArguments(sender, arrayOf("state", "set", "feature", "off"))
 
         assertWorldMarkdownContains("- feature = false")
-        sender.assertLastTranslation(StackUpUpIds.COMMAND_STATE_SET_KEY, "feature", false)
+        sender.assertLastTranslation(RuleMessageKey.COMMAND_STATE_SET.translationKey, "feature", false)
     }
 
     private fun assertWrongUsage(command: CommandStackUpUp, sender: ICommandSender, vararg args: String) {
         val exception = assertThrows(WrongUsageException::class.java) {
             command.executeArguments(sender, args)
         }
-        assertEquals(StackUpUpIds.COMMAND_USAGE_KEY, exception.message)
+        assertEquals(RuleMessageKey.COMMAND_USAGE.translationKey, exception.message)
     }
 
     private fun command(): CommandStackUpUp {

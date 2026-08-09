@@ -9,25 +9,20 @@ import net.minecraft.item.ItemStack
  *
  * Provider 是字段声明的一部分；Resolver 只执行计划，不按字段名分发。
  */
-enum class RuleFieldContextProvider {
-    ORE_NAMES {
-        override fun collect(stack: ItemStack, fields: StackContextFields) {
-            fields.oreNames = RuleRuntime.oreDictIndex().getOreNames(stack)
-        }
-    },
-    MATERIAL {
-        override fun collect(stack: ItemStack, fields: StackContextFields) {
-            fields.material = GregTechMaterialResolver.resolveMaterial(stack)
-        }
-    },
-    TAB {
-        override fun collect(stack: ItemStack, fields: StackContextFields) {
-            fields.tab = stack.item.creativeTab?.tabLabel ?: ""
-        }
-    },
-    ;
+enum class RuleFieldContextProvider(
+    val collect: (ItemStack, StackContextFields) -> Unit
+) {
+    ORE_NAMES({ stack, fields ->
+        fields.oreNames = RuleRuntime.oreDictIndex().getOreNames(stack)
+    }),
 
-    abstract fun collect(stack: ItemStack, fields: StackContextFields)
+    MATERIAL({ stack, fields ->
+        fields.material = GregTechMaterialResolver.resolveMaterial(stack)
+    }),
+
+    TAB({ stack, fields ->
+        fields.tab = stack.item.creativeTab?.tabLabel.orEmpty()
+    });
 }
 
 /**

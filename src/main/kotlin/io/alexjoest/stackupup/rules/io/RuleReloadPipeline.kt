@@ -5,6 +5,7 @@ import io.alexjoest.stackupup.rules.RuleMessages
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import java.io.File
 
+/** 用途：加载 DSL/Markdown 规则文件并解析合并为规则快照。 */
 internal object RuleReloadPipeline {
     fun disabled(primaryRulesFile: File): RuleReloadReport = RuleReloadReport(
         file = primaryRulesFile,

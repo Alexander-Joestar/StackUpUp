@@ -26,6 +26,7 @@ import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 
+/** 用途：Forge 模组主类，负责生命周期编排与配置同步。 */
 @Mod(
     modid = StackUpUpIds.MOD_ID,
     name = StackUpUpIds.MOD_NAME,

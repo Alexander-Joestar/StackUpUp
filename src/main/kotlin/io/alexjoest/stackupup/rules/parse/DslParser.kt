@@ -109,8 +109,8 @@ object DslParser {
         }
         stream.consume(DslTokenType.RIGHT_BRACKET, RuleMessages.message(RuleMessageKey.LIST_CONDITION_MISSING_RIGHT_BRACKET))
         if (field == RuleField.ITEM) {
-            for (token in literalTokens) {
-                validateItemLiteral(token.lexeme, token.column)
+            for ((_, lexeme, column) in literalTokens) {
+                validateItemLiteral(lexeme, column)
             }
         }
         return ListConditionAst(field, literalTokens.map { it.lexeme })

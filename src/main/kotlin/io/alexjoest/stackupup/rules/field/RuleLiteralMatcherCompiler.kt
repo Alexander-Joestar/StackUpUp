@@ -3,6 +3,7 @@ package io.alexjoest.stackupup.rules.field
 import io.alexjoest.stackupup.rules.RuleMessages
 import io.alexjoest.stackupup.rules.parse.ItemLiteralSyntax
 
+/** 用途：把规则字面量（含通配）编译为匹配器节点。 */
 internal object RuleLiteralMatcherCompiler {
     /**
      * 字符串 pattern 编译：无通配 → 精确匹配节点；含通配 → 锚定正则节点。

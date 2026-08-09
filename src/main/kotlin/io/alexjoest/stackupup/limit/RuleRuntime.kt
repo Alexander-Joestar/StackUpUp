@@ -3,6 +3,7 @@ package io.alexjoest.stackupup.limit
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import java.util.concurrent.atomic.AtomicReference
 
+/** 用途：持有当前规则快照与矿石词典索引的全局运行态，原子替换。 */
 object RuleRuntime {
     private val emptySnapshot = RuleSnapshot(version = 0L, rules = emptyList())
     private val emptyOreDictIndex = OreDictIndex({ _, _ -> emptySet() })

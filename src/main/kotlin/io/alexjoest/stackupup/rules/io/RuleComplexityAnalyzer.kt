@@ -1,8 +1,8 @@
 package io.alexjoest.stackupup.rules.io
 
 import io.alexjoest.stackupup.StackUpUpConfig
-import io.alexjoest.stackupup.StackUpUpIds
 import io.alexjoest.stackupup.rules.LocalizedMessage
+import io.alexjoest.stackupup.rules.RuleMessageKey
 import io.alexjoest.stackupup.rules.RuleStepKind
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 
@@ -17,13 +17,13 @@ object RuleComplexityAnalyzer {
         val totalRuleLength = snapshot.rules.sumOf { it.sourceLine.length }
 
         if (ruleCount >= RULE_COUNT_THRESHOLD) {
-            add(LocalizedMessage(StackUpUpIds.RULE_COMPLEXITY_RULE_COUNT_KEY, listOf(ruleCount)))
+            add(LocalizedMessage(RuleMessageKey.RULE_COMPLEXITY_RULE_COUNT.translationKey, listOf(ruleCount)))
         }
         if (longestRuleLength >= RULE_LENGTH_THRESHOLD) {
-            add(LocalizedMessage(StackUpUpIds.RULE_COMPLEXITY_RULE_LENGTH_KEY, listOf(longestRuleLength)))
+            add(LocalizedMessage(RuleMessageKey.RULE_COMPLEXITY_RULE_LENGTH.translationKey, listOf(longestRuleLength)))
         }
         if (totalRuleLength >= TOTAL_LENGTH_THRESHOLD) {
-            add(LocalizedMessage(StackUpUpIds.RULE_COMPLEXITY_TOTAL_LENGTH_KEY, listOf(totalRuleLength)))
+            add(LocalizedMessage(RuleMessageKey.RULE_COMPLEXITY_TOTAL_LENGTH.translationKey, listOf(totalRuleLength)))
         }
         addAll(clampWarnings(snapshot))
     }
@@ -38,7 +38,7 @@ object RuleComplexityAnalyzer {
             if (setValue <= max) {
                 null
             } else {
-                LocalizedMessage(StackUpUpIds.RULE_LIMIT_CLAMP_KEY, listOf(rule.lineNumber, max))
+                LocalizedMessage(RuleMessageKey.RULE_LIMIT_CLAMP.translationKey, listOf(rule.lineNumber, max))
             }
         }
     }

@@ -22,7 +22,7 @@ import org.objectweb.asm.tree.ClassNode
  * optional 层（late）只 ERROR 记录不中止——MixinBooter 的 late loader 循环对抛出的异常整体中断
  * （LoadControllerMixin 字节码/sources 证据），late 层抛异常会连带中止全部剩余 late 配置装载。
  */
-object MixinConfigRegistrationValidator {
+object MixinConfigValidator {
     private val logger: Logger = LogManager.getLogger("stackupup.mixin.config")
 
     private const val MIXIN_ANNOTATION_DESCRIPTOR: String = "Lorg/spongepowered/asm/mixin/Mixin;"

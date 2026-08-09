@@ -13,25 +13,24 @@ import org.apache.logging.log4j.core.LogEvent
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import zone.rong.mixinbooter.Context
 import org.apache.logging.log4j.core.Logger as CoreLogger
 
 /**
- * late/early loader 跳过与冲突禁用的日志断言（T14.5 停止条件 2/3/5）。
+ * connector 跳过与冲突禁用的日志断言（T14.5 停止条件 2/3/5；自 StackUpUpLateMixinLoaderSkipLogTest 迁移）。
  *
  * 断言真实 logger 输出：项目 classpath 的 log4j-core 是裁剪 jar（无 ListAppender，
  * `./gradlew dependencies --configuration testCompileClasspath` 与 javap 证据），因此测试自带最小
  * [CollectingAppender]（实现 core.Appender 接口）挂到目标 logger 上捕获消息。
- * - mod 缺失 / MixinToggles 关闭 / 未知配置 → 结构化日志 + 返回 false（原零日志跳过/无条件入队）；
+ * - mod 缺失 / MixinToggles 关闭 / 未知配置 → 结构化日志 + 拒绝装载；
  * - required:false 配置（brandonscore）mod 缺失同样记录；
- * - 冲突禁用保留设计语义（返回空表）但必须 ERROR 说明原因。
+ * - 冲突禁用保留设计语义（拒绝 early 装载）但必须 ERROR 说明原因。
  *
  * 对全局 logger 的 level/appender 修改在 finally 中恢复；项目未开启 JUnit 并行，
- * 且该 logger 名仅本 loader 使用，不影响其它测试。
+ * 且该 logger 名仅本 connector 使用，不影响其它测试。
  */
-class StackUpUpLateMixinLoaderSkipLogTest {
+class StackUpUpMixinConnectorSkipLogTest {
 
-    private fun capturedLogs(loggerName: String = "stackupup.mixin.late", block: () -> Unit): List<String> {
+    private fun capturedLogs(loggerName: String = "stackupup.mixin.connector", block: () -> Unit): List<String> {
         val collected = mutableListOf<String>()
         val appender = CollectingAppender(collected)
         val logger = LogManager.getLogger(loggerName) as CoreLogger
@@ -55,9 +54,7 @@ class StackUpUpLateMixinLoaderSkipLogTest {
     fun `modAbsent_shouldLogStructuredSkipAndReturnFalse`() {
         val messages = capturedLogs {
             assertFalse(
-                StackUpUpLateMixinLoader().shouldMixinConfigQueue(
-                    Context(StackUpUpIds.LATE_AE2_MIXIN_CONFIG, emptyList()),
-                ),
+                StackUpUpMixinConnector().shouldQueue(StackUpUpIds.LATE_AE2_MIXIN_CONFIG) { false },
             )
         }
         assertTrue(
@@ -70,9 +67,7 @@ class StackUpUpLateMixinLoaderSkipLogTest {
     fun `requiredFalseConfigModAbsent_shouldAlsoLogSkip`() {
         val messages = capturedLogs {
             assertFalse(
-                StackUpUpLateMixinLoader().shouldMixinConfigQueue(
-                    Context(StackUpUpIds.LATE_BRANDONSCORE_MIXIN_CONFIG, emptyList()),
-                ),
+                StackUpUpMixinConnector().shouldQueue(StackUpUpIds.LATE_BRANDONSCORE_MIXIN_CONFIG) { false },
             )
         }
         assertTrue(
@@ -88,9 +83,7 @@ class StackUpUpLateMixinLoaderSkipLogTest {
             MixinToggles.ic2 = false
             val messages = capturedLogs {
                 assertFalse(
-                    StackUpUpLateMixinLoader().shouldMixinConfigQueue(
-                        Context(StackUpUpIds.LATE_IC2_MIXIN_CONFIG, listOf("ic2")),
-                    ),
+                    StackUpUpMixinConnector().shouldQueue(StackUpUpIds.LATE_IC2_MIXIN_CONFIG) { it == "ic2" },
                 )
             }
             assertTrue(
@@ -106,14 +99,20 @@ class StackUpUpLateMixinLoaderSkipLogTest {
     fun `unknownConfig_shouldLogErrorAndReturnFalseInsteadOfUnconditionalQueue`() {
         val messages = capturedLogs {
             assertFalse(
-                StackUpUpLateMixinLoader().shouldMixinConfigQueue(
-                    Context("mixins.stackupup.late.ghost.json", listOf("ghostmod")),
-                ),
+                StackUpUpMixinConnector().shouldQueue("mixins.stackupup.late.ghost.json") { true },
             )
         }
         assertTrue(
             messages.any { it.contains("mixins.stackupup.late.ghost.json") && it.contains("not registered") },
             "未知配置不得无条件入队且必须留 ERROR 日志，实际: $messages",
+        )
+    }
+
+    @Test
+    fun `noConflict_shouldAllowEarlyQueue`() {
+        assertTrue(
+            StackUpUpMixinConnector().shouldQueueEarly(emptyList()),
+            "无冲突时 early 配置必须允许装载",
         )
     }
 
@@ -124,8 +123,12 @@ class StackUpUpLateMixinLoaderSkipLogTest {
         System.setProperty(disabledProperty, "true")
         System.setProperty(modsProperty, "StackUp")
         try {
-            val messages = capturedLogs("stackupup.coremod") {
-                assertTrue(StackUpUpCore().getMixinConfigs().isEmpty(), "冲突禁用必须保留空表设计语义")
+            val conflicts = StackUpUpCore.ensureConflictState()
+            val messages = capturedLogs {
+                assertFalse(
+                    StackUpUpMixinConnector().shouldQueueEarly(conflicts),
+                    "冲突禁用必须拒绝 early 装载",
+                )
             }
             assertTrue(
                 messages.any { it.contains(StackUpUpIds.EARLY_MIXIN_CONFIG) && it.contains("StackUp") && it.contains("NOT queued") },

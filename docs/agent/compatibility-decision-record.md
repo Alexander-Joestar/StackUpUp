@@ -878,3 +878,68 @@ T12.5 JSONL 事件逐条关联调用点、结论三态标注完成；无源码�
 - ⑥ **11.13 运行时 ASM 版本并存未验证**（本复核新增）。来源：11.13 jar 与 cleanmix-0.7.1.jar 均不内嵌 ASM（实测条目统计为 0）；11.13 POM 声明 asm-debug-all 5.2、cleanmix 0.7.1 POM 声明 asm-tree/commons/util 9.8（runtime）。缺口：classpath 上 5.2 与 9.8 并存时转换链实际使用哪套未验证。影响：转换期 ClassReader/ClassWriter 行为差异。停止条件：11.13 启动日志 + 转换后字节码矩阵（T14.4/T14.7 范围）。
 
 **无源码不可判定与迁移行为边界：** 11.13/cleanmix-0.7.1/mixinextras-0.5.5 候选 jar 仅在线下载核对 manifest 与内容统计，未保留本地副本、未运行加载矩阵；其运行行为证据（provider/refmap/classloader/容量写入）仍为**无源码不可判定**，本复核不改变 8.6 的停止条件：T14.7 通过前不实施迁移。第三方容量写入目标缺口维持既有台账（`compatibility-decision-record.md:156-163`、`mixin-生态与注入最佳实践.md:97-101`），本复核不重列。DeepWiki 全部查询只作架构/职责佐证，不作版本化运行事实；GitHub API 限流与 DeepWiki 未索引均已按上表逐条记录，未把失败项写成通过。
+
+### 8.8 IMixinConnector 装载入口迁移（2026-08-10 追加）
+
+本节记录把 mixin 装载入口从 deprecated 的 `IEarlyMixinLoader`/`ILateMixinLoader` 迁移到 `IMixinConnector`
+（MixinBooter 11 官方路径）的真实实施记录。只换装载入口，装载语义（冲突禁用/动态条件/校验/日志）全部保留。
+
+- **实施变更（逐文件）：**
+  - 新建 `src/main/kotlin/io/alexjoest/stackupup/bootstrap/StackUpUpMixinConnector.kt`：`class StackUpUpMixinConnector : IMixinConnector`，
+    `connect()` 先 early（`StackUpUpCore.ensureConflictState()` 冲突非空 → ERROR + 不 add；通过 → `MixinConfigValidator.requireCoreConfigValid`
+    fail-fast 后 `Mixins.addConfiguration(EARLY_MIXIN_CONFIG)`，early 段异常按 ERROR 隔离、不连带中止 late），再 late（`validateConfigs` + `logProblems`
+    正向校验 → 按模块表逐配置 `ModDiscoverer.isModPresent(modId)` + `MixinToggles` 条件 add；不在模块表的配置不装载）。
+    决策函数 `shouldQueueEarly(conflicts)`/`shouldQueue(config, isModPresent)` 为 internal 供测试注入谓词；模块表
+    `LateMixinModule` 15 项自 `StackUpUpLateMixinLoader` 逐字迁移。
+  - `src/main/kotlin/io/alexjoest/stackupup/StackUpUpCore.kt`：移除 `IEarlyMixinLoader` 实现与 `getMixinConfigs()`；
+    `ensureConflictState()` 由 private 改 internal（connector 与 `getASMTransformerClass` 共用同一冲突判定）；
+    IFMLLoadingPlugin 其余（`getASMTransformerClass`/`injectData`/`COREMOD_ACTIVE_PROPERTY`）不变。
+  - 删除 `src/main/kotlin/io/alexjoest/stackupup/bootstrap/StackUpUpLateMixinLoader.kt`。
+  - `build-logic/convention/src/main/kotlin/minecraft.gradle.kts`：jar manifest 新增 `MixinConnector` →
+    `io.alexjoest.stackupup.bootstrap.StackUpUpMixinConnector`（useMixins 门控；属性名取自 CleanMix 0.7.1
+    `Constants.ManifestAttributes.MIXINCONNECTOR = "MixinConnector"`，`MixinPlatformAgentDefault.accept/prepare` 读取）。
+  - 测试：`StackUpUpLateMixinLoaderSkipLogTest` → `StackUpUpMixinConnectorSkipLogTest`（6 用例，谓词注入替代 Context）；
+    `MixinBooterIntegrationTest` 重写（early/late 配置名稳定、模块表、按 mod 在场决策、connector 源码结构检查）；
+    `MixinConfigValidatorTest`/`MixinConfigRegistrationAlignmentTest` 改用模块表；三个 mixin source test 改 `shouldQueue` 谓词注入。
+
+- **关键证据（11.13 源码 `/tmp/mb11src` 与 cleanmix-0.7.1 实测）：**
+  - 注册链：`ModDiscoverer.discover()`（MixinBooterPlugin 构造期）扫描 mods 目录与 LaunchClassLoader URL 上的 jar，
+    记录 manifest 带 `MixinConfigs`/`MixinConnector` 的 jar → `MixinBooterService.getMixinContainers()` →
+    `MixinPlatformManager.inject()`（injectData 内 `platform.inject()`，MixinBooterPlugin.java:60）再扫描容器 →
+    `MixinPlatformAgentDefault.prepare()` 读 manifest 属性 → `addConnector` → `MixinConnectorManager.inject()` 实例化并调 `connect()`。
+  - **dev 环境可用性（已实证）**：RFG 2.0.2 `MCPTasks.java` 的 `runServer`/`runClient` classpath 均含 `task.classpath(taskJar)`
+    （:598-601/:610-613），即 `build/libs/StackUpUp-0.2.4-dev.jar` 以 jar 形式在 dev 运行时 classpath 上，会被 ModDiscoverer 扫描；
+    运行日志 `[CleanMix]: Successfully loaded Mixin Connector [io.alexjoest.stackupup.bootstrap.StackUpUpMixinConnector]` 实证 dev 发现成功。
+  - **Kotlin object 不可用于 connector（与任务预设的 object 写法偏离，须记录）**：`MixinConnectorManager.loadConnectors()`
+    用 `connectorClass.getDeclaredConstructor().newInstance()` 且**不调用 setAccessible**（MixinConnectorManager.java:82）；
+    Kotlin object 编译为私有构造器 → `newInstance()` 抛 IllegalAccessException → connector 永不装载。故实现为普通
+    `class`（公共无参构造，javap 实证 `public io.alexjoest.stackupup.bootstrap.StackUpUpMixinConnector()`），与旧
+    `ILateMixinLoader`（class + 公共无参构造）同一约束。任务原文写 `object`，此处以源码证据为准偏离并记录。
+  - `Context`（zone.rong.mixinbooter）已 deprecated（11.0 起），connect() 无 Context 参数；mod 在场判断改用
+    `zone.rong.mixinbooter.service.ModDiscoverer.isModPresent(String)`（public static，源码实证），与旧
+    `Context.isModPresent`（内部即 `presentMods.contains`，presentMods 来自 `ModDiscoverer.getPresentMods()`）同一数据源。
+  - 全部 16 个 mixin 配置（early 1 + late 15）`"target": "@env(DEFAULT)"`；11.13 CleanMix 模型 DEFAULT 配置统一在
+    DEFAULT 阶段（EnvironmentStateTweaker → gotoPhase(DEFAULT)，位于 injectData 之后）装载，connect() 在 injectData 内 add
+    早/晚配置无行为差异（运行日志实证：early 配置 `Preparing config mixins.stackupup.early.json (20)` + 全部目标 APPLY）。
+
+- **验证结果（实际执行）：**
+  - `test` 全量：BUILD SUCCESSFUL（含重写后 `StackUpUpMixinConnectorSkipLogTest` 6/6、`MixinBooterIntegrationTest` 5/5、
+    `MixinConfigRegistrationAlignmentTest` 2/2 等，0 failures）。三护栏用例含在 `test` 内（`MixinBooterIntegrationTest`/
+    `EarlyMixinBytecodeSafetyTest`/`CoremodHierarchyBytecodeSafetyTest` 全部通过）。
+  - `spotlessCheck`：FAILED，但仅剩**预存违规** `src/main/kotlin/io/alexjoest/stackupup/rules/field/RuleFieldContextProvider.kt`
+    （enum 单行化，jj 工作区未改动该文件，租约外不修）；本次迁移新增/改写的全部文件通过 spotless。
+  - deprecation 警告：`compileKotlin compileTestKotlin --rerun-tasks` 全量重编，`IEarlyMixinLoader`/`ILateMixinLoader`/`Context`
+    警告 0 残留（8.6.1 记录的 6 主 + 15 测处已消除）；剩余 2 条警告均为既有无关项（StackLimitHooksTest 旧重载、WrapperCapacityDiagnosticTest 空性）。
+  - `runServerAutoTestMatrix`：FAILED——`inv_wrapper_limit`/`sided_inv_wrapper_limit` 槽位上限=64 预期=10000。
+    **该失败为预存问题，与本迁移无关**：2026-08-09 10:40 的前变更运行（旧 loader，`run/logs/2026-08-09-1.log.gz`）同两个探针
+    逐字节同签名失败；机制上 `ForgeItemHandlerLimitMixin` 仅目标 ItemStackHandler/EntityEquipmentInvWrapper（T3 已移除转发 wrapper），
+    `FixedCompatTargets`（2026-05-01 提交，早于一切近期运行）显式跳过 InvWrapper/SidedInvWrapper，探针代理库存 `getInventoryStackLimit`
+    硬编码 64 → 当兼容上限为 10000 时该两探针必然失败（10:47 运行兼容上限 64 时两探针平凡通过佐证）。迁移装载链本身运行实证通过：
+    `Successfully loaded Mixin Connector`、early 配置 20 mixins 准备并 APPLY（ItemMixin/ContainerMixin/SlotLimitMixin/
+    SlotItemHandlerMixin/ForgeItemHandlerLimitMixin×2/VanillaInventoryLimitMixin×9 等）、15 个 late 配置按 mod 缺失逐条 INFO 跳过、
+    combined/ranged/slot_item_handler 三探针 10000 通过。8.6.1 记录「探针 5 项通过」出自兼容上限 64 的运行（与 10:47 同型），
+    无 10000 上限下 5 项全过的可核证据。
+
+- **剩余风险/UNKNOWN：** ① 矩阵两探针失败为预存问题，修复属探针预期或 skip 表/目标集合决策（本任务红线「不改 mixin 目标类」不涉及）；
+  ② `spotlessCheck` 的 RuleFieldContextProvider 预存违规未修（租约外）；③ 生产混淆 jar 的 connector 装载（notch 环境）未实测（dev/SRG
+  证据已覆盖 manifest 注册与装载）；④ 8.6.1「探针 5 项通过」与 10:40 后失败的差异缺少 05:37 运行日志，机制归因见上，保持 UNKNOWN。

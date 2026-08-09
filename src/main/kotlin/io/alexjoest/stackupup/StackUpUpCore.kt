@@ -1,19 +1,15 @@
 package io.alexjoest.stackupup
 
-import io.alexjoest.stackupup.bootstrap.MixinConfigValidator
 import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
-import zone.rong.mixinbooter.IEarlyMixinLoader
 
 @IFMLLoadingPlugin.Name("StackUpUpCore")
 @IFMLLoadingPlugin.MCVersion("1.12.2")
 @IFMLLoadingPlugin.SortingIndex(1001)
 // 只排除 core 包，避免把 mixin 包一起挡在 LaunchClassLoader 的变换链外。
 @IFMLLoadingPlugin.TransformerExclusions(StackUpUpIds.CORE_PACKAGE_NAME, StackUpUpIds.CONFIG_CLASS_NAME)
-class StackUpUpCore :
-    IFMLLoadingPlugin,
-    IEarlyMixinLoader {
+class StackUpUpCore : IFMLLoadingPlugin {
     companion object {
         private val logger: Logger = LogManager.getLogger("stackupup.coremod")
         private const val COREMOD_ACTIVE_PROPERTY: String = "${StackUpUpIds.MOD_ID}.coremod.active"
@@ -61,7 +57,9 @@ class StackUpUpCore :
             }
         }
 
-        private fun ensureConflictState(): List<String> {
+        // internal：early mixin 装载入口（StackUpUpMixinConnector.connect）与动态 transformer 注册
+        // （getASMTransformerClass）共用同一冲突判定，保证两处装载决策一致。
+        internal fun ensureConflictState(): List<String> {
             if (isDisabledForConflict()) {
                 return conflictingMods()
             }
@@ -96,21 +94,4 @@ class StackUpUpCore :
     }
 
     override fun getAccessTransformerClass(): String? = null
-
-    override fun getMixinConfigs(): List<String> {
-        val conflicts = ensureConflictState()
-        if (conflicts.isNotEmpty()) {
-            // 冲突禁用是既有设计（AGENTS「冲突时禁用是设计」），但必须 ERROR 说明原因，不再静默返回空表（T14.5 停止条件 1/5）。
-            logger.error(
-                "Early mixin config '{}' is NOT queued: conflicting stacking mods detected [{}]; " +
-                    "all early mixins disabled by conflict-disable design",
-                StackUpUpIds.EARLY_MIXIN_CONFIG,
-                conflicts.joinToString(", "),
-            )
-            return emptyList()
-        }
-        // 核心 early 配置缺失/注册无效必须 fail-fast（T14.5 停止条件 1），不再让核心配置静默失效。
-        MixinConfigValidator.requireCoreConfigValid(StackUpUpIds.EARLY_MIXIN_CONFIG, javaClass.classLoader)
-        return listOf(StackUpUpIds.EARLY_MIXIN_CONFIG)
-    }
 }

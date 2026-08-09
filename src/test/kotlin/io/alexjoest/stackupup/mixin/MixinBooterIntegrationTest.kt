@@ -1,19 +1,26 @@
 package io.alexjoest.stackupup.mixin
 
-import io.alexjoest.stackupup.StackUpUpCore
-import io.alexjoest.stackupup.bootstrap.StackUpUpLateMixinLoader
+import io.alexjoest.stackupup.StackUpUpIds
+import io.alexjoest.stackupup.bootstrap.StackUpUpMixinConnector
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import zone.rong.mixinbooter.Context
 import java.nio.file.Files
 import java.nio.file.Paths
 
+/**
+ * MixinBooter 装载链集成测试（自 IEarlyMixinLoader/ILateMixinLoader 时代迁移到 IMixinConnector）。
+ *
+ * 决策函数（shouldQueueEarly/shouldQueue）为行为验证：调用真实代码；mod 在场判断经注入谓词模拟
+ * （生产路径由 connector 传入 ModDiscoverer.isModPresent，见结构检查用例）。
+ * [connectorSource_shouldKeepLoaderSemantics] 为结构检查：只证明源码保留冲突分支/条件 add/校验调用。
+ */
 class MixinBooterIntegrationTest {
     @Test
     fun `earlyConfigFileName_shouldBeStable`() {
-        assertEquals(listOf("mixins.stackupup.early.json"), StackUpUpCore().getMixinConfigs())
+        assertEquals("mixins.stackupup.early.json", StackUpUpIds.EARLY_MIXIN_CONFIG)
+        assertTrue(StackUpUpMixinConnector().shouldQueueEarly(emptyList()), "无冲突时 early 配置应可装载")
     }
 
     @Test
@@ -36,13 +43,13 @@ class MixinBooterIntegrationTest {
                 "mixins.stackupup.late.colossalchests.json",
                 "mixins.stackupup.late.gregtech.json",
             ),
-            StackUpUpLateMixinLoader().getMixinConfigs(),
+            StackUpUpMixinConnector().modules.map { it.config },
         )
     }
 
     @Test
     fun `lateConfigFiles_shouldReferenceExistingMixinSources`() {
-        for (config in StackUpUpLateMixinLoader().getMixinConfigs()) {
+        for (config in StackUpUpMixinConnector().modules.map { it.config }) {
             val configPath = Paths.get("src", "main", "resources", config)
             assertTrue(Files.isRegularFile(configPath), "Missing mixin config: $config")
 
@@ -61,122 +68,61 @@ class MixinBooterIntegrationTest {
 
     @Test
     fun `lateConfig_shouldQueueByModPresence`() {
-        val loader = StackUpUpLateMixinLoader()
-        assertTrue(
-            loader.shouldMixinConfigQueue(
-                Context(
-                    "mixins.stackupup.late.ae2.json",
-                    listOf("appliedenergistics2"),
-                ),
-            ),
-        )
-        assertFalse(loader.shouldMixinConfigQueue(Context("mixins.stackupup.late.ae2.json", emptyList())))
+        fun present(vararg modIds: String): (String) -> Boolean = { modId -> modId in modIds }
 
-        assertTrue(
-            loader.shouldMixinConfigQueue(
-                Context("mixins.stackupup.late.actuallyadditions.json", listOf("actuallyadditions")),
-            ),
-        )
-        assertFalse(
-            loader.shouldMixinConfigQueue(
-                Context(
-                    "mixins.stackupup.late.actuallyadditions.json",
-                    emptyList(),
-                ),
-            ),
-        )
+        val connector = StackUpUpMixinConnector()
+        assertTrue(connector.shouldQueue("mixins.stackupup.late.ae2.json", present("appliedenergistics2")))
+        assertFalse(connector.shouldQueue("mixins.stackupup.late.ae2.json", present()))
 
-        assertTrue(loader.shouldMixinConfigQueue(Context("mixins.stackupup.late.brandonscore.json", listOf("brandonscore"))))
-        assertFalse(loader.shouldMixinConfigQueue(Context("mixins.stackupup.late.brandonscore.json", emptyList())))
+        assertTrue(connector.shouldQueue("mixins.stackupup.late.actuallyadditions.json", present("actuallyadditions")))
+        assertFalse(connector.shouldQueue("mixins.stackupup.late.actuallyadditions.json", present()))
 
-        assertTrue(loader.shouldMixinConfigQueue(Context("mixins.stackupup.late.mantle.json", listOf("mantle"))))
-        assertFalse(loader.shouldMixinConfigQueue(Context("mixins.stackupup.late.mantle.json", emptyList())))
+        assertTrue(connector.shouldQueue("mixins.stackupup.late.brandonscore.json", present("brandonscore")))
+        assertFalse(connector.shouldQueue("mixins.stackupup.late.brandonscore.json", present()))
 
-        assertTrue(loader.shouldMixinConfigQueue(Context("mixins.stackupup.late.ic2.json", listOf("ic2"))))
-        assertTrue(
-            loader.shouldMixinConfigQueue(
-                Context(
-                    "mixins.stackupup.late.cyclopscore.json",
-                    listOf("cyclopscore"),
-                ),
-            ),
-        )
-        assertFalse(loader.shouldMixinConfigQueue(Context("mixins.stackupup.late.cyclopscore.json", emptyList())))
+        assertTrue(connector.shouldQueue("mixins.stackupup.late.mantle.json", present("mantle")))
+        assertFalse(connector.shouldQueue("mixins.stackupup.late.mantle.json", present()))
 
-        assertTrue(loader.shouldMixinConfigQueue(Context("mixins.stackupup.late.enderio.json", listOf("enderio"))))
-        assertFalse(loader.shouldMixinConfigQueue(Context("mixins.stackupup.late.enderio.json", emptyList())))
+        assertTrue(connector.shouldQueue("mixins.stackupup.late.ic2.json", present("ic2")))
+        assertTrue(connector.shouldQueue("mixins.stackupup.late.cyclopscore.json", present("cyclopscore")))
+        assertFalse(connector.shouldQueue("mixins.stackupup.late.cyclopscore.json", present()))
 
-        assertTrue(
-            loader.shouldMixinConfigQueue(
-                Context(
-                    "mixins.stackupup.late.refinedstorage.json",
-                    listOf("refinedstorage"),
-                ),
-            ),
-        )
-        assertFalse(
-            loader.shouldMixinConfigQueue(
-                Context(
-                    "mixins.stackupup.late.refinedstorage.json",
-                    emptyList(),
-                ),
-            ),
-        )
+        assertTrue(connector.shouldQueue("mixins.stackupup.late.enderio.json", present("enderio")))
+        assertFalse(connector.shouldQueue("mixins.stackupup.late.enderio.json", present()))
 
-        assertTrue(
-            loader.shouldMixinConfigQueue(
-                Context("mixins.stackupup.late.integrateddynamics.json", listOf("integrateddynamics")),
-            ),
-        )
-        assertFalse(
-            loader.shouldMixinConfigQueue(
-                Context("mixins.stackupup.late.integrateddynamics.json", emptyList()),
-            ),
-        )
+        assertTrue(connector.shouldQueue("mixins.stackupup.late.refinedstorage.json", present("refinedstorage")))
+        assertFalse(connector.shouldQueue("mixins.stackupup.late.refinedstorage.json", present()))
 
-        assertTrue(
-            loader.shouldMixinConfigQueue(
-                Context("mixins.stackupup.late.limelib.json", listOf("limelib")),
-            ),
-        )
-        assertFalse(
-            loader.shouldMixinConfigQueue(
-                Context("mixins.stackupup.late.limelib.json", emptyList()),
-            ),
-        )
+        assertTrue(connector.shouldQueue("mixins.stackupup.late.integrateddynamics.json", present("integrateddynamics")))
+        assertFalse(connector.shouldQueue("mixins.stackupup.late.integrateddynamics.json", present()))
 
-        assertTrue(
-            loader.shouldMixinConfigQueue(
-                Context("mixins.stackupup.late.immersiveengineering.json", listOf("immersiveengineering")),
-            ),
-        )
-        assertFalse(
-            loader.shouldMixinConfigQueue(
-                Context("mixins.stackupup.late.immersiveengineering.json", emptyList()),
-            ),
-        )
+        assertTrue(connector.shouldQueue("mixins.stackupup.late.limelib.json", present("limelib")))
+        assertFalse(connector.shouldQueue("mixins.stackupup.late.limelib.json", present()))
 
-        assertTrue(
-            loader.shouldMixinConfigQueue(
-                Context("mixins.stackupup.late.colossalchests.json", listOf("colossalchests")),
-            ),
-        )
-        assertFalse(
-            loader.shouldMixinConfigQueue(
-                Context("mixins.stackupup.late.colossalchests.json", emptyList()),
-            ),
-        )
+        assertTrue(connector.shouldQueue("mixins.stackupup.late.immersiveengineering.json", present("immersiveengineering")))
+        assertFalse(connector.shouldQueue("mixins.stackupup.late.immersiveengineering.json", present()))
 
-        assertTrue(
-            loader.shouldMixinConfigQueue(
-                Context("mixins.stackupup.late.gregtech.json", listOf("gregtech")),
+        assertTrue(connector.shouldQueue("mixins.stackupup.late.colossalchests.json", present("colossalchests")))
+        assertFalse(connector.shouldQueue("mixins.stackupup.late.colossalchests.json", present()))
+
+        assertTrue(connector.shouldQueue("mixins.stackupup.late.gregtech.json", present("gregtech")))
+        assertFalse(connector.shouldQueue("mixins.stackupup.late.gregtech.json", present()))
+    }
+
+    @Test
+    fun `connectorSource_shouldKeepLoaderSemantics`() {
+        // 结构检查（非行为验证）：connect() 装载链必须保留冲突检测分支、mod 在场条件 add 与校验调用，
+        // 否则 dev/test 与生产装载入口会脱节；实际装载行为由 runServerAutoTest 运行验证覆盖。
+        val source = String(
+            Files.readAllBytes(
+                Paths.get("src", "main", "kotlin", "io", "alexjoest", "stackupup", "bootstrap", "StackUpUpMixinConnector.kt"),
             ),
+            Charsets.UTF_8,
         )
-        assertFalse(
-            loader.shouldMixinConfigQueue(
-                Context("mixins.stackupup.late.gregtech.json", emptyList()),
-            ),
-        )
+        assertTrue(source.contains("ensureConflictState"), "connect 必须先做冲突检测")
+        assertTrue(source.contains("ModDiscoverer.isModPresent"), "late 装载必须按 mod 在场条件 add")
+        assertTrue(source.contains("MixinConfigValidator"), "装载前必须保留正向校验")
+        assertTrue(source.contains("Mixins.addConfiguration"), "必须通过 Mixins.addConfiguration 入队")
     }
 
     private fun extractJsonString(json: String, key: String): String? {

@@ -28,7 +28,7 @@ class MixinConfigValidatorTest {
 
     @Test
     fun `lateConfigs_onRealClasspath_shouldHaveNoProblems`() {
-        val lateConfigs = StackUpUpLateMixinLoader().getMixinConfigs()
+        val lateConfigs = StackUpUpMixinConnector().modules.map { it.config }
         assertEquals(emptyList<MixinConfigValidator.Problem>(), MixinConfigValidator.validateConfigs(lateConfigs, realClassLoader))
     }
 

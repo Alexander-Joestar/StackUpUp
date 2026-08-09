@@ -115,6 +115,11 @@ tasks.withType<Jar> {
         if (useAccessTransformer) {
             attributeMap["FMLAT"] = archivesBaseName + "_at.cfg"
         }
+        if (useMixins) {
+            // MixinBooter 11 官方装载入口：MixinConnector 属性指向 IMixinConnector 实现，由 CleanMix
+            // MixinPlatformAgentDefault 读取 jar manifest 注册（属性名取自 ManifestAttributes.MIXINCONNECTOR）。
+            attributeMap["MixinConnector"] = "io.alexjoest.stackupup.bootstrap.StackUpUpMixinConnector"
+        }
         attributes(attributeMap)
     }
     // Add all embedded dependencies into the jar

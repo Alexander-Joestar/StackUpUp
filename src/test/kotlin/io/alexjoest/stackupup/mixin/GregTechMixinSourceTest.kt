@@ -1,11 +1,10 @@
 package io.alexjoest.stackupup.mixin
 
 import io.alexjoest.stackupup.StackUpUpIds
-import io.alexjoest.stackupup.bootstrap.StackUpUpLateMixinLoader
+import io.alexjoest.stackupup.bootstrap.StackUpUpMixinConnector
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import zone.rong.mixinbooter.Context
 import java.nio.file.Files
 import java.nio.file.Paths
 
@@ -70,23 +69,19 @@ class GregTechMixinSourceTest {
     @Test
     fun `gregTechLateMixin_shouldBeRegisteredInLoaderAndToggled`() {
         assertTrue(
-            StackUpUpLateMixinLoader().getMixinConfigs().any { it.contains("gregtech") },
-            "gregtech late config 必须登记在 loader 模块表",
+            StackUpUpMixinConnector().modules.any { it.config.contains("gregtech") },
+            "gregtech late config 必须登记在 connector 模块表",
         )
         assertTrue(
             StackUpUpIds.LATE_GREGTECH_MIXIN_CONFIG == "mixins.stackupup.late.gregtech.json",
             "配置名常量必须与资源一致",
         )
         assertTrue(
-            StackUpUpLateMixinLoader().shouldMixinConfigQueue(
-                Context(StackUpUpIds.LATE_GREGTECH_MIXIN_CONFIG, listOf("gregtech")),
-            ),
+            StackUpUpMixinConnector().shouldQueue(StackUpUpIds.LATE_GREGTECH_MIXIN_CONFIG) { it == "gregtech" },
             "modid=gregtech 存在时配置应入队",
         )
         assertFalse(
-            StackUpUpLateMixinLoader().shouldMixinConfigQueue(
-                Context(StackUpUpIds.LATE_GREGTECH_MIXIN_CONFIG, emptyList()),
-            ),
+            StackUpUpMixinConnector().shouldQueue(StackUpUpIds.LATE_GREGTECH_MIXIN_CONFIG) { false },
             "modid 缺失时配置应跳过",
         )
     }

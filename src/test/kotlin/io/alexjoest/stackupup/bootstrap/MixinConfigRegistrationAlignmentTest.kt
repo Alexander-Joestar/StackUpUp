@@ -1,6 +1,5 @@
 package io.alexjoest.stackupup.bootstrap
 
-import io.alexjoest.stackupup.StackUpUpCore
 import io.alexjoest.stackupup.StackUpUpIds
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -29,7 +28,7 @@ class MixinConfigRegistrationAlignmentTest {
                 .filter { it.startsWith("mixins.${StackUpUpIds.MOD_ID}.") && it.endsWith(".json") }
                 .toList()
         }
-        val registered = StackUpUpCore().getMixinConfigs() + StackUpUpLateMixinLoader().getMixinConfigs()
+        val registered = listOf(StackUpUpIds.EARLY_MIXIN_CONFIG) + StackUpUpMixinConnector().modules.map { it.config }
         val unregistered = MixinConfigValidator.findUnregisteredConfigFiles(configFiles, registered)
         assertEquals(emptyList<String>(), unregistered, "存在 JSON 但 loader 未注册: $unregistered")
     }
@@ -60,7 +59,7 @@ class MixinConfigRegistrationAlignmentTest {
     }
 
     private fun readAllJsonClassNames(): Set<String> {
-        val configs = StackUpUpCore().getMixinConfigs() + StackUpUpLateMixinLoader().getMixinConfigs()
+        val configs = listOf(StackUpUpIds.EARLY_MIXIN_CONFIG) + StackUpUpMixinConnector().modules.map { it.config }
         return buildSet {
             for (config in configs) {
                 val json = String(Files.readAllBytes(RESOURCES_DIR.resolve(config)), StandardCharsets.UTF_8)

@@ -1,7 +1,7 @@
 package io.alexjoest.stackupup.mixin
 
 import io.alexjoest.stackupup.StackUpUpIds
-import io.alexjoest.stackupup.bootstrap.StackUpUpLateMixinLoader
+import io.alexjoest.stackupup.bootstrap.StackUpUpMixinConnector
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -37,8 +37,8 @@ class NuclearCraftMixinSourceTest {
     @Test
     fun `nuclearCraftLateMixin_shouldBeRegisteredInLoaderAndToggled`() {
         assertTrue(
-            StackUpUpLateMixinLoader().getMixinConfigs().any { it.contains("nuclearcraft") },
-            "NC late config 必须登记在 loader 模块表",
+            StackUpUpMixinConnector().modules.any { it.config.contains("nuclearcraft") },
+            "NC late config 必须登记在 connector 模块表",
         )
         assertTrue(
             StackUpUpIds.LATE_NUCLEARCRAFT_MIXIN_CONFIG == "mixins.stackupup.late.nuclearcraft.json",

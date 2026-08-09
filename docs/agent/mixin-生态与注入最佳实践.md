@@ -294,9 +294,13 @@ accessor/invoker 接口，但 accessor 也必须有目标版本证据。
 - `ItemGridHandlerMixin.java:13-24` 与 `ItemGridHandlerPortableMixin.java` 已采用 `@WrapOperation`，方向正确；但当前
   handler 接收 `Operation<Long>` 却不调用 `original`，语义上仍接近“硬替换”。必须证明这是有意替换 `Math.min(JJ)J`，并验证其他
   wrapper 叠加时不会丢失原逻辑。
-- `RenderItemMixin.java:13-29`、`AppEngAdaptorItemHandlerMixin.java:15-30` 也接收 `Operation`
-  但当前实现不调用它们。前者需验证渲染原操作是否有意被替换；后者连接未知 handler 的真实插入路径，必须单独做
-  remainder/守恒审计，不能仅因注解是 `WrapOperation` 就视为安全链式包装。
+- `RenderItemMixin.java:13-29` 接收 `Operation` 但当前实现不调用它。需验证渲染原操作是否有意被替换。
+- `AppEngAdaptorItemHandlerMixin.java`（方案 A，2026-08-08）已不再包含任何注入：类保留为 AE2 late config 的入口
+  保险丝，`AdaptorItemHandler#addItems` 对 `IItemHandler#insertItem` 的调用原样执行（热路径零分支、零分配）。
+  不用 `@WrapOperation` + `operation.call(...)` 的原因：`Operation.call(Object...)` 是 varargs，javac 会为每次
+  调用生成 Object[] 与 Integer/Boolean 装箱（字节码证据），违背零分配约束。"不吞"由原版/Forge remainder 契约
+  结构性保证，边界探针（`DevAutomationServerDriver#probeBoundaryLimit`）负责运行期验证；不再委托
+  `Ae2ItemHandlerInsertLimiter`，也不做任何审计。
 - `ContainerMixin.java:14-26` 是较好的包装形态：读取 `original.call(slot)` 后再做 item-aware 限制。它仍不能单独证明所有库存真实写入容量已经同步。
 - `RefinedStorageMixinSourceTest.kt:11-19` 只做源码结构护栏：检查包含 `WrapOperation` 且不含 `@Redirect`。它不能证明运行时
   injection 命中、原操作调用次数、调用链顺序或容量守恒，必须有行为/字节码验证补足。
@@ -397,7 +401,7 @@ jar、其他 Mixin fork 或 11.x CleanMix；实际 provider/jar 未核验时必�
 | `src/main/java/io/alexjoest/stackupup/mixin/early/PacketUtilMixin.java:16-39`                                                             | 客户端到服务端 ItemStack 写入的 `HEAD + cancellable` 替换                                                                                                  | 与 `PacketBufferMixin` 一起做协议矩阵和异常验证；不能把编解码替换当成普通返回值修改。                                                                                  |
 | `src/main/java/io/alexjoest/stackupup/mixin/early/VanillaInventoryWriteMixin.java:33-49`                                                  | 多种 inventory 的 setter 前后都使用 `require=0`                                                                                                            | 逐目标确认 setter 是否声明、写入是否真正发生、异常时 begin/end 是否成对；核心目标不应靠软失败掩盖缺失。                                                                |
 | `src/main/java/io/alexjoest/stackupup/mixin/early/NetHandlerPlayClientMixin.java:17-50`                                                   | 先调用原 setter/setAll，再恢复客户端堆叠数量                                                                                                               | 将其定义为客户端同步路径而非 remainder 补偿；验证服务端权威状态、容器更新顺序、空槽和多槽列表，避免与禁止事后补偿规则混淆。                                            |
-| `src/main/java/io/alexjoest/stackupup/mixin/late/AppEngAdaptorItemHandlerMixin.java:15-30`、`core/Ae2ItemHandlerInsertLimiter.java:18-57` | 可选 `WrapOperation` 接入未知 handler；真实分支会按 cap 分片调用 `insertItem(..., false)` 并重建返回 remainder，handler wrapper 当前不调用传入 `Operation` | 这是已登记的当前已知限制，不得与“未知 handler 不扩容”混为一谈；逐调用记录 offered/落库/remainder，证明预先限幅与事后补偿的边界；第三方内部写入缺证据时标为 `UNKNOWN`。 |
+| `src/main/java/io/alexjoest/stackupup/mixin/late/AppEngAdaptorItemHandlerMixin.java`、`core/Ae2ItemHandlerInsertLimiter.java` | 方案 A（2026-08-08）后：mixin 不再包含任何注入（保留为 config 入口保险丝），AE2 `insertItem` 调用原样执行，热路径零分支零分配（不用 `operation.call`：varargs 产生 Object[] 与装箱分配）；`Ae2ItemHandlerInsertLimiter` 保留为纯工具类（仅测试/探针直接使用），分片循环与白名单不再处于热路径 | "不吞"由原版/Forge remainder 契约结构性保证；边界探针 `probeBoundaryLimit` 验证 `insertItem(N)` 全存 / 追加 `insertItem(1)` 被拒；第三方内部写入缺证据时仍标为 `UNKNOWN`，不得写成已扩容证明。 |
 | `src/main/java/io/alexjoest/stackupup/mixin/late/ItemGridHandlerMixin.java:13-24` 与 portable 版本                                        | `@WrapOperation` 带 `require=0`，当前不调用 `original`                                                                                                     | 加载缺失诊断；确定是否有意替换 `Math.min`；验证多 wrapper 叠加、原 operation 调用契约和抽取真实结果。                                                                  |
 | `src/main/java/io/alexjoest/stackupup/mixin/early/RenderItemMixin.java:13-29`                                                             | 渲染文本调用使用 `@WrapOperation` 但当前不调用 `original`                                                                                                  | 确认是否有意完全替换字体绘制；验证客户端渲染、颜色/坐标/空文本和其他渲染 Mixin 共存，不能仅凭注解名称认为它是保留原调用的 wrapper。                                    |
 | `src/main/java/io/alexjoest/stackupup/core/DynamicCompatMethodProbe.java:32-58`、`core/CompatibilityLimitPatch.java:56-85`                | 动态 ASM 只按方法名识别，并在命中方法中替换所有 `BIPUSH 64`；当前 probe 不按 descriptor、常量位置或语义确认                                                | 不能把方法名/常量命中写成目标闭合；逐个补 descriptor 和语义位置证据，确认 Mixin 已接管目标进入 `FixedCompatTargets`，并检查动态 transformer 不二次命中。               |
@@ -407,12 +411,16 @@ jar、其他 Mixin fork 或 11.x CleanMix；实际 provider/jar 未核验时必�
 
 ### 8.1 当前实现的额外已知限制
 
-- **[当前项目事实] AE2 未知 handler 路径**：
-  `src/main/java/io/alexjoest/stackupup/core/Ae2ItemHandlerInsertLimiter.java:18-57` 对不在白名单的 handler 计算
-  `min(64, getSlotLimit)`；大于 cap 时，真实 `simulate=false` 分支会循环调用多个 chunk，并用 `accepted`/`remainderOf`
-  重建返回余量。`src/main/java/io/alexjoest/stackupup/mixin/late/AppEngAdaptorItemHandlerMixin.java:15-30` 以可选
-  `@WrapOperation` 接入该路径，但没有调用传入的 `Operation`。这不是“未知 handler 已扩容”的证明，也不能被本规范批准为无风险；它是当前已登记的
-  remainder/未知写入链限制，必须逐次记录真实落库和 remainder，并在证据闭合前保持 `UNKNOWN`。
+- **[当前项目事实] AE2 热路径已零逻辑化（方案 A，2026-08-08）**：
+  `src/main/java/io/alexjoest/stackupup/mixin/late/AppEngAdaptorItemHandlerMixin.java` 不再包含任何注入
+  （仅保留为 AE2 late config 入口保险丝），AE2 `AdaptorItemHandler#addItems` 对 `IItemHandler#insertItem`
+  的调用原样执行，热路径零分支、零分配；不用 `@WrapOperation` + `operation.call` 的原因见 §6.2
+  （varargs 会生成 Object[] 与装箱分配）。"不吞"由原版/Forge remainder 契约结构性保证：`insertItem`
+  超量时返回 remainder，由 AE2 侧自行回收，我方不干预。
+  `Ae2ItemHandlerInsertLimiter.java` 保留为纯工具类（仅 `Ae2ItemHandlerInsertLimiterTest` /
+  `WrapperCapacityDiagnosticTest` 等测试护栏直接使用），其分片循环已不在任何热路径上；运行期验证由
+  边界探针 `DevAutomationServerDriver#probeBoundaryLimit`（insertItem(N) 全存 / 追加 insertItem(1) 被拒）承担。
+  这仍不是"未知 handler 已扩容"的证明——未知 handler 的写入容量依旧不可判定，只是我方不再干预投喂语义。
 - **[当前项目事实] 动态 ASM 未闭合**：`DynamicCompatMethodProbe.java:32-58` 只按方法名识别，
   `CompatibilityLimitPatch.java:56-85` 在匹配方法内替换所有 `BIPUSH 64`；`DynamicCompatTransformer.java:21-49` 负责应用补丁，
   `FixedCompatTargets.java:29-64` 负责固定跳过表。当前实现没有按 descriptor 和常量语义位置建立完整单一事实源；重构时必须先核对

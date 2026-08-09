@@ -91,10 +91,15 @@ descriptor。
 - `src/main/java/io/alexjoest/stackupup/mixin/early/VanillaInventoryLimitMixin.java:22-53` 当前覆盖多类 vanilla
   `IInventory`，并先调用 `StackLimitHooks.resolveInventoryWriteLimit`，再处理 64 哨兵。这个运行时目标集合仍需 T11
   的编译期登记表收敛。
-- `src/main/java/io/alexjoest/stackupup/core/Ae2ItemHandlerInsertLimiter.java:20-60` 当前对不在白名单的 handler 使用
-  `min(64, getSlotLimit(slot))` 分片投喂；`simulate=false` 的 `:44-57` 会把每个不超过 cap 的 chunk 作为独立真实插入，遇到
-  remainder 或零进度就停止并返回原始剩余量。它是预先限幅而非写入后回填（T10 已逐调用点核对，§3.6）；每次真实调用由
-  T12 审计。白名单由 `isTrusted` 的类型判断决定，已按 §3.6 重排并给出每项写入链证据；类型列表不替代 T12 运行时审计。
+- `src/main/java/io/alexjoest/stackupup/mixin/late/AppEngAdaptorItemHandlerMixin.java`（方案 A，2026-08-08）不再包含
+  任何注入：类保留为 AE2 late config 入口保险丝，`AdaptorItemHandler#addItems` 的 `insertItem` 调用原样执行——
+  热路径零分支、零分配（不用 `@WrapOperation` + `operation.call`：`Operation.call(Object...)` 是 varargs，
+  javac 编译产物含 Object[] 与 Integer/Boolean 装箱分配，字节码证据见 §3.8）。"不吞"由原版/Forge remainder
+  契约结构性保证，运行期由边界探针 `DevAutomationServerDriver#probeBoundaryLimit` 验证。
+- `src/main/java/io/alexjoest/stackupup/core/Ae2ItemHandlerInsertLimiter.java`（方案 A 后）保留为纯工具类：只被
+  `Ae2ItemHandlerInsertLimiterTest` / `WrapperCapacityDiagnosticTest` 等测试护栏直接使用，已不在任何热路径上；
+  对不在白名单的 handler 的 `min(64, getSlotLimit(slot))` 分片投喂逻辑原样保留（预先限幅而非写入后回填，§3.6 判定不变），
+  原 ConservationAuditor 审计分支已随审计器整体移除（§3.8）。
 - `src/main/java/io/alexjoest/stackupup/mixin/late/AppEngPatternTermMixin.java:15-29` 当前只在 AE2 三类 pattern terminal
   构造结束后提升空白 pattern 输入槽 `patternSlotIN`；该项目代码不证明 AE2 其他槽或第三方内部写入容量，相关目标仍须按源码和运行证据审查。
 - `StackLimitHooks.resolveInventoryClampLimit` 定义于
@@ -214,28 +219,32 @@ Forge 写入链源码后重排。判定规则：白名单只直通写入链全�
   白名单内，无新的自洽 IItemHandler 类需要移入；未为功能便利扩大白名单。
 - 移出后行为：InvWrapper/SidedInvWrapper 进入 untrusted 分片路径（cap=`min(64, getSlotLimit)`）。对原版
   自洽 delegate（InventoryBasic/TileEntityLockableLoot 系 setter 按同一上限夹取）分片全部接受，结果与直通
-  等价；对未知第三方 delegate 单次投喂上限更紧，且每次真实分片仍产生 T12 守恒事件。
+  等价；对未知第三方 delegate 单次投喂上限更紧（原设计，方案 A 后该路径仅测试使用，不再处于热路径）。
 - `EntityEquipmentInvWrapper` 未移出、未写成「无余量必吞」：Forge insertItem 的上限计算与 remainder 由源码
   闭合（引用 P0 事实 a）；白名单只决定投喂方是否直通，不影响其自洽写入。
-- 静态白名单不替代 T12：`insertCapped` 的三处真实插入点（trusted 直通、小量直通、分片循环）仍全部经
-  `insertWithAudit` 产生守恒事件，重排不改变审计调用点与 handler 类名上报。
+- 静态白名单不替代运行期验证：方案 A 后 `insertCapped` 不再处于热路径（mixin 已透传，§3.8），白名单/分片行为仅由
+  测试护栏覆盖；运行期"不吞"由 remainder 契约结构性保证 + 边界探针验证，不再有守恒审计事件。
 - 剩余风险：`instanceof ItemStackHandler` 会信任第三方子类覆盖的 `insertItem`/`getStackLimit`，子类行为
-  无源码不可判定，由 T12 按实际类名观测；该静态性风险与重排前一致，不因本任务扩大。
+  无源码不可判定；该静态性风险与重排前一致，不因本任务扩大。方案 A 后我方不干预投喂语义，未知子类的写入行为
+  交由目标侧 remainder 契约自回收，我方不再观测。
 
 测试：
 
 - `Ae2ItemHandlerInsertLimiterTest`：白名单内（ItemStackHandler 真实/模拟插入与 remainder 86、EmptyHandler
   完整余量、VanillaDoubleChestItemHandler 无邻箱直通）与白名单外（分片、cap=0 不调用、模拟单分片、部分
   接受 remainder）覆盖；原 InvWrapper 信任断言更新为分片断言（150 → [64,64,22]）。
-- `Ae2ItemHandlerInsertLimiterConservationAuditTest`：移出项守恒测试（InvWrapper、SidedInvWrapper 各一条，
-  audit 开启无告警且 `stored + remainder == offered`）与保留项守恒测试（ItemStackHandler trusted 直通在
-  64 上限处闭合 remainder）。
+- `Ae2ItemHandlerInsertLimiterConservationAuditTest` 已随 ConservationAuditor 整体删除（§3.8）；移出项/保留项
+  守恒行为由 `Ae2ItemHandlerInsertLimiterTest` 与 `WrapperCapacityDiagnosticTest` 的 `stored + remainder == offered`
+  断言继续覆盖。
 - `WrapperCapacityDiagnosticTest#ae2Limiter_trustedInvWrapper_overUnexpandedInventory_conservesItems`（T3
   端到端，租约外未改动）只断言守恒公式、不断言调用次数，移出后仍通过。
 
 ### 3.7 T13 回填记录（2026-08-08 执行）
 
-> 本小节是 T13「覆盖面收缩与回填」的 T2 回填收口产出（T12.5 第三种状态的关键动作）：只回填证据与判定引用，
+> **方案 A 更新（2026-08-08）**：本小节为历史回填记录。守恒审计层（ConservationAuditor/ConservationEvent/
+> ConservationReportWriter 与 JSONL 报告）已按用户决策整体移除（§3.8），`run/logs/stackupup-conservation.jsonl`
+> 不再生成；下述事件号与 JSONL 行是当时运行时证据，保留作历史事实，不代表当前实现仍存在该观测通道。
+> 本节是 T13「覆盖面收缩与回填」的 T2 回填收口产出（T12.5 第三种状态的关键动作）：只回填证据与判定引用，
 > 不修改生产实现；运行时事件逐条引用 run/logs/stackupup-conservation.jsonl 原始行（schema v1，事件号按行序）。
 > 配套回填：docs/agent/t2a-容量站点登记表.md §9（证据来源标注与收缩刷新）。
 
@@ -271,15 +280,17 @@ Forge 写入链源码后重排。判定规则：白名单只直通写入链全�
   unbalancedRealEvents=1、unbalanced=[{example.TruncatingThirdPartyHandler, Ae2ItemHandlerInsertLimiter#insertCapped, 1}]。
 
 **功能缺口：** 无。T3/T10 收缩未引入功能缺口：移除项均有测试覆盖（WrapperCapacityDiagnosticTest 覆盖四个
-转发 wrapper 不注入与 remainder 闭合、SlotItemHandler 独立注入移除护栏；Ae2ItemHandlerInsertLimiterTest 与
-Ae2ItemHandlerInsertLimiterConservationAuditTest 覆盖移出项守恒）；本回填未修改任何生产代码、测试或构建配置。
+转发 wrapper 不注入与 remainder 闭合、SlotItemHandler 独立注入移除护栏；Ae2ItemHandlerInsertLimiterTest 覆盖
+移出项分片守恒，`Ae2ItemHandlerInsertLimiterConservationAuditTest` 已随方案 A 删除）；本回填未修改任何生产
+代码、测试或构建配置。
 
-**结论三态标注（T13 矩阵口径：已回扩 / 决定不回扩（附理由）/ 等 T12 审计数据）：**
+**结论三态标注（T13 矩阵口径：已回扩 / 决定不回扩（附理由）/ 等 T12 审计数据；方案 A 后"等 T12 审计数据"
+一档由边界探针与守恒行为测试替代）：**
 
 - ItemStackHandler：未收缩（T3 保留注入）。运行时事件 #1（真实写 128 守恒成立）与 #3（simulate）支持现状；
   按未收缩项登记，无回扩处置。
 - EntityEquipmentInvWrapper：未收缩（T3 保留注入，装甲槽 1 不提升）。手部槽回扩按 T13 准入需所有实际投喂
-  入口通过真实守恒测试；当前 JSONL 无该类的运行时事件 → **等 T12 审计数据**。
+  入口通过真实守恒测试；当前无运行时事件 → 维持不回扩，验证由守恒行为测试与边界探针承担。
 - InvWrapper / SidedInvWrapper / CombinedInvWrapper / RangedWrapper（T3 移出）：**决定不回扩**——转发语义，
   delegate 为任意 IInventory/ISidedInventory/子 handler，包装器不是独立容量来源；JSONL 无任何 wrapper 类事件。
   InvWrapper/SidedInvWrapper 回扩须按 T13 准入「T12 观测到具体内层类 + 该版本源码或可重复守恒证据」，当前无此输入。
@@ -289,14 +300,37 @@ Ae2ItemHandlerInsertLimiterConservationAuditTest 覆盖移出项守恒）；本�
 - InventoryLargeChest：不在表（t2b §3.1，转发/条件断链），维持不回扩；T13 回扩准入（`min(upper, lower)` 且
   两半一致）当前无运行时数据输入。
 
-**T12.5 三态诚实声明（本回填后的状态）：**
+**T12.5 三态诚实声明（本回填后的状态；方案 A 已废弃守恒审计任务，见 §3.8）：**
 
 - 已闭合：报告可生成/可解析/可追溯（schema v1，3 事件逐条可回到调用点与 handler 类名）；T2a 登记表逐站点
   标注证据来源（t2a §9.2，无源码项保持 UNKNOWN）；本小节回填完成。
 - 未闭合（如实标注，不得写成第三种状态）：服务端矩阵 `runServerAutoTestMatrix` **未全量执行**
   （t14.7-发布前矩阵.md §5.2「runServerAutoTest 未执行」），当前 JSONL 仅 3 事件、覆盖 ItemStackHandler
   单站点；T12.4 关闭态门运行时判定 UNKNOWN（t14.7 §5.5）；事件 #2 归属 UNKNOWN。因此 **T12.5 第三种状态
-  未完全达成，本回填为部分闭合（PARTIAL）**；T13 完整解锁仍需全量矩阵生成可解析报告 + 关闭态门运行时验证。
+  未完全达成，本回填为部分闭合（PARTIAL）**；方案 A 后该门不再作为解锁条件，运行期验证由边界探针承担。
+
+### 3.8 方案 A：不吞物品回退策略（2026-08-08 执行）
+
+用户决策：结构性移除热路径逻辑，依赖原版/Forge remainder 契约保证"不吞"，并移除 ConservationAuditor。
+事实链：原版/Forge 天然"超量不吞"——`InventoryPlayer.addResource`（双上限夹取返回剩余）、
+`Container.mergeItemStack`（余量留参数栈）、`ItemStackHandler.insertItem`（超量返回 remainder）；
+硬编码返回 64 的 mod 在 insertItem 按上限夹取时回退到 64、remainder 返回剩余、不吞（用户确认语义）。
+
+- **热路径零逻辑**：`AppEngAdaptorItemHandlerMixin.java` 不再包含任何注入（类保留为 AE2 late config 入口
+  保险丝），AE2 `AdaptorItemHandler#addItems` 的 `IItemHandler#insertItem` 调用原样执行——mixin 层零分支、
+  零分配。初始方案曾尝试 `@WrapOperation` 改调 `operation.call(handler, slot, stack, simulate)`，但编译产物
+  （javap 字节码证据）显示 `Operation.call(Object...)` 是 varargs：每次调用生成 `Object[4]` 数组与
+  Integer/Boolean 装箱，违背零分配约束，故最终采用"不包裹、直接放行原调用"的最简形态。
+  我方不干预即可保证"我方不吞"：AE2 收到的堆叠若超过其写入容量，remainder 由 AE2 自身回收
+  （AE2 无源码，`无源码不可判定`，但我方不再执行任何限幅/分片/补偿）。
+- **ConservationAuditor 移除**：删除 `src/main/kotlin/io/alexjoest/stackupup/audit/` 整包
+  （ConservationAuditor/ConservationEvent/ConservationReportWriter）与 4 个审计测试；
+  `DevAutomationServerDriver` 删审计事件块（探针判定 evaluateProbeResult/evaluateBoundaryProbe 不依赖审计，保留）。
+- **Ae2ItemHandlerInsertLimiter 保留为纯工具类**：仅测试护栏直接使用，不在热路径上；白名单/分片行为原样保留
+  （预先限幅语义不变），不再承担任何运行期审计。
+- **"不吞"验证改由边界探针承担**：`DevAutomationServerDriver#probeBoundaryLimit` 验证
+  `insertItem(N)` 全部存入（remainder=0）+ 追加 `insertItem(1)` 被拒（remainder=1），N 为规则解析值。
+- **删除的文档**：`docs/agent/t12.5-报告schema.md`（JSONL 报告 schema 随审计器废弃）。
 
 ## 4. 当前限制
 
@@ -304,8 +338,9 @@ Ae2ItemHandlerInsertLimiterConservationAuditTest 覆盖移出项守恒）；本�
    **无源码不可判定**。
 2. `ForgeItemHandlerLimitMixin` 已按 §3.5 收敛为两个自洽目标（ItemStackHandler、EntityEquipmentInvWrapper），
    四个转发 wrapper 与 `SlotItemHandler#getSlotStackLimit` 的独立注入已移除（T3 执行，2026-08-08）。
-3. 当前 AE2 限流器白名单已按 §3.6 重排（保留四个自洽/零容量项，移出 InvWrapper/SidedInvWrapper 两个转发
-   wrapper），白名单不替代 T12 运行时审计。AE2 的 `AdaptorItemHandler`、三个 pattern terminal
+3. 当前 AE2 热路径已按方案 A（§3.8）改为 mixin 原样透传，`Ae2ItemHandlerInsertLimiter` 白名单保留为纯工具
+   类（仅测试使用，§3.6 判定不变）；"不吞"由 remainder 契约结构性保证 + 边界探针验证，不再有守恒审计。
+   AE2 的 `AdaptorItemHandler`、三个 pattern terminal
    目标及其第三方内部写入链在本记录中没有对应第三方源码，统一记为 **无源码不可判定**，不能用项目自己的 mixin 名称补出结论。
 4. `InventoryLargeChest` 的上限转发与按 index 写入存在结构性不一致风险；T11 不能仅保留现有 mixin 目标而跳过两半箱验证。
 5. NuclearCraft、Tech Reborn、RebornCore 等第三方内部写入链不因方法名或历史注释自动获得分类。当前缺少对应版本源码时，记录为
@@ -356,17 +391,19 @@ Forge 自身 wrapper 和 vanilla 反编译源码不属于上述缺失项；它�
 
 ### 5.5 AE2 投喂路径
 
-`src/main/java/io/alexjoest/stackupup/core/Ae2ItemHandlerInsertLimiter.java` 是项目自己的投喂适配层。Forge `IItemHandler`
-的正式契约在 `build/rfg/minecraft-src/java/net/minecraftforge/items/IItemHandler.java:61-75`：`insertItem` 接受
-`simulate` 参数并返回未插入的 remainder。
+方案 A（§3.8）后，AE2 投喂热路径不再经过任何项目代码：`AppEngAdaptorItemHandlerMixin.java` 不包含任何注入
+（仅保留为 config 入口保险丝），`IItemHandler#insertItem` 调用原样执行，零分支、零分配。
+Forge `IItemHandler` 的正式契约在 `build/rfg/minecraft-src/java/net/minecraftforge/items/IItemHandler.java:61-75`：
+`insertItem` 接受 `simulate` 参数并返回未插入的 remainder——"不吞"由该契约结构性保证。
 
-对超出 cap 的 `simulate=false` 输入，当前实现把输入预先拆成多个独立 chunk；每个 chunk 都是一次不超过 cap 的真实
-`insertItem`，只有该 chunk 的 remainder 或零进度会停止后续 chunk。这与写入后回填已接受数量不是同一语义，但仍必须由 T10
-逐调用点核对，不能把现有循环直接当成已批准的补偿机制。
+`src/main/java/io/alexjoest/stackupup/core/Ae2ItemHandlerInsertLimiter.java` 保留为纯工具类（仅测试护栏直接
+使用，不在热路径上）：对超出 cap 的 `simulate=false` 输入把输入预先拆成多个独立 chunk，每个 chunk 都是一次
+不超过 cap 的真实 `insertItem`，只有该 chunk 的 remainder 或零进度会停止后续 chunk。这是预先限幅而非写入后
+回填（§3.6 判定不变）；该循环已不处于任何热路径。
 
 AE2 `AdaptorItemHandler`、三个 pattern terminal 目标及其包裹 handler 的第三方内部实现，在本记录中均为 **无源码不可判定**
 。项目自己的 `AppEngPatternTermMixin.java:15-29` 只证明它尝试提升空白 pattern 输入槽 `patternSlotIN`，不证明其他槽或 AE2
-内部写入容量；安全性仍须由 T10 的静态白名单证据和 T12 的真实运行报告分别确认。
+内部写入容量；"不吞"的运行期验证由边界探针（`DevAutomationServerDriver#probeBoundaryLimit`）承担。
 
 ## 6. 拟议任务与准入边界
 
@@ -389,15 +426,14 @@ SlotItemHandler#getItemStackLimit）的真实 `simulate=false` 守恒测试与�
 **待决边界：**白名单是静态、窄范围的调用方策略，不是全局 handler 规则；`isTrusted` 不能以类名作为理由。
 `EntityEquipmentInvWrapper` 不能直接移除并声称必吞，也不能直接保留并声称已安全，必须引用第 3.2 节的 Forge/vanilla 分界证据。
 
-**准入条件： **白名单内外分别覆盖真实插入、模拟插入和 remainder；第三方源码缺失时写**无源码不可判定**并维持 64 安全上限。T10
-的静态白名单不能替代 T12 的运行时审计。
+**准入条件： **白名单内外分别覆盖真实插入、模拟插入和 remainder；第三方源码缺失时写**无源码不可判定**并维持 64 安全上限。方案 A
+（§3.8）后白名单不再承担运行期职责，运行期"不吞"由 remainder 契约结构性保证 + 边界探针验证。
 
 **执行状态（2026-08-08）：**判定与重排完成，见 §3.6。移出 InvWrapper、SidedInvWrapper（转发 wrapper，
 delegate 任意 IInventory/ISidedInventory，第三方写入面无源码）；保留 ItemStackHandler、
 VanillaDoubleChestItemHandler、EntityEquipmentInvWrapper、EmptyHandler；移入 0 项。白名单内外真实/
-模拟/remainder 测试与移出项守恒测试落地于 `Ae2ItemHandlerInsertLimiterTest` 与
-`Ae2ItemHandlerInsertLimiterConservationAuditTest`；`WrapperCapacityDiagnosticTest` 的端到端守恒测试
-（租约外未改动）只断言守恒公式，移出后仍通过。
+模拟/remainder 测试落地于 `Ae2ItemHandlerInsertLimiterTest`（`Ae2ItemHandlerInsertLimiterConservationAuditTest`
+已随方案 A 删除）；`WrapperCapacityDiagnosticTest` 的端到端守恒测试（租约外未改动）只断言守恒公式，移出后仍通过。
 
 ### T11：vanilla 目标表
 

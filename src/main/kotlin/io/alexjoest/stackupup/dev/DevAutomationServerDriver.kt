@@ -2,8 +2,6 @@ package io.alexjoest.stackupup.dev
 
 import io.alexjoest.stackupup.StackLimitHooks
 import io.alexjoest.stackupup.StackUpUp
-import io.alexjoest.stackupup.audit.ConservationAuditor
-import io.alexjoest.stackupup.audit.ConservationEvent
 import io.alexjoest.stackupup.limit.RuleRuntime
 import io.alexjoest.stackupup.limit.StackContext
 import io.alexjoest.stackupup.limit.StackContextResolver
@@ -220,39 +218,12 @@ object DevAutomationServerDriver {
         val resolvedLimit = RuleRuntime.limitService().resolve(context)
 
         val handler = ItemStackHandler(1)
-        val auditEnabled = ConservationAuditor.enabled()
         val insertNStack = stick.copy().also { it.count = resolvedLimit }
         val remainderAfterN = handler.insertItem(0, insertNStack, false)
         val storedAfterN = handler.getStackInSlot(0)
         val insertOneStack = ItemStack(Items.STICK, 1)
         val remainderAfterOne = handler.insertItem(0, insertOneStack, false)
         val storedAfterOne = handler.getStackInSlot(0).count
-        if (auditEnabled) {
-            ConservationAuditor.audit(
-                ConservationEvent(
-                    callSite = "DevAutomationServerDriver#probeBoundaryLimit",
-                    handlerClassName = handler.javaClass.name,
-                    slot = 0,
-                    simulate = false,
-                    offered = insertNStack.count,
-                    before = 0,
-                    after = storedAfterN.count,
-                    remainderCount = remainderAfterN.count,
-                ),
-            )
-            ConservationAuditor.audit(
-                ConservationEvent(
-                    callSite = "DevAutomationServerDriver#probeBoundaryLimit",
-                    handlerClassName = handler.javaClass.name,
-                    slot = 0,
-                    simulate = false,
-                    offered = insertOneStack.count,
-                    before = storedAfterN.count,
-                    after = storedAfterOne,
-                    remainderCount = remainderAfterOne.count,
-                ),
-            )
-        }
         val actualLimit = stick.maxStackSize
         return BoundaryProbeResult(
             rule = BOUNDARY_PROBE_RULE,
@@ -283,24 +254,8 @@ object DevAutomationServerDriver {
         val resolvedLimit = RuleRuntime.limitService().resolve(context)
         val insertionStack = probeStack.copy().also { it.count = DevAutomationConfig.itemCount }
         val handler = ItemStackHandler(1)
-        val auditEnabled = ConservationAuditor.enabled()
-        val before = if (auditEnabled) handler.getStackInSlot(0).count else 0
         val remainder = handler.insertItem(0, insertionStack, false)
         val stored = handler.getStackInSlot(0)
-        if (auditEnabled) {
-            ConservationAuditor.audit(
-                ConservationEvent(
-                    callSite = "DevAutomationServerDriver#probeTarget",
-                    handlerClassName = handler.javaClass.name,
-                    slot = 0,
-                    simulate = false,
-                    offered = insertionStack.count,
-                    before = before,
-                    after = stored.count,
-                    remainderCount = remainder.count,
-                ),
-            )
-        }
         val actualLimit = probeStack.maxStackSize
         val slotLimit = handler.getSlotLimit(0)
         val evaluation = evaluateProbeResult(

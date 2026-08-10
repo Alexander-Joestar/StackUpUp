@@ -1,9 +1,6 @@
 package io.alexjoest.stackupup.rules.io
 
 data class MarkdownContainer(val blocks: List<MarkdownBlock>, val sections: List<MarkdownSection>) {
-    val stateSections: List<MarkdownSection>
-        get() = sections.filter { it.kind == MarkdownSectionKind.STATE }
-
     val ruleSections: List<MarkdownSection>
         get() = sections.filter { it.kind == MarkdownSectionKind.RULES }
 }

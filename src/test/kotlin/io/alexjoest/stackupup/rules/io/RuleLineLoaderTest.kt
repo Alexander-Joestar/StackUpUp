@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 
 class RuleLineLoaderTest {
     @Test
-    fun `shouldSkipEmptyAndCommentLines`() {
+    fun shouldSkipEmptyAndCommentLines() {
         val result = RuleLineLoader.load(
             listOf(
                 RuleLineLoader.RuleLineInput("# comment", 1, "main.su"),
@@ -20,7 +20,7 @@ class RuleLineLoaderTest {
     }
 
     @Test
-    fun `shouldHandleMultilineBlockComments`() {
+    fun shouldHandleMultilineBlockComments() {
         val result = RuleLineLoader.load(
             listOf(
                 RuleLineLoader.RuleLineInput("/* begin", 1, "main.su"),
@@ -34,7 +34,7 @@ class RuleLineLoaderTest {
     }
 
     @Test
-    fun `errors_shouldIncludeSourceFileAndLine`() {
+    fun errors_shouldIncludeSourceFileAndLine() {
         val result = RuleLineLoader.load(
             listOf(
                 RuleLineLoader.RuleLineInput("item = minecraft:egg -> /", 7, "pack.su"),
@@ -48,7 +48,7 @@ class RuleLineLoaderTest {
     }
 
     @Test
-    fun `shouldStopCompilingAfterFirstParseError`() {
+    fun shouldStopCompilingAfterFirstParseError() {
         val result = RuleLineLoader.load(
             listOf(
                 RuleLineLoader.RuleLineInput("item = minecraft:egg -> 64", 1, "main.su"),
@@ -62,7 +62,7 @@ class RuleLineLoaderTest {
     }
 
     @Test
-    fun `shouldCompileValidRulesBeforeParseError`() {
+    fun shouldCompileValidRulesBeforeParseError() {
         val result = RuleLineLoader.load(
             listOf(
                 RuleLineLoader.RuleLineInput("item = minecraft:egg -> 64", 1, "main.su"),

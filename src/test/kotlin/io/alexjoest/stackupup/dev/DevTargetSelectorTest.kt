@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test
 
 class DevTargetSelectorTest {
     @Test
-    fun `explicitItem_shouldTakePriority`() {
+    fun explicitItem_shouldTakePriority() {
         val selected = DevTargetRuntimeResolver.selectCandidate(
             explicitItemId = "gregtech:meta_item_1",
             explicitMeta = 11305,
@@ -20,7 +20,7 @@ class DevTargetSelectorTest {
     }
 
     @Test
-    fun `noExplicit_shouldFallbackToGtOreDict`() {
+    fun noExplicit_shouldFallbackToGtOreDict() {
         val selected = DevTargetRuntimeResolver.selectCandidate(
             explicitItemId = "gregtech:gt.metaitem.01",
             explicitMeta = 11305,

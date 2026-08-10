@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test
 
 class StackUpUpConfigTest {
     @Test
-    fun `configFacade_shouldExposeFlatRuntimeAccess`() {
+    fun configFacade_shouldExposeFlatRuntimeAccess() {
         val previousEnableDslRules = StackUpUpConfig.general.enableDslRules
         val previousTooltipStackDisplayMode = StackUpUpConfig.client.tooltipStackDisplayMode
         val previousMaxStackSize = StackUpUpConfig.general.maxStackSize
@@ -43,7 +43,7 @@ class StackUpUpConfigTest {
     }
 
     @Test
-    fun `publicIds_shouldUseStackupup`() {
+    fun publicIds_shouldUseStackupup() {
         assertEquals(StackUpUpIds.MOD_ID, StackUpUp.MOD_ID)
         assertEquals(StackUpUpIds.PUBLIC_ID, StackUpUp.PUBLIC_ID)
         assertEquals(StackUpUpIds.CONFIG_ID, StackUpUp.CONFIG_ID)
@@ -54,7 +54,7 @@ class StackUpUpConfigTest {
     }
 
     @Test
-    fun `idConstants_shouldBeCentralized`() {
+    fun idConstants_shouldBeCentralized() {
         assertEquals("stackupup", StackUpUpIds.MOD_ID)
         assertEquals("config.stackupup", StackUpUpIds.CONFIG_LANG_ROOT)
         assertEquals("commands.stackupup", StackUpUpIds.COMMAND_LANG_ROOT)
@@ -71,7 +71,7 @@ class StackUpUpConfigTest {
     }
 
     @Test
-    fun `shouldNotExposeLegacyDslV1`() {
+    fun shouldNotExposeLegacyDslV1() {
         assertThrows(NoSuchMethodException::class.java) {
             StackUpUpConfig::class.java.getMethod("getScriptingActive")
         }

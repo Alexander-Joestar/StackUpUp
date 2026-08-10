@@ -51,7 +51,7 @@ class StackUpUpMixinConnectorSkipLogTest {
     }
 
     @Test
-    fun `modAbsent_shouldLogStructuredSkipAndReturnFalse`() {
+    fun modAbsent_shouldLogStructuredSkipAndReturnFalse() {
         val messages = capturedLogs {
             assertFalse(
                 StackUpUpMixinConnector().shouldQueue(StackUpUpIds.LATE_AE2_MIXIN_CONFIG) { false },
@@ -64,7 +64,7 @@ class StackUpUpMixinConnectorSkipLogTest {
     }
 
     @Test
-    fun `requiredFalseConfigModAbsent_shouldAlsoLogSkip`() {
+    fun requiredFalseConfigModAbsent_shouldAlsoLogSkip() {
         val messages = capturedLogs {
             assertFalse(
                 StackUpUpMixinConnector().shouldQueue(StackUpUpIds.LATE_BRANDONSCORE_MIXIN_CONFIG) { false },
@@ -77,7 +77,7 @@ class StackUpUpMixinConnectorSkipLogTest {
     }
 
     @Test
-    fun `toggleOff_shouldLogStructuredSkipAndReturnFalse`() {
+    fun toggleOff_shouldLogStructuredSkipAndReturnFalse() {
         val original = MixinToggles.ic2
         try {
             MixinToggles.ic2 = false
@@ -96,7 +96,7 @@ class StackUpUpMixinConnectorSkipLogTest {
     }
 
     @Test
-    fun `unknownConfig_shouldLogErrorAndReturnFalseInsteadOfUnconditionalQueue`() {
+    fun unknownConfig_shouldLogErrorAndReturnFalseInsteadOfUnconditionalQueue() {
         val messages = capturedLogs {
             assertFalse(
                 StackUpUpMixinConnector().shouldQueue("mixins.stackupup.late.ghost.json") { true },
@@ -109,7 +109,7 @@ class StackUpUpMixinConnectorSkipLogTest {
     }
 
     @Test
-    fun `noConflict_shouldAllowEarlyQueue`() {
+    fun noConflict_shouldAllowEarlyQueue() {
         assertTrue(
             StackUpUpMixinConnector().shouldQueueEarly(emptyList()),
             "无冲突时 early 配置必须允许装载",
@@ -117,7 +117,7 @@ class StackUpUpMixinConnectorSkipLogTest {
     }
 
     @Test
-    fun `conflictDisabled_shouldKeepDesignSemanticsAndLogErrorExplainingWhy`() {
+    fun conflictDisabled_shouldKeepDesignSemanticsAndLogErrorExplainingWhy() {
         val disabledProperty = "${StackUpUpIds.MOD_ID}.conflict.disabled"
         val modsProperty = "${StackUpUpIds.MOD_ID}.conflict.mods"
         System.setProperty(disabledProperty, "true")

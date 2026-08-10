@@ -1,6 +1,6 @@
 # DSL v2 规则示例
 
-本文面向整合包作者，语法说明建立在 **源码核对**和 **部分测试覆盖**两类证据上；两者明确区分，不能据此宣称当前语法已被全量行为测试覆盖。文中明确区分：
+本文面向整合包作者。语法说明基于 **源码核对**与 **部分测试覆盖**两类证据，两者明确区分，不宣称当前语法已被全量行为测试覆盖。文中区分：
 
 - **当前实现**：现在可以写入规则文件并由加载器处理。
 - **已知限制**：当前行为可能不直观，不能按未来设计理解。
@@ -134,9 +134,8 @@ item in [minecraft:wool@14, minecraft:wool@15] -> 256
 ```
 
 **旧的 `:meta` 简写已移除**（如 `minecraft:wool:14` 不再表示 wool 加 metadata 14）。按 1.12.2
-`ResourceLocation.splitObjectName` 的实际行为（只按第一个冒号分割），整串是 item ID pattern，path
-可以含冒号；需要精确 metadata 时请改用 `@14`。多冒号字面量保持原值，不按冒号数量拒绝，也不把冒号
-后的第三段当 meta：
+`ResourceLocation.splitObjectName` 只按第一个冒号分割的实际语义，整串是 item ID pattern，path 可含
+冒号；多冒号字面量保持原值，不按冒号数量拒绝，也不把第三段当 meta；需要精确 metadata 时请改用 `@14`：
 
 ```su
 item = minecraft:wool:14 -> 256   # item ID pattern 为 minecraft:wool:14，不约束 meta
@@ -181,8 +180,6 @@ item in ["minecraft:egg", "minecraft:snowball"] -> 128
 item = minecraft:egg -> 128 // 行尾注释
 /* 可以跨行的块注释 */
 ```
-
-当前 DSL 字面量支持引号（见「item 字面量、metadata 与通配」），可以用引号包住 item ID 或字段值。
 
 当前 `.su` 还保留了按已加载模组过滤的条件块：
 
@@ -258,6 +255,22 @@ block 内一行去掉前导空格后以 `# ` 开头的内容时，会把它当�
 `set` 还接受 `1` / `0`、`yes` / `no`、`on` / `off`。命令只操作当前存档的 `<save>/data/stackupup/main.su.md`；每个 `.su.md`
 文件声明的 state 只用于该文件自己的 gate，不会自动共享给其他 Markdown 文件。
 
+### 第三方脚本集成
+
+状态开关的唯一对外接口是 `StackUpUp` 的静态方法，任意 mod、CraftTweaker 脚本或 GroovyScript 都可以直接调用，无需额外接口：
+
+```java
+// Java / CRT / GroovyScript 等（均支持调用静态方法）
+io.alexjoest.stackupup.StackUpUp.setState("expert_mode", true);
+boolean expert = io.alexjoest.stackupup.StackUpUp.getState("expert_mode");
+```
+
+- `setState` 线程安全（内部同步），写入当前存档的 state 文件并立即生效。
+- reload 按需触发：只有任一 gate 的求值结果因这次写入而实际变化时才重建规则缓存；重复写入相同值、写入未被任何 gate
+  引用的状态，或 gate 结果不变时都不会触发 reload。
+- `getState` 在存储不可用（未进入存档）时返回 `false`。
+- 模组不依赖 CraftTweaker/GroovyScript，因此不提供 `@ZenClass` 注册；直接调用静态方法即可。
+
 `state set` 写入内容发生变化后会自动调用规则 reload，不需要再执行 `/stackupup reload`。设置成文件中已有的相同值时不会写文件，也不会触发这次自动
 reload。直接编辑规则文件、修改 `.su` 或修改配置目录中的 `.su.md` 后，仍需执行：
 
@@ -302,9 +315,8 @@ reload。直接编辑规则文件、修改 `.su` 或修改配置目录中的 `.s
 
 - `legacy reload`：旧 `config/stackupup-rules.su` 仅在 `config/stackupup/main.su` 缺失时加载的回退路径。
 - fence `# `：fenced code block 内去掉前导空格后以 `# ` 开头的行结束当前 fence 的行为。
-- state reload：`state set` 改变值时触发自动 reload、设置为相同值时不触发 reload 的行为。
-
-因此，上述说明不能写成完整行为验证，也不能宣称当前语法已被全量测试覆盖。
+- state reload：`state set` 改变值时，只有在任一 gate 求值结果实际变化时才触发自动 reload；重复写入相同值、写入未被
+  gate 引用的状态或 gate 结果不变时不触发 reload 的行为。
 
 ### 后续任务（不是当前实现）
 
@@ -315,5 +327,3 @@ reload。直接编辑规则文件、修改 `.su` 或修改配置目录中的 `.s
   不代表 T7.1 已完成。DSL 字面量引号词法已由 T7.2 实现，不属于本项缺口。
 - 其余 DSL 错误的列级定位仍待实现；当前只有 item 字面量错误（非法 `@` meta、引号问题）带列号。
 - 增加专用 `RangeConditionAst` 并重新定义比较链的 AST 产出；当前范围链只是由现有比较条件组合得到。
-
-本页此次只更新文档，不实现上述后续任务，也不改变 README 中已有的文档路径。

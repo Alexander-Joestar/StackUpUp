@@ -22,8 +22,9 @@ public final class FixedCompatTargets {
         return new Entry(className, false);
     }
 
-    private static Entry e(String className, boolean probeCovered) {
-        return new Entry(className, probeCovered);
+    // probe 覆盖目标（DynamicCompatMethodProbe 已接管）固定携带 probeCovered=true。
+    private static Entry eProbeCovered(String className) {
+        return new Entry(className, true);
     }
 
     private static final Entry[] ENTRIES = {
@@ -46,18 +47,18 @@ public final class FixedCompatTargets {
         // 已由 late mixin 独占负责的第三方库存
         e("appeng.tile.inventory.AppEngInternalInventory"),
         e("appeng.tile.inventory.AppEngInternalAEInventory"),
-        e("org.cyclops.cyclopscore.inventory.SimpleInventory", true),
+        eProbeCovered("org.cyclops.cyclopscore.inventory.SimpleInventory"),
 
         // Forge item handler / wrapper
-        e("net.minecraftforge.items.SlotItemHandler", true),
+        eProbeCovered("net.minecraftforge.items.SlotItemHandler"),
         e("net.minecraftforge.items.ItemStackHandler"),
         e("net.minecraftforge.items.VanillaDoubleChestItemHandler"),
         e("net.minecraftforge.items.wrapper.EntityEquipmentInvWrapper"),
         e("net.minecraftforge.items.wrapper.EmptyHandler"),
-        e("net.minecraftforge.items.wrapper.InvWrapper", true),
-        e("net.minecraftforge.items.wrapper.SidedInvWrapper", true),
-        e("net.minecraftforge.items.wrapper.CombinedInvWrapper", true),
-        e("net.minecraftforge.items.wrapper.RangedWrapper", true),
+        eProbeCovered("net.minecraftforge.items.wrapper.InvWrapper"),
+        eProbeCovered("net.minecraftforge.items.wrapper.SidedInvWrapper"),
+        eProbeCovered("net.minecraftforge.items.wrapper.CombinedInvWrapper"),
+        eProbeCovered("net.minecraftforge.items.wrapper.RangedWrapper"),
     };
 
     private static final String[] ALL_TARGETS = copyNames(false);

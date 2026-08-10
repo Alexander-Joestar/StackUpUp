@@ -1,11 +1,12 @@
 package io.alexjoest.stackupup.dev
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
 
 class DevCompatProbeAvailabilityTest {
     @Test
-    fun `falseCheck_shouldBeMissing`() {
+    fun falseCheck_shouldBeMissing() {
         assertEquals(
             ProbeAvailability.missing(),
             evaluateProbeAvailability { false },
@@ -13,10 +14,23 @@ class DevCompatProbeAvailabilityTest {
     }
 
     @Test
-    fun `exception_shouldNotBeSkippedAsMissing`() {
+    fun exception_shouldNotBeSkippedAsMissing() {
         assertEquals(
             ProbeAvailability.failed("IllegalStateException: broken linkage"),
             evaluateProbeAvailability { throw IllegalStateException("broken linkage") },
+        )
+    }
+
+    @Test
+    fun absentClass_shouldBeMissing() {
+        assertFalse(hasClass("io.alexjoest.stackupup.dev.MissingProbeDependency"))
+    }
+
+    @Test
+    fun linkageError_shouldBeFailure() {
+        assertEquals(
+            ProbeAvailability.failed("NoClassDefFoundError: broken linkage"),
+            evaluateProbeAvailability { throw NoClassDefFoundError("broken linkage") },
         )
     }
 }

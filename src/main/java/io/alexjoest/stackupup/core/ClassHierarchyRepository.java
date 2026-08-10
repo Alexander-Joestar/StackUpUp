@@ -51,7 +51,7 @@ final class ClassHierarchyRepository {
         fileName = NameConverter.toSlashName(fileName) + ".class";
         InputStream stream = ClassHierarchyRepository.class.getClassLoader().getResourceAsStream(fileName);
         if (stream == null) {
-            return new Metadata(null, Collections.<String>emptySet());
+            return new Metadata(null, Collections.emptySet());
         }
 
         try {
@@ -60,7 +60,7 @@ final class ClassHierarchyRepository {
             reader.accept(collector, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
             return collector.toMetadata();
         } catch (Exception e) {
-            return new Metadata(null, Collections.<String>emptySet());
+            return new Metadata(null, Collections.emptySet());
         } finally {
             try { stream.close(); } catch (Exception ignored) {}
         }

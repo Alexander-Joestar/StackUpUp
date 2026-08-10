@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test
 
 class DynamicCompatMethodProbeTest {
     @Test
-    fun `inventoryMethod_shouldIdentifyAsInventory`() {
+    fun inventoryMethod_shouldIdentifyAsInventory() {
         assertEquals(
             DynamicCompatTargetProfile.INVENTORY,
             DynamicCompatMethodProbe.detectProfiles(classBytes("io.alexjoest.stackupup.core.TestInventoryOverride")),
@@ -13,7 +13,7 @@ class DynamicCompatMethodProbeTest {
     }
 
     @Test
-    fun `itemHandlerMethod_shouldIdentifyAsItemHandler`() {
+    fun itemHandlerMethod_shouldIdentifyAsItemHandler() {
         assertEquals(
             DynamicCompatTargetProfile.ITEM_HANDLER,
             DynamicCompatMethodProbe.detectProfiles(classBytes("net.minecraftforge.items.ItemStackHandler")),
@@ -21,7 +21,7 @@ class DynamicCompatMethodProbeTest {
     }
 
     @Test
-    fun `slotMethod_shouldIdentifyAsSlot`() {
+    fun slotMethod_shouldIdentifyAsSlot() {
         assertEquals(
             DynamicCompatTargetProfile.SLOT,
             DynamicCompatMethodProbe.detectProfiles(classBytes("net.minecraft.inventory.Slot")),

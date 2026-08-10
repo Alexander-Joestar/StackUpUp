@@ -39,14 +39,15 @@ class StackLimitHooksTest {
         GregTechMaterialResolver.resetResolverForTesting()
     }
 
-    fun `getCompatibilityStackSize_shouldReturnGlobalMax`() {
+    @Test
+    fun getCompatibilityStackSize_shouldReturnGlobalMax() {
         StackUpUpConfig.general.maxStackSize = 10240
         StackUpUpConfig.activeMaxStackSize = 10240
         assertEquals(10240, StackLimitHooks.getCompatibilityStackSize())
     }
 
     @Test
-    fun `applyDynamicStackLimit_shouldDelegateToCurrentSnapshot`() {
+    fun applyDynamicStackLimit_shouldDelegateToCurrentSnapshot() {
         RuleRuntime.replaceSnapshot(
             RuleSnapshot(
                 version = 2L,
@@ -70,7 +71,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `applyDynamicStackLimit_shouldResolveFromItemStack`() {
+    fun applyDynamicStackLimit_shouldResolveFromItemStack() {
         Bootstrap.register()
         RuleRuntime.replaceSnapshot(
             RuleSnapshot(
@@ -93,7 +94,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `applyDynamicStackLimit_shouldMatchCreativeTabFromItemStack`() {
+    fun applyDynamicStackLimit_shouldMatchCreativeTabFromItemStack() {
         Bootstrap.register()
         val item = Item()
             .setCreativeTab(CreativeTabs.MATERIALS)
@@ -118,7 +119,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `originalBaseline_shouldNotBePollutedByRuleLimit`() {
+    fun originalBaseline_shouldNotBePollutedByRuleLimit() {
         Bootstrap.register()
         RuleRuntime.replaceSnapshot(
             RuleSnapshot(
@@ -137,7 +138,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `dynamicRuleEvaluation_shouldStartFromOriginalBaseline`() {
+    fun dynamicRuleEvaluation_shouldStartFromOriginalBaseline() {
         Bootstrap.register()
         RuleRuntime.replaceSnapshot(
             RuleSnapshot(
@@ -158,7 +159,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `noRules_shouldReturnVanillaBaselineWithoutOreDict`() {
+    fun noRules_shouldReturnVanillaBaselineWithoutOreDict() {
         Bootstrap.register()
         RuleRuntime.replaceSnapshot(RuleSnapshot(version = 4L, rules = emptyList()))
         RuleRuntime.replaceOreDictIndex(OreDictIndex.fromStackLoader { error("ore dict must not be queried when no rules exist") })
@@ -173,7 +174,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `noOreDepRule_shouldSkipOreDictQuery`() {
+    fun noOreDepRule_shouldSkipOreDictQuery() {
         Bootstrap.register()
         RuleRuntime.replaceSnapshot(
             RuleSnapshot(
@@ -195,7 +196,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `noMaterialRule_shouldSkipMaterialResolver`() {
+    fun noMaterialRule_shouldSkipMaterialResolver() {
         Bootstrap.register()
         var calls = 0
         val restoreResolver = GregTechMaterialResolver.installResolverForTesting {
@@ -227,7 +228,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `materialRule_shouldCallMaterialResolver`() {
+    fun materialRule_shouldCallMaterialResolver() {
         Bootstrap.register()
         var calls = 0
         val restoreResolver = GregTechMaterialResolver.installResolverForTesting {
@@ -259,7 +260,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `materialRule_shouldNotMatchWhenResolverReturnsEmpty`() {
+    fun materialRule_shouldNotMatchWhenResolverReturnsEmpty() {
         Bootstrap.register()
         RuleRuntime.replaceSnapshot(
             RuleSnapshot(
@@ -281,7 +282,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `normalSlot_shouldAllowLimitExceedingCompatConstant`() {
+    fun normalSlot_shouldAllowLimitExceedingCompatConstant() {
         Bootstrap.register()
         val item = object : Item() {
             override fun getItemStackLimit(stack: ItemStack): Int = 10240
@@ -296,7 +297,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `emptyContainerMergeSlot_shouldClampDeclaredLimitToInventoryCapacity`() {
+    fun emptyContainerMergeSlot_shouldClampDeclaredLimitToInventoryCapacity() {
         Bootstrap.register()
         val item = object : Item() {
             override fun getItemStackLimit(stack: ItemStack): Int = 10240
@@ -312,7 +313,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `nonEmptyContainerMergeSlot_shouldUseDynamicItemAwareLimit`() {
+    fun nonEmptyContainerMergeSlot_shouldUseDynamicItemAwareLimit() {
         Bootstrap.register()
         val item = object : Item() {
             override fun getItemStackLimit(stack: ItemStack): Int = 10240
@@ -329,7 +330,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `smallSlot_shouldNotBeAmplifiedByRuleLimit`() {
+    fun smallSlot_shouldNotBeAmplifiedByRuleLimit() {
         Bootstrap.register()
         RuleRuntime.replaceSnapshot(
             RuleSnapshot(
@@ -351,7 +352,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `slotAtDynamicLimit_shouldNotDoubleAmplify`() {
+    fun slotAtDynamicLimit_shouldNotDoubleAmplify() {
         Bootstrap.register()
         RuleRuntime.replaceSnapshot(
             RuleSnapshot(
@@ -375,7 +376,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `compatLimitEqualsDynamicLimit_shouldNotDoubleAmplify`() {
+    fun compatLimitEqualsDynamicLimit_shouldNotDoubleAmplify() {
         Bootstrap.register()
         val item = object : Item() {
             override fun getItemStackLimit(stack: ItemStack): Int = 10240
@@ -391,7 +392,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `multiplicativeRule_shouldNotReMultiplyAtSlotLevel`() {
+    fun multiplicativeRule_shouldNotReMultiplyAtSlotLevel() {
         Bootstrap.register()
         RuleRuntime.replaceSnapshot(
             RuleSnapshot(
@@ -416,7 +417,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `itemHandlerSlot_shouldClampToRealSlotLimit`() {
+    fun itemHandlerSlot_shouldClampToRealSlotLimit() {
         Bootstrap.register()
         val item = object : Item() {
             override fun getItemStackLimit(stack: ItemStack): Int = if (stack.count > 2) 102400 else 10240
@@ -433,7 +434,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `itemHandler64_shouldRaiseToCompatLimit`() {
+    fun itemHandler64_shouldRaiseToCompatLimit() {
         Bootstrap.register()
         val item = Item().setRegistryName(ResourceLocation("stackupup_test", "vanilla_item_handler_item"))
         val stack = ItemStack(item, 1, 0)
@@ -448,7 +449,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `itemHandlerDefault_shouldAllowAtLeastDynamicLimit`() {
+    fun itemHandlerDefault_shouldAllowAtLeastDynamicLimit() {
         Bootstrap.register()
         val item = object : Item() {
             override fun getItemStackLimit(stack: ItemStack): Int = 10240
@@ -465,7 +466,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `itemHandlerSmallLimit_shouldNotBeAmplified`() {
+    fun itemHandlerSmallLimit_shouldNotBeAmplified() {
         Bootstrap.register()
         val item = object : Item() {
             override fun getItemStackLimit(stack: ItemStack): Int = 16
@@ -482,7 +483,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `useMergeLimit_shouldAllowCompatFallbackToDynamicItemLimit`() {
+    fun useMergeLimit_shouldAllowCompatFallbackToDynamicItemLimit() {
         // 覆盖 InventoryPlayerAddResourceMixin.stackupup$useMergeLimit（canMergeStacks 路径）
         // 对 resolveInventoryClampLimit 的调用语义：合并时按 incoming 堆叠的动态上限放行。
         Bootstrap.register()
@@ -500,7 +501,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `usePickedStackLimit_shouldNotAmplifySmallInventoryLimit`() {
+    fun usePickedStackLimit_shouldNotAmplifySmallInventoryLimit() {
         // 覆盖 InventoryPlayerAddResourceMixin.stackupup$usePickedStackLimit（addResource 路径）
         // 对 resolveInventoryClampLimit 的调用语义：拾取时按库存真实容量收紧，不做放大。
         Bootstrap.register()
@@ -518,7 +519,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `inventoryLimitQuery_shouldBeStableBeforeDuringAndAfterWrite`() {
+    fun inventoryLimitQuery_shouldBeStableBeforeDuringAndAfterWrite() {
         // inventory-write 通道已删除：库存上限查询不再依赖写入线程状态，
         // 同一对象在真实写入前、写入中和写入后读取 clamp 结果必须一致。
         Bootstrap.register()
@@ -540,7 +541,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `creativePacket_shouldAllowDynamicAboveCompat`() {
+    fun creativePacket_shouldAllowDynamicAboveCompat() {
         Bootstrap.register()
         val item = object : Item() {
             override fun getItemStackLimit(stack: ItemStack): Int = 80000
@@ -551,7 +552,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `creativePacket_shouldRejectAboveRealDynamicLimit`() {
+    fun creativePacket_shouldRejectAboveRealDynamicLimit() {
         Bootstrap.register()
         RuleRuntime.replaceSnapshot(
             RuleSnapshot(
@@ -569,7 +570,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `creativeLimit_shouldNotReapplyRelativeToDynamic`() {
+    fun creativeLimit_shouldNotReapplyRelativeToDynamic() {
         Bootstrap.register()
         val item = object : Item() {
             override fun getItemStackLimit(stack: ItemStack): Int = 66
@@ -580,7 +581,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `nestedItemLimit_shouldNotReapplyRules`() {
+    fun nestedItemLimit_shouldNotReapplyRules() {
         Bootstrap.register()
         RuleRuntime.replaceSnapshot(
             RuleSnapshot(
@@ -600,7 +601,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `normalSlot_shouldNotReapplyRelativeToDynamicItem`() {
+    fun normalSlot_shouldNotReapplyRelativeToDynamicItem() {
         Bootstrap.register()
         val item = object : Item() {
             override fun getItemStackLimit(stack: ItemStack): Int = 66
@@ -619,7 +620,7 @@ class StackLimitHooksTest {
     // ---- T4b：内容键缓存（替代 mark/consume 实例身份 ThreadLocal） ----
 
     @Test
-    fun `contentKeyCache_shouldReturnCachedValueForUnchangedContent`() {
+    fun contentKeyCache_shouldReturnCachedValueForUnchangedContent() {
         Bootstrap.register()
         val item = Item().setRegistryName(ResourceLocation("stackupup_test", "cache_hit_item"))
         val stack = ItemStack(item, 1, 0)
@@ -630,7 +631,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `resolutionResult_shouldBeReusableViaContentKeyCache`() {
+    fun resolutionResult_shouldBeReusableViaContentKeyCache() {
         // 模拟 ItemMixin(写) + ItemStackMixin(读) 的 getMaxStackSize 契约：
         // 内层 getItemStackLimit 已按规则解析并写入内容键缓存，外层直接复用，不得在 128 上再乘 2。
         Bootstrap.register()
@@ -654,7 +655,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `sameInstanceMetaMutation_shouldResolveNewValueByContent`() {
+    fun sameInstanceMetaMutation_shouldResolveNewValueByContent() {
         Bootstrap.register()
         RuleRuntime.replaceSnapshot(
             RuleSnapshot(
@@ -683,7 +684,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `sameInstanceNbtMutation_shouldResolveNewValueByContent`() {
+    fun sameInstanceNbtMutation_shouldResolveNewValueByContent() {
         // 基线随 NBT 变化（模拟 modded item 的 getItemStackLimit 读取 NBT）。
         Bootstrap.register()
         val item = object : Item() {
@@ -706,7 +707,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `sameInstanceInPlaceNbtMutation_shouldNotReuseOldValue`() {
+    fun sameInstanceInPlaceNbtMutation_shouldNotReuseOldValue() {
         // 原地变异同一 NBT 实例：内容变化后旧条目不可达，读取必须 miss 并重新解析。
         Bootstrap.register()
         val item = object : Item() {
@@ -728,7 +729,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `writeOnlyCacheCall_shouldNotRetainStackInstance`() {
+    fun writeOnlyCacheCall_shouldNotRetainStackInstance() {
         // 模拟 isEnchantable / LootEntryItem.addLoot 的只写调用：
         // 只调用 getItemStackLimit（写缓存）而不经 getMaxStackSize 读取，
         // 内容键缓存不得留下对 ItemStack 实例的强引用。
@@ -741,7 +742,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `writeOnlyCalls_shouldNotGrowCacheForSameContent`() {
+    fun writeOnlyCalls_shouldNotGrowCacheForSameContent() {
         Bootstrap.register()
         val item = Item().setRegistryName(ResourceLocation("stackupup_test", "count_item"))
         val stack = ItemStack(item, 1, 0)
@@ -752,7 +753,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `contentKeyCache_shouldBeInvalidatedOnSnapshotReplacement`() {
+    fun contentKeyCache_shouldBeInvalidatedOnSnapshotReplacement() {
         Bootstrap.register()
         val item = Item().setRegistryName(ResourceLocation("stackupup_test", "epoch_item"))
         val stack = ItemStack(item, 1, 0)
@@ -765,7 +766,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `cachedLimit_shouldNotBeServedInsideOriginalBaselineBypass`() {
+    fun cachedLimit_shouldNotBeServedInsideOriginalBaselineBypass() {
         Bootstrap.register()
         val item = object : Item() {
             override fun getItemStackLimit(stack: ItemStack): Int = StackLimitHooks.lookupResolvedItemLimit(stack) ?: 64
@@ -778,7 +779,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun `reentrantResolution_shouldShortCircuitWhenEnteringItemMixin`() {
+    fun reentrantResolution_shouldShortCircuitWhenEnteringItemMixin() {
         Bootstrap.register()
         RuleRuntime.replaceSnapshot(
             RuleSnapshot(

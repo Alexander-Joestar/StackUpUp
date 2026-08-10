@@ -33,7 +33,7 @@ class DevRuleInjectorTest {
     }
 
     @Test
-    fun `shouldAppendDevRuleToCurrentSnapshot`() {
+    fun shouldAppendDevRuleToCurrentSnapshot() {
         RuleRuntime.replaceSnapshot(
             RuleSnapshot(
                 version = 1L,
@@ -63,7 +63,7 @@ class DevRuleInjectorTest {
     }
 
     @Test
-    fun `sameRuleInjectedTwice_shouldNotStack`() {
+    fun sameRuleInjectedTwice_shouldNotStack() {
         RuleRuntime.replaceSnapshot(
             RuleSnapshot(
                 version = 1L,
@@ -82,7 +82,7 @@ class DevRuleInjectorTest {
     }
 
     @Test
-    fun `batchInjection_shouldApplyAllDistinctRulesOnce`() {
+    fun batchInjection_shouldApplyAllDistinctRulesOnce() {
         RuleRuntime.replaceSnapshot(RuleSnapshot(version = 1L, rules = emptyList()))
 
         val first = DevRuleInjector.ensureInjected(listOf("ore = ingotSteel -> 1024", "item = minecraft:stick -> 512"))
@@ -97,7 +97,7 @@ class DevRuleInjectorTest {
     }
 
     @Test
-    fun `batchInjection_withParseError_shouldFailAndInjectNothing`() {
+    fun batchInjection_withParseError_shouldFailAndInjectNothing() {
         RuleRuntime.replaceSnapshot(RuleSnapshot(version = 1L, rules = emptyList()))
 
         val result = DevRuleInjector.ensureInjected(listOf("ore = ingotSteel -> 1024", "这不是合法规则"))
@@ -107,7 +107,7 @@ class DevRuleInjectorTest {
     }
 
     @Test
-    fun `blankRule_shouldBeSkipped`() {
+    fun blankRule_shouldBeSkipped() {
         RuleRuntime.replaceSnapshot(RuleSnapshot(version = 1L, rules = emptyList()))
 
         assertEquals(DevRuleInjectionResult.Skipped, DevRuleInjector.ensureInjected(""))

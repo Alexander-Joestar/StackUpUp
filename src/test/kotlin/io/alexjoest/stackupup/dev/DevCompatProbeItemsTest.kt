@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 
 class DevCompatProbeItemsTest {
     @Test
-    fun `rsTerminalProbe_shouldExposeCompatLimit`() {
+    fun rsTerminalProbe_shouldExposeCompatLimit() {
         Bootstrap.register()
         val stack = DevCompatProbeItems.createGridExtractProbeStack()
         assertEquals(StackLimitHooks.getCompatibilityStackSize(), stack.item.getItemStackLimit(stack))

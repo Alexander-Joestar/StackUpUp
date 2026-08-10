@@ -8,13 +8,13 @@ import java.nio.file.Paths
 
 class Ae2MixinSourceTest {
     @Test
-    fun `ae2Mixin_shouldCoverConstructorConstantAndNotDeadInjectMissingMethod`() {
+    fun ae2Mixin_shouldCoverConstructorConstantAndNotDeadInjectMissingMethod() {
         assertCoversConstructorOnly("src/main/java/io/alexjoest/stackupup/mixin/late/AppEngInternalInventoryMixin.java")
         assertCoversConstructorOnly("src/main/java/io/alexjoest/stackupup/mixin/late/AppEngInternalAEInventoryMixin.java")
     }
 
     @Test
-    fun `ae2Mixin_shouldKeepAdaptorItemHandlerAsZeroLogicFuse`() {
+    fun ae2Mixin_shouldKeepAdaptorItemHandlerAsZeroLogicFuse() {
         val config = String(Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.late.ae2.json")), Charsets.UTF_8)
         assertTrue(config.contains("AppEngAdaptorItemHandlerMixin"), "AE2 late config 应继续加载 AdaptorItemHandler 入口保险丝")
 
@@ -30,7 +30,7 @@ class Ae2MixinSourceTest {
     }
 
     @Test
-    fun `ae2Mixin_shouldExpandBlankPatternInputSlot`() {
+    fun ae2Mixin_shouldExpandBlankPatternInputSlot() {
         val config = String(Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.late.ae2.json")), Charsets.UTF_8)
         assertTrue(config.contains("AppEngPatternTermMixin"), "AE2 late config 应加载样板终端空白样板槽补丁")
 

@@ -25,14 +25,6 @@ internal class DslTokenCursor(private val tokens: List<DslToken>) {
         return token
     }
 
-    fun tryConsume(type: DslTokenType): DslToken? {
-        if (peekType() != type) {
-            return null
-        }
-        index++
-        return tokens[index - 1]
-    }
-
     fun consumeLiteral(message: LocalizedMessage): String = consumeLiteralToken(message).lexeme
 
     fun consumeLiteralToken(message: LocalizedMessage): DslToken {
@@ -44,30 +36,10 @@ internal class DslTokenCursor(private val tokens: List<DslToken>) {
         return token
     }
 
-    fun tryConsumeLiteral(): String? = tryConsumeLiteralToken()?.lexeme
-
-    fun tryConsumeLiteralToken(): DslToken? {
-        val token = currentToken()
-        if (token.type != DslTokenType.IDENTIFIER && token.type != DslTokenType.NUMBER) {
-            return null
-        }
-        index++
-        return token
-    }
-
     fun consumeComparisonOperator(): DslToken {
         val token = currentToken()
         if (!token.type.isComparisonOperator) {
             throw RuleMessages.exception(RuleMessageKey.MISSING_COMPARISON_OPERATOR)
-        }
-        index++
-        return token
-    }
-
-    fun tryConsumeComparisonOperator(): DslToken? {
-        val token = currentToken()
-        if (!token.type.isComparisonOperator) {
-            return null
         }
         index++
         return token

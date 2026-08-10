@@ -19,7 +19,7 @@ class MixinConfigValidatorTest {
     private val realClassLoader: ClassLoader = javaClass.classLoader
 
     @Test
-    fun `coreConfig_onRealClasspath_shouldHaveNoProblems`() {
+    fun coreConfig_onRealClasspath_shouldHaveNoProblems() {
         assertEquals(
             emptyList<MixinConfigValidator.Problem>(),
             MixinConfigValidator.validateConfig(StackUpUpIds.EARLY_MIXIN_CONFIG, realClassLoader),
@@ -27,13 +27,13 @@ class MixinConfigValidatorTest {
     }
 
     @Test
-    fun `lateConfigs_onRealClasspath_shouldHaveNoProblems`() {
+    fun lateConfigs_onRealClasspath_shouldHaveNoProblems() {
         val lateConfigs = StackUpUpMixinConnector().modules.map { it.config }
         assertEquals(emptyList<MixinConfigValidator.Problem>(), MixinConfigValidator.validateConfigs(lateConfigs, realClassLoader))
     }
 
     @Test
-    fun `missingCoreConfigResource_shouldFailFast`() {
+    fun missingCoreConfigResource_shouldFailFast() {
         val emptyLoader = object : ClassLoader() {
             override fun getResourceAsStream(name: String): InputStream? = null
         }
@@ -47,7 +47,7 @@ class MixinConfigValidatorTest {
     }
 
     @Test
-    fun `jsonListingMissingMixinClass_shouldReportProblem`() {
+    fun jsonListingMissingMixinClass_shouldReportProblem() {
         val json = """
             {"package": "io.alexjoest.stackupup.mixin.early", "mixins": ["NoSuchMixin"]}
         """.trimIndent()
@@ -57,7 +57,7 @@ class MixinConfigValidatorTest {
     }
 
     @Test
-    fun `jsonListingClassWithoutMixinAnnotation_shouldReportProblem`() {
+    fun jsonListingClassWithoutMixinAnnotation_shouldReportProblem() {
         val json = """
             {"package": "io.alexjoest.stackupup.mixin.early", "mixins": ["VanillaInventoryTargets"]}
         """.trimIndent()
@@ -67,7 +67,7 @@ class MixinConfigValidatorTest {
     }
 
     @Test
-    fun `jsonListingRealMixinClass_shouldHaveNoProblems`() {
+    fun jsonListingRealMixinClass_shouldHaveNoProblems() {
         val json = """
             {"package": "io.alexjoest.stackupup.mixin.early", "mixins": ["ContainerMixin"]}
         """.trimIndent()
@@ -78,7 +78,7 @@ class MixinConfigValidatorTest {
     }
 
     @Test
-    fun `findUnregisteredConfigFiles_shouldReportConfigsNotRegisteredByLoaders`() {
+    fun findUnregisteredConfigFiles_shouldReportConfigsNotRegisteredByLoaders() {
         val configFiles = listOf(
             "mixins.stackupup.early.json",
             "mixins.stackupup.late.ae2.json",

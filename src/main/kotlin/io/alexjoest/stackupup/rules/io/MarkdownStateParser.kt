@@ -59,7 +59,7 @@ internal object MarkdownStateParser {
         while (index <= stateRange.last && index < source.size) {
             val parsed = parseStateLine(source[index])
             if (parsed != null) {
-                val (name, value, indent) = parsed
+                val (name, _, indent) = parsed
                 if (name in orderedKeys) {
                     source[index] = "${" ".repeat(indent)}- $name = ${states[name] == true}"
                     seen += name
@@ -90,11 +90,9 @@ internal object MarkdownStateParser {
 
     private fun findStateSections(lines: List<String>): List<IntRange> {
         val ranges = ArrayList<IntRange>()
-        var start = -1
         for (index in lines.indices) {
             val trimmed = lines[index].trim()
             if (trimmed.equals("# state", ignoreCase = true)) {
-                start = index
                 var end = lines.lastIndex
                 for (next in index + 1 until lines.size) {
                     val nextTrimmed = lines[next].trim()
@@ -103,7 +101,7 @@ internal object MarkdownStateParser {
                         break
                     }
                 }
-                ranges += start..end
+                ranges += index..end
             }
         }
         return ranges

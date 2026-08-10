@@ -20,7 +20,7 @@ class RuleLiteralMatcherTest {
     // ---- 引号：只改变词法边界，不改变值 ----
 
     @Test
-    fun `quotedLiteral_shouldMatchSameValueAsUnquoted`() {
+    fun quotedLiteral_shouldMatchSameValueAsUnquoted() {
         val compiled = RuleCompiler.compileLine("item = \"minecraft:wool\" -> 128", 1)
 
         assertTrue(compiled.matches(ctx("minecraft:wool", meta = 0)))
@@ -29,7 +29,7 @@ class RuleLiteralMatcherTest {
     }
 
     @Test
-    fun `quotedLiteralInList_shouldMatchEachValue`() {
+    fun quotedLiteralInList_shouldMatchEachValue() {
         val compiled = RuleCompiler.compileLine("item in [\"minecraft:egg\", \"minecraft:snowball\"] -> 128", 1)
 
         assertTrue(compiled.matches(ctx("minecraft:egg")))
@@ -38,7 +38,7 @@ class RuleLiteralMatcherTest {
     }
 
     @Test
-    fun `quotedLiteral_shouldKeepAtMetaSyntax`() {
+    fun quotedLiteral_shouldKeepAtMetaSyntax() {
         val compiled = RuleCompiler.compileLine("item = \"minecraft:wool@14\" -> 128", 1)
 
         assertTrue(compiled.matches(ctx("minecraft:wool", meta = 14)))
@@ -48,7 +48,7 @@ class RuleLiteralMatcherTest {
     // ---- @meta：@整数 精确、@* 任意 ----
 
     @Test
-    fun `exactMeta_shouldMatchOnlyThatMetadata`() {
+    fun exactMeta_shouldMatchOnlyThatMetadata() {
         val compiled = RuleCompiler.compileLine("item = minecraft:wool@14 -> 128", 1)
 
         assertTrue(compiled.matches(ctx("minecraft:wool", meta = 14)))
@@ -57,7 +57,7 @@ class RuleLiteralMatcherTest {
     }
 
     @Test
-    fun `atStar_shouldMatchAnyMetadata`() {
+    fun atStar_shouldMatchAnyMetadata() {
         val compiled = RuleCompiler.compileLine("item = minecraft:wool@* -> 128", 1)
 
         assertTrue(compiled.matches(ctx("minecraft:wool", meta = 0)))
@@ -68,7 +68,7 @@ class RuleLiteralMatcherTest {
     // ---- 多冒号：按 1.12.2 ResourceLocation 保持原值，不把第三段当 meta ----
 
     @Test
-    fun `multiColonPath_shouldStayFullLiteralId`() {
+    fun multiColonPath_shouldStayFullLiteralId() {
         // 1.12.2 ResourceLocation.splitObjectName 只按第一个冒号分割（indexOf(58)），
         // path 可为 'gt.metaitem.01:11305'，末段不得被当作 meta。
         val compiled = RuleCompiler.compileLine("item = gregtech:gt.metaitem.01:11305 -> 128", 1)
@@ -79,7 +79,7 @@ class RuleLiteralMatcherTest {
     }
 
     @Test
-    fun `colonStar_shouldStayPathWildcardNotMetaWildcard`() {
+    fun colonStar_shouldStayPathWildcardNotMetaWildcard() {
         // minecraft:wool:* 是 path 含 '*' 的 pattern（匹配 minecraft:wool:... 的 id），
         // 不是 minecraft:wool 加任意 meta，也不是永不命中的整串精确匹配。
         val compiled = RuleCompiler.compileLine("item = minecraft:wool:* -> 128", 1)
@@ -92,7 +92,7 @@ class RuleLiteralMatcherTest {
     // ---- fail-fast：错误指向正确列与原因 ----
 
     @Test
-    fun `invalidMeta_shouldFailFastWithColumnAndReason`() {
+    fun invalidMeta_shouldFailFastWithColumnAndReason() {
         LocalizedMessages.setLanguage(LocalizedMessages.DEFAULT_LANGUAGE_CODE)
         try {
             val error = assertThrows(LocalizedRuleException::class.java) {
@@ -111,7 +111,7 @@ class RuleLiteralMatcherTest {
     }
 
     @Test
-    fun `negativeMeta_shouldFailFastWithNegativeReason`() {
+    fun negativeMeta_shouldFailFastWithNegativeReason() {
         val error = assertThrows(LocalizedRuleException::class.java) {
             DslParser.parseLine("item = minecraft:wool@-1 -> 128")
         }
@@ -123,7 +123,7 @@ class RuleLiteralMatcherTest {
     }
 
     @Test
-    fun `emptyItemIdBeforeAt_shouldFailFast`() {
+    fun emptyItemIdBeforeAt_shouldFailFast() {
         val error = assertThrows(LocalizedRuleException::class.java) {
             DslParser.parseLine("item = @14 -> 128")
         }
@@ -135,7 +135,7 @@ class RuleLiteralMatcherTest {
     }
 
     @Test
-    fun `invalidMetaInList_shouldFailFastWithColumn`() {
+    fun invalidMetaInList_shouldFailFastWithColumn() {
         val error = assertThrows(LocalizedRuleException::class.java) {
             DslParser.parseLine("item in [minecraft:egg, minecraft:wool@abc] -> 128")
         }
@@ -147,7 +147,7 @@ class RuleLiteralMatcherTest {
     }
 
     @Test
-    fun `unterminatedQuote_shouldFailFastWithColumn`() {
+    fun unterminatedQuote_shouldFailFastWithColumn() {
         val error = assertThrows(LocalizedRuleException::class.java) {
             DslParser.parseLine("item = \"minecraft:wool -> 128")
         }
@@ -157,7 +157,7 @@ class RuleLiteralMatcherTest {
     }
 
     @Test
-    fun `emptyQuote_shouldFailFastWithColumn`() {
+    fun emptyQuote_shouldFailFastWithColumn() {
         val error = assertThrows(LocalizedRuleException::class.java) {
             DslParser.parseLine("item = \"\" -> 128")
         }

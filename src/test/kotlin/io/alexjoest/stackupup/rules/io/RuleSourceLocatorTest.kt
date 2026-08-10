@@ -15,7 +15,7 @@ class RuleSourceLocatorTest {
     }
 
     @Test
-    fun `shouldReturnGlobalWorldUserInOrder`() {
+    fun shouldReturnGlobalWorldUserInOrder() {
         val tempDir = createTempDirectory("stackupup-source-locator").toFile()
         val configDir = File(tempDir, "config").apply { mkdirs() }
         val rulesDir = File(configDir, StackUpUpIds.MOD_ID).apply { mkdirs() }

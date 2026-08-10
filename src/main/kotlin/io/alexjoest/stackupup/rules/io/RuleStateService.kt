@@ -15,6 +15,11 @@ internal class RuleStateService(private val resolveFile: () -> File?) {
     }
 
     /**
+     * 读取完整 state 集合；存储文件不可用时返回 null。
+     */
+    fun readStates(): Map<String, Boolean>? = stateStore()?.readStates()
+
+    /**
      * 写入指定状态键。
      *
      * 存储文件不可用时返回 null；可用时返回底层写入是否改变了文件内容。

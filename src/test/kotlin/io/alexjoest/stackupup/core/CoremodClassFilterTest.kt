@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test
 
 class CoremodClassFilterTest {
     @Test
-    fun `shouldSkipUnrelatedRuntimeClasses`() {
+    fun shouldSkipUnrelatedRuntimeClasses() {
         assertEquals(true, CoremodClassFilter.shouldSkip("kotlin/jvm/internal/Intrinsics"))
         assertEquals(true, CoremodClassFilter.shouldSkip("java/lang/String"))
         assertEquals(true, CoremodClassFilter.shouldSkip("javax/annotation/Nullable"))
@@ -14,7 +14,7 @@ class CoremodClassFilterTest {
     }
 
     @Test
-    fun `shouldNotSkipGameAndModClasses`() {
+    fun shouldNotSkipGameAndModClasses() {
         assertEquals(false, CoremodClassFilter.shouldSkip("net/minecraft/item/ItemStack"))
         assertEquals(false, CoremodClassFilter.shouldSkip("net/minecraft/tileentity/TileEntityChest"))
         assertEquals(

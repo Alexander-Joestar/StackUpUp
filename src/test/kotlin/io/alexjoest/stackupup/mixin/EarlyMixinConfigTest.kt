@@ -22,7 +22,7 @@ class EarlyMixinConfigTest {
     private fun readMixinSource(relativePath: String) = readSource("src/main/java/io/alexjoest/stackupup/mixin/early/$relativePath")
 
     @Test
-    fun `earlyConfig_shouldIncludeMigratedFixedTargets`() {
+    fun earlyConfig_shouldIncludeMigratedFixedTargets() {
         val content = readSource("src/main/resources/mixins.stackupup.early.json")
 
         listOf(
@@ -34,7 +34,7 @@ class EarlyMixinConfigTest {
     }
 
     @Test
-    fun `earlyConfig_shouldSeparateClientFromServerMixins`() {
+    fun earlyConfig_shouldSeparateClientFromServerMixins() {
         val content = readSource("src/main/resources/mixins.stackupup.early.json")
         val mixins = content.substringAfter("\"mixins\": [").substringBefore("],")
         val client = content.substringAfter("\"client\": [").substringBefore("]")
@@ -46,7 +46,7 @@ class EarlyMixinConfigTest {
     }
 
     @Test
-    fun `containerMixin_shouldHaveOnlyMergeLimitWrapper`() {
+    fun containerMixin_shouldHaveOnlyMergeLimitWrapper() {
         val source = readMixinSource("ContainerMixin.java")
 
         // merge limit wrapper is the only remaining logic
@@ -58,7 +58,7 @@ class EarlyMixinConfigTest {
     }
 
     @Test
-    fun `playerPickup_shouldClampWriteBySourceStack`() {
+    fun playerPickup_shouldClampWriteBySourceStack() {
         val source = readMixinSource("InventoryPlayerAddResourceMixin.java")
 
         assertTrue(source.contains("canMergeStacks"))
@@ -69,7 +69,7 @@ class EarlyMixinConfigTest {
     }
 
     @Test
-    fun `entityMerge_shouldUseLargerDynamicLimit`() {
+    fun entityMerge_shouldUseLargerDynamicLimit() {
         val source = readMixinSource("EntityItemMergeMixin.java")
 
         assertTrue(source.contains("combineItems"))
@@ -78,7 +78,7 @@ class EarlyMixinConfigTest {
     }
 
     @Test
-    fun `resolveInventoryClampLimit_shouldKeepTwoCallSites`() {
+    fun resolveInventoryClampLimit_shouldKeepTwoCallSites() {
         // P0 事实 c：迁移后 resolveInventoryClampLimit 调用方仍为 2（useMergeLimit + usePickedStackLimit）。
         val source = readMixinSource("InventoryPlayerAddResourceMixin.java")
 
@@ -86,7 +86,7 @@ class EarlyMixinConfigTest {
     }
 
     @Test
-    fun `migratedMixin_shouldNotUseRedirectOrOverwrite`() {
+    fun migratedMixin_shouldNotUseRedirectOrOverwrite() {
         // T14.7 M1/M2：@Redirect -> @ModifyExpressionValue 后不得回退到 @Redirect/@Overwrite。
         listOf("EntityItemMergeMixin.java", "InventoryPlayerAddResourceMixin.java").forEach { name ->
             val source = readMixinSource(name)
@@ -97,7 +97,7 @@ class EarlyMixinConfigTest {
     }
 
     @Test
-    fun `clientSlotSyncHooks_shouldRestoreEmptySlotsFromTransmittedStacks`() {
+    fun clientSlotSyncHooks_shouldRestoreEmptySlotsFromTransmittedStacks() {
         val source = readSource("src/main/kotlin/io/alexjoest/stackupup/ClientSlotSyncHooks.kt")
 
         assertTrue(source.contains("currentStack.isEmpty"))
@@ -105,7 +105,7 @@ class EarlyMixinConfigTest {
     }
 
     @Test
-    fun `clientSlotSyncMixin_shouldRepairPacketsOnly`() {
+    fun clientSlotSyncMixin_shouldRepairPacketsOnly() {
         val source = readMixinSource("NetHandlerPlayClientMixin.java")
 
         assertTrue(source.contains("handleSetSlot"))

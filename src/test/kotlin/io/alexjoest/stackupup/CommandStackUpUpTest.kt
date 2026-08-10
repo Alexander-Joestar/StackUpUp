@@ -3,7 +3,6 @@ package io.alexjoest.stackupup
 import io.alexjoest.stackupup.rules.RuleMessageKey
 import io.alexjoest.stackupup.rules.io.RuleSourceLocator
 import io.alexjoest.stackupup.rules.io.RuleStateService
-import net.minecraft.command.CommandResultStats
 import net.minecraft.command.ICommandSender
 import net.minecraft.command.WrongUsageException
 import net.minecraft.entity.Entity
@@ -43,7 +42,7 @@ class CommandStackUpUpTest {
     }
 
     @Test
-    fun `commandMetadata_shouldUseStableIdsAndUsageKey`() {
+    fun commandMetadata_shouldUseStableIdsAndUsageKey() {
         val command = CommandStackUpUp()
         val sender = CapturingCommandSender()
 
@@ -53,9 +52,8 @@ class CommandStackUpUpTest {
     }
 
     @Test
-    fun `tabCompletions_shouldSuggestSubcommandsStateActionsAndBooleanTokens`() {
+    fun tabCompletions_shouldSuggestSubcommandsStateActionsAndBooleanTokens() {
         val command = CommandStackUpUp()
-        val sender = CapturingCommandSender()
 
         assertEquals(listOf("reload"), command.completeArguments(arrayOf("r")))
         assertEquals(listOf("get", "set"), command.completeArguments(arrayOf("state", "")))
@@ -65,7 +63,7 @@ class CommandStackUpUpTest {
     }
 
     @Test
-    fun `execute_shouldRejectMissingUnknownAndIncompleteStateUsage`() {
+    fun execute_shouldRejectMissingUnknownAndIncompleteStateUsage() {
         val command = command()
         val sender = CapturingCommandSender()
 
@@ -78,7 +76,7 @@ class CommandStackUpUpTest {
     }
 
     @Test
-    fun `executeStateSet_shouldParseTrueBooleanTokensAndReportStateSet`() {
+    fun executeStateSet_shouldParseTrueBooleanTokensAndReportStateSet() {
         writeWorldMarkdownState("feature" to false)
         val command = command()
         val sender = CapturingCommandSender()
@@ -90,7 +88,7 @@ class CommandStackUpUpTest {
     }
 
     @Test
-    fun `executeStateSet_shouldParseFalseBooleanTokensAndKeepCurrentFalseBehavior`() {
+    fun executeStateSet_shouldParseFalseBooleanTokensAndKeepCurrentFalseBehavior() {
         writeWorldMarkdownState("feature" to true)
         val command = command()
         val sender = CapturingCommandSender()
@@ -158,9 +156,6 @@ class CommandStackUpUpTest {
         override fun getCommandSenderEntity(): Entity? = null
 
         override fun sendCommandFeedback(): Boolean = true
-
-        override fun setCommandStat(type: CommandResultStats.Type, amount: Int) {
-        }
 
         override fun getServer(): MinecraftServer? = null
 

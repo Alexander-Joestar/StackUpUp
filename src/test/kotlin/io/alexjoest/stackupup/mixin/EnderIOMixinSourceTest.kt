@@ -8,7 +8,7 @@ import java.nio.file.Paths
 
 class EnderIOMixinSourceTest {
     @Test
-    fun `enderIoMachineMixin_shouldTargetNoArgInventoryLimitDescriptor`() {
+    fun enderIoMachineMixin_shouldTargetNoArgInventoryLimitDescriptor() {
         val source = String(
             Files.readAllBytes(
                 Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/EnderIOMachineInventoryLimitMixin.java"),
@@ -20,7 +20,7 @@ class EnderIOMixinSourceTest {
     }
 
     @Test
-    fun `enderIoSlottedMixin_shouldTargetSlotAwareInventoryLimitDescriptor`() {
+    fun enderIoSlottedMixin_shouldTargetSlotAwareInventoryLimitDescriptor() {
         val source = String(
             Files.readAllBytes(
                 Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/EnderIOSlottedInventoryLimitMixin.java"),
@@ -32,7 +32,7 @@ class EnderIOMixinSourceTest {
     }
 
     @Test
-    fun `enderIoInventorySlotMixin_shouldGuard64AndPreserveExplicitLimitsAndCrafterOverride`() {
+    fun enderIoInventorySlotMixin_shouldGuard64AndPreserveExplicitLimitsAndCrafterOverride() {
         val config = String(Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.late.enderio.json")), Charsets.UTF_8)
         val source = String(
             Files.readAllBytes(Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/EnderIOInventorySlotLimitMixin.java")),
@@ -53,7 +53,7 @@ class EnderIOMixinSourceTest {
     }
 
     @Test
-    fun `enderIoNoDropMixin_shouldSuppressShrinkAndSpawnWithoutRedirect`() {
+    fun enderIoNoDropMixin_shouldSuppressShrinkAndSpawnWithoutRedirect() {
         val config = String(Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.late.enderio.json")), Charsets.UTF_8)
         val source = String(
             Files.readAllBytes(

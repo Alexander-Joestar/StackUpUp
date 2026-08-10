@@ -29,7 +29,7 @@ class StackLimitServiceTest {
     }
 
     @Test
-    fun `shouldExecuteRulesInFileOrder`() {
+    fun shouldExecuteRulesInFileOrder() {
         val snapshot = RuleSnapshot(
             version = 1L,
             rules = listOf(
@@ -45,7 +45,7 @@ class StackLimitServiceTest {
     }
 
     @Test
-    fun `sameContext_shouldHitCache`() {
+    fun sameContext_shouldHitCache() {
         var evaluations = 0
         val snapshot = RuleSnapshot(
             version = 2L,
@@ -73,7 +73,7 @@ class StackLimitServiceTest {
     }
 
     @Test
-    fun `shouldSupportItemWithMetadataSugar`() {
+    fun shouldSupportItemWithMetadataSugar() {
         val snapshot = RuleSnapshot(
             version = 3L,
             rules = listOf(
@@ -97,7 +97,7 @@ class StackLimitServiceTest {
     }
 
     @Test
-    fun `shouldExecuteActionChainInOrder`() {
+    fun shouldExecuteActionChainInOrder() {
         val snapshot = RuleSnapshot(
             version = 4L,
             rules = listOf(
@@ -115,7 +115,7 @@ class StackLimitServiceTest {
     }
 
     @Test
-    fun `runtimeResult_shouldBeClampedByMaxStackSize`() {
+    fun runtimeResult_shouldBeClampedByMaxStackSize() {
         val previous = StackUpUpConfig.activeMaxStackSize
         StackUpUpConfig.general.maxStackSize = 256
         StackUpUpConfig.activeMaxStackSize = 256
@@ -140,7 +140,7 @@ class StackLimitServiceTest {
     }
 
     @Test
-    fun `emptySnapshot_shouldClampBaseLimitWithoutCaching`() {
+    fun emptySnapshot_shouldClampBaseLimitWithoutCaching() {
         StackUpUpConfig.general.maxStackSize = 128
         StackUpUpConfig.activeMaxStackSize = 128
         val service = StackLimitService(RuleSnapshot(version = 10L, rules = emptyList()))
@@ -152,7 +152,7 @@ class StackLimitServiceTest {
     }
 
     @Test
-    fun `materialDependentRules_shouldPartitionResolvedCacheByMaterial`() {
+    fun materialDependentRules_shouldPartitionResolvedCacheByMaterial() {
         val snapshot = RuleSnapshot(
             version = 6L,
             rules = listOf(
@@ -168,7 +168,7 @@ class StackLimitServiceTest {
     }
 
     @Test
-    fun `materialIndependentRules_shouldNotPartitionResolvedCacheByMaterial`() {
+    fun materialIndependentRules_shouldNotPartitionResolvedCacheByMaterial() {
         val snapshot = RuleSnapshot(
             version = 7L,
             rules = listOf(
@@ -184,7 +184,7 @@ class StackLimitServiceTest {
     }
 
     @Test
-    fun `tabDependentRules_shouldPartitionResolvedCacheByTab`() {
+    fun tabDependentRules_shouldPartitionResolvedCacheByTab() {
         val snapshot = RuleSnapshot(
             version = 8L,
             rules = listOf(
@@ -200,7 +200,7 @@ class StackLimitServiceTest {
     }
 
     @Test
-    fun `mixedDynamicFields_shouldPartitionResolvedCacheByDeclaredFields`() {
+    fun mixedDynamicFields_shouldPartitionResolvedCacheByDeclaredFields() {
         val snapshot = RuleSnapshot(
             version = 9L,
             rules = listOf(
@@ -219,7 +219,7 @@ class StackLimitServiceTest {
     // ---- T6：缓存键机械推导与零分配快路径 ----
 
     @Test
-    fun `contextsDifferingOnlyInReadField_shouldNotShareCacheEntries`() {
+    fun contextsDifferingOnlyInReadField_shouldNotShareCacheEntries() {
         // 规则读取 tab，tab 必须进入字段缓存键：只差 tab 的两个上下文不得共享条目。
         val snapshot = RuleSnapshot(
             version = 20L,
@@ -236,7 +236,7 @@ class StackLimitServiceTest {
     }
 
     @Test
-    fun `fastAndSlowPath_shouldResolveIdentically`() {
+    fun fastAndSlowPath_shouldResolveIdentically() {
         // 同一快照分别走快路径（自动定型）与强制慢路径，结果必须逐上下文一致。
         val snapshot = RuleSnapshot(
             version = 21L,
@@ -261,7 +261,7 @@ class StackLimitServiceTest {
     }
 
     @Test
-    fun `oreRules_shouldNotUseFastPath`() {
+    fun oreRules_shouldNotUseFastPath() {
         // ORE 的身份稳定性契约（索引替换失效）由慢路径承载，含 ORE 的快照不得走快路径。
         val snapshot = RuleSnapshot(
             version = 22L,
@@ -274,7 +274,7 @@ class StackLimitServiceTest {
     }
 
     @Test
-    fun `oreRules_shouldKeyCacheByIdentityNotOreNames`() {
+    fun oreRules_shouldKeyCacheByIdentityNotOreNames() {
         // ORE 显式声明 STABLE_VIA_IDENTITY：缓存键只含身份，不含矿辞集合。
         // 生产路径矿辞集合由 OreDictIndex 按 itemId+metadata 稳定决定，同一身份不会出现不同矿辞。
         val snapshot = RuleSnapshot(
@@ -292,7 +292,7 @@ class StackLimitServiceTest {
     }
 
     @Test
-    fun `fastPathHit_shouldNotAllocateObjects`() {
+    fun fastPathHit_shouldNotAllocateObjects() {
         // 命中路径零分配：用线程分配字节计数验证快路径命中不构造任何中间对象。
         val snapshot = RuleSnapshot(
             version = 24L,

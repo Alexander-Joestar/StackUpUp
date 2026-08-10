@@ -4,8 +4,8 @@
 
 [![CurseForge](https://img.shields.io/badge/CurseForge-StackUpUp-orange)](https://www.curseforge.com/minecraft/mc-mods/stackupup)
 
-StackUpUp is a stack-limit mod for Minecraft 1.12.2 modpacks and servers. It lets pack authors describe stack-size rules
-in text files, with first-class support for metadata items, Ore Dictionary names, vanilla inventory paths, and
+StackUpUp is a stack-limit mod for Minecraft 1.12.2 modpacks and servers. It lets pack authors describe stack-size
+rules in text files, with first-class support for metadata items, Ore Dictionary names, vanilla inventory paths, and
 compatibility patches for common hard-coded `64` limits.
 
 Chinese README: [README.md](README.md) (Chinese)
@@ -15,9 +15,7 @@ Chinese README: [README.md](README.md) (Chinese)
 - Target: Minecraft **1.12.2** + Forge **14.23.5.2847**
 - Current version: **0.2.4**
 - Rule system: DSL v2, using `.su` files or Markdown `.su.md` containers with `state` and `gate`
-- Compatibility layer: MixinBooter + Mixin first, with ASM kept only for legacy compatibility and early-loading
-  fallbacks
-- Registered late mixin targets currently attempted for loading (see the compatibility list below)
+- Compatibility layer: MixinBooter **11.13** + CleanMix **0.7.1**, with Mixin configs registered through `IMixinConnector`; ASM is kept only for legacy compatibility and early-loading fallbacks. MixinBooter 10.7 and the old loaders are historical baselines only
 
 ## Download
 
@@ -27,7 +25,7 @@ Download StackUpUp from [CurseForge](https://www.curseforge.com/minecraft/mc-mod
 
 1. Install Minecraft **1.12.2** and Forge **14.23.5.2847**.
 2. Install the required dependencies:
-    - [MixinBooter](https://www.curseforge.com/minecraft/mc-mods/mixin-booter) **10.7**
+    - [MixinBooter](https://www.curseforge.com/minecraft/mc-mods/mixin-booter) **11.13**
     - [Forgelin-Continuous](https://www.curseforge.com/minecraft/mc-mods/forgelin-continuous) **2.3.0.0**
       Current project build validation uses these versions; other versions have not been verified by this repository.
 3. Put the StackUpUp jar into the `mods/` folder.
@@ -35,17 +33,8 @@ Download StackUpUp from [CurseForge](https://www.curseforge.com/minecraft/mc-mod
 
 ## Rule Files
 
-Rules live under `config/stackupup/`. The recommended entry point is:
-
-```text
-config/stackupup/main.su
-```
-
-Use a Markdown container when you want comments, state switches, or conditional gates in the same file:
-
-```text
-config/stackupup/main.su.md
-```
+Rules live under `config/stackupup/`. The recommended entry point is `config/stackupup/main.su`; use the Markdown
+container `config/stackupup/main.su.md` when you want comments, state switches, or conditional gates in the same file.
 
 Later matching rules continue from or override the result produced by earlier rules. The current effective evaluation
 order is:
@@ -54,33 +43,23 @@ order is:
 2. `config/stackupup/*.su.md`, sorted by file name, excluding example files.
 3. Legacy `config/stackupup-rules.su`, only when `main.su` does not exist.
 4. `<save>/data/stackupup/world.su`.
-5. `config/stackupup/*.su`, sorted by file name, excluding `user.su` and example files; `main.su` is included in this
-   step.
+5. `config/stackupup/*.su`, sorted by file name, excluding `user.su` and example files; `main.su` is included in this step.
 6. `config/stackupup/user.su`.
 
 See [docs/DSL-v2-规则示例.md](docs/DSL-v2-%E8%A7%84%E5%88%99%E7%A4%BA%E4%BE%8B.md) (Chinese) for syntax examples.
 
 ## Commands
 
-```text
-/stackupup reload
-/stackupup edit
-/stackupup state get <name>
-/stackupup state set <name> <value>
-```
+Commands: `/stackupup reload`, `/stackupup edit`, `/stackupup state get <name>`, `/stackupup state set <name> <value>`.
 
 - `reload`: reload rule files.
 - `edit`: open the main rule file on the client.
-- `state get <name>`: read a state from the current save's `<save>/data/stackupup/main.su.md`; other `.su.md` files do
-  not share these states.
-- `state set <name> <value>`: update a state in the same file; `<value>` is case-insensitive and accepts `true` /
-  `false`, as well as `1` / `0`, `yes` / `no`, and `on` / `off`; a `reload` is triggered when the file content actually
-  changes.
+- `state get <name>`: read a state from the current save's `<save>/data/stackupup/main.su.md`; other `.su.md` files do not share these states.
+- `state set <name> <value>`: update a state in the same file; `<value>` is case-insensitive and accepts `true` / `false`, `1` / `0`, `yes` / `no`, and `on` / `off`; a `reload` is triggered only when the write actually changes the evaluation result of some gate.
 
 If `config/stackupup/main.su` is absent while the legacy `config/stackupup-rules.su` exists, the first DSL-enabled
-`reload` includes the legacy file through the fallback and creates the main file. Once the main file exists, later
-`reload`s may no longer load that legacy file, so its rules may stop taking effect; detailed migration behavior is not
-finalized.
+`reload` includes the legacy file through the fallback and creates the main file; later `reload`s may then no longer
+load the legacy file, so its rules may stop taking effect (migration behavior is not finalized).
 
 ## DSL Examples
 
@@ -90,49 +69,30 @@ item = * -> 128
 mod = thermal -> 1024
 ore = ingotSteel -> 2048
 material = steel -> 2048
-
 item in [minecraft:egg, minecraft:snowball] -> 128
 item = gregtech:gt.metaitem.01 && meta = 11305 -> 512
 item = gregtech:gt.metaitem.01@11305 -> 512
 item = minecraft:wool:14 -> 512
-
 2 < size < 64 -> 256
 tab = buildingBlocks -> 256
 ```
 
-Actions can be chained to keep transforming the current result:
+Actions can be chained to keep transforming the current result, e.g. `item = gregtech:gt.metaitem.01@11305 && ore = ingotSteel -> 1024`,
+`material = steel && mod = gregtech -> 1024`, `ore = ingotSteel -> 512 -> *2`.
 
-```su
-item = gregtech:gt.metaitem.01@11305 && ore = ingotSteel -> 1024
-material = steel && mod = gregtech -> 1024
-ore = ingotSteel -> 512 -> *2
-```
-
-`material` is an optional match field. It only has a value when GregTech is loaded and the item can be resolved to a GT
-material; when GT is not loaded, resolution fails, or the item is not a GT material item, every `material` condition is
-treated as not matched, including `!=` and list matches. Use the material registry name: native GT materials can use
+`material` is an optional match field: it only has a value when GregTech is loaded and the item can be resolved to a GT
+material; when GT is not loaded, resolution fails, or the item is not a GT material item, every `material` condition
+(including `!=` and list matches) is treated as not matched. Use the material registry name: native GT materials can use
 names such as `steel`; use the `modid:name` format when you need to distinguish materials across mods, without treating
 unverified concrete material IDs as examples. This does not promise support for every GT item.
 
-The old `category` field is not needed on 1.12.2 and should not be used:
-
-```su
-# Not recommended
-category = potion -> 32
-category = enchanted_book -> 16
-```
+The old `category` field is not needed on 1.12.2 and should not be used, e.g. `category = potion -> 32`,
+`category = enchanted_book -> 16`.
 
 ## Client Display
 
-Large stack counts are automatically scaled or abbreviated in inventory slots. Version 0.2.4 adds
-`alwaysCompactNumbers`, which forces capped compact text before fitting and any font scaling:
-
-```text
-1-999
-1K-99K
-0.1M-99M
-0.1B-2.1B
-```
+Large stack counts are automatically scaled or abbreviated in inventory slots; version 0.2.4 adds `alwaysCompactNumbers`,
+which forces capped compact text before fitting and any font scaling, e.g. `1-999`, `1K-99K`, `0.1M-99M`, `0.1B-2.1B`.
 
 If abbreviated slot text is not enough context, enable the tooltip stack display option to show the current count and
 max stack limit as `count/limit`.
@@ -149,19 +109,13 @@ is not proof that the real write capacity can be raised. Advertising a higher va
 many items into storage that cannot actually accept them, which can cause truncation, item loss, or conflicts with the
 mod's own overflow handling.
 
-For registered targets currently attempted for loading, StackUpUp uses MixinBooter late mixins to attempt to modify real
-`getInventoryStackLimit()` / `getSlotLimit()` style entry points and let slot limits follow; when third-party source is
-unavailable, the real write path is "无源码不可判定" (cannot be determined without source), and class names or mixin
-registration alone do not establish write capacity. Old ASM remains only as a legacy and early-loading fallback, not as
-the preferred way to add compatibility. The AE2 feeding hot path (Plan A) passes `insertItem` through with zero branches
-and zero allocations: not swallowing items is structurally guaranteed by the vanilla/Forge remainder contract (oversized
-inserts return the remainder for the caller to reclaim), and the boundary probe verifies it at runtime (`insertItem(N)`
-fully stored, a following `insertItem(1)` rejected with remainder=1). Write-after-the-fact remainder refill is not a
-capacity guarantee.
-
-Rule metadata stays on the static `RuleField` enum. Expensive or optional context comes from
-`RuleField.contextProviders`, merged into a `RuntimeContextRequirements` provider plan; `RuleContextRequirement` remains
-only for legacy compatibility and diagnostics.
+For registered targets currently attempted for loading, StackUpUp registers Mixin configs through `IMixinConnector` and
+attempts to modify real `getInventoryStackLimit()` / `getSlotLimit()` style entry points so slot limits follow. When
+third-party source is unavailable, the real write path is "无源码不可判定" (cannot be determined without source), and
+class names or registration alone do not establish write capacity. Old ASM remains only as a legacy and early-loading
+fallback, not as the preferred way to add compatibility. AE2 Plan A is archived: its hot path passes `insertItem`
+through without a project wrapper, relying on the vanilla/Forge remainder contract and a boundary probe; no JSONL
+conservation report or write-after-the-fact remainder refill is used.
 
 Current late mixin targets registered for attempted loading include:
 
@@ -178,16 +132,14 @@ Current late mixin targets registered for attempted loading include:
 - LimeLib
 - ImmersiveEngineering
 
-For implementation notes,
-see [docs/StackUpUp-实现与兼容性说明.md](docs/StackUpUp-%E5%AE%9E%E7%8E%B0%E4%B8%8E%E5%85%BC%E5%AE%B9%E6%80%A7%E8%AF%B4%E6%98%8E.md)
-(Chinese).
+For implementation notes, see [docs/StackUpUp-实现与兼容性说明.md](docs/StackUpUp-%E5%AE%9E%E7%8E%B0%E4%B8%8E%E5%85%BC%E5%AE%B9%E6%80%A7%E8%AF%B4%E6%98%8E.md) (Chinese).
 
 ## Differences From StackUp
 
-- StackUpUp targets Minecraft **1.12.2**.
-- Rules use **DSL v2**, designed for item IDs, metadata, Ore Dictionary names, and creative-tab matching.
-- Compatibility is centered on **MixinBooter + Mixin**, with ASM reduced to legacy and early-loading support.
-- Client display includes scaling, abbreviation, and tooltip support for very large stack counts.
+Compared with StackUp, StackUpUp targets Minecraft **1.12.2**, uses **DSL v2** rules designed for item IDs, metadata,
+Ore Dictionary names, and creative-tab matching, centers compatibility on **MixinBooter + Mixin** with ASM reduced to
+legacy and early-loading support, and adds client display scaling, abbreviation, and tooltip support for very large
+stack counts.
 
 ## Development And Verification
 

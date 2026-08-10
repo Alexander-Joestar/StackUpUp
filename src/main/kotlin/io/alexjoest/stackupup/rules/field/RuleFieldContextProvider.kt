@@ -9,9 +9,7 @@ import net.minecraft.item.ItemStack
  *
  * Provider 是字段声明的一部分；Resolver 只执行计划，不按字段名分发。
  */
-enum class RuleFieldContextProvider(
-    val collect: (ItemStack, StackContextFields) -> Unit
-) {
+enum class RuleFieldContextProvider(val collect: (ItemStack, StackContextFields) -> Unit) {
     ORE_NAMES({ stack, fields ->
         fields.oreNames = RuleRuntime.oreDictIndex().getOreNames(stack)
     }),
@@ -22,7 +20,7 @@ enum class RuleFieldContextProvider(
 
     TAB({ stack, fields ->
         fields.tab = stack.item.creativeTab?.tabLabel.orEmpty()
-    });
+    }),
 }
 
 /**

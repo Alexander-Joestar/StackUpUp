@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 
 class MarkdownContainerScannerTest {
     @Test
-    fun `shouldSplitStateAndRulesSections`() {
+    fun shouldSplitStateAndRulesSections() {
         val document = MarkdownContainerScanner.scan(
             listOf(
                 "# intro",
@@ -33,7 +33,7 @@ class MarkdownContainerScannerTest {
     }
 
     @Test
-    fun `shouldTrackHeadingLevelsAndFenceLanguages`() {
+    fun shouldTrackHeadingLevelsAndFenceLanguages() {
         val document = MarkdownContainerScanner.scan(
             listOf(
                 "# rules",
@@ -58,7 +58,7 @@ class MarkdownContainerScannerTest {
     }
 
     @Test
-    fun `shouldContinueAfterUnclosedFence`() {
+    fun shouldContinueAfterUnclosedFence() {
         val document = MarkdownContainerScanner.scan(
             listOf(
                 "# rules",

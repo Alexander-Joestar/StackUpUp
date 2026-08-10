@@ -29,3 +29,7 @@ logs
 local-dev-mods
 scripts/runclient-graal25.cmd
 zone/**/*.class
+
+# 大体积分析输入与中间产物
+check.html
+dev/tools/*.tsv

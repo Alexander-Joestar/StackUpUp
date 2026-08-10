@@ -35,7 +35,7 @@ class VanillaInventoryLargeChestTest {
     }.setRegistryName(ResourceLocation("stackupup_test", "large_chest_test_item"))
 
     @Test
-    fun `advertisedLimit_followsUpperHalf_whileLowerHalfWriteClampsToItsOwnLimit`() {
+    fun advertisedLimit_followsUpperHalf_whileLowerHalfWriteClampsToItsOwnLimit() {
         val upper = object : TileEntityChest() {
             override fun getInventoryStackLimit(): Int = RAISED_LIMIT
         }
@@ -61,7 +61,7 @@ class VanillaInventoryLargeChestTest {
     }
 
     @Test
-    fun `advertisedLimit_followsUpperHalf_whenLowerHalfRaised`() {
+    fun advertisedLimit_followsUpperHalf_whenLowerHalfRaised() {
         // 对称情形：上箱原值、下箱抬高 —— 广告仍取上箱（64），下箱写入夹取 512；
         // 广告不虚报，但也不代表真实写入面（下箱），进一步证明转发语义。
         val upper = TileEntityChest()
@@ -78,7 +78,7 @@ class VanillaInventoryLargeChestTest {
     }
 
     @Test
-    fun `largeChest_shouldNotBeInTargetTable`() {
+    fun largeChest_shouldNotBeInTargetTable() {
         assertFalse(VanillaInventoryTargets.TARGETS.contains(InventoryLargeChest::class.java))
         assertTrue(VanillaInventoryTargets.EXCLUDED.contains(InventoryLargeChest::class.java))
     }

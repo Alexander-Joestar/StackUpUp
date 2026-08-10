@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 
 class EarlyMixinBytecodeSafetyTest {
     @Test
-    fun `staticMixin_shouldNotGenerateCompanionFields`() {
+    fun staticMixin_shouldNotGenerateCompanionFields() {
         val targets =
             listOf(
                 "io.alexjoest.stackupup.mixin.early.InventoryHelperMixin",
@@ -23,7 +23,7 @@ class EarlyMixinBytecodeSafetyTest {
     }
 
     @Test
-    fun `inventoryHelper_shouldNotDependOnKotlinSplice`() {
+    fun inventoryHelper_shouldNotDependOnKotlinSplice() {
         val mixinClass = Class.forName("io.alexjoest.stackupup.mixin.early.InventoryHelperMixin")
         val classBytes = requireNotNull(mixinClass.getResourceAsStream("InventoryHelperMixin.class")) {
             "无法读取 InventoryHelperMixin.class"

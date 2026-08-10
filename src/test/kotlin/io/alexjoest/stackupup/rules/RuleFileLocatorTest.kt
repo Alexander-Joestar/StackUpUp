@@ -9,7 +9,7 @@ import kotlin.io.path.createTempDirectory
 
 class RuleFileLocatorTest {
     @Test
-    fun `shouldPreferExplicitConfigDir`() {
+    fun shouldPreferExplicitConfigDir() {
         val configDir = createTempDirectory("stackupup-config").toFile()
         RuleFileLocator.setConfigDirectory(configDir)
 
@@ -20,7 +20,7 @@ class RuleFileLocatorTest {
     }
 
     @Test
-    fun `noExplicit_shouldFallbackToRunConfig`() {
+    fun noExplicit_shouldFallbackToRunConfig() {
         RuleFileLocator.resetForTests()
 
         assertEquals(

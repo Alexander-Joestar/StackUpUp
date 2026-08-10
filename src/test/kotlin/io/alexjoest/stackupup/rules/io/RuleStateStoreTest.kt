@@ -8,7 +8,7 @@ import kotlin.io.path.createTempDirectory
 
 class RuleStateStoreTest {
     @Test
-    fun `shouldPreserveCommentsWhileUpdatingStateLines`() {
+    fun shouldPreserveCommentsWhileUpdatingStateLines() {
         val tempDir = createTempDirectory("stackupup-state-store").toFile()
         val file = File(tempDir, "main.su.md").apply {
             writeText(

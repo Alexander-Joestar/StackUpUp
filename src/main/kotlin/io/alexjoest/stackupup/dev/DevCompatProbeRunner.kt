@@ -25,14 +25,19 @@ object DevCompatProbeRunner {
         .toSet()
 
     fun run(server: MinecraftServer): List<String> {
-        val selectedIds =
-            selectRequestedProbeIds(DevAutomationConfig.compatProbeIds, probes.map(DevCompatProbe::id))
+        val availableIds = probes.map(DevCompatProbe::id)
+        val selectedIds = selectRequestedProbeIds(DevAutomationConfig.compatProbeIds, availableIds)
         val selectedProbes = probes.filter { it.id in selectedIds }
+        val failures = ArrayList<String>()
+        val unknownFailures = unknownProbeFailures(DevAutomationConfig.compatProbeIds, availableIds)
+        failures += unknownFailures
+        unknownFailures.forEach { failure ->
+            StackUpUp.logger?.error("开发自动验收[兼容探针]：{}。", failure)
+        }
         if (selectedProbes.isEmpty()) {
-            return emptyList()
+            return failures
         }
 
-        val failures = ArrayList<String>()
         for (probe in selectedProbes) {
             when (val availability = evaluateProbeAvailability(probe::isAvailable)) {
                 ProbeAvailability.available() -> Unit
@@ -64,6 +69,9 @@ object DevCompatProbeRunner {
         return failures
     }
 }
+
+internal fun unknownProbeFailures(requestedIds: Set<String>, availableIds: List<String>): List<String> =
+    unknownRequestedProbeIds(requestedIds, availableIds).map { "unknown_probe_id: $it" }
 
 internal data class ProbeAvailability(val available: Boolean, val failureSummary: String?) {
     companion object {

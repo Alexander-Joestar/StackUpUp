@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 
 class RuleSnapshotTest {
     @Test
-    fun `requirements_shouldTrackTypedReferencedFieldsAndNeeds`() {
+    fun requirements_shouldTrackTypedReferencedFieldsAndNeeds() {
         val materialSnapshot = RuleSnapshot(
             version = 1L,
             rules = listOf(
@@ -62,7 +62,7 @@ class RuleSnapshotTest {
     }
 
     @Test
-    fun `requirements_shouldMergeMixedFieldNeeds`() {
+    fun requirements_shouldMergeMixedFieldNeeds() {
         val snapshot = RuleSnapshot(
             version = 1L,
             rules = listOf(
@@ -78,7 +78,7 @@ class RuleSnapshotTest {
     }
 
     @Test
-    fun `requires_shouldReuseCompiledRuntimeRequirements`() {
+    fun requires_shouldReuseCompiledRuntimeRequirements() {
         val snapshot = RuleSnapshot(
             version = 1L,
             rules = listOf(
@@ -96,7 +96,7 @@ class RuleSnapshotTest {
     }
 
     @Test
-    fun `runtimeRequirements_fromFields_shouldInferProvidersFromFieldDeclarations`() {
+    fun runtimeRequirements_fromFields_shouldInferProvidersFromFieldDeclarations() {
         val requirements = RuntimeContextRequirements.fromFields(
             setOf(
                 RuleField.TAB,
@@ -116,7 +116,7 @@ class RuleSnapshotTest {
     }
 
     @Test
-    fun `runtimeRequirements_fromFields_shouldDeduplicateRepeatedProviderDeclarations`() {
+    fun runtimeRequirements_fromFields_shouldDeduplicateRepeatedProviderDeclarations() {
         val requirements = RuntimeContextRequirements.fromFields(
             listOf(
                 RuleField.TAB,

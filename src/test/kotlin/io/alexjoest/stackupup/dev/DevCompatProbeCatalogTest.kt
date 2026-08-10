@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 
 class DevCompatProbeCatalogTest {
     @Test
-    fun `fixedProbes_shouldBeInDefaultCatalog`() {
+    fun fixedProbes_shouldBeInDefaultCatalog() {
         val probeIds = DevCompatProbeRunner.probeIds()
         assertEquals(expectedFixedTargetProbeCoverage(), DevCompatProbeRunner.fixedTargetCoverage())
         assertTrue("cyclopscore_simple_inventory_limit" in probeIds)

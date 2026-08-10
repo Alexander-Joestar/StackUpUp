@@ -1,6 +1,5 @@
 package io.alexjoest.stackupup.rules
 
-import io.alexjoest.stackupup.rules.LocalizedMessage
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import io.alexjoest.stackupup.rules.io.RuleReloadReport
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -10,7 +9,7 @@ import java.io.File
 
 class RuleReloadReportTest {
     @Test
-    fun `noErrorsNoWarnings_shouldBeClean`() {
+    fun noErrorsNoWarnings_shouldBeClean() {
         val report = RuleReloadReport(
             file = File("run/config/stackupup/main.su"),
             snapshot = RuleSnapshot(version = 1L, rules = emptyList()),
@@ -22,7 +21,7 @@ class RuleReloadReportTest {
     }
 
     @Test
-    fun `shouldPreserveErrorsAndWarnings`() {
+    fun shouldPreserveErrorsAndWarnings() {
         val report = RuleReloadReport(
             file = File("run/config/stackupup/main.su"),
             snapshot = RuleSnapshot(version = 1L, rules = emptyList()),

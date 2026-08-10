@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test
 
 class DslTokenizerTest {
     @Test
-    fun `shouldRecognizeItemAndMetadata`() {
+    fun shouldRecognizeItemAndMetadata() {
         val tokens = DslTokenizer.tokenize("item = gregtech:gt.metaitem.01 && meta = 11305 -> 512")
         assertEquals(
             listOf(
@@ -28,7 +28,7 @@ class DslTokenizerTest {
     }
 
     @Test
-    fun `shouldRecognizeAllCoreOperators`() {
+    fun shouldRecognizeAllCoreOperators() {
         val tokens = DslTokenizer.tokenize("size >= 2 && size <= 64 || meta != 1 -> +4 -> -3 -> *2 -> /1 item in [a, b]")
         assertEquals(
             listOf(
@@ -69,7 +69,7 @@ class DslTokenizerTest {
     }
 
     @Test
-    fun `quotedLiteral_shouldStripQuotesAndKeepValueAndColumn`() {
+    fun quotedLiteral_shouldStripQuotesAndKeepValueAndColumn() {
         val tokens = DslTokenizer.tokenize("item = \"minecraft:wool@14\" -> 128")
 
         assertEquals(
@@ -89,7 +89,7 @@ class DslTokenizerTest {
     }
 
     @Test
-    fun `quotedSectionMidValue_shouldAppendContentWithoutQuotes`() {
+    fun quotedSectionMidValue_shouldAppendContentWithoutQuotes() {
         val tokens = DslTokenizer.tokenize("item = minecraft:\"wool@14\" -> 128")
 
         assertEquals("minecraft:wool@14", tokens[2].lexeme)
@@ -97,7 +97,7 @@ class DslTokenizerTest {
     }
 
     @Test
-    fun `unterminatedQuote_shouldFailFastWithOpeningQuoteColumn`() {
+    fun unterminatedQuote_shouldFailFastWithOpeningQuoteColumn() {
         val error = assertThrows(LocalizedRuleException::class.java) {
             DslTokenizer.tokenize("item = \"minecraft:wool")
         }
@@ -107,7 +107,7 @@ class DslTokenizerTest {
     }
 
     @Test
-    fun `emptyQuote_shouldFailFastWithOpeningQuoteColumn`() {
+    fun emptyQuote_shouldFailFastWithOpeningQuoteColumn() {
         val error = assertThrows(LocalizedRuleException::class.java) {
             DslTokenizer.tokenize("item = \"\" -> 128")
         }

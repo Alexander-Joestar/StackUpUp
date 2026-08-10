@@ -37,6 +37,11 @@ class ConfigGui(parentScreen: GuiScreen?) :
                     } else {
                         object : IConfigElement by element {
                             override fun getChildElements(): MutableList<IConfigElement> = sanitizeConfigElements(children).toMutableList()
+
+                            // IConfigElement 的两个 Java default 方法不被 Kotlin 委托转发，
+                            // 显式委托给 element，避免丢失被包装元素对这些方法的覆写。
+                            override fun getValidValuesDisplay(): Array<String?>? = element.validValuesDisplay
+                            override fun hasSlidingControl(): Boolean = element.hasSlidingControl()
                         }
                     }
                 }

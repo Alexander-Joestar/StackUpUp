@@ -62,7 +62,7 @@ class WrapperCapacityDiagnosticTest {
 
     /** InvWrapper.getSlotLimit 是否直接转发背后 IInventory 的真实上限（不得被抬到兼容上限）。 */
     @Test
-    fun `invWrapper_slotLimit_reflectsBackingInventoryLimit`() {
+    fun invWrapper_slotLimit_reflectsBackingInventoryLimit() {
         val wrapper = InvWrapper(LimitedInventory(64))
         assertEquals(64, wrapper.getSlotLimit(0), "InvWrapper 应转发背后库存的真实上限")
         assertTrue(
@@ -73,7 +73,7 @@ class WrapperCapacityDiagnosticTest {
 
     /** 关键诊断：向只接受 64 的库存插入 150，wrapper 报告的 remainder 是否诚实。 */
     @Test
-    fun `invWrapper_insertOversized_remainderMustAccountForTruncation`() {
+    fun invWrapper_insertOversized_remainderMustAccountForTruncation() {
         val inventory = LimitedInventory(64)
         val wrapper = InvWrapper(inventory)
 
@@ -91,7 +91,7 @@ class WrapperCapacityDiagnosticTest {
 
     /** SidedInvWrapper 走的是另一套静态插入逻辑，单独确认。 */
     @Test
-    fun `sidedInvWrapper_insertOversized_remainderMustAccountForTruncation`() {
+    fun sidedInvWrapper_insertOversized_remainderMustAccountForTruncation() {
         val inventory = LimitedSidedInventory(64)
         val wrapper = SidedInvWrapper(inventory, net.minecraft.util.EnumFacing.NORTH)
 
@@ -108,7 +108,7 @@ class WrapperCapacityDiagnosticTest {
 
     /** 端到端：AE2 限流器把 InvWrapper 当 trusted 直通后，守恒是否仍成立。 */
     @Test
-    fun `ae2Limiter_trustedInvWrapper_overUnexpandedInventory_conservesItems`() {
+    fun ae2Limiter_trustedInvWrapper_overUnexpandedInventory_conservesItems() {
         val inventory = LimitedInventory(64)
         val wrapper = InvWrapper(inventory)
 
@@ -125,7 +125,7 @@ class WrapperCapacityDiagnosticTest {
 
     /** 自洽站点基线：未提升的 ItemStackHandler 在 64 上限处闭合 remainder。 */
     @Test
-    fun `itemStackHandler_insertOversized_vanillaLimit_conservesItems`() {
+    fun itemStackHandler_insertOversized_vanillaLimit_conservesItems() {
         val handler = ItemStackHandler(1)
         assertEquals(64, handler.getSlotLimit(0))
 
@@ -142,7 +142,7 @@ class WrapperCapacityDiagnosticTest {
      * （ItemStackHandler.java:88 读 getStackLimit、:107-116 落库并返回 remainder）必须守恒。
      */
     @Test
-    fun `itemStackHandler_insertOversized_raisedSlotLimit_conservesItems`() {
+    fun itemStackHandler_insertOversized_raisedSlotLimit_conservesItems() {
         val handler = RaisedLimitItemStackHandler(StackLimitHooks.getCompatibilityStackSize())
         assertEquals(StackLimitHooks.getCompatibilityStackSize(), handler.getSlotLimit(0))
 
@@ -156,7 +156,7 @@ class WrapperCapacityDiagnosticTest {
 
     /** 转发链不注入：CombinedInvWrapper 的 getSlotLimit 转发子 handler，写入经子 handler 闭合 remainder。 */
     @Test
-    fun `combinedInvWrapper_insertOversized_remainderMustAccountForTruncation`() {
+    fun combinedInvWrapper_insertOversized_remainderMustAccountForTruncation() {
         val wrapper = CombinedInvWrapper(ItemStackHandler(1), ItemStackHandler(1))
         assertEquals(64, wrapper.getSlotLimit(0), "CombinedInvWrapper 应转发子 handler 的真实上限")
 
@@ -169,7 +169,7 @@ class WrapperCapacityDiagnosticTest {
 
     /** 转发链不注入：RangedWrapper 的 getSlotLimit 转发 compose，写入经 compose 闭合 remainder。 */
     @Test
-    fun `rangedWrapper_insertOversized_remainderMustAccountForTruncation`() {
+    fun rangedWrapper_insertOversized_remainderMustAccountForTruncation() {
         val wrapper = RangedWrapper(ItemStackHandler(3), 0, 2)
         assertEquals(64, wrapper.getSlotLimit(0), "RangedWrapper 应转发 compose 的真实上限")
 
@@ -185,7 +185,7 @@ class WrapperCapacityDiagnosticTest {
      * 不需要对 wrapper 自身注入；写入经 InventoryBasic 的 clamp 截断并退回 remainder。
      */
     @Test
-    fun `invWrapper_overRaisedInventory_forwardsRealCapacity`() {
+    fun invWrapper_overRaisedInventory_forwardsRealCapacity() {
         val inventory = LimitedInventory(StackLimitHooks.getCompatibilityStackSize())
         val wrapper = InvWrapper(inventory)
         assertEquals(StackLimitHooks.getCompatibilityStackSize(), wrapper.getSlotLimit(0))
@@ -204,7 +204,7 @@ class WrapperCapacityDiagnosticTest {
      * vanilla 实体 setter 为无截断列表直写（EntityLiving.java:1012-1022 同语义），写入量守恒。
      */
     @Test
-    fun `entityHandsWrapper_insertOversized_raisedHandLimit_conservesItems`() {
+    fun entityHandsWrapper_insertOversized_raisedHandLimit_conservesItems() {
         val wrapper = RaisedHandsInvWrapper(StubLivingEntity(TestWorld()))
         assertEquals(StackLimitHooks.getCompatibilityStackSize(), wrapper.getSlotLimit(0))
 
@@ -218,7 +218,7 @@ class WrapperCapacityDiagnosticTest {
 
     /** EntityEquipment 保留动作护栏（装甲槽）：slot limit 恒为 1（不可堆叠语义），不得被提升，remainder 闭合。 */
     @Test
-    fun `entityArmorWrapper_insertOversized_armorSlotKeepsLimitOne`() {
+    fun entityArmorWrapper_insertOversized_armorSlotKeepsLimitOne() {
         val wrapper = EntityArmorInvWrapper(StubLivingEntity(TestWorld()))
         assertEquals(1, wrapper.getSlotLimit(0), "装甲槽 slot limit 应为 1 且不被提升")
 
@@ -232,7 +232,7 @@ class WrapperCapacityDiagnosticTest {
 
     /** 结构检查（非行为验证）：ForgeItemHandlerLimitMixin 只保留两个自洽目标，四个转发 wrapper 已移除。 */
     @Test
-    fun `forgeItemHandlerLimitMixin_shouldNotTargetForwardingWrappers`() {
+    fun forgeItemHandlerLimitMixin_shouldNotTargetForwardingWrappers() {
         val bytes = mixinClassBytes("io.alexjoest.stackupup.mixin.early.ForgeItemHandlerLimitMixin")
 
         for (kept in listOf("ItemStackHandler", "EntityEquipmentInvWrapper")) {
@@ -250,7 +250,7 @@ class WrapperCapacityDiagnosticTest {
 
     /** 结构检查（非行为验证）：SlotItemHandler 的 getSlotStackLimit 独立上限注入已移除，simulate 基广告保留。 */
     @Test
-    fun `slotItemHandlerMixin_shouldNotInjectIndependentSlotLimit`() {
+    fun slotItemHandlerMixin_shouldNotInjectIndependentSlotLimit() {
         val bytes = mixinClassBytes("io.alexjoest.stackupup.mixin.early.SlotItemHandlerMixin")
 
         assertFalse(

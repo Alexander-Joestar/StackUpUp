@@ -69,7 +69,7 @@ class VanillaInventoryConservationTest {
     }
 
     @Test
-    fun `chest_setter_shouldClampToRaisedLimitWithoutLoss`() {
+    fun chest_setter_shouldClampToRaisedLimitWithoutLoss() {
         assertConservedClamp(
             object : TileEntityChest() {
                 override fun getInventoryStackLimit(): Int = RAISED_LIMIT
@@ -80,13 +80,13 @@ class VanillaInventoryConservationTest {
     }
 
     @Test
-    fun `chest_setter_shouldClampToVanillaLimitInBaseline`() {
+    fun chest_setter_shouldClampToVanillaLimitInBaseline() {
         // 原值基线：无 override 时夹取 64，证明夹取跟随上限值而非写死 64。
         assertConservedClamp(TileEntityChest(), 0, VANILLA_LIMIT)
     }
 
     @Test
-    fun `dispenser_setter_shouldClampToRaisedLimitWithoutLoss`() {
+    fun dispenser_setter_shouldClampToRaisedLimitWithoutLoss() {
         assertConservedClamp(
             object : TileEntityDispenser() {
                 override fun getInventoryStackLimit(): Int = RAISED_LIMIT
@@ -97,7 +97,7 @@ class VanillaInventoryConservationTest {
     }
 
     @Test
-    fun `furnace_setter_shouldClampToRaisedLimitWithoutLoss`() {
+    fun furnace_setter_shouldClampToRaisedLimitWithoutLoss() {
         assertConservedClamp(
             object : TileEntityFurnace() {
                 override fun getInventoryStackLimit(): Int = RAISED_LIMIT
@@ -108,7 +108,7 @@ class VanillaInventoryConservationTest {
     }
 
     @Test
-    fun `hopper_setter_shouldClampToRaisedLimitWithoutLoss`() {
+    fun hopper_setter_shouldClampToRaisedLimitWithoutLoss() {
         assertConservedClamp(
             object : TileEntityHopper() {
                 override fun getInventoryStackLimit(): Int = RAISED_LIMIT
@@ -119,7 +119,7 @@ class VanillaInventoryConservationTest {
     }
 
     @Test
-    fun `shulkerBox_setter_shouldClampToRaisedLimitWithoutLoss`() {
+    fun shulkerBox_setter_shouldClampToRaisedLimitWithoutLoss() {
         assertConservedClamp(
             object : TileEntityShulkerBox() {
                 override fun getInventoryStackLimit(): Int = RAISED_LIMIT
@@ -130,7 +130,7 @@ class VanillaInventoryConservationTest {
     }
 
     @Test
-    fun `minecartChest_setter_shouldClampToRaisedLimitWithoutLoss`() {
+    fun minecartChest_setter_shouldClampToRaisedLimitWithoutLoss() {
         // EntityMinecartContainer 为抽象类（mixin 目标本身），以其具体子类 EntityMinecartChest 为行为代理，
         // patch 经继承对子类生效（t2b §4 规格）。
         assertConservedClamp(
@@ -143,7 +143,7 @@ class VanillaInventoryConservationTest {
     }
 
     @Test
-    fun `basic_setter_shouldClampToRaisedLimitWithoutLoss`() {
+    fun basic_setter_shouldClampToRaisedLimitWithoutLoss() {
         assertConservedClamp(
             object : InventoryBasic("stackupup_test", false, 2) {
                 override fun getInventoryStackLimit(): Int = RAISED_LIMIT
@@ -154,7 +154,7 @@ class VanillaInventoryConservationTest {
     }
 
     @Test
-    fun `merchant_setter_shouldClampToRaisedLimitWithoutLoss`() {
+    fun merchant_setter_shouldClampToRaisedLimitWithoutLoss() {
         // 写槽 2（交易结果槽）避开 resetRecipeAndSlots（槽 0/1 变更触发，需要非空 merchant）。
         assertConservedClamp(
             object : InventoryMerchant(null, null) {
@@ -166,7 +166,7 @@ class VanillaInventoryConservationTest {
     }
 
     @Test
-    fun `playerInventory_addItemStack_shouldClampPerSlotToRaisedLimitWithoutLoss`() {
+    fun playerInventory_addItemStack_shouldClampPerSlotToRaisedLimitWithoutLoss() {
         val playerInventory = object : InventoryPlayer(null) {
             override fun getInventoryStackLimit(): Int = RAISED_LIMIT
         }
@@ -186,7 +186,7 @@ class VanillaInventoryConservationTest {
     }
 
     @Test
-    fun `brewingStand_setter_shouldNotTruncateAtRaisedState`() {
+    fun brewingStand_setter_shouldNotTruncateAtRaisedState() {
         // TileEntityBrewingStand.setInventorySlotContents（:330-336）为朴素写入，无夹取即不截断。
         assertConservedPlainWrite(
             object : TileEntityBrewingStand() {
@@ -197,7 +197,7 @@ class VanillaInventoryConservationTest {
     }
 
     @Test
-    fun `crafting_setter_shouldNotTruncateAtRaisedState`() {
+    fun crafting_setter_shouldNotTruncateAtRaisedState() {
         // InventoryCrafting.setInventorySlotContents（:176-180）为朴素写入；eventHandler 用测试容器。
         assertConservedPlainWrite(
             object : InventoryCrafting(TestContainer(), 3, 3) {
@@ -208,7 +208,7 @@ class VanillaInventoryConservationTest {
     }
 
     @Test
-    fun `craftResult_setter_shouldNotTruncateAtRaisedState`() {
+    fun craftResult_setter_shouldNotTruncateAtRaisedState() {
         // InventoryCraftResult.setInventorySlotContents（:150-154）为朴素写入。
         assertConservedPlainWrite(
             object : InventoryCraftResult() {

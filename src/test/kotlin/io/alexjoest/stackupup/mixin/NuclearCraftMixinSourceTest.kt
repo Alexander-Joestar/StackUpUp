@@ -10,7 +10,7 @@ import java.nio.file.Paths
 
 class NuclearCraftMixinSourceTest {
     @Test
-    fun `nuclearCraftMixin_shouldPatchRealCapacitySourceNotSplitOnlyExpansion`() {
+    fun nuclearCraftMixin_shouldPatchRealCapacitySourceNotSplitOnlyExpansion() {
         val config = String(Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.late.nuclearcraft.json")), Charsets.UTF_8)
         val mixin = String(
             Files.readAllBytes(Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/NuclearCraftTileInventoryLimitMixin.java")),
@@ -35,7 +35,7 @@ class NuclearCraftMixinSourceTest {
     }
 
     @Test
-    fun `nuclearCraftLateMixin_shouldBeRegisteredInLoaderAndToggled`() {
+    fun nuclearCraftLateMixin_shouldBeRegisteredInLoaderAndToggled() {
         assertTrue(
             StackUpUpMixinConnector().modules.any { it.config.contains("nuclearcraft") },
             "NC late config 必须登记在 connector 模块表",
@@ -47,7 +47,7 @@ class NuclearCraftMixinSourceTest {
     }
 
     @Test
-    fun `nuclearCraftDistributorNoDropMixin_shouldSkipCullAndDropWithoutRedirect`() {
+    fun nuclearCraftDistributorNoDropMixin_shouldSkipCullAndDropWithoutRedirect() {
         val config = String(Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.late.nuclearcraft.json")), Charsets.UTF_8)
         val source = String(
             Files.readAllBytes(

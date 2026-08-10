@@ -28,7 +28,7 @@ class DslRuleSourceMultiFileTest {
     }
 
     @Test
-    fun `shouldAggregateMultipleFilesInOrder`() {
+    fun shouldAggregateMultipleFilesInOrder() {
         val tempDir = createTempDirectory("stackupup-multi-source").toFile()
         val pack = File(tempDir, "pack.su").apply {
             writeText("item = minecraft:egg -> 64" + System.lineSeparator(), Charsets.UTF_8)
@@ -46,7 +46,7 @@ class DslRuleSourceMultiFileTest {
     }
 
     @Test
-    fun `shouldFilterConditionalBlocksAcrossMultipleFiles`() {
+    fun shouldFilterConditionalBlocksAcrossMultipleFiles() {
         val tempDir = createTempDirectory("stackupup-multi-source").toFile()
         val pack = File(tempDir, "pack.su").apply {
             writeText(
@@ -81,7 +81,7 @@ class DslRuleSourceMultiFileTest {
     }
 
     @Test
-    fun `errors_shouldIncludeSourceFileName`() {
+    fun errors_shouldIncludeSourceFileName() {
         val tempDir = createTempDirectory("stackupup-multi-source").toFile()
         val broken = File(tempDir, "broken.su").apply {
             writeText("item = minecraft:egg ??? 64" + System.lineSeparator(), Charsets.UTF_8)

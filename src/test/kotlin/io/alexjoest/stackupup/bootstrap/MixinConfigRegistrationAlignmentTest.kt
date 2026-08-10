@@ -22,7 +22,7 @@ import kotlin.streams.toList
 class MixinConfigRegistrationAlignmentTest {
 
     @Test
-    fun `allJsonResources_shouldBeRegisteredByLoaders`() {
+    fun allJsonResources_shouldBeRegisteredByLoaders() {
         val configFiles = Files.list(RESOURCES_DIR).use { stream ->
             stream.map { it.fileName.toString() }
                 .filter { it.startsWith("mixins.${StackUpUpIds.MOD_ID}.") && it.endsWith(".json") }
@@ -34,7 +34,7 @@ class MixinConfigRegistrationAlignmentTest {
     }
 
     @Test
-    fun `everyMixinSourceClass_shouldBeRegisteredInSomeJson`() {
+    fun everyMixinSourceClass_shouldBeRegisteredInSomeJson() {
         val registeredNames = readAllJsonClassNames()
         val unregisteredMixins = buildList {
             addAll(mixinClassesFromSource("early"))

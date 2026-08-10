@@ -7,7 +7,7 @@ import kotlin.io.path.createTempDirectory
 
 class RuleFileTemplateTest {
     @Test
-    fun `defaultTemplate_shouldCreateEmptyRuleFile`() {
+    fun defaultTemplate_shouldCreateEmptyRuleFile() {
         val tempDir = createTempDirectory("stackupup-rule-template").toFile()
         val file = File(tempDir, "main.su")
 

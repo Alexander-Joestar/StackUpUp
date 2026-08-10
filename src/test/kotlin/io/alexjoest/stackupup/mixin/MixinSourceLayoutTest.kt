@@ -6,11 +6,10 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.io.path.exists
-import kotlin.streams.asSequence
 
 class MixinSourceLayoutTest {
     @Test
-    fun `mixinSources_shouldBeInSrcMainJava`() {
+    fun mixinSources_shouldBeInSrcMainJava() {
         val kotlinMixinRoot = Paths.get("src", "main", "kotlin", "io", "alexjoest", "stackupup", "mixin")
         val kotlinMixinFiles = kotlinMixinRoot.walkRegularFiles()
             .filter { it.toString().endsWith(".kt") }
@@ -22,7 +21,7 @@ class MixinSourceLayoutTest {
     }
 
     @Test
-    fun `mixinPackage_shouldNotContainRuntimeHelpers`() {
+    fun mixinPackage_shouldNotContainRuntimeHelpers() {
         val mixinRoot = Paths.get("src", "main", "java", "io", "alexjoest", "stackupup", "mixin")
         val nonMixinFiles = mixinRoot.walkRegularFiles()
             .filter { it.toString().endsWith(".java") }

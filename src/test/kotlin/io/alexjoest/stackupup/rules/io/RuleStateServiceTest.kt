@@ -14,14 +14,14 @@ class RuleStateServiceTest {
     lateinit var tempDir: Path
 
     @Test
-    fun `getState_shouldReturnNullWhenStoreUnavailable`() {
+    fun getState_shouldReturnNullWhenStoreUnavailable() {
         val service = RuleStateService { null }
 
         assertNull(service.getState("phase1"))
     }
 
     @Test
-    fun `getState_shouldReturnFalseWhenStateKeyMissing`() {
+    fun getState_shouldReturnFalseWhenStateKeyMissing() {
         val stateFile = createStateFile(
             """
             # state
@@ -34,7 +34,7 @@ class RuleStateServiceTest {
     }
 
     @Test
-    fun `getState_shouldReturnStoredStateWhenKeyExists`() {
+    fun getState_shouldReturnStoredStateWhenKeyExists() {
         val stateFile = createStateFile(
             """
             # state

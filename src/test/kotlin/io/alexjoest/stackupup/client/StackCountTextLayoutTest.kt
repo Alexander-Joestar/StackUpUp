@@ -5,26 +5,26 @@ import org.junit.jupiter.api.Test
 
 class StackCountTextLayoutTest {
     @Test
-    fun `shouldStripFormattingCodes`() {
+    fun shouldStripFormattingCodes() {
         assertEquals("1024", StackCountTextLayout.stripFormattingCodes("§e10§l24"))
         assertEquals("64", StackCountTextLayout.stripFormattingCodes("64"))
     }
 
     @Test
-    fun `shouldTruncateToMostSignificantDigit`() {
+    fun shouldTruncateToMostSignificantDigit() {
         assertEquals(7, StackCountTextLayout.floorToMostSignificantDigit(7))
         assertEquals(900, StackCountTextLayout.floorToMostSignificantDigit(987))
         assertEquals(10000, StackCountTextLayout.floorToMostSignificantDigit(12345))
     }
 
     @Test
-    fun `thousands_shouldUseCompactAbbreviation`() {
+    fun thousands_shouldUseCompactAbbreviation() {
         assertEquals("10.2K", StackCountTextLayout.formatLongCompactCount(10240))
         assertEquals("10K", StackCountTextLayout.formatShortCompactCount(10240))
     }
 
     @Test
-    fun `compactAbbreviation_shouldCoverBoundaries`() {
+    fun compactAbbreviation_shouldCoverBoundaries() {
         assertEquals("999", StackCountTextLayout.formatLongCompactCount(999))
         assertEquals("999", StackCountTextLayout.formatShortCompactCount(999))
 
@@ -45,7 +45,7 @@ class StackCountTextLayoutTest {
     }
 
     @Test
-    fun `cappedAbbreviation_shouldCoverAlwaysCompactBoundaries`() {
+    fun cappedAbbreviation_shouldCoverAlwaysCompactBoundaries() {
         assertEquals("999", StackCountTextLayout.formatCappedCount(999))
         assertEquals("1K", StackCountTextLayout.formatCappedCount(1000))
         assertEquals("1.5K", StackCountTextLayout.formatCappedCount(1500))
@@ -58,7 +58,7 @@ class StackCountTextLayoutTest {
     }
 
     @Test
-    fun `rawInteger_shouldUseThousandsSeparator`() {
+    fun rawInteger_shouldUseThousandsSeparator() {
         assertEquals("1,024", StackCountTextLayout.formatGroupedCount(1024))
         assertEquals("80,000", StackCountTextLayout.formatGroupedCount(80000))
         assertEquals("1,000,000", StackCountTextLayout.formatGroupedCount(1000000))

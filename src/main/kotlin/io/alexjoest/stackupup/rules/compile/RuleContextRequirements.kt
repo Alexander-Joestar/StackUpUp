@@ -9,7 +9,7 @@ import io.alexjoest.stackupup.rules.field.RuleFieldContextProvider
  *
  * - [referencedFields]：规则引用的字段集合（AST 投影，驱动运行时 provider 采集计划）；
  * - [cacheKeyFields]：字段缓存键材料，由 matcher 树 [FieldMatcher.readFields] 机械推导
- *   后按字段声明的 [CacheKeyStrategy] 过滤（T6），不再手工维护；
+ *   后按字段声明的 [io.alexjoest.stackupup.rules.CacheKeyStrategy] 过滤（T6），不再手工维护；
  * - [readFields]：matcher 树实际读取的字段集合（缓存键推导的唯一事实源）。
  */
 data class RuleContextRequirements(val referencedFields: Set<RuleField>, val cacheKeyFields: List<RuleField>, val readFields: Set<RuleField>) {

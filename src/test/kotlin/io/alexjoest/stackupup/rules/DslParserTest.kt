@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 
 class DslParserTest {
     @Test
-    fun `shouldParseChainedComparison`() {
+    fun shouldParseChainedComparison() {
         val rule = DslParser.parseLine("2 < size < 64 -> 1024")
         assertEquals(listOf("set"), rule.action.steps.map { it.debugName })
         assertEquals(listOf(1024), rule.action.steps.map { it.value })
@@ -17,7 +17,7 @@ class DslParserTest {
     }
 
     @Test
-    fun `shouldParseInList`() {
+    fun shouldParseInList() {
         val rule = DslParser.parseLine("item in [minecraft:egg, minecraft:snowball] -> 128")
         assertEquals(listOf("set"), rule.action.steps.map { it.debugName })
         assertEquals(listOf(128), rule.action.steps.map { it.value })
@@ -25,7 +25,7 @@ class DslParserTest {
     }
 
     @Test
-    fun `shouldParseAndAfterListCondition`() {
+    fun shouldParseAndAfterListCondition() {
         val rule = DslParser.parseLine("item in [minecraft:egg, minecraft:snowball] && metadata = 0 -> 128")
         assertEquals(listOf("set"), rule.action.steps.map { it.debugName })
         assertEquals(listOf(128), rule.action.steps.map { it.value })
@@ -34,7 +34,7 @@ class DslParserTest {
     }
 
     @Test
-    fun `shouldParseMultiplyOperator`() {
+    fun shouldParseMultiplyOperator() {
         val rule = DslParser.parseLine("size > 2 -> *4")
         assertEquals(listOf("multiply"), rule.action.steps.map { it.debugName })
         assertEquals(listOf(4), rule.action.steps.map { it.value })
@@ -42,7 +42,7 @@ class DslParserTest {
     }
 
     @Test
-    fun `shouldNormalizeSymbolAliases`() {
+    fun shouldNormalizeSymbolAliases() {
         val rule = DslParser.parseLine("item = gregtech:gt.metaitem.01 && metadata in [1, 2, 3] -> 1024")
         assertEquals(listOf("set"), rule.action.steps.map { it.debugName })
         assertEquals(listOf(1024), rule.action.steps.map { it.value })
@@ -51,14 +51,14 @@ class DslParserTest {
     }
 
     @Test
-    fun `shouldParseActionChain`() {
+    fun shouldParseActionChain() {
         val rule = DslParser.parseLine("size > 1 -> *2 -> +10 -> /2")
         assertEquals(listOf("multiply", "add", "divide"), rule.action.steps.map { it.debugName })
         assertEquals(listOf(2, 10, 2), rule.action.steps.map { it.value })
     }
 
     @Test
-    fun `unknownFieldSingleComparison_shouldThrowUnsupportedField`() {
+    fun unknownFieldSingleComparison_shouldThrowUnsupportedField() {
         val error = assertThrows(LocalizedRuleException::class.java) {
             DslParser.parseLine("bogus = 1 -> 64")
         }
@@ -67,7 +67,7 @@ class DslParserTest {
     }
 
     @Test
-    fun `compactChainedRange_shouldProduceRangeConditionAst`() {
+    fun compactChainedRange_shouldProduceRangeConditionAst() {
         val range = DslParser.parseLine("1<meta<3 -> 512").condition as RangeConditionAst
 
         assertEquals(RuleField.META, range.field)
@@ -78,7 +78,7 @@ class DslParserTest {
     }
 
     @Test
-    fun `closedChainedRange_shouldProduceInclusiveBounds`() {
+    fun closedChainedRange_shouldProduceInclusiveBounds() {
         val range = DslParser.parseLine("1 <= meta <= 3 -> 512").condition as RangeConditionAst
 
         assertEquals(RuleField.META, range.field)
@@ -89,7 +89,7 @@ class DslParserTest {
     }
 
     @Test
-    fun `reversedChainedRange_shouldNormalizeToLowerAndUpperBounds`() {
+    fun reversedChainedRange_shouldNormalizeToLowerAndUpperBounds() {
         // 3 >= meta > 1 与 1 < meta <= 3 是同一区间，边界方向统一归一到 lower/upper
         val range = DslParser.parseLine("3 >= meta > 1 -> 512").condition as RangeConditionAst
 
@@ -101,7 +101,7 @@ class DslParserTest {
     }
 
     @Test
-    fun `chainLongerThanTwoComparisons_shouldNotSilentlyTruncate`() {
+    fun chainLongerThanTwoComparisons_shouldNotSilentlyTruncate() {
         val error = assertThrows(LocalizedRuleException::class.java) {
             DslParser.parseLine("1 < meta < 3 < 5 -> 512")
         }
@@ -110,7 +110,7 @@ class DslParserTest {
     }
 
     @Test
-    fun `singleComparisonStartingWithLiteral_shouldReverseOperator`() {
+    fun singleComparisonStartingWithLiteral_shouldReverseOperator() {
         // literal cmp field 单比较等价于 field cmp.reverse() literal，产出 FieldComparisonAst
         val comparison = DslParser.parseLine("3 > meta -> 512").condition as FieldComparisonAst
 

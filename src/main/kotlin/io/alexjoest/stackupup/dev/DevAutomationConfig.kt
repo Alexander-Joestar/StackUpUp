@@ -1,6 +1,12 @@
 package io.alexjoest.stackupup.dev
 
 import io.alexjoest.stackupup.StackUpUpIds
+import org.apache.logging.log4j.LogManager
+import org.apache.logging.log4j.Logger
+
+private val logger: Logger = LogManager.getLogger("stackupup.dev.automation")
+
+private val DEV_AUTOMATION_MODES: Set<String> = setOf("client", "server", "both")
 
 object DevAutomationConfig {
     private val settings: DevAutomationSettings = readSettings(System::getProperty)
@@ -75,9 +81,19 @@ internal fun readSettings(getProperty: (String) -> String?): DevAutomationSettin
         ?: getProperty(StackUpUpIds.DEV_AUTOMATION_LEGACY_PREFIX)
         ?: defaultValue
 
+    val enabled = readEnabled("false").toBoolean()
+    val mode = readSetting("mode", "client")
+    if (enabled && mode !in DEV_AUTOMATION_MODES) {
+        logger.error(
+            "Illegal dev automation mode '{}': expected one of [{}]; client and server automation stay disabled.",
+            mode,
+            DEV_AUTOMATION_MODES.joinToString(", "),
+        )
+    }
+
     return DevAutomationSettings(
-        enabled = readEnabled("false").toBoolean(),
-        mode = readSetting("mode", "client"),
+        enabled = enabled,
+        mode = mode,
         runServerMatrix = readSetting("matrix", "false").toBoolean(),
         autoShutdown = readSetting("autoShutdown", "true").toBoolean(),
         failFast = readSetting("failFast", "true").toBoolean(),
@@ -105,4 +121,12 @@ internal fun selectRequestedProbeIds(requestedIds: Set<String>, availableIds: Li
         return availableIds
     }
     return availableIds.filter { it in requestedIds }
+}
+
+internal fun unknownRequestedProbeIds(requestedIds: Set<String>, availableIds: List<String>): Set<String> {
+    if (requestedIds.isEmpty()) {
+        return emptySet()
+    }
+    val available = availableIds.toSet()
+    return requestedIds.filterNot(available::contains).toCollection(LinkedHashSet())
 }

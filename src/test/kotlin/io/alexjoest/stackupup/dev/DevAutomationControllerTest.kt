@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test
 
 class DevAutomationControllerTest {
     @Test
-    fun `atMainMenu_shouldStartWorldOnce`() {
+    fun atMainMenu_shouldStartWorldOnce() {
         val controller = DevAutomationController()
 
         val firstActions = controller.advance(DevAutomationSnapshot(atMainMenu = true))
@@ -16,7 +16,7 @@ class DevAutomationControllerTest {
     }
 
     @Test
-    fun `enteredWorld_shouldGiveTargetItemOnce`() {
+    fun enteredWorld_shouldGiveTargetItemOnce() {
         val controller = DevAutomationController()
 
         controller.advance(DevAutomationSnapshot(atMainMenu = true))
@@ -28,7 +28,7 @@ class DevAutomationControllerTest {
     }
 
     @Test
-    fun `itemObserved_shouldEndFlow`() {
+    fun itemObserved_shouldEndFlow() {
         val controller = DevAutomationController()
 
         controller.advance(DevAutomationSnapshot(atMainMenu = true))
@@ -53,7 +53,7 @@ class DevAutomationControllerTest {
     }
 
     @Test
-    fun `resourceReloadRequested_atMainMenu_shouldEmitReloadGuidanceThenLaunchWorld`() {
+    fun resourceReloadRequested_atMainMenu_shouldEmitReloadGuidanceThenLaunchWorld() {
         val controller = DevAutomationController()
 
         val firstActions = controller.advance(

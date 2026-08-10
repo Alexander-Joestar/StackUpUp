@@ -18,13 +18,13 @@ import java.nio.file.Paths
  */
 class MixinBooterIntegrationTest {
     @Test
-    fun `earlyConfigFileName_shouldBeStable`() {
+    fun earlyConfigFileName_shouldBeStable() {
         assertEquals("mixins.stackupup.early.json", StackUpUpIds.EARLY_MIXIN_CONFIG)
         assertTrue(StackUpUpMixinConnector().shouldQueueEarly(emptyList()), "无冲突时 early 配置应可装载")
     }
 
     @Test
-    fun `lateConfigFileName_shouldBeStable`() {
+    fun lateConfigFileName_shouldBeStable() {
         assertEquals(
             listOf(
                 "mixins.stackupup.late.ae2.json",
@@ -48,7 +48,7 @@ class MixinBooterIntegrationTest {
     }
 
     @Test
-    fun `lateConfigFiles_shouldReferenceExistingMixinSources`() {
+    fun lateConfigFiles_shouldReferenceExistingMixinSources() {
         for (config in StackUpUpMixinConnector().modules.map { it.config }) {
             val configPath = Paths.get("src", "main", "resources", config)
             assertTrue(Files.isRegularFile(configPath), "Missing mixin config: $config")
@@ -67,7 +67,7 @@ class MixinBooterIntegrationTest {
     }
 
     @Test
-    fun `lateConfig_shouldQueueByModPresence`() {
+    fun lateConfig_shouldQueueByModPresence() {
         fun present(vararg modIds: String): (String) -> Boolean = { modId -> modId in modIds }
 
         val connector = StackUpUpMixinConnector()
@@ -110,7 +110,7 @@ class MixinBooterIntegrationTest {
     }
 
     @Test
-    fun `connectorSource_shouldKeepLoaderSemantics`() {
+    fun connectorSource_shouldKeepLoaderSemantics() {
         // 结构检查（非行为验证）：connect() 装载链必须保留冲突检测分支、mod 在场条件 add 与校验调用，
         // 否则 dev/test 与生产装载入口会脱节；实际装载行为由 runServerAutoTest 运行验证覆盖。
         val source = String(

@@ -42,6 +42,10 @@ object RuleRuntimeCoordinator {
             } else {
                 RuleReloadPipeline.disabled(primaryRulesFile)
             }
+            if (report.errors.isNotEmpty()) {
+                lastReportState = report
+                return report
+            }
             publishSuccessfulReload(report, enableDslRules)
         } catch (ex: Exception) {
             val report = failedReloadReport(primaryRulesFile, ex)

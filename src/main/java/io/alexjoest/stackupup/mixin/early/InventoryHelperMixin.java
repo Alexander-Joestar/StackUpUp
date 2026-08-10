@@ -6,12 +6,14 @@ import net.minecraft.inventory.InventoryHelper;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(InventoryHelper.class)
 public abstract class InventoryHelperMixin {
+    @Unique
     private static final int MIN_SPLIT_THRESHOLD = 8;
 
     @Inject(
@@ -20,11 +22,12 @@ public abstract class InventoryHelperMixin {
         cancellable = true
     )
     private static void useLargeStackSplit(World worldIn, double x, double y, double z, ItemStack stack, CallbackInfo ci) {
-        spawnLargeStack(worldIn, x, y, z, stack);
+        stackupup$spawnLargeStack(worldIn, x, y, z, stack);
         ci.cancel();
     }
 
-    private static void spawnLargeStack(World world, double x, double y, double z, ItemStack stack) {
+    @Unique
+    private static void stackupup$spawnLargeStack(World world, double x, double y, double z, ItemStack stack) {
         float xOffset = StackLimitHooks.RANDOM.nextFloat() * 0.8F + 0.1F;
         float yOffset = StackLimitHooks.RANDOM.nextFloat() * 0.8F + 0.1F;
         float zOffset = StackLimitHooks.RANDOM.nextFloat() * 0.8F + 0.1F;

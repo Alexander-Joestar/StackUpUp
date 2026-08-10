@@ -1,7 +1,6 @@
 package io.alexjoest.stackupup.rules
 
 import io.alexjoest.stackupup.StackUpUpConfig
-import io.alexjoest.stackupup.rules.LocalizedMessage
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import io.alexjoest.stackupup.rules.io.RuleFeedback
 import io.alexjoest.stackupup.rules.io.RuleLineLoader
@@ -14,7 +13,7 @@ import java.io.File
 
 class RuleFeedbackTest {
     @Test
-    fun `error_shouldPreserveTranslationKeyAndArgs`() {
+    fun error_shouldPreserveTranslationKeyAndArgs() {
         val report = RuleReloadReport(
             file = File("run/config/stackupup/main.su"),
             snapshot = RuleSnapshot(version = 1L, rules = emptyList()),
@@ -48,7 +47,7 @@ class RuleFeedbackTest {
     }
 
     @Test
-    fun `complexityWarning_shouldPreserveTranslationKey`() {
+    fun complexityWarning_shouldPreserveTranslationKey() {
         val previous = StackUpUpConfig.general.ruleComplexityWarnings
         StackUpUpConfig.general.ruleComplexityWarnings = true
         StackUpUpConfig.applyReloadControlledValues()

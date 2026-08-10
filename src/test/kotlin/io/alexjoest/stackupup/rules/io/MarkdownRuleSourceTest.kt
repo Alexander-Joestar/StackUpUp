@@ -20,7 +20,7 @@ class MarkdownRuleSourceTest {
     }
 
     @Test
-    fun `shouldCompileOnlyEnabledMarkdownRuleBlocks`() {
+    fun shouldCompileOnlyEnabledMarkdownRuleBlocks() {
         previousMaxStackSize = StackUpUpConfig.activeMaxStackSize
         val result = MarkdownRuleSource.fromLines(
             listOf(
@@ -58,7 +58,7 @@ class MarkdownRuleSourceTest {
     }
 
     @Test
-    fun `shouldLoadMultipleMarkdownFilesInOrder`() {
+    fun shouldLoadMultipleMarkdownFilesInOrder() {
         val tempDir = createTempDirectory("stackupup-markdown-multi-source").toFile()
         val pack = File(tempDir, "pack.su.md").apply {
             writeText(

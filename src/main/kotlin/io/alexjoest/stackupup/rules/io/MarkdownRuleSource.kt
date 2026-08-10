@@ -12,14 +12,6 @@ import java.io.File
  */
 internal object MarkdownRuleSource {
     /**
-     * 读取单个 Markdown 规则文件。
-     */
-    fun fromFile(file: File, gateContext: RuleGateContext = RuleGateContext.EMPTY): RuleLoadResult {
-        RuleFileTemplate.ensureExists(file)
-        return fromLines(file.readLines(Charsets.UTF_8), file.name, gateContext)
-    }
-
-    /**
      * 读取多个 Markdown 规则文件，并为每个文件独立合并本文件 state。
      */
     fun fromFiles(files: List<File>, gateContext: RuleGateContext = RuleGateContext.EMPTY): RuleLoadResult = fromParsedFiles(
@@ -42,9 +34,9 @@ internal object MarkdownRuleSource {
     fun fromParsedFiles(files: List<ParsedMarkdownFile>, gateContext: RuleGateContext = RuleGateContext.EMPTY): RuleLoadResult {
         val allRules = ArrayList<CompiledRule>()
         val allErrors = ArrayList<LocalizedMessage>()
-        for (file in files) {
-            val effectiveContext = gateContext.copy(states = gateContext.states + file.document.states)
-            val result = collectInputs(file.document.lines, file.sourceName, effectiveContext)
+        for ((sourceName, document) in files) {
+            val effectiveContext = gateContext.copy(states = gateContext.states + document.states)
+            val result = collectInputs(document.lines, sourceName, effectiveContext)
             allRules += result.snapshot.rules
             allErrors += result.errors
         }
@@ -126,8 +118,7 @@ internal object MarkdownRuleSource {
         target: MutableList<RuleLineLoader.RuleLineInput>,
     ) {
         var active = true
-        for (frame in gateStack) {
-            val parsed = frame.parsed
+        for ((parsed) in gateStack) {
             active = active && (parsed == null || (parsed is MarkdownGateParseResult.Success && gateContext.matches(parsed.expression)))
         }
         if (!active) {

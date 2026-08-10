@@ -13,7 +13,7 @@ import org.objectweb.asm.tree.MethodNode
 
 class MaxStackConstantPatchTest {
     @Test
-    fun `targetMethod64_shouldBeReplacedWithUnifiedEntry`() {
+    fun targetMethod64_shouldBeReplacedWithUnifiedEntry() {
         val method = MethodNode(Opcodes.ACC_PUBLIC, "onExtract", "()V", null, null)
         method.instructions.add(IntInsnNode(Opcodes.BIPUSH, 64))
         method.instructions.add(InsnNode(Opcodes.RETURN))
@@ -31,7 +31,7 @@ class MaxStackConstantPatchTest {
     }
 
     @Test
-    fun `nonTargetMethod_shouldNotBeReplaced`() {
+    fun nonTargetMethod_shouldNotBeReplaced() {
         val method = MethodNode(Opcodes.ACC_PUBLIC, "notTarget", "()V", null, null)
         method.instructions.add(IntInsnNode(Opcodes.BIPUSH, 64))
         method.instructions.add(InsnNode(Opcodes.RETURN))

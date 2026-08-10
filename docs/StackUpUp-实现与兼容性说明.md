@@ -6,8 +6,7 @@
 - **已知限制**：源码能证明的缺口，或因缺少第三方源码而无法判定的边界。
 - **规划事项**：后续任务定义，不表示对应生产代码已经落地。
 
-本次只更新文档，不执行 T2–T13
-的生产实现。相关记录： [兼容决策记录](agent/compatibility-decision-record.md) · [重构任务清单](agent/%E9%87%8D%E6%9E%84%E4%BB%BB%E5%8A%A1%E6%B8%85%E5%8D%95.md)。
+相关记录： [兼容决策记录](agent/compatibility-decision-record.md) · [重构任务清单](agent/%E9%87%8D%E6%9E%84%E4%BB%BB%E5%8A%A1%E6%B8%85%E5%8D%95.md)。
 
 ## 当前实现
 
@@ -22,8 +21,7 @@
 4. `StackLimitService` 按当前 `RuleSnapshot` 顺序执行命中的动作，并将结果限制在 `1..activeMaxStackSize`。
 
 原版基线查询通过 `originalBaselineBypassDepth` 避免递归进入动态规则。规则快照和矿辞索引由 `RuleRuntime.replaceRuntime`
-以一个运行态引用替换；规则重载由 `RuleRuntimeCoordinator` 负责，报告中的解析错误由 `RuleReloadPipeline` 收集。当前协调器会把
-pipeline 返回的快照交给发布路径，因此不能把“报告含错误时保留旧运行态”写成已成立的不变量。
+以一个运行态引用替换；规则重载由 `RuleRuntimeCoordinator` 负责，报告中的解析错误由 `RuleReloadPipeline` 收集。
 
 源码入口：`src/main/kotlin/io/alexjoest/stackupup/StackLimitHooks.kt`、
 `src/main/kotlin/io/alexjoest/stackupup/limit/StackLimitService.kt`、
@@ -53,7 +51,7 @@ Forge 1.12.2 的 `SlotItemHandler` 源码中：
 
 当前 `SlotItemHandlerMixin` 仍修改这两个方法：`getSlotStackLimit()` 在原值等于 64 时保持原值，否则返回原值与全局上限的较大值；
 `getItemStackLimit()` 再调用 `resolveItemHandlerSlotLimit`。这段代码不能被描述成“只有 handler 已报告大于 64 才会提升”，也不能作为未知
-handler 的安全证明：原值为 1 的槽位也会进入非 64 分支。它是已知限制，后续 T3 会重新收敛；本文不把它当作最终容量准入规则。
+handler 的安全证明：原值为 1 的槽位也会进入非 64 分支，是已知限制，本文不把它当作最终容量准入规则。
 
 `ForgeItemHandlerLimitMixin` 当前的显式目标包括 `ItemStackHandler`、`EntityEquipmentInvWrapper`、`InvWrapper`、
 `SidedInvWrapper`、`CombinedInvWrapper` 和 `RangedWrapper`。这是现状登记，不是对这些目标全部安全的结论。
@@ -87,8 +85,8 @@ Forge `EntityEquipmentInvWrapper` 必须与实体的 vanilla 存储路径分开�
 - `setStackInSlot()` 不经过 `insertItem()` 的 `limit`/`remainder` 计算，而是直接调用实体的 vanilla setter；这是另一条写入路径，不能用
   `insertItem()` 的 remainder 事实替代。
 
-因此不能把 Forge `EntityEquipmentInvWrapper` 写成“无余量必吞”。Forge wrapper 的 remainder
-事实并不自动证明实体底层所有写入语义都安全；两条路径必须分别有源码和测试证据。源码位置：
+因此不能把 Forge `EntityEquipmentInvWrapper` 写成“无余量必吞”；remainder 事实不自动证明实体底层
+写入语义都安全，两条路径必须分别有源码和测试证据。源码位置：
 `build/rfg/minecraft-src/java/net/minecraftforge/items/wrapper/EntityEquipmentInvWrapper.java`。
 
 Forge `ItemStackHandler` 的源码会在 `insertItem()` 中再次使用 `getSlotLimit()` 与物品上限计算写入量，并返回
@@ -106,9 +104,9 @@ remainder；这是它自身写入链的事实。不能把这个结论传播给�
 - `CombinedInvWrapper` 和 `RangedWrapper` 将查询和 `insertItem()` 转发给底层 handler。
 - `VanillaDoubleChestItemHandler` 按实际访问的箱体转发上限和写入。
 
-如果只 patch wrapper 的广告面，底层库存仍可能按原上限截断，广告和写入就会断链。因此转发 wrapper 不应作为独立广告 patch
-目标；应当先证明真实 delegate 的容量，再在 delegate 的真实写入面收敛。当前 `ForgeItemHandlerLimitMixin` 和
-`Ae2ItemHandlerInsertLimiter` 仍保留部分 wrapper 目标或信任项，这是待 T3/T10 处理的已知差距，不是完成证明。
+因此转发 wrapper 不应作为独立广告 patch 目标；应当先证明真实 delegate 的容量，再在 delegate 的真实写入面收敛。当前
+`ForgeItemHandlerLimitMixin` 和 `Ae2ItemHandlerInsertLimiter` 仍保留部分 wrapper 目标或信任项，这是待 T3/T10 处理的
+已知差距，不是完成证明。
 
 ### 禁止写入后余量补偿
 
@@ -138,14 +136,13 @@ remainder。这是当前存在的多次真实分片及其守恒风险，不等�
 
 ### Late Mixin
 
-`StackUpUpLateMixinLoader` 为每个模块登记一个 late mixin 配置，并同时检查目标 mod 是否存在和对应 `MixinToggles` 开关。当前登记的
+`StackUpUpMixinConnector` 为每个模块登记一个 late mixin 配置，并同时检查目标 mod 是否存在和对应 `MixinToggles` 开关。当前登记的
 mod id 为：
 
 `appliedenergistics2`、`actuallyadditions`、`brandonscore`、`cyclopscore`、`enderio`、`ic2`、`mantle`、`refinedstorage`、
-`storagenetwork`、`integrateddynamics`、`limelib`、`immersiveengineering`。
+`storagenetwork`、`integrateddynamics`、`limelib`、`immersiveengineering`、`nuclearcraft`、`colossalchests`、`gregtech`。
 
-late 配置中的我方 mixin 只说明“补丁尝试在哪个目标方法上加载”，不说明第三方真实写入容量。第三方目标的写入语义统一按“无源码不可判定”处理，不能以目标类名或
-mixin 方法名替代证据。
+late 配置中的我方 mixin 只说明“补丁尝试在哪个目标方法上加载”，不说明第三方真实写入容量；第三方目标的写入语义统一按“无源码不可判定”处理。
 
 ### ASM 与固定跳过表
 
@@ -158,13 +155,11 @@ mixin 方法名替代证据。
 5. `CompatibilityLimitPatch` 只把目标方法中写死的原版 64 替换为 `StackLimitHooks.getCompatibilityStackSize()`；
    `ITEM_HANDLER` profile 不生成补丁。
 
-当前 ASM 按方法名（含映射名）识别候选，再按目标方法名查找 `BIPUSH 64` 字节码常量并替换；方法 descriptor
-和常量所在的真实写入/语义位置尚未闭合。因此命中方法名或字节码常量只说明项目代码的补丁尝试，不构成真实容量写入证据。
-
-ASM early path 的源文件使用 Java，避免 Kotlin 标准库在 coremod 早期加载；但当前 `CompatibilityLimitPatch` 仍使用
-`Consumer<ClassNode>` 和 lambda，这不满足 early path 对 lambda/方法引用的字节码禁用要求，属于待修的字节码护栏问题。已由显式
-Mixin 接管的目标不能再由 ASM 重复补丁。当前 `FixedCompatTargets` 是跳过表，不是已经完成的容量安全目标表；T2/T11
-仍需建立带写入证据的编译期登记。
+当前 ASM 按方法名（含映射名）识别候选、按目标方法名查找 `BIPUSH 64` 字节码常量并替换，方法 descriptor 和常量所在的
+真实写入/语义位置尚未闭合；命中方法名或字节码常量只说明补丁尝试，不构成真实容量写入证据。ASM early path 使用 Java
+以避免 Kotlin 标准库在 coremod 早期加载，但 `CompatibilityLimitPatch` 仍使用 `Consumer<ClassNode>` 和 lambda，
+不满足 early path 的字节码禁用要求，属于待修护栏问题。已由显式 Mixin 接管的目标不能再由 ASM 重复补丁；`FixedCompatTargets`
+是跳过表，不是已经完成的容量安全目标表，T2/T11 仍需建立带写入证据的编译期登记。
 
 ## 规则数据流
 

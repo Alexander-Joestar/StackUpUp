@@ -1,5 +1,6 @@
 package io.alexjoest.stackupup
 
+import io.alexjoest.stackupup.rules.io.GateReloadCheck
 import io.alexjoest.stackupup.rules.io.RuleFileLocator
 import io.alexjoest.stackupup.rules.io.RuleReloadReport
 import io.alexjoest.stackupup.rules.io.RuleSourceLocator
@@ -43,17 +44,15 @@ import java.nio.file.StandardCopyOption
 class StackUpUp {
     private var hadPostInit: Boolean = false
 
-    private fun handleConfigChanged(activateReloadControlledValues: Boolean = false) {
+    private fun handleConfigChanged() {
         ConfigManager.sync(CONFIG_ID, Config.Type.INSTANCE)
-        if (activateReloadControlledValues) {
-            StackUpUpConfig.applyReloadControlledValues()
-        }
+        StackUpUpConfig.applyReloadControlledValues()
     }
 
     @SubscribeEvent
     fun onConfigChanged(event: ConfigChangedEvent.OnConfigChangedEvent) {
         if (MOD_ID == event.modID && (event.configID == null || CONFIG_ID == event.configID)) {
-            handleConfigChanged(activateReloadControlledValues = true)
+            handleConfigChanged()
         }
     }
 
@@ -80,7 +79,7 @@ class StackUpUp {
         LocalizedMessages.initialize()
 
         RuleFileLocator.setConfigDirectory(event.modConfigurationDirectory)
-        handleConfigChanged(activateReloadControlledValues = true)
+        handleConfigChanged()
 
         MinecraftForge.EVENT_BUS.register(this)
         MinecraftForge.EVENT_BUS.register(proxy)
@@ -170,11 +169,21 @@ class StackUpUp {
         @JvmStatic
         @Synchronized
         fun setState(name: String, value: Boolean) {
+            val before = stateService.readStates() ?: run {
+                logger?.warn("Cannot read current state set before writing '{}' because world markdown storage is unavailable", name)
+                return
+            }
             val changed = stateService.setState(name, value) ?: run {
                 logger?.warn("Cannot write state '{}' because world markdown storage is unavailable", name)
                 return
             }
             if (!changed) return
+            // 只有 gate 求值结果实际变化才重建规则缓存；无 gate 引用或结果不变时跳过 reload。
+            val after = before + (name to value)
+            val file = RuleSourceLocator.resolveWorldMarkdownFile()
+            if (file == null || !GateReloadCheck.needsReload(file.readLines(Charsets.UTF_8), before, after)) {
+                return
+            }
             reload()
         }
 
@@ -189,7 +198,9 @@ class StackUpUp {
 
         private fun logReloadReport(report: RuleReloadReport) {
             val activeLogger = logger ?: return
-            activeLogger.info("Loaded {} DSL rules from {}", report.snapshot.rules.size, report.file.absolutePath)
+            if (report.errors.isEmpty()) {
+                activeLogger.info("Loaded {} DSL rules from {}", report.snapshot.rules.size, report.file.absolutePath)
+            }
             report.errors.map { it.format() }.forEach(activeLogger::error)
             for (warning in report.warnings) {
                 if (!StackUpUpConfig.general.ruleComplexityWarnings) {

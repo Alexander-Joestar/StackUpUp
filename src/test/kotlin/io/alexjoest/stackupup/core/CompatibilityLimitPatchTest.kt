@@ -10,14 +10,15 @@ import org.objectweb.asm.tree.IntInsnNode
 
 class CompatibilityLimitPatchTest {
     @Test
-    fun `unrelatedClass_shouldNotGeneratePlan`() {
+    fun unrelatedClass_shouldNotGeneratePlan() {
         val patches = CompatibilityLimitPatch.planFor("java.lang.String")
         assertTrue(patches.isEmpty())
     }
 
     @Test
-    fun `patchList_shouldCorrectlyReflectEmptiness`() {
-        val emptyPatches = emptyList<Any>()
+    fun patchList_shouldCorrectlyReflectEmptiness() {
+        // 用真实 planFor 结果验证空态，避免对硬编码空列表断言恒真条件。
+        val emptyPatches = CompatibilityLimitPatch.planFor("java.lang.String")
         val nonEmptyPatches = CompatibilityLimitPatch.planFor(
             "io.alexjoest.stackupup.core.TestInventoryOverride",
             classBytes("io.alexjoest.stackupup.core.TestInventoryOverride"),
@@ -27,7 +28,7 @@ class CompatibilityLimitPatchTest {
     }
 
     @Test
-    fun `fixedMixinTarget_shouldNotGenerateDynamicPatch`() {
+    fun fixedMixinTarget_shouldNotGenerateDynamicPatch() {
         for (target in FixedCompatTargets.all()) {
             assertFalse(
                 CompatibilityLimitPatch.planFor(target).isNotEmpty(),
@@ -37,7 +38,7 @@ class CompatibilityLimitPatchTest {
     }
 
     @Test
-    fun `declaredDynamicTarget_shouldStillGeneratePatch`() {
+    fun declaredDynamicTarget_shouldStillGeneratePatch() {
         assertTrue(
             CompatibilityLimitPatch.planFor(
                 "io.alexjoest.stackupup.core.TestInventoryOverride",
@@ -60,7 +61,7 @@ class CompatibilityLimitPatchTest {
     }
 
     @Test
-    fun `inheritedNoMethod_shouldNotGeneratePlan`() {
+    fun inheritedNoMethod_shouldNotGeneratePlan() {
         assertFalse(
             CompatibilityLimitPatch.planFor(
                 "net.minecraftforge.items.wrapper.PlayerInvWrapper",

@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 
 class RuleLanguageTest {
     @Test
-    fun `fieldIdentifier_shouldResolveToUnifiedEnum`() {
+    fun fieldIdentifier_shouldResolveToUnifiedEnum() {
         assertEquals(RuleField.ITEM, RuleField.fromIdentifier("item"))
         assertEquals(RuleField.MOD, RuleField.fromIdentifier("mod"))
         assertEquals(RuleField.TYPE, RuleField.fromIdentifier("type"))
@@ -20,7 +20,7 @@ class RuleLanguageTest {
     }
 
     @Test
-    fun `comparisonOperator_shouldSupportReverseChaining`() {
+    fun comparisonOperator_shouldSupportReverseChaining() {
         assertEquals(ComparisonOperator.GREATER, ComparisonOperator.LESS.reverse())
         assertEquals(ComparisonOperator.GREATER_EQUALS, ComparisonOperator.LESS_EQUALS.reverse())
         assertEquals(ComparisonOperator.LESS, ComparisonOperator.GREATER.reverse())
@@ -28,7 +28,7 @@ class RuleLanguageTest {
     }
 
     @Test
-    fun `comparisonSymbols_shouldResolveToEnum`() {
+    fun comparisonSymbols_shouldResolveToEnum() {
         assertEquals(ComparisonOperator.EQUALS, ComparisonOperator.fromSymbol("="))
         assertEquals(ComparisonOperator.NOT_EQUALS, ComparisonOperator.fromSymbol("!="))
         assertEquals(ComparisonOperator.GREATER_EQUALS, ComparisonOperator.fromSymbol(">="))
@@ -36,7 +36,7 @@ class RuleLanguageTest {
     }
 
     @Test
-    fun `fieldMetadata_shouldDeclareContextRequirements`() {
+    fun fieldMetadata_shouldDeclareContextRequirements() {
         assertEquals(FieldType.ITEM, RuleField.ITEM.fieldType)
         assertEquals(emptySet<RuleFieldContextProvider>(), RuleField.ITEM.contextProviders)
         assertEquals(false, RuleField.ITEM.contributesToCacheKey())
@@ -52,7 +52,7 @@ class RuleLanguageTest {
     }
 
     @Test
-    fun `cacheKeyField_shouldExtractDeclaredFieldValue`() {
+    fun cacheKeyField_shouldExtractDeclaredFieldValue() {
         assertEquals(
             "steel",
             RuleField.MATERIAL.cacheKeyValue(cacheCtx(material = "steel")),
@@ -60,7 +60,7 @@ class RuleLanguageTest {
     }
 
     @Test
-    fun `fieldCacheKeyStrategies_shouldBeExplicitlyDeclared`() {
+    fun fieldCacheKeyStrategies_shouldBeExplicitlyDeclared() {
         // T6：每个字段显式声明缓存键贡献策略（必填构造参数），ORE 由身份稳定性契约覆盖而非注释。
         assertEquals(CacheKeyStrategy.IDENTITY_FIXED, RuleField.ITEM.cacheKeyStrategy)
         assertEquals(CacheKeyStrategy.IDENTITY_FIXED, RuleField.MOD.cacheKeyStrategy)

@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test
 
 class OreDictIndexTest {
     @Test
-    fun `sameItemAndMetadata_shouldHitCache`() {
+    fun sameItemAndMetadata_shouldHitCache() {
         val index = OreDictIndex({ _, _ -> setOf("ingotSteel") })
         assertEquals(setOf("ingotSteel"), index.getOreNames("gregtech:gt.metaitem.01", 11305))
         assertEquals(setOf("ingotSteel"), index.getOreNames("gregtech:gt.metaitem.01", 11305))
@@ -18,7 +18,7 @@ class OreDictIndexTest {
     }
 
     @Test
-    fun `shouldQueryOreDictFromOriginalItemStack`() {
+    fun shouldQueryOreDictFromOriginalItemStack() {
         Bootstrap.register()
         val seen = ArrayList<ItemStack>()
         val index = OreDictIndex.fromStackLoader { stack ->
@@ -35,7 +35,7 @@ class OreDictIndexTest {
     }
 
     @Test
-    fun `emptyStack_shouldReturnEmptySet`() {
+    fun emptyStack_shouldReturnEmptySet() {
         Bootstrap.register()
         val index = OreDictIndex.fromStackLoader { error("空栈不应触发加载器") }
         assertTrue(index.getOreNames(ItemStack.EMPTY).isEmpty())

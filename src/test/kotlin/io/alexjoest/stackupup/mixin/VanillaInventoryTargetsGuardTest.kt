@@ -55,13 +55,13 @@ class VanillaInventoryTargetsGuardTest {
     }
 
     @Test
-    fun `targetTable_shouldMatchMixinAnnotationListExactly`() {
+    fun targetTable_shouldMatchMixinAnnotationListExactly() {
         // 双向一致：实现中存在但表内缺失 = 未登记目标 = 失败；表内存在但实现缺失 = 登记悬空 = 失败。
         assertEquals(tableTargets, mixinAnnotationTargets())
     }
 
     @Test
-    fun `targetTable_shouldMatchT2bDocumentTableExactly`() {
+    fun targetTable_shouldMatchT2bDocumentTableExactly() {
         // 文档契约（t2b §5）：§2 目标表每行以 "| net.minecraft.<全限定类名> |" 开头，全文档仅该表如此。
         val doc = readSource("docs/agent/t2b-原版目标表.md")
         val docTargets = Regex("(?m)^\\| (net\\.minecraft\\.[A-Za-z0-9_.]+) \\|")
@@ -74,7 +74,7 @@ class VanillaInventoryTargetsGuardTest {
     }
 
     @Test
-    fun `excludedImplementers_shouldNotBeInTableNorMixin`() {
+    fun excludedImplementers_shouldNotBeInTableNorMixin() {
         assertEquals(
             setOf(InventoryLargeChest::class.java.name, TileEntityBeacon::class.java.name),
             VanillaInventoryTargets.EXCLUDED.map { it.name }.toSet(),
@@ -88,7 +88,7 @@ class VanillaInventoryTargetsGuardTest {
     }
 
     @Test
-    fun `runtimeSentinel_shouldBeReplacedByCompileTimeTable`() {
+    fun runtimeSentinel_shouldBeReplacedByCompileTimeTable() {
         val source = readMixinSource()
         assertFalse(source.contains("original == 64"), "运行时 original == 64 目标判断应已删除")
         assertFalse(source.contains("VANILLA_STACK_LIMIT"), "64 哨兵常量应已删除")

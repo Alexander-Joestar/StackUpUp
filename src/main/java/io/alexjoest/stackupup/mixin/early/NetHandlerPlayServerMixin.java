@@ -12,6 +12,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -55,6 +56,7 @@ abstract class NetHandlerPlayServerMixin {
         ci.cancel();
     }
 
+    @Unique
     private boolean stackupup$tryApplyCreativeSlotUpdate(int slotId, ItemStack stack, boolean isValidStack) {
         boolean isInventorySlot = slotId >= 1 && slotId <= 45;
         if (!isInventorySlot || !isValidStack) {
@@ -66,6 +68,7 @@ abstract class NetHandlerPlayServerMixin {
         return true;
     }
 
+    @Unique
     private void stackupup$tryDropCreativeStack(ItemStack stack, boolean isValidStack) {
         if (!isValidStack || this.itemDropThreshold >= 200) {
             return;
@@ -78,12 +81,18 @@ abstract class NetHandlerPlayServerMixin {
         }
     }
 
+    @Unique
     private void stackupup$sanitizeBlockEntityTag(ItemStack stack) {
-        if (stack.isEmpty() || !stack.hasTagCompound() || !stack.getTagCompound().hasKey("BlockEntityTag", 10)) {
+        if (stack.isEmpty() || !stack.hasTagCompound()) {
             return;
         }
 
-        NBTTagCompound blockEntityTag = stack.getTagCompound().getCompoundTag("BlockEntityTag");
+        NBTTagCompound compound = stack.getTagCompound();
+        if (compound == null || !compound.hasKey("BlockEntityTag", 10)) {
+            return;
+        }
+
+        NBTTagCompound blockEntityTag = compound.getCompoundTag("BlockEntityTag");
         if (!blockEntityTag.hasKey("x") || !blockEntityTag.hasKey("y") || !blockEntityTag.hasKey("z")) {
             return;
         }

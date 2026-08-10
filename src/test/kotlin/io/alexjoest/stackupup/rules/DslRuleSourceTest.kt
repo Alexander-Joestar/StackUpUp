@@ -10,7 +10,7 @@ import kotlin.io.path.createTempDirectory
 
 class DslRuleSourceTest {
     @Test
-    fun `shouldSkipCommentsAndEmptyLines`() {
+    fun shouldSkipCommentsAndEmptyLines() {
         val result = DslRuleSource.fromLines(
             listOf(
                 "# 注释",
@@ -25,7 +25,7 @@ class DslRuleSourceTest {
     }
 
     @Test
-    fun `shouldSkipBlockAndTrailingComments`() {
+    fun shouldSkipBlockAndTrailingComments() {
         val result = DslRuleSource.fromLines(
             listOf(
                 "/* 整行块注释 */",
@@ -41,7 +41,7 @@ class DslRuleSourceTest {
     }
 
     @Test
-    fun `shouldCollectErrorsAndKeepValidRules`() {
+    fun shouldCollectErrorsAndKeepValidRules() {
         val result = DslRuleSource.fromLines(
             listOf(
                 "item = minecraft:egg -> 64",
@@ -54,7 +54,7 @@ class DslRuleSourceTest {
     }
 
     @Test
-    fun `ifBlock_shouldLoadRulesWhenGateMatches`() {
+    fun ifBlock_shouldLoadRulesWhenGateMatches() {
         val result = DslRuleSource.fromLines(
             lines = listOf(
                 "if mod = gamestages",
@@ -71,7 +71,7 @@ class DslRuleSourceTest {
     }
 
     @Test
-    fun `ifBlock_shouldSkipRulesWhenGateDoesNotMatch`() {
+    fun ifBlock_shouldSkipRulesWhenGateDoesNotMatch() {
         val result = DslRuleSource.fromLines(
             lines = listOf(
                 "if mod = ftbquests",
@@ -89,7 +89,7 @@ class DslRuleSourceTest {
     }
 
     @Test
-    fun `ifBlock_shouldSupportNestedParentGateSkip`() {
+    fun ifBlock_shouldSupportNestedParentGateSkip() {
         val result = DslRuleSource.fromLines(
             lines = listOf(
                 "if mod = missing",
@@ -108,7 +108,7 @@ class DslRuleSourceTest {
     }
 
     @Test
-    fun `missingFile_shouldAutoCreateTemplate`() {
+    fun missingFile_shouldAutoCreateTemplate() {
         val tempDir = createTempDirectory("stackupup-rule-source").toFile()
         val file = File(tempDir, "main.su")
 

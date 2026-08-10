@@ -9,7 +9,7 @@ import java.nio.file.Files
 
 class RuleReloadPipelineTest {
     @Test
-    fun `reload_shouldNotWarnOnValidLimits`() {
+    fun reload_shouldNotWarnOnValidLimits() {
         val tempDir = Files.createTempDirectory("stackupup-rule-reload-test")
         val rulesFile = tempDir.resolve("main.su").toFile().apply {
             writeText("item = minecraft:egg -> 2048\n")
@@ -28,7 +28,7 @@ class RuleReloadPipelineTest {
     }
 
     @Test
-    fun `reload_shouldWarnOnExcessiveSetRule`() {
+    fun reload_shouldWarnOnExcessiveSetRule() {
         val tempDir = Files.createTempDirectory("stackupup-rule-reload-clamp-test")
         val rulesFile = tempDir.resolve("main.su").toFile().apply {
             writeText("item = minecraft:egg -> 500000\n")
@@ -49,7 +49,20 @@ class RuleReloadPipelineTest {
     }
 
     @Test
-    fun `reload_shouldKeepMarkdownRuleErrorsBeforeStateErrors`() {
+    fun reload_shouldRetainPartialSnapshotForErrorReport() {
+        val tempDir = Files.createTempDirectory("stackupup-rule-reload-partial-test")
+        val rulesFile = tempDir.resolve("main.su").toFile().apply {
+            writeText("item = minecraft:egg -> 512\nnot a rule\n", Charsets.UTF_8)
+        }
+
+        val report = RuleReloadPipeline.loadDslRules(rulesFile, listOf(rulesFile))
+
+        assertEquals(1, report.snapshot.rules.size)
+        assertTrue(report.errors.isNotEmpty())
+    }
+
+    @Test
+    fun reload_shouldKeepMarkdownRuleErrorsBeforeStateErrors() {
         val tempDir = Files.createTempDirectory("stackupup-rule-reload-markdown-error-order-test")
         val primaryRulesFile = tempDir.resolve("main.su").toFile()
         val markdownFile = tempDir.resolve("main.su.md").toFile().apply {

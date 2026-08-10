@@ -12,7 +12,6 @@ sealed class RuleGateExpression {
     }
 
     data class ModLoaded(val modIds: List<String>) : RuleGateExpression() {
-        constructor(modId: String) : this(listOf(modId))
         override fun evaluate(context: RuleGateContext): Boolean = modIds.all { context.modLoaded(it) }
         override fun dependencies(): Set<String> = emptySet()
         override fun isConstant(): Boolean = true

@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 
 class DevProbeEvaluatorTest {
     @Test
-    fun `matchAndSufficientContainer_shouldPass`() {
+    fun matchAndSufficientContainer_shouldPass() {
         val result = evaluateProbeResult(
             requestedCount = 128,
             resolvedLimit = 512,
@@ -21,7 +21,7 @@ class DevProbeEvaluatorTest {
     }
 
     @Test
-    fun `mismatch_shouldFail`() {
+    fun mismatch_shouldFail() {
         val result = evaluateProbeResult(
             requestedCount = 128,
             resolvedLimit = 1024,
@@ -42,7 +42,7 @@ class DevProbeEvaluatorTest {
     }
 
     @Test
-    fun `containerBelowDynamicButInsertPasses_shouldPass`() {
+    fun containerBelowDynamicButInsertPasses_shouldFail() {
         val result = evaluateProbeResult(
             requestedCount = 128,
             resolvedLimit = 512,
@@ -52,12 +52,15 @@ class DevProbeEvaluatorTest {
             remainderCount = 64,
         )
 
-        assertEquals(true, result.passed)
-        assertEquals(emptyList<String>(), result.reasons)
+        assertEquals(false, result.passed)
+        assertEquals(
+            listOf("动态广告上限 512 大于广告插槽上限 64。"),
+            result.reasons,
+        )
     }
 
     @Test
-    fun `boundary_insertNFullAndNPlusOneRejected_shouldPass`() {
+    fun boundary_insertNFullAndNPlusOneRejected_shouldPass() {
         val result = evaluateBoundaryProbe(
             resolvedLimit = 1024,
             actualLimit = 1024,
@@ -72,7 +75,7 @@ class DevProbeEvaluatorTest {
     }
 
     @Test
-    fun `boundary_ruleNotEffective_shouldFail`() {
+    fun boundary_ruleNotEffective_shouldFail() {
         val result = evaluateBoundaryProbe(
             resolvedLimit = 64,
             actualLimit = 64,
@@ -87,7 +90,7 @@ class DevProbeEvaluatorTest {
     }
 
     @Test
-    fun `boundary_nPlusOneNotRejected_shouldFail`() {
+    fun boundary_nPlusOneNotRejected_shouldFail() {
         val result = evaluateBoundaryProbe(
             resolvedLimit = 1024,
             actualLimit = 1024,
@@ -103,7 +106,7 @@ class DevProbeEvaluatorTest {
     }
 
     @Test
-    fun `boundary_insertNPartial_shouldFail`() {
+    fun boundary_insertNPartial_shouldFail() {
         val result = evaluateBoundaryProbe(
             resolvedLimit = 1024,
             actualLimit = 1024,

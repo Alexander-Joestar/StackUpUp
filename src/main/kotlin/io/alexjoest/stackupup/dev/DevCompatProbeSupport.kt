@@ -10,7 +10,7 @@ import java.lang.reflect.Method
 internal fun hasClass(name: String): Boolean = try {
     loadClass(name)
     true
-} catch (_: Throwable) {
+} catch (_: ClassNotFoundException) {
     false
 }
 

@@ -11,13 +11,13 @@ data class RuleAction(val steps: List<RuleStep>) {
         fun divideOrKeep(current: Int, stepValue: Int): Int = if (stepValue == 0) current else current / stepValue
 
         var result = base
-        for (step in steps) {
-            result = when (step.kind) {
-                RuleStepKind.SET -> step.value
-                RuleStepKind.ADD -> result + step.value
-                RuleStepKind.SUBTRACT -> result - step.value
-                RuleStepKind.MULTIPLY -> result * step.value
-                RuleStepKind.DIVIDE -> divideOrKeep(result, step.value)
+        for ((kind, value) in steps) {
+            result = when (kind) {
+                RuleStepKind.SET -> value
+                RuleStepKind.ADD -> result + value
+                RuleStepKind.SUBTRACT -> result - value
+                RuleStepKind.MULTIPLY -> result * value
+                RuleStepKind.DIVIDE -> divideOrKeep(result, value)
             }
         }
         return result.coerceAtLeast(1)

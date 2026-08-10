@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 
 class DynamicCompatTargetClassifierTest {
     @Test
-    fun `fixedTarget_shouldSkipDynamicClassification`() {
+    fun fixedTarget_shouldSkipDynamicClassification() {
         for (target in FixedCompatTargets.all()) {
             assertEquals(
                 DynamicCompatTargetProfile.NONE,
@@ -17,7 +17,7 @@ class DynamicCompatTargetClassifierTest {
     }
 
     @Test
-    fun `customInventoryBridge_shouldClassifyAsInventory`() {
+    fun customInventoryBridge_shouldClassifyAsInventory() {
         assertEquals(
             DynamicCompatTargetProfile.INVENTORY,
             DynamicCompatTargetClassifier.classify("io.alexjoest.stackupup.core.TestInventoryBridge"),
@@ -25,7 +25,7 @@ class DynamicCompatTargetClassifierTest {
     }
 
     @Test
-    fun `forgeWrapper_shouldClassifyAsItemHandler`() {
+    fun forgeWrapper_shouldClassifyAsItemHandler() {
         assertEquals(
             DynamicCompatTargetProfile.ITEM_HANDLER,
             DynamicCompatTargetClassifier.classify("net.minecraftforge.items.wrapper.PlayerInvWrapper"),
@@ -33,7 +33,7 @@ class DynamicCompatTargetClassifierTest {
     }
 
     @Test
-    fun `slotSubclass_shouldClassifyAsSlot`() {
+    fun slotSubclass_shouldClassifyAsSlot() {
         assertEquals(
             DynamicCompatTargetProfile.SLOT,
             DynamicCompatTargetClassifier.classify("net.minecraft.inventory.SlotCrafting"),
@@ -41,7 +41,7 @@ class DynamicCompatTargetClassifierTest {
     }
 
     @Test
-    fun `unrelatedClass_shouldClassifyAsNone`() {
+    fun unrelatedClass_shouldClassifyAsNone() {
         assertEquals(
             DynamicCompatTargetProfile.NONE,
             DynamicCompatTargetClassifier.classify("java.lang.String"),
@@ -49,7 +49,7 @@ class DynamicCompatTargetClassifierTest {
     }
 
     @Test
-    fun `targetedClassification_shouldSkipUnmatchedProfiles`() {
+    fun targetedClassification_shouldSkipUnmatchedProfiles() {
         assertEquals(
             DynamicCompatTargetProfile.NONE,
             DynamicCompatTargetClassifier.classify(
@@ -67,7 +67,7 @@ class DynamicCompatTargetClassifierTest {
     }
 
     @Test
-    fun `fixedTargetProbeSubset_shouldDeriveFromSingleDeclaration`() {
+    fun fixedTargetProbeSubset_shouldDeriveFromSingleDeclaration() {
         assertArrayEquals(
             arrayOf(
                 "org.cyclops.cyclopscore.inventory.SimpleInventory",
@@ -82,7 +82,7 @@ class DynamicCompatTargetClassifierTest {
     }
 
     @Test
-    fun `probeTargets_shouldPreserveFixedTargetOrder`() {
+    fun probeTargets_shouldPreserveFixedTargetOrder() {
         val allTargets = FixedCompatTargets.all()
         val expected = ArrayList<String>()
         for (target in allTargets) {

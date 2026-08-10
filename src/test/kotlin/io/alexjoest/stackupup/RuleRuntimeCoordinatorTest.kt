@@ -7,6 +7,7 @@ import io.alexjoest.stackupup.rules.compile.RuleCompiler
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import io.alexjoest.stackupup.rules.io.RuleFileExampleTemplate
 import io.alexjoest.stackupup.rules.io.RuleFileLocator
+import io.alexjoest.stackupup.rules.io.RuleSourceLocator
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertSame
@@ -17,7 +18,7 @@ import kotlin.io.path.createTempDirectory
 
 class RuleRuntimeCoordinatorTest {
     @Test
-    fun `reload_shouldNotRefreshExampleFiles`() {
+    fun reload_shouldNotRefreshExampleFiles() {
         val tempDir = createTempDirectory("stackupup-runtime-disabled").toFile()
         val configDir = File(tempDir, "config").apply { mkdirs() }
         val rulesDir = File(configDir, StackUpUpIds.RULES_DIRECTORY_NAME).apply { mkdirs() }
@@ -34,6 +35,7 @@ class RuleRuntimeCoordinatorTest {
             assertEquals(0, report.snapshot.rules.size)
             assertEquals(report, RuleRuntimeCoordinator.lastReport())
             assertEquals(0, RuleRuntime.currentSnapshot().rules.size)
+            assertSame(RuleRuntime.currentSnapshot(), report.snapshot)
             assertFalse(File(rulesDir, StackUpUpIds.EXAMPLE_RULES_FILE_NAME).exists())
             assertFalse(File(rulesDir, StackUpUpIds.EXAMPLE_MARKDOWN_RULES_FILE_NAME).exists())
         } finally {
@@ -42,7 +44,7 @@ class RuleRuntimeCoordinatorTest {
     }
 
     @Test
-    fun `syncExampleFiles_shouldRefreshExampleFiles`() {
+    fun syncExampleFiles_shouldRefreshExampleFiles() {
         val tempDir = createTempDirectory("stackupup-runtime-examples").toFile()
         val configDir = File(tempDir, "config").apply { mkdirs() }
         val rulesDir = File(configDir, StackUpUpIds.RULES_DIRECTORY_NAME).apply { mkdirs() }
@@ -65,7 +67,7 @@ class RuleRuntimeCoordinatorTest {
     }
 
     @Test
-    fun `reload_shouldCacheFailureReportWithoutPublishingRuntimeWhenLoadFails`() {
+    fun reload_shouldCacheFailureReportWithoutPublishingRuntimeWhenLoadFails() {
         val tempDir = createTempDirectory("stackupup-runtime-failure").toFile()
         val configFile = File(tempDir, "config").apply {
             writeText("not a directory", Charsets.UTF_8)
@@ -94,7 +96,39 @@ class RuleRuntimeCoordinatorTest {
     }
 
     @Test
-    fun `replaceRuntime_shouldPublishSnapshotOreIndexAndLimitServiceTogether`() {
+    fun `含非法行的规则文件重载后不替换运行时快照与矿辞索引且报告为错误报告`() {
+        val tempDir = createTempDirectory("stackupup-runtime-partial-error").toFile()
+        val configDir = File(tempDir, "config").apply { mkdirs() }
+        val rulesDir = File(configDir, StackUpUpIds.RULES_DIRECTORY_NAME).apply { mkdirs() }
+        File(rulesDir, StackUpUpIds.RULES_FILE_NAME).writeText(
+            "item = minecraft:egg -> 512\nnot a rule\n",
+            Charsets.UTF_8,
+        )
+        val previousSnapshot = RuleRuntime.currentSnapshot()
+        val previousIndex = RuleRuntime.oreDictIndex()
+        val worldDir = File(tempDir, "world").apply { mkdirs() }
+
+        RuleFileLocator.setConfigDirectory(configDir)
+        RuleSourceLocator.setWorldDirectoryForTests(worldDir)
+
+        try {
+            val report = RuleRuntimeCoordinator.reload(enableDslRules = true)
+
+            assertEquals(1, report.snapshot.rules.size)
+            assertTrue(report.errors.isNotEmpty())
+            assertSame(report, RuleRuntimeCoordinator.lastReport())
+            assertSame(report.errors, RuleRuntimeCoordinator.lastReport().errors)
+            assertSame(previousSnapshot, RuleRuntime.currentSnapshot())
+            assertSame(previousIndex, RuleRuntime.oreDictIndex())
+            assertFalse(report.snapshot === RuleRuntime.currentSnapshot())
+        } finally {
+            RuleSourceLocator.setWorldDirectoryForTests(null)
+            RuleFileLocator.resetForTests()
+        }
+    }
+
+    @Test
+    fun replaceRuntime_shouldPublishSnapshotOreIndexAndLimitServiceTogether() {
         val previousSnapshot = RuleRuntime.currentSnapshot()
         val previousIndex = RuleRuntime.oreDictIndex()
         val snapshot = RuleSnapshot(
@@ -127,7 +161,7 @@ class RuleRuntimeCoordinatorTest {
     }
 
     @Test
-    fun `oreDictIndexReplacement_shouldResetLimitServiceCache`() {
+    fun oreDictIndexReplacement_shouldResetLimitServiceCache() {
         // T6 ORE 失效条件：矿辞索引刷新（replaceOreDictIndex）→ replaceRuntime →
         // 整体换新 StackLimitService 实例，解析缓存随之清空（机制在代码中，不是注释约定）。
         val previousSnapshot = RuleRuntime.currentSnapshot()

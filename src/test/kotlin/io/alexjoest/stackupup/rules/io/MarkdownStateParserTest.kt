@@ -25,7 +25,7 @@ class MarkdownStateParserTest {
     }
 
     @Test
-    fun `shouldMergeMultipleStateSections`() {
+    fun shouldMergeMultipleStateSections() {
         val document = MarkdownStateParser.parse(
             listOf(
                 "# state",
@@ -42,7 +42,7 @@ class MarkdownStateParserTest {
     }
 
     @Test
-    fun `shouldReportInvalidStateLines`() {
+    fun shouldReportInvalidStateLines() {
         val document = MarkdownStateParser.parse(
             listOf(
                 "# state",

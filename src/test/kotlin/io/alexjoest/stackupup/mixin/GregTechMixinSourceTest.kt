@@ -10,7 +10,7 @@ import java.nio.file.Paths
 
 class GregTechMixinSourceTest {
     @Test
-    fun `gregTechMetaItemMixin_shouldNormalizeDirectCallSurfaceLikeItemMixin`() {
+    fun gregTechMetaItemMixin_shouldNormalizeDirectCallSurfaceLikeItemMixin() {
         val config = String(Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.late.gregtech.json")), Charsets.UTF_8)
         val mixin = String(
             Files.readAllBytes(Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/GregTechMetaItemMixin.java")),
@@ -41,7 +41,7 @@ class GregTechMixinSourceTest {
     }
 
     @Test
-    fun `gregTechMetaPrefixItemMixin_shouldNormalizeDirectCallSurfaceLikeItemMixin`() {
+    fun gregTechMetaPrefixItemMixin_shouldNormalizeDirectCallSurfaceLikeItemMixin() {
         val mixin = String(
             Files.readAllBytes(Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/GregTechMetaPrefixItemMixin.java")),
             Charsets.UTF_8,
@@ -67,7 +67,7 @@ class GregTechMixinSourceTest {
     }
 
     @Test
-    fun `gregTechLateMixin_shouldBeRegisteredInLoaderAndToggled`() {
+    fun gregTechLateMixin_shouldBeRegisteredInLoaderAndToggled() {
         assertTrue(
             StackUpUpMixinConnector().modules.any { it.config.contains("gregtech") },
             "gregtech late config 必须登记在 connector 模块表",

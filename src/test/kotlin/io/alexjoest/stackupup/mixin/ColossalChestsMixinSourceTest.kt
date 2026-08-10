@@ -10,7 +10,7 @@ import java.nio.file.Paths
 
 class ColossalChestsMixinSourceTest {
     @Test
-    fun `colossalChestsTileMixin_shouldPatchInventoryConstructionStackLimit`() {
+    fun colossalChestsTileMixin_shouldPatchInventoryConstructionStackLimit() {
         val config = String(Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.late.colossalchests.json")), Charsets.UTF_8)
         val mixin = String(
             Files.readAllBytes(Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/ColossalChestsTileMixin.java")),
@@ -48,7 +48,7 @@ class ColossalChestsMixinSourceTest {
     }
 
     @Test
-    fun `colossalChestsLateMixin_shouldBeRegisteredInLoaderAndToggled`() {
+    fun colossalChestsLateMixin_shouldBeRegisteredInLoaderAndToggled() {
         assertTrue(
             StackUpUpMixinConnector().modules.any { it.config.contains("colossalchests") },
             "colossalchests late config 必须登记在 connector 模块表",

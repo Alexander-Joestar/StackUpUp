@@ -17,7 +17,6 @@ object StackUpUpIds {
     const val CONFIG_LANG_ROOT: String = "config.$MOD_ID"
     const val COMMAND_LANG_ROOT: String = "commands.$MOD_ID"
     const val MESSAGE_LANG_ROOT: String = "message.$MOD_ID"
-    const val TOOLTIP_LANG_ROOT: String = "tooltip.$MOD_ID"
 
     const val DEV_AUTOMATION_PREFIX: String = "$MOD_ID.dev.autoTest"
     const val DEV_AUTOMATION_LEGACY_PREFIX: String = "stackup.dev.autoTest"
@@ -30,7 +29,6 @@ object StackUpUpIds {
     const val PROXY_COMMON_CLASS_NAME: String = "$PACKAGE_NAME.ProxyCommon"
     const val CONFIG_GUI_FACTORY_CLASS_NAME: String = "$PACKAGE_NAME.config.ConfigGuiFactory"
     const val DYNAMIC_COMPAT_TRANSFORMER_CLASS_NAME: String = "$CORE_PACKAGE_NAME.DynamicCompatTransformer"
-    const val STACK_LIMIT_HOOKS_CLASS_NAME: String = "$PACKAGE_NAME.StackLimitHooks"
     const val STACK_LIMIT_HOOKS_INTERNAL_NAME: String = "io/alexjoest/stackupup/StackLimitHooks"
 
     const val EARLY_MIXIN_CONFIG: String = "mixins.$MOD_ID.early.json"

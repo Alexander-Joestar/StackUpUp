@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 
 class RuleCompilerTest {
     @Test
-    fun `shouldCompileItemInListToMatchAny`() {
+    fun shouldCompileItemInListToMatchAny() {
         val compiled = RuleCompiler.compileLine("item in [minecraft:egg, minecraft:snowball] -> 128", 7)
         val egg = ctx("minecraft:egg", baseSize = 16)
         val snowball = ctx("minecraft:snowball", baseSize = 16)
@@ -16,7 +16,7 @@ class RuleCompilerTest {
     }
 
     @Test
-    fun `shouldCompileOrCondition`() {
+    fun shouldCompileOrCondition() {
         val compiled = RuleCompiler.compileLine("mod = thermal || mod = ic2 -> 512", 8)
         val thermal = ctx("thermal:foo", baseSize = 16)
         val ic2 = ctx("ic2:bar", baseSize = 16)
@@ -27,7 +27,7 @@ class RuleCompilerTest {
     }
 
     @Test
-    fun `shouldSupportModListWildcard`() {
+    fun shouldSupportModListWildcard() {
         val compiled = RuleCompiler.compileLine("mod in [therm*, ic2] -> 512", 8)
         val thermal = ctx("thermal:foo", modId = "thermalexpansion", baseSize = 16)
         val ic2 = ctx("ic2:bar", baseSize = 16)
@@ -39,7 +39,7 @@ class RuleCompilerTest {
     }
 
     @Test
-    fun `shouldPreserveMultiplyOrder`() {
+    fun shouldPreserveMultiplyOrder() {
         val compiled = RuleCompiler.compileLine("ore = ingotSteel -> *2", 9)
         assertEquals(1, compiled.action.steps.size)
         assertEquals("multiply", compiled.action.steps.single().debugName)
@@ -47,28 +47,28 @@ class RuleCompilerTest {
     }
 
     @Test
-    fun `shouldSupportActionChain`() {
+    fun shouldSupportActionChain() {
         val compiled = RuleCompiler.compileLine("ore = ingotSteel -> *2 -> +10", 10)
         assertEquals(listOf("multiply", "add"), compiled.action.steps.map { it.debugName })
         assertEquals(listOf(2, 10), compiled.action.steps.map { it.value })
     }
 
     @Test
-    fun `shouldSupportSizeRange`() {
+    fun shouldSupportSizeRange() {
         val compiled = RuleCompiler.compileLine("size > 2 && size < 64 -> 1024", 11)
         assertEquals(true, compiled.matches(ctx("minecraft:egg", baseSize = 16)))
         assertEquals(false, compiled.matches(ctx("minecraft:stick")))
     }
 
     @Test
-    fun `shouldSupportCompactSizeComparison`() {
+    fun shouldSupportCompactSizeComparison() {
         val compiled = RuleCompiler.compileLine("size >2 -> 1000000", 11)
         assertEquals(true, compiled.matches(ctx("minecraft:egg")))
         assertEquals(false, compiled.matches(ctx("minecraft:sword", baseSize = 1)))
     }
 
     @Test
-    fun `shouldSupportItemWithMetadataSugar`() {
+    fun shouldSupportItemWithMetadataSugar() {
         val compiled = RuleCompiler.compileLine("item = gregtech:gt.metaitem.01@11305 -> 1024", 12)
         val matched = ctx("gregtech:gt.metaitem.01", meta = 11305)
         val otherMeta = ctx("gregtech:gt.metaitem.01", meta = 42)
@@ -78,7 +78,7 @@ class RuleCompilerTest {
     }
 
     @Test
-    fun `shouldSupportOreWildcardMatch`() {
+    fun shouldSupportOreWildcardMatch() {
         val compiled = RuleCompiler.compileLine("ore != ingot* -> 64", 12)
         val ingot = ctx("minecraft:iron_ingot", oreNames = setOf("ingotIron"))
         val dust = ctx("minecraft:gunpowder", oreNames = setOf("dustSulfur"))
@@ -88,7 +88,7 @@ class RuleCompilerTest {
     }
 
     @Test
-    fun `shouldSupportItemAtMetadataSugar`() {
+    fun shouldSupportItemAtMetadataSugar() {
         val compiled = RuleCompiler.compileLine("item = gregtech:gt.metaitem.01@11305 -> 1024", 13)
         val matched = ctx("gregtech:gt.metaitem.01", meta = 11305)
         val otherMeta = ctx("gregtech:gt.metaitem.01", meta = 42)
@@ -98,14 +98,14 @@ class RuleCompilerTest {
     }
 
     @Test
-    fun `shouldSupportMetaAsAlias`() {
+    fun shouldSupportMetaAsAlias() {
         val compiled = RuleCompiler.compileLine("metadata in [1, 2, 3] -> 512", 14)
         assertEquals(true, compiled.matches(ctx("minecraft:egg", meta = 2, baseSize = 16)))
         assertEquals(false, compiled.matches(ctx("minecraft:egg", meta = 4, baseSize = 16)))
     }
 
     @Test
-    fun `itemWithoutMeta_shouldMatchWholeDomain`() {
+    fun itemWithoutMeta_shouldMatchWholeDomain() {
         val compiled = RuleCompiler.compileLine("item = gregtech:gt.metaitem.01 -> 1024", 15)
 
         assertEquals(true, compiled.matches(ctx("gregtech:gt.metaitem.01", meta = 1)))
@@ -114,7 +114,7 @@ class RuleCompilerTest {
     }
 
     @Test
-    fun `shouldSupportItemListWithMeta`() {
+    fun shouldSupportItemListWithMeta() {
         val compiled = RuleCompiler.compileLine(
             "item in [gregtech:gt.metaitem.01@1, gregtech:gt.metaitem.01@2] && mod = gregtech -> 1024",
             16,
@@ -125,7 +125,7 @@ class RuleCompilerTest {
     }
 
     @Test
-    fun `shouldSupportItemAndMetaList`() {
+    fun shouldSupportItemAndMetaList() {
         val compiled = RuleCompiler.compileLine(
             "item = gregtech:gt.metaitem.01 && meta in [1, 2, 3] -> 1024",
             17,
@@ -137,7 +137,7 @@ class RuleCompilerTest {
     }
 
     @Test
-    fun `and_shouldHaveHigherPrecedenceThanOr`() {
+    fun and_shouldHaveHigherPrecedenceThanOr() {
         val compiled = RuleCompiler.compileLine(
             "mod = thermal || item = gregtech:gt.metaitem.01 && metadata = 11305 -> 256",
             18,
@@ -149,7 +149,7 @@ class RuleCompilerTest {
     }
 
     @Test
-    fun `itemWildcard_shouldMatchStackableOnly`() {
+    fun itemWildcard_shouldMatchStackableOnly() {
         val compiled = RuleCompiler.compileLine("item = * -> 128", 19)
 
         // baseSize > 1 可堆叠
@@ -162,7 +162,7 @@ class RuleCompilerTest {
     }
 
     @Test
-    fun `shouldMatchTabField`() {
+    fun shouldMatchTabField() {
         val compiled = RuleCompiler.compileLine("tab = buildingBlocks -> 256", 20)
 
         assertEquals(true, compiled.matches(ctx("minecraft:stone", type = "block", tab = "buildingBlocks")))
@@ -170,7 +170,7 @@ class RuleCompilerTest {
     }
 
     @Test
-    fun `shouldMatchMaterialFieldExactly`() {
+    fun shouldMatchMaterialFieldExactly() {
         val compiled = RuleCompiler.compileLine("material = steel -> 2048", 21)
 
         assertEquals(true, compiled.matches(ctx("gregtech:meta_item_1", meta = 1000, material = "steel")))
@@ -179,7 +179,7 @@ class RuleCompilerTest {
     }
 
     @Test
-    fun `shouldMatchMaterialListAndRejectEmptyDefault`() {
+    fun shouldMatchMaterialListAndRejectEmptyDefault() {
         val compiled = RuleCompiler.compileLine("material in [steel, copper] -> 2048", 22)
 
         assertEquals(true, compiled.matches(ctx("gregtech:meta_item_1", meta = 1000, material = "steel")))
@@ -188,7 +188,7 @@ class RuleCompilerTest {
     }
 
     @Test
-    fun `materialMissing_shouldNotMatchNegativeComparison`() {
+    fun materialMissing_shouldNotMatchNegativeComparison() {
         val compiled = RuleCompiler.compileLine("material != steel -> 2048", 23)
 
         assertEquals(false, compiled.matches(ctx("gregtech:meta_item_1", meta = 1000)))
@@ -197,7 +197,7 @@ class RuleCompilerTest {
     }
 
     @Test
-    fun `itemList_shouldReuseItemMatcherMetadataSugar`() {
+    fun itemList_shouldReuseItemMatcherMetadataSugar() {
         val compiled = RuleCompiler.compileLine("item in [gregtech:gt.metaitem.01@11305] -> 1024", 24)
 
         assertEquals(true, compiled.matches(ctx("gregtech:gt.metaitem.01", meta = 11305)))
@@ -205,7 +205,7 @@ class RuleCompilerTest {
     }
 
     @Test
-    fun `shouldMatchMetaRange`() {
+    fun shouldMatchMetaRange() {
         val compiled = RuleCompiler.compileLine("100 < meta < 300 -> 512", 25)
 
         assertEquals(true, compiled.matches(ctx("minecraft:wool", meta = 150, type = "block")))

@@ -17,7 +17,7 @@ final class TypeRelationshipResolver {
             return cached;
         }
 
-        boolean resolved = implementsRecursive(className, targetType, new HashSet<String>(8));
+        boolean resolved = implementsRecursive(className, targetType, new HashSet<>(8));
         Boolean previous = implementsCache.putIfAbsent(cacheKey, resolved);
         return previous != null ? previous : resolved;
     }

@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test
  */
 class FieldMatcherTest {
     @Test
-    fun `chainedInterval_shouldMatchOnlyMiddleValue`() {
+    fun chainedInterval_shouldMatchOnlyMiddleValue() {
         val compiled = RuleCompiler.compileLine("1 < meta < 3 -> 512", 1)
 
         assertTrue(compiled.matches(ctx(meta = 2)))
@@ -28,7 +28,7 @@ class FieldMatcherTest {
     }
 
     @Test
-    fun `compactChainedInterval_shouldMatchOnlyMiddleValue`() {
+    fun compactChainedInterval_shouldMatchOnlyMiddleValue() {
         val compiled = RuleCompiler.compileLine("1<meta<3 -> 512", 1)
 
         assertTrue(compiled.matches(ctx(meta = 2)))
@@ -37,7 +37,7 @@ class FieldMatcherTest {
     }
 
     @Test
-    fun `reverseDirectionChain_shouldMatchLikeForwardComparison`() {
+    fun reverseDirectionChain_shouldMatchLikeForwardComparison() {
         // literal cmp field 单比较 ≡ field cmp.reverse() literal：3 > meta 与 meta < 3 语义一致
         val reversed = RuleCompiler.compileLine("3 > meta -> 512", 1)
         val forward = RuleCompiler.compileLine("meta < 3 -> 512", 1)
@@ -48,7 +48,7 @@ class FieldMatcherTest {
     }
 
     @Test
-    fun `reversedRange_shouldMatchLikeForwardRange`() {
+    fun reversedRange_shouldMatchLikeForwardRange() {
         // 反向区间 3 >= meta > 1 ≡ 1 < meta <= 3
         val reversed = RuleCompiler.compileLine("3 >= meta > 1 -> 512", 1)
         val forward = RuleCompiler.compileLine("1 < meta <= 3 -> 512", 1)
@@ -59,7 +59,7 @@ class FieldMatcherTest {
     }
 
     @Test
-    fun `emptyInterval_shouldNeverMatch`() {
+    fun emptyInterval_shouldNeverMatch() {
         val compiled = RuleCompiler.compileLine("3 < meta < 1 -> 512", 1)
 
         for (meta in 0..4) {
@@ -68,7 +68,7 @@ class FieldMatcherTest {
     }
 
     @Test
-    fun `numericBoundary_shouldRespectOpenClosedSemantics`() {
+    fun numericBoundary_shouldRespectOpenClosedSemantics() {
         val open = RuleCompiler.compileLine("1 < meta < 3 -> 512", 1)
         val closed = RuleCompiler.compileLine("1 <= meta <= 3 -> 512", 1)
 
@@ -82,7 +82,7 @@ class FieldMatcherTest {
     }
 
     @Test
-    fun `numericNotEquals_shouldComparePrimitively`() {
+    fun numericNotEquals_shouldComparePrimitively() {
         val compiled = RuleCompiler.compileLine("meta != 14 -> 512", 1)
 
         assertFalse(compiled.matches(ctx(meta = 14)))
@@ -90,7 +90,7 @@ class FieldMatcherTest {
     }
 
     @Test
-    fun `illegalOrderingOperatorOnStringField_shouldFailFast`() {
+    fun illegalOrderingOperatorOnStringField_shouldFailFast() {
         val error = assertThrows(LocalizedRuleException::class.java) {
             RuleCompiler.compileLine("mod > foo -> 64", 1)
         }
@@ -100,7 +100,7 @@ class FieldMatcherTest {
     }
 
     @Test
-    fun `illegalOrderingOperatorOnItemField_shouldFailFast`() {
+    fun illegalOrderingOperatorOnItemField_shouldFailFast() {
         val error = assertThrows(LocalizedRuleException::class.java) {
             RuleCompiler.compileLine("item >= minecraft:egg -> 64", 1)
         }
@@ -110,7 +110,7 @@ class FieldMatcherTest {
     }
 
     @Test
-    fun `illegalOrderingOperatorOnStringSetField_shouldFailFast`() {
+    fun illegalOrderingOperatorOnStringSetField_shouldFailFast() {
         val error = assertThrows(LocalizedRuleException::class.java) {
             RuleCompiler.compileLine("ore < ingotIron -> 64", 1)
         }
@@ -120,7 +120,7 @@ class FieldMatcherTest {
     }
 
     @Test
-    fun `pureStringList_shouldMatchAnyMember`() {
+    fun pureStringList_shouldMatchAnyMember() {
         val compiled = RuleCompiler.compileLine("mod in [thermal, ic2] -> 512", 1)
 
         assertTrue(compiled.matches(ctx(modId = "thermal")))
@@ -129,7 +129,7 @@ class FieldMatcherTest {
     }
 
     @Test
-    fun `wildcardList_shouldMatchPerItem`() {
+    fun wildcardList_shouldMatchPerItem() {
         val compiled = RuleCompiler.compileLine("mod in [therm*, ic2] -> 512", 1)
 
         assertTrue(compiled.matches(ctx(modId = "thermalexpansion")))
@@ -138,7 +138,7 @@ class FieldMatcherTest {
     }
 
     @Test
-    fun `stringNotEquals_shouldNegateMatch`() {
+    fun stringNotEquals_shouldNegateMatch() {
         val compiled = RuleCompiler.compileLine("mod != thermal -> 512", 1)
 
         assertFalse(compiled.matches(ctx(modId = "thermal")))
@@ -146,7 +146,7 @@ class FieldMatcherTest {
     }
 
     @Test
-    fun `stringNotEqualsWildcard_shouldNegatePattern`() {
+    fun stringNotEqualsWildcard_shouldNegatePattern() {
         val compiled = RuleCompiler.compileLine("mod != therm* -> 512", 1)
 
         assertFalse(compiled.matches(ctx(modId = "thermalexpansion")))
@@ -154,7 +154,7 @@ class FieldMatcherTest {
     }
 
     @Test
-    fun `itemNotEquals_shouldNegatePatternAndMeta`() {
+    fun itemNotEquals_shouldNegatePatternAndMeta() {
         val compiled = RuleCompiler.compileLine("item != minecraft:wool@14 -> 512", 1)
 
         assertFalse(compiled.matches(ctx(itemId = "minecraft:wool", meta = 14)))
@@ -163,7 +163,7 @@ class FieldMatcherTest {
     }
 
     @Test
-    fun `itemList_shouldHonorExactMeta`() {
+    fun itemList_shouldHonorExactMeta() {
         val compiled = RuleCompiler.compileLine("item in [minecraft:wool@14, minecraft:egg] -> 512", 1)
 
         assertTrue(compiled.matches(ctx(itemId = "minecraft:wool", meta = 14)))
@@ -172,7 +172,7 @@ class FieldMatcherTest {
     }
 
     @Test
-    fun `missingValuePolicy_shouldApplyBeforeNegation`() {
+    fun missingValuePolicy_shouldApplyBeforeNegation() {
         val compiled = RuleCompiler.compileLine("material != steel -> 512", 1)
 
         assertFalse(compiled.matches(ctx(material = "")))
@@ -181,7 +181,7 @@ class FieldMatcherTest {
     }
 
     @Test
-    fun `stringListWithNeverMatchPolicy_shouldRejectEmptyValue`() {
+    fun stringListWithNeverMatchPolicy_shouldRejectEmptyValue() {
         val compiled = RuleCompiler.compileLine("material in [steel, copper] -> 512", 1)
 
         assertFalse(compiled.matches(ctx(material = "")))
@@ -190,7 +190,7 @@ class FieldMatcherTest {
     }
 
     @Test
-    fun `stringSetWildcard_shouldMatchAnyOreName`() {
+    fun stringSetWildcard_shouldMatchAnyOreName() {
         val compiled = RuleCompiler.compileLine("ore = ingot* -> 512", 1)
 
         assertTrue(compiled.matches(ctx(oreNames = setOf("ingotIron", "dustGold"))))
@@ -198,7 +198,7 @@ class FieldMatcherTest {
     }
 
     @Test
-    fun `stringSetList_shouldMatchAnyMember`() {
+    fun stringSetList_shouldMatchAnyMember() {
         val compiled = RuleCompiler.compileLine("ore in [ingotIron, ingotGold] -> 512", 1)
 
         assertTrue(compiled.matches(ctx(oreNames = setOf("ingotIron"))))
@@ -207,7 +207,7 @@ class FieldMatcherTest {
     }
 
     @Test
-    fun `itemWildcardList_shouldMatchStackableOnly`() {
+    fun itemWildcardList_shouldMatchStackableOnly() {
         val compiled = RuleCompiler.compileLine("item in [*] -> 512", 1)
 
         assertTrue(compiled.matches(ctx(baseLimit = 16)))
@@ -215,7 +215,7 @@ class FieldMatcherTest {
     }
 
     @Test
-    fun `numericList_shouldMatchAnyMember`() {
+    fun numericList_shouldMatchAnyMember() {
         val compiled = RuleCompiler.compileLine("meta in [1, 2, 3] -> 512", 1)
 
         assertTrue(compiled.matches(ctx(meta = 2)))
@@ -223,7 +223,7 @@ class FieldMatcherTest {
     }
 
     @Test
-    fun `stringFieldEquality_shouldMatchOtherStringFields`() {
+    fun stringFieldEquality_shouldMatchOtherStringFields() {
         val typeRule = RuleCompiler.compileLine("type = block -> 512", 1)
         val tabRule = RuleCompiler.compileLine("tab = buildingBlocks -> 512", 1)
 
@@ -236,7 +236,7 @@ class FieldMatcherTest {
     // ---- T6：缓存键读取字段机械推导 ----
 
     @Test
-    fun `matcherTree_shouldMechanicallyDeriveReadFieldsForSingleField`() {
+    fun matcherTree_shouldMechanicallyDeriveReadFieldsForSingleField() {
         assertEquals(setOf(RuleField.MATERIAL), RuleCompiler.compileLine("material = steel -> 512", 1).matcher.readFields())
         assertEquals(setOf(RuleField.META), RuleCompiler.compileLine("1 < meta < 5 -> 512", 1).matcher.readFields())
         assertEquals(setOf(RuleField.ITEM), RuleCompiler.compileLine("item = * -> 512", 1).matcher.readFields())
@@ -246,14 +246,14 @@ class FieldMatcherTest {
     }
 
     @Test
-    fun `matcherTree_shouldMechanicallyDeriveReadFieldsForCompoundConditions`() {
+    fun matcherTree_shouldMechanicallyDeriveReadFieldsForCompoundConditions() {
         val compiled = RuleCompiler.compileLine("mod = gregtech && material = steel || tab = tools -> 512", 1)
 
         assertEquals(setOf(RuleField.MOD, RuleField.MATERIAL, RuleField.TAB), compiled.matcher.readFields())
     }
 
     @Test
-    fun `matcherTree_shouldDeduplicateRepeatedFieldsInReadFields`() {
+    fun matcherTree_shouldDeduplicateRepeatedFieldsInReadFields() {
         // 区间编译为同一字段的两条比较（AllOf），去重后仍只有一个字段。
         val interval = RuleCompiler.compileLine("1 <= meta <= 5 -> 512", 1)
 

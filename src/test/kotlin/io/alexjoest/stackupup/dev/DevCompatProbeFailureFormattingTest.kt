@@ -6,7 +6,7 @@ import java.lang.reflect.InvocationTargetException
 
 class DevCompatProbeFailureFormattingTest {
     @Test
-    fun `shouldUnwrapInvocationTargetException`() {
+    fun shouldUnwrapInvocationTargetException() {
         val throwable = InvocationTargetException(IllegalStateException("grid exploded"))
 
         assertEquals(
@@ -16,7 +16,7 @@ class DevCompatProbeFailureFormattingTest {
     }
 
     @Test
-    fun `exception_shouldAppendCauseToSummary`() {
+    fun exception_shouldAppendCauseToSummary() {
         assertEquals(
             "左键提取请求=-1 预期=128 原因=IllegalStateException: grid exploded",
             appendProbeFailureCause(
@@ -27,7 +27,7 @@ class DevCompatProbeFailureFormattingTest {
     }
 
     @Test
-    fun `noException_shouldKeepOriginalSummary`() {
+    fun noException_shouldKeepOriginalSummary() {
         assertEquals(
             "左键提取请求=128 预期=128",
             appendProbeFailureCause("左键提取请求=128 预期=128", null),

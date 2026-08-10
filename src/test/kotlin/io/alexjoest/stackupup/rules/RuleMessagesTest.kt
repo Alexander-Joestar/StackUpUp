@@ -15,7 +15,7 @@ class RuleMessagesTest {
     }
 
     @Test
-    fun `errorMessage_shouldSupportEnglishLocale`() {
+    fun errorMessage_shouldSupportEnglishLocale() {
         val previous = Locale.getDefault()
         Locale.setDefault(Locale.ENGLISH)
         try {

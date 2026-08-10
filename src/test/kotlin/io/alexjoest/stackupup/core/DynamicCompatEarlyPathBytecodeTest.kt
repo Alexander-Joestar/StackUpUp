@@ -5,18 +5,18 @@ import org.junit.jupiter.api.Test
 
 class DynamicCompatEarlyPathBytecodeTest {
     @Test
-    fun `earlyPath_shouldNotReferenceWhenException`() {
+    fun earlyPath_shouldNotReferenceWhenException() {
         assertFalse(classBytes(CompatibilityLimitPatch::class.java).containsAscii("kotlin/NoWhenBranchMatchedException"))
         assertFalse(classBytes(DynamicCompatTargetClassifier::class.java).containsAscii("kotlin/NoWhenBranchMatchedException"))
     }
 
     @Test
-    fun `earlyPath_shouldNotReferenceRefClass`() {
+    fun earlyPath_shouldNotReferenceRefClass() {
         assertFalse(classBytes(DynamicCompatMethodProbe::class.java).containsAscii("kotlin/jvm/internal/Ref${'$'}BooleanRef"))
     }
 
     @Test
-    fun `earlyPath_shouldNotGenerateWhenMappingClass`() {
+    fun earlyPath_shouldNotGenerateWhenMappingClass() {
         assertFalse(hasSiblingClass(CompatibilityLimitPatch::class.java, "WhenMappings"))
         assertFalse(hasSiblingClass(DynamicCompatTargetClassifier::class.java, "WhenMappings"))
     }

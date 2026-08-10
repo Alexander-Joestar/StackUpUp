@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test
 
 class Ae2ItemHandlerInsertLimiterTest {
     @Test
-    fun `insertCapped_shouldSplitUnknownHandlerIntoVanillaSizedCalls`() {
+    fun insertCapped_shouldSplitUnknownHandlerIntoVanillaSizedCalls() {
         val handler = RecordingHandler(slotLimit = 256)
         val result = Ae2ItemHandlerInsertLimiter.insertCapped(handler, 0, stack(150), false)
 
@@ -30,7 +30,7 @@ class Ae2ItemHandlerInsertLimiterTest {
     }
 
     @Test
-    fun `insertCapped_shouldRespectSlotLimitBelowVanillaLimit`() {
+    fun insertCapped_shouldRespectSlotLimitBelowVanillaLimit() {
         val handler = RecordingHandler(slotLimit = 32)
         val result = Ae2ItemHandlerInsertLimiter.insertCapped(handler, 0, stack(80), true)
 
@@ -40,7 +40,7 @@ class Ae2ItemHandlerInsertLimiterTest {
     }
 
     @Test
-    fun `insertCapped_shouldNeverPassOversizedStackToUnsafeHandler`() {
+    fun insertCapped_shouldNeverPassOversizedStackToUnsafeHandler() {
         val handler = RecordingHandler(slotLimit = 64)
         val result = Ae2ItemHandlerInsertLimiter.insertCapped(handler, 0, stack(130), false)
 
@@ -50,7 +50,7 @@ class Ae2ItemHandlerInsertLimiterTest {
     }
 
     @Test
-    fun `insertCapped_shouldNotInsertWhenSlotLimitIsZero`() {
+    fun insertCapped_shouldNotInsertWhenSlotLimitIsZero() {
         val original = stack(80)
         val handler = RecordingHandler(slotLimit = 0)
         val result = Ae2ItemHandlerInsertLimiter.insertCapped(handler, 0, original, false)
@@ -60,7 +60,7 @@ class Ae2ItemHandlerInsertLimiterTest {
     }
 
     @Test
-    fun `insertCapped_shouldChunkForwardingInvWrapperEvenAroundKnownInventory`() {
+    fun insertCapped_shouldChunkForwardingInvWrapperEvenAroundKnownInventory() {
         val handler = RecordingInvWrapper(slotLimit = 256)
         val result = Ae2ItemHandlerInsertLimiter.insertCapped(handler, 0, stack(150), false)
 
@@ -70,7 +70,7 @@ class Ae2ItemHandlerInsertLimiterTest {
     }
 
     @Test
-    fun `insertCapped_shouldTrustItemStackHandlerAndReturnRealRemainder`() {
+    fun insertCapped_shouldTrustItemStackHandlerAndReturnRealRemainder() {
         val handler = RecordingItemStackHandler(slotLimit = 64)
         val result = Ae2ItemHandlerInsertLimiter.insertCapped(handler, 0, stack(150), false)
 
@@ -80,7 +80,7 @@ class Ae2ItemHandlerInsertLimiterTest {
     }
 
     @Test
-    fun `insertCapped_shouldTrustItemStackHandlerOnSimulateWithoutWrite`() {
+    fun insertCapped_shouldTrustItemStackHandlerOnSimulateWithoutWrite() {
         val handler = RecordingItemStackHandler(slotLimit = 64)
         val result = Ae2ItemHandlerInsertLimiter.insertCapped(handler, 0, stack(150), true)
 
@@ -91,7 +91,7 @@ class Ae2ItemHandlerInsertLimiterTest {
     }
 
     @Test
-    fun `insertCapped_shouldTrustEmptyHandlerAndReturnFullRemainder`() {
+    fun insertCapped_shouldTrustEmptyHandlerAndReturnFullRemainder() {
         val handler = EmptyHandler()
         val result = Ae2ItemHandlerInsertLimiter.insertCapped(handler, 0, stack(150), false)
 
@@ -99,7 +99,7 @@ class Ae2ItemHandlerInsertLimiterTest {
     }
 
     @Test
-    fun `insertCapped_shouldTrustVanillaDoubleChestHandlerWithoutAdjacentChest`() {
+    fun insertCapped_shouldTrustVanillaDoubleChestHandlerWithoutAdjacentChest() {
         val handler = VanillaDoubleChestItemHandler(null, null, false)
         val result = Ae2ItemHandlerInsertLimiter.insertCapped(handler, 0, stack(150), false)
 
@@ -107,7 +107,7 @@ class Ae2ItemHandlerInsertLimiterTest {
     }
 
     @Test
-    fun `insertCapped_shouldNotTrustCombinedWrapperAroundUnknownHandler`() {
+    fun insertCapped_shouldNotTrustCombinedWrapperAroundUnknownHandler() {
         val inner = RecordingModifiableHandler(slotLimit = 256)
         val handler = CombinedInvWrapper(inner)
         val result = Ae2ItemHandlerInsertLimiter.insertCapped(handler, 0, stack(150), false)
@@ -118,7 +118,7 @@ class Ae2ItemHandlerInsertLimiterTest {
     }
 
     @Test
-    fun `insertCapped_shouldNotTrustRangedWrapperAroundUnknownHandler`() {
+    fun insertCapped_shouldNotTrustRangedWrapperAroundUnknownHandler() {
         val inner = RecordingModifiableHandler(slotLimit = 256)
         val handler = RangedWrapper(inner, 0, 1)
         val result = Ae2ItemHandlerInsertLimiter.insertCapped(handler, 0, stack(150), false)
@@ -129,7 +129,7 @@ class Ae2ItemHandlerInsertLimiterTest {
     }
 
     @Test
-    fun `insertCapped_shouldOnlySimulateOneChunkForUntrustedHandler`() {
+    fun insertCapped_shouldOnlySimulateOneChunkForUntrustedHandler() {
         val handler = CapacityHandler(slotLimit = 256, capacity = 64)
         val result = Ae2ItemHandlerInsertLimiter.insertCapped(handler, 0, stack(128), true)
 
@@ -139,7 +139,7 @@ class Ae2ItemHandlerInsertLimiterTest {
     }
 
     @Test
-    fun `insertCapped_shouldReturnRealRemainderAfterChunkedInsertionFillsSlot`() {
+    fun insertCapped_shouldReturnRealRemainderAfterChunkedInsertionFillsSlot() {
         val handler = CapacityHandler(slotLimit = 256, capacity = 64)
         val result = Ae2ItemHandlerInsertLimiter.insertCapped(handler, 0, stack(128), false)
 
@@ -149,7 +149,7 @@ class Ae2ItemHandlerInsertLimiterTest {
     }
 
     @Test
-    fun `insertCapped_shouldPreserveRemainderWhenChunkIsPartiallyAccepted`() {
+    fun insertCapped_shouldPreserveRemainderWhenChunkIsPartiallyAccepted() {
         val handler = CapacityHandler(slotLimit = 256, capacity = 40)
         val result = Ae2ItemHandlerInsertLimiter.insertCapped(handler, 0, stack(100), false)
 

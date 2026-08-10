@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test
 
 class StackContextResolverTest {
     @Test
-    fun `shouldNormalizeItemStackToUnifiedContext`() {
+    fun shouldNormalizeItemStackToUnifiedContext() {
         Bootstrap.register()
         val item = Item().setRegistryName(ResourceLocation("gregtech", "meta_ingot"))
         val stack = ItemStack(item, 1, 324)
@@ -38,7 +38,7 @@ class StackContextResolverTest {
     }
 
     @Test
-    fun `shouldSkipOreDictLookupWhenDisabled`() {
+    fun shouldSkipOreDictLookupWhenDisabled() {
         Bootstrap.register()
         val item = Item().setRegistryName(ResourceLocation("gregtech", "meta_ingot"))
         val stack = ItemStack(item, 1, 324)
@@ -61,7 +61,7 @@ class StackContextResolverTest {
     }
 
     @Test
-    fun `defaultStackContext_shouldQueryOreNamesForCompatibility`() {
+    fun defaultStackContext_shouldQueryOreNamesForCompatibility() {
         Bootstrap.register()
         val item = Item().setRegistryName(ResourceLocation("gregtech", "meta_ingot"))
         val stack = ItemStack(item, 1, 324)
@@ -87,7 +87,7 @@ class StackContextResolverTest {
     }
 
     @Test
-    fun `shouldReturnEmptyMaterialWhenMaterialLookupDisabled`() {
+    fun shouldReturnEmptyMaterialWhenMaterialLookupDisabled() {
         Bootstrap.register()
         var calls = 0
         val restoreResolver = GregTechMaterialResolver.installResolverForTesting {
@@ -113,7 +113,7 @@ class StackContextResolverTest {
     }
 
     @Test
-    fun `shouldResolveOnlyRequiredExpensiveFields`() {
+    fun shouldResolveOnlyRequiredExpensiveFields() {
         Bootstrap.register()
         var materialCalls = 0
         val restoreResolver = GregTechMaterialResolver.installResolverForTesting {
@@ -144,7 +144,7 @@ class StackContextResolverTest {
     }
 
     @Test
-    fun `shouldCollectTabFromFieldPlanWithoutOtherOptionalLookups`() {
+    fun shouldCollectTabFromFieldPlanWithoutOtherOptionalLookups() {
         Bootstrap.register()
         var materialCalls = 0
         val restoreResolver = GregTechMaterialResolver.installResolverForTesting {

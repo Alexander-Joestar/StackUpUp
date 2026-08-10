@@ -133,9 +133,10 @@ object DevAutomationServerDriver {
 
         val failures = ArrayList<String>()
         var unresolvedBuiltInTargets = 0
+        val matrixSpecs = DevAutomationConfig.builtInMatrix
+        val matrixResults = evaluateMatrixTargets(matrixSpecs, ::evaluateTarget)
 
-        for (spec in DevAutomationConfig.builtInMatrix) {
-            val result = evaluateTarget(spec)
+        for ((spec, result) in matrixSpecs.zip(matrixResults)) {
             if (result.passed) {
                 StackUpUp.logger?.info("开发自动验收[服务端]：矩阵样例 {} 通过。{}", spec.name, result.summary)
                 report.line("矩阵 ${spec.name}: 通过。${result.summary}")
@@ -181,6 +182,14 @@ object DevAutomationServerDriver {
 
         shutdownIfRequested(server)
     }
+
+    internal fun evaluateMatrixTargets(specs: List<DevProbeTargetSpec>, evaluate: (DevProbeTargetSpec) -> DevProbeRunResult): List<DevProbeRunResult> =
+        specs.map { spec ->
+            runCatching { evaluate(spec) }
+                .getOrElse { throwable ->
+                    DevProbeRunResult.failed("执行异常：${formatProbeThrowable(throwable)}")
+                }
+        }
 
     private fun evaluateTarget(spec: DevProbeTargetSpec): DevProbeRunResult {
         val target = DevTargetRuntimeResolver.resolve(spec)
@@ -346,6 +355,9 @@ internal fun evaluateProbeResult(
         if (actualLimit <= 64) {
             add("目标物品的实际上限仍未突破 64。")
         }
+        if (actualLimit > slotLimit) {
+            add("动态广告上限 $actualLimit 大于广告插槽上限 $slotLimit。")
+        }
         if (storedCount != expectedStoredCount) {
             add("请求插入 $requestedCount 个物品时，期望存入 $expectedStoredCount 个，实际仅存入 $storedCount 个。")
         }
@@ -434,7 +446,7 @@ internal fun renderAutomationReport(lines: List<String>, failed: Boolean): Strin
     append("最终状态: ").append(if (failed) "FAIL" else "PASS").append('\n')
 }
 
-private data class DevProbeRunResult(val passed: Boolean, val summary: String) {
+internal data class DevProbeRunResult(val passed: Boolean, val summary: String) {
     companion object {
         fun failed(summary: String): DevProbeRunResult = DevProbeRunResult(false, summary)
     }

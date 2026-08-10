@@ -19,7 +19,7 @@ class GregTechMaterialResolverTest {
     }
 
     @Test
-    fun `shouldReturnEmptyForRegularStackWhenGregTechIsNotLoaded`() {
+    fun shouldReturnEmptyForRegularStackWhenGregTechIsNotLoaded() {
         Bootstrap.register()
         val item = Item().setRegistryName(ResourceLocation("minecraft", "stone"))
         val stack = ItemStack(item, 1, 0)
@@ -32,7 +32,7 @@ class GregTechMaterialResolverTest {
     }
 
     @Test
-    fun `primaryResolver_shouldReadPublicMaterialStackGetMaterial`() {
+    fun primaryResolver_shouldReadPublicMaterialStackGetMaterial() {
         Bootstrap.register()
         OreDictUnifier.materialStack = TestMaterialStack(TestMaterial("gregtech:steel", "steel_by_name"))
         val item = Item().setRegistryName(ResourceLocation("gregtech", "meta_ingot"))
@@ -44,7 +44,7 @@ class GregTechMaterialResolverTest {
     }
 
     @Test
-    fun `primaryReflectionFailure_shouldStillAllowFallbackResolver`() {
+    fun primaryReflectionFailure_shouldStillAllowFallbackResolver() {
         Bootstrap.register()
         val item = object : MetaItem() {
             override fun getItem(stack: ItemStack): Any = TestValueItem(TestMaterial(null, "fallback_steel"))
@@ -57,7 +57,7 @@ class GregTechMaterialResolverTest {
     }
 
     @Test
-    fun `materialName_shouldUseResourceLocationRegistryNameBeforeGetName`() {
+    fun materialName_shouldUseResourceLocationRegistryNameBeforeGetName() {
         val material = object {
             fun getRegistryName(): ResourceLocation = ResourceLocation("gregtech", "steel")
 
@@ -68,7 +68,7 @@ class GregTechMaterialResolverTest {
     }
 
     @Test
-    fun `materialName_shouldFallbackToGetNameWhenRegistryNameMissing`() {
+    fun materialName_shouldFallbackToGetNameWhenRegistryNameMissing() {
         val material = object {
             fun getName(): String = "steel"
         }
@@ -77,7 +77,7 @@ class GregTechMaterialResolverTest {
     }
 
     @Test
-    fun `materialName_shouldRejectDebugToStringWhenPublicMethodsMissing`() {
+    fun materialName_shouldRejectDebugToStringWhenPublicMethodsMissing() {
         val material = object {
             override fun toString(): String = "gregtech:bronze"
         }
@@ -86,7 +86,7 @@ class GregTechMaterialResolverTest {
     }
 
     @Test
-    fun `materialName_shouldAcceptResourceLocationRegistryName`() {
+    fun materialName_shouldAcceptResourceLocationRegistryName() {
         val material = object {
             fun getRegistryName(): ResourceLocation = ResourceLocation("gregtech", "bronze")
         }
@@ -95,7 +95,7 @@ class GregTechMaterialResolverTest {
     }
 
     @Test
-    fun `fallbackResolver_shouldReturnEmptyWhenValueItemMaterialGetterIsNotPublicByBoundary`() {
+    fun fallbackResolver_shouldReturnEmptyWhenValueItemMaterialGetterIsNotPublicByBoundary() {
         Bootstrap.register()
         val item = object : MetaItem() {
             override fun getItem(stack: ItemStack): Any = object {

@@ -7,7 +7,7 @@
 ## 接手执行顺序
 
 - 先读根级 [AGENTS.md](../../AGENTS.md)（唯一规范）与 [2026-04-18-hard-rules.md](2026-04-18-hard-rules.md)（硬门槛），再用 `jj st` / `jj diff` 检查工作副本；未提交改动受保护，不执行恢复、清理或提交；
-- 先按 [重构任务清单.md](%E9%87%8D%E6%9E%84%E4%BB%BB%E5%8A%A1%E6%B8%85%E5%8D%95.md) 当前状态表和 DAG 选择任务。T8.0 为 PARTIAL，T8.2 为 BLOCKED；T12 方案 A 已归档且不再作为 T13 依赖；T13 BLOCKED；T14.1–T14.6 PARTIAL、T14.7 未通过；T15 的结构与验证分开记录；T16 未完成；
+- 先按 [重构任务清单.md](%E9%87%8D%E6%9E%84%E4%BB%BB%E5%8A%A1%E6%B8%85%E5%8D%95.md) 当前状态表和 DAG 选择任务。T8.0 为 PARTIAL，T8.2 为 BLOCKED；T12 方案 A 已归档且不再作为 T13 依赖；T13 BLOCKED；T14.1–T14.6 PARTIAL、T14.7 为 BLOCKED/PARTIAL；T15 的结构与验证分开记录；T16 为 UNKNOWN（尚未开始）；
 - 每个任务开工前声明目标、租约、禁止事项、证据、安全不变量和验证；状态只用 PASS/FAIL/BLOCKED/UNKNOWN/PARTIAL，作者不得自审。容量证据不足写 `无源码不可判定`，运行/复核未完成不得写成通过。
 
 ## 现行工程规范
@@ -24,7 +24,7 @@
 
 ## 任务规划与状态
 
-- [重构任务清单.md](%E9%87%8D%E6%9E%84%E4%BB%BB%E5%8A%A1%E6%B8%85%E5%8D%95.md)：定义任务依赖、证据、写入范围和验收门；当前状态以清单状态表为准。T8.0 为 PARTIAL、T8.2 为 BLOCKED、T12 方案 A 已归档且不再作为 T13 依赖、T13 BLOCKED、T14.1–T14.6 PARTIAL、T14.7 BLOCKED/PARTIAL，T15 分开记录结构与验证，T16 未完成。
+- [重构任务清单.md](%E9%87%8D%E6%9E%84%E4%BB%BB%E5%8A%A1%E6%B8%85%E5%8D%95.md)：定义任务依赖、证据、写入范围和验收门；当前状态以清单状态表为准。T8.0 为 PARTIAL、T8.2 为 BLOCKED、T12 方案 A 已归档且不再作为 T13 依赖、T13 BLOCKED、T14.1–T14.6 PARTIAL、T14.7 BLOCKED/PARTIAL，T15 分开记录结构与验证，T16 为 UNKNOWN（尚未开始）。
 
 ## 用户文档
 

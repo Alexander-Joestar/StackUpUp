@@ -1,7 +1,7 @@
 # T2a 容量站点登记表
 
 > 任务：T2a「容量补丁准入规则」（docs/agent/重构任务清单.md 当前状态表）；编译期三分类与 patch 目标登记表，只登记事实与准入规则，不修改生产目标。
-> 状态：✅ 已完成（2026-08，重收口精简）（部分项 UNKNOWN，见正文）。证据基线：当前工作副本（T4a 已应用：inventory-write 通道已移除，`VanillaInventoryWriteMixin` 已删除、`StackLimitHooks.resolveInventoryWriteLimit` 已不存在，`rg` 复核无命中）+ `build/rfg/minecraft-src/java/` 为 Forge/vanilla 反编译源码；第三方模组 jar 缺失，写入路径一律 **无源码不可判定**（缺失 jar 见 §5）；生产代码路径一律使用 repo-relative 形式（`src/main/java/...`、`src/main/kotlin/...`）；所有行号与工作副本一致（2026-08-08 `rg`/`sed` 复核）。
+> 状态：PARTIAL（登记表已产出并复核；部分项 UNKNOWN 见正文，独立复核待指派，未完成前不得宣称 PASS）。证据基线：当前工作副本（T4a 已应用：inventory-write 通道已移除，`VanillaInventoryWriteMixin` 已删除、`StackLimitHooks.resolveInventoryWriteLimit` 已不存在，`rg` 复核无命中）+ `build/rfg/minecraft-src/java/` 为 Forge/vanilla 反编译源码；第三方模组 jar 缺失，写入路径一律 **无源码不可判定**（缺失 jar 见 §5）；生产代码路径一律使用 repo-relative 形式（`src/main/java/...`、`src/main/kotlin/...`）；所有行号与工作副本一致（2026-08-08 `rg`/`sed` 复核）。
 
 ## 1. 三分类定义（共同准则原文见 docs/agent/重构任务清单.md「状态口径」与「验收卡」）
 
@@ -22,9 +22,9 @@
 | ItemMixin | net.minecraft.item.Item | `getItemStackLimit(Lnet/minecraft/item/ItemStack;)I`（`remap=false`） | 物品层上限单一来源；消费面为 `ItemStack.getMaxStackSize` 与全部合并/写入路径 | 自洽（底层来源站点；广告与各写入面的 maxStackSize 计算同源） | src/main/java/io/alexjoest/stackupup/mixin/early/ItemMixin.java:12-24；src/main/kotlin/io/alexjoest/stackupup/StackLimitHooks.kt:58-75（applyDynamicStackLimit）、:106-122（cacheResolvedItemLimit/lookupResolvedItemLimit） | — |
 | ItemStackMixin | net.minecraft.item.ItemStack | `getMaxStackSize()I` | 堆叠层广告；消费 `lookupResolvedItemLimit` 缓存（ItemMixin 经 `cacheResolvedItemLimit` 写入）或回退 `applyDynamicStackLimit`；消费面同 ItemMixin | 自洽（与 ItemMixin 同源） | src/main/java/.../mixin/early/ItemStackMixin.java:11-19；src/main/kotlin/io/alexjoest/stackupup/StackLimitHooks.kt:106-122（lookupResolvedItemLimit） | — |
 
-### 2.1 `VanillaInventoryLimitMixin`（`getInventoryStackLimit()I`，14 个 vanilla 类）
+### 2.1 `VanillaInventoryLimitMixin`（`getInventoryStackLimit()I`，编译期表内 12 个 vanilla 类）
 
-站点：`VanillaInventoryLimitMixin.stackupup$replaceCompatibilityLimit`（src/main/java/.../mixin/early/VanillaInventoryLimitMixin.java:41-48），目标方法均为 `getInventoryStackLimit()I`，当前实现含 `original == 64` 哨兵（同文件 :47；该哨兵是 T2a 要取代的判据，见 §6）。
+站点：`VanillaInventoryLimitMixin.stackupup$replaceCompatibilityLimit`（src/main/java/.../mixin/early/VanillaInventoryLimitMixin.java:43-50），目标方法均为 `getInventoryStackLimit()I`，`require = 0`（同文件 :46）；运行时 `original == 64` 哨兵已按 T11 删除（t2b §6.3），当前实现直接返回全局兼容上限。
 
 | 目标类 | 写入路径 | 分类 | 证据（file:line） |
 | --- | --- | --- | --- |

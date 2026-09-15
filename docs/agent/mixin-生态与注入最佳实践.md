@@ -191,8 +191,8 @@ Forge/FML + LaunchWrapper
 
 ### 6.2 当前代码的审查候选
 
-- `EntityItemMergeMixin.java:11-20` 用 `@Redirect` 替换 `ItemStack#getMaxStackSize()I`，是明确的 `INVOKE` 操作包装候选：迁移前确认 `candidate`、当前堆栈和 `other` 语义，再用 `Operation<Integer>` 保留原值计算合并上限；不能仅凭“Redirect 禁止”删除原逻辑。
-- `InventoryPlayerAddResourceMixin.java:12-43` 有三个 Redirect，分别影响 `canMergeStacks` 与 `addResource` 调用点；每个点独立确认是纯结果修改还是需要 receiver/参数/原操作，不能合并成一个泛化 hook。`resolveInventoryClampLimit` 仍有两个业务调用方，删除或改签名前必须逐一处理。
+- `EntityItemMergeMixin.java:11-23` 已按迁移完成 `@ModifyExpressionValue`（T14.2 的 M1/M2 迁移，2026-08-08）：修改 `ItemStack#getMaxStackSize()I` 表达式结果并保留原值参与计算，不再使用 `@Redirect`。
+- `InventoryPlayerAddResourceMixin.java:12-44` 三个调用点均已迁移为 `@ModifyExpressionValue`（两个 `getInventoryStackLimit` 调用点经 `resolveInventoryClampLimit`，一个 `getMaxStackSize` 调用点取入站栈上限）；每个点仍是独立语义，不能合并成一个泛化 hook。`resolveInventoryClampLimit` 仍有两个业务调用方，删除或改签名前必须逐一处理。
 - `ItemGridHandlerMixin.java:13-24` 与 portable 版本已用 `@WrapOperation`，方向正确；但 handler 接收 `Operation<Long>` 却不调用 `original`，语义仍接近“硬替换”。必须证明是有意替换 `Math.min(JJ)J`，并验证其他 wrapper 叠加时不丢失原逻辑。
 - `RenderItemMixin.java:13-29` 接收 `Operation` 但当前不调用；需验证渲染原操作是否有意被替换。
 - `AppEngAdaptorItemHandlerMixin.java`（T12 方案 A，2026-08-08，已归档）已不含任何注入：类保留为 AE2 late config 入口保险丝，`AdaptorItemHandler#addItems` 对 `IItemHandler#insertItem` 的调用原样执行（热路径零分支、零分配）。不用 `@WrapOperation` + `operation.call(...)` 的原因：`Operation.call(Object...)` 是 varargs，javac 每次调用生成 Object[] 与 Integer/Boolean 装箱（字节码证据），违背零分配约束。"不吞"由原版/Forge remainder 契约结构性保证，边界探针（`DevAutomationServerDriver#probeBoundaryLimit`）负责运行期验证；不再委托 `Ae2ItemHandlerInsertLimiter`，也不做任何审计。该方案不再作为 T13 依赖或解锁条件。
@@ -249,17 +249,17 @@ Forge/FML + LaunchWrapper
 
 | 文件与位置 | 当前事实 | 重构审查动作 |
 |---|---|---|
-| `early/EntityItemMergeMixin.java:11-20` | `@Redirect` 替换合并流程中 `ItemStack#getMaxStackSize()I` | 记录调用点和合并双方真实上限；评估 `@WrapOperation`，验证原操作调用、合并容量和 remainder/实体数量结果。 |
-| `early/InventoryPlayerAddResourceMixin.java:12-43` | 三个 Redirect 分布在合并和资源加入路径 | 每个调用点单独建立语义；检查 `resolveInventoryClampLimit` 两个调用方；禁止用一次泛化替换掩盖不同的 source/target/limit 关系。 |
+| `early/EntityItemMergeMixin.java:11-23` | 已迁移为 `@ModifyExpressionValue`，修改合并流程中 `ItemStack#getMaxStackSize()I` 的表达式结果（保留原值参与 `Math.max` 计算），不再是 `@Redirect` | 记录调用点和合并双方真实上限；验证原值参与、合并容量和 remainder/实体数量结果。 |
+| `early/InventoryPlayerAddResourceMixin.java:12-44` | 三个调用点均为 `@ModifyExpressionValue`，分布在合并和资源加入路径 | 每个调用点单独建立语义；检查 `resolveInventoryClampLimit` 两个调用方；禁止用一次泛化替换掩盖不同的 source/target/limit 关系。 |
 | `early/NetHandlerPlayServerMixin.java:21-56` | Shadow 两个字段，HEAD cancellable 重建创造模式包处理 | 对照目标版本完整方法；覆盖线程切换、创造模式、非法槽位、空栈、BlockEntityTag 清洗、slot 更新、丢弃阈值和取消后逻辑；优先减少完整控制流接管。 |
 | `early/ItemStackNbtMixin.java:21-71` | 多 Shadow，`writeToNBT` HEAD cancellable 重建 NBT | 逐字段对照目标版本；覆盖空 item、tag alias、ForgeCaps、读写往返、未知字段保留和其他 Mixin 共存；不能只验证 Count 变大。 |
-| `early/SlotItemHandlerMixin.java:16-39` | Shadow slot limit，修改 slot limit 和 item-aware limit | 先确认 handler 的真实 insert/setter；未知 handler 不扩容；不能把 `original == 64` 分支当作安全通用证明。 |
-| `early/ForgeItemHandlerLimitMixin.java:15-33` | 对 `ItemStackHandler`、多个 Forge wrapper 和 `EntityEquipmentInvWrapper` 统一修改 `getSlotLimit` | 按目标拆分查询—写入链；wrapper 只作转发证据不能独立抬高；装备 armor/hand、`insertItem`、`setStackInSlot` 和 vanilla setter 分开验证。 |
+| `early/SlotItemHandlerMixin.java:26-38` | 只保留 `getItemStackLimit()` 的 `@ModifyReturnValue`（`resolveItemHandlerSlotLimit` 按 `min(slotLimit, itemLimit)` 收敛）+ `@Shadow getSlotStackLimit()`；T3 已移除 `getSlotStackLimit()` 的独立动态上限注入与 `original == 64` 分支 | 先确认 handler 的真实 insert/setter；未知 handler 不扩容；不能把已移除的 `original == 64` 分支当作现状描述。 |
+| `early/ForgeItemHandlerLimitMixin.java:33-46` | 目标只有 `ItemStackHandler` 与 `EntityEquipmentInvWrapper` 两个自洽类（`@Mixin` 列表 :33-39、handler :43-46）；四个转发 wrapper 已按 T3 移出 | 按目标拆分查询—写入链；wrapper 只作转发证据不能独立抬高；装备 armor/hand、`insertItem`、`setStackInSlot` 和 vanilla setter 分开验证。 |
 | `early/SlotLimitMixin.java:12-27` | 修改 slot item limit；正的 inventory limit 才 clamp | 覆盖非正 inventory limit；广告、实际 setter 和 handler insert 同源；不能用 GUI/slot 返回值掩盖服务端容量。 |
 | `early/InventoryHelperMixin.java:17-25` | `HEAD + cancellable` 完整替换原版掉落拆分 | 对照原版实体生成、空栈、随机拆分和总数守恒；确认是业务重写而非可局部包装的调用点。 |
 | `early/PacketBufferMixin.java:16-59` | 读写 `ItemStack` 的两个 `HEAD + cancellable` 协议替换 | 对照 1.12.2 原版协议、空栈、id、count、damage、share tag、异常和读写往返；验证客户端/服务端两端一致。 |
 | `early/PacketUtilMixin.java:16-39` | 客户端到服务端 ItemStack 写入的 `HEAD + cancellable` 替换 | 与 `PacketBufferMixin` 一起做协议矩阵和异常验证；不能把编解码替换当成普通返回值修改。 |
-| `early/VanillaInventoryWriteMixin.java:33-49` | 多种 inventory 的 setter 前后都使用 `require=0` | 逐目标确认 setter 是否声明、写入是否真正发生、异常时 begin/end 是否成对；核心目标不应靠软失败掩盖缺失。 |
+| `early/VanillaInventoryWriteMixin.java`（**已随 T4a 删除**） | **该文件在当前工作副本中不存在**（`rg -n "VanillaInventoryWriteMixin" src/` 无命中）；旧描述「多种 inventory 的 setter 前后都使用 `require=0`」仅为 T4a 前历史形态 | 仅作历史对照保留；不得据此判断当前写入面或 `require` 现状。若将来重新引入 setter 上下文，须逐目标确认 setter 是否声明、写入是否真正发生、异常时 begin/end 是否成对。 |
 | `early/NetHandlerPlayClientMixin.java:17-50` | 先调用原 setter/setAll，再恢复客户端堆叠数量 | 定义为客户端同步路径而非 remainder 补偿；验证服务端权威状态、容器更新顺序、空槽和多槽列表，避免与禁止事后补偿混淆。 |
 | `late/AppEngAdaptorItemHandlerMixin.java`、`core/Ae2ItemHandlerInsertLimiter.java` | T12 方案 A（2026-08-08，已归档）：mixin 无任何注入（保留为 config 入口保险丝），AE2 `insertItem` 原样执行，热路径零分支零分配（不用 `operation.call`：varargs 产生 Object[] 与装箱）；`Ae2ItemHandlerInsertLimiter` 保留为纯工具类（仅测试/探针直接使用），分片循环与白名单不在热路径 | “不吞”由原版/Forge remainder 契约结构性保证；边界探针 `probeBoundaryLimit` 验证 `insertItem(N)` 全存 / 追加 `insertItem(1)` 被拒；第三方内部写入缺证据时仍标 `UNKNOWN`，不得写成已扩容证明；该方案不作为 T13 依赖或解锁条件。 |
 | `late/ItemGridHandlerMixin.java:13-24` 与 portable 版本 | `@WrapOperation` 带 `require=0`，当前不调用 `original` | 加载缺失诊断；确定是否有意替换 `Math.min`；验证多 wrapper 叠加、原 operation 调用契约和抽取真实结果。 |

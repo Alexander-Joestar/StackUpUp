@@ -17,10 +17,10 @@ cursegradle = "1.4.0"
 spotless = "7.0.3"
 foojayResolverConvention = "1.0.0"
 assetmover = "2.5"
-mixinbooter = "11.13"
-# refmap 修复（8.6.1）：11.13 fat jar 不内嵌 obfuscation AP，需在编译期挂载 cleanmix 0.7.1 的
-# MixinObfuscationProcessor{Injection,Targets} 才能生成 refmap；与 mixinbooter 11.13 POM 声明的版本一致。
-cleanmix = "0.7.1"
+mixinbooter = "11.17"
+# refmap 修复（8.6.1）：11.17 fat jar 不内嵌 obfuscation AP，需在编译期挂载 cleanmix 0.7.2 的
+# MixinObfuscationProcessor{Injection,Targets} 才能生成 refmap；与 mixinbooter 11.17 POM 声明的版本一致。
+cleanmix = "0.7.2"
 asmDebugAll = "5.2"
 guava = "24.1.1-jre"
 gson = "2.8.6"

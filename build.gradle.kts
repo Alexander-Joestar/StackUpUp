@@ -57,8 +57,8 @@ dependencies {
         annotationProcessor(libs.asmDebugAll)
         annotationProcessor(libs.guava)
         annotationProcessor(libs.gson)
-        // refmap 修复（8.6.1）：mixinbooter 11.13 的 META-INF/services 只注册 MixinExtrasAP，
-        // obfuscation AP（MixinObfuscationProcessor{Injection,Targets}）在独立 cleanmix 0.7.1 中；
+        // refmap 修复（8.6.1）：mixinbooter 11.17 的 META-INF/services 只注册 MixinExtrasAP，
+        // obfuscation AP（MixinObfuscationProcessor{Injection,Targets}）在独立 cleanmix 0.7.2 中；
         // 此处仅编译期挂载 AP（对应 10.7 基线 asm/guava/gson 同为 AP-only），不进 implementation/runtime。
         annotationProcessor(libs.cleanmix)
         annotationProcessor(mixin) {

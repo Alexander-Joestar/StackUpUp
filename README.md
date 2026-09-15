@@ -124,6 +124,15 @@ StackUpUp 对遵循原版堆叠语义的模组通常直接生效；对自行写�
 
 仓库还提供本地开发自动验收任务，在服务端或客户端启动后验证规则是否生效；详见 [docs/runServer-自动化回归.md](docs/runServer-%E8%87%AA%E5%8A%A8%E5%8C%96%E5%9B%9E%E5%BD%92.md)。
 
+## 依赖升级备忘
+
+这些是备忘，不是待办：
+
+- Gradle wrapper 还是 9.4.0；升级影响整个构建，要改再说。
+- `cursegradle` 插件还挂在 `build.gradle.kts:17`；移除会影响发布流程。
+- `idea-ext` 还是 1.1.7，能升但收益不大。
+- `asm`/`guava`/`gson` 三个 annotationProcessor（`build.gradle.kts:57-59`）**别删**——CleanMix 0.7.1 是 MixinBooter 11.13 生成 refmap 必需的，删了 refmap 就没了。
+
 ## 来源
 
 StackUpUp 脱胎于 [StackUp](https://github.com/asiekierka/StackUp)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/stackup)，LGPLv3）。

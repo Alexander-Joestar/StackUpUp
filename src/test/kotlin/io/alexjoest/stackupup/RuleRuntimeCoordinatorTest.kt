@@ -3,6 +3,7 @@ package io.alexjoest.stackupup
 import io.alexjoest.stackupup.limit.OreDictIndex
 import io.alexjoest.stackupup.limit.RuleRuntime
 import io.alexjoest.stackupup.limit.StackContext
+import io.alexjoest.stackupup.rules.RuleMessageKey
 import io.alexjoest.stackupup.rules.compile.RuleCompiler
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import io.alexjoest.stackupup.rules.io.RuleFileExampleTemplate
@@ -122,6 +123,44 @@ class RuleRuntimeCoordinatorTest {
             assertSame(previousIndex, RuleRuntime.oreDictIndex())
             assertFalse(report.snapshot === RuleRuntime.currentSnapshot())
         } finally {
+            RuleSourceLocator.setWorldDirectoryForTests(null)
+            RuleFileLocator.resetForTests()
+        }
+    }
+
+    @Test
+    fun `仅含告警的规则文件重载后照常发布运行时快照`() {
+        val tempDir = createTempDirectory("stackupup-runtime-warnings-only").toFile()
+        val configDir = File(tempDir, "config").apply { mkdirs() }
+        val rulesDir = File(configDir, StackUpUpIds.RULES_DIRECTORY_NAME).apply { mkdirs() }
+        val rulesFile = File(rulesDir, StackUpUpIds.RULES_FILE_NAME)
+            .apply { writeText("item = minecraft:egg -> 500000\n", Charsets.UTF_8) }
+        val previousSnapshot = RuleRuntime.currentSnapshot()
+        val previousIndex = RuleRuntime.oreDictIndex()
+        val previousActiveMaxStackSize = StackUpUpConfig.activeMaxStackSize
+        val previousConfiguredMaxStackSize = StackUpUpConfig.general.maxStackSize
+
+        RuleFileLocator.setConfigDirectory(configDir)
+        RuleSourceLocator.setWorldDirectoryForTests(File(tempDir, "world").apply { mkdirs() })
+        // 500000 超出本期上限 10240 -> 只产生 clamp 告警，不产生错误。
+        StackUpUpConfig.general.maxStackSize = 10240
+        StackUpUpConfig.activeMaxStackSize = 10240
+
+        try {
+            val report = RuleRuntimeCoordinator.reload(enableDslRules = true)
+
+            assertTrue(report.errors.isEmpty())
+            assertEquals(1, report.warnings.size)
+            assertEquals(RuleMessageKey.RULE_LIMIT_CLAMP.translationKey, report.warnings.single().translationKey)
+            assertEquals(1, report.snapshot.rules.size)
+            assertEquals(rulesFile.absolutePath, report.file.absolutePath)
+            // warnings-only 必须放行：报告、运行时快照与服务实例一起发布，不被告警拦下。
+            assertEquals(report, RuleRuntimeCoordinator.lastReport())
+            assertSame(report.snapshot, RuleRuntime.currentSnapshot())
+        } finally {
+            StackUpUpConfig.general.maxStackSize = previousConfiguredMaxStackSize
+            StackUpUpConfig.activeMaxStackSize = previousActiveMaxStackSize
+            RuleRuntime.replaceRuntime(previousSnapshot, previousIndex)
             RuleSourceLocator.setWorldDirectoryForTests(null)
             RuleFileLocator.resetForTests()
         }

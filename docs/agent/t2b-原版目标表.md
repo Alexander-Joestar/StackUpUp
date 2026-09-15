@@ -1,7 +1,7 @@
 # T2b 原版目标表（getInventoryStackLimit()I 编译期显式表）
 
 > 任务/性质：T2b+T11「原版目标表与登记护栏」（docs/agent/重构任务清单.md T2b+T11 节）：原版 `getInventoryStackLimit()I` 安全目标改为**编译期显式表**、删除运行时 `original == 64` 目标判断；本文是原版目标的登记表，只登记事实与准入规则，不修改生产目标，与 `src/main/java/.../mixin/early/VanillaInventoryTargets.java`、`VanillaInventoryLimitMixin` 的 `@Mixin` 列表（机器可读实现）双向一致（登记护栏）。
-> 状态：✅ 已完成（2026-08，重收口精简）。证据基线：`build/rfg/minecraft-src/java/net/minecraft/` 为 Forge/vanilla 反编译源码（前缀简写 `.../net/minecraft`）；行号 2026-08-08 用 `rg -n` 复核；生产代码路径使用 repo-relative 形式。
+> 状态：PARTIAL（登记表已产出；独立复核待指派，未完成独立复核前本文档不得宣称 PASS）。证据基线：`build/rfg/minecraft-src/java/net/minecraft/` 为 Forge/vanilla 反编译源码（前缀简写 `.../net/minecraft`）；行号 2026-08-08 用 `rg -n` 复核；生产代码路径使用 repo-relative 形式。
 
 ## 1. 全量枚举：`getInventoryStackLimit()I` 实现者（16 处 + 接口声明 1 处）
 
@@ -48,7 +48,7 @@
 | net.minecraft.inventory.InventoryCrafting | 64 | 自洽（写入无夹取，不截断） |
 | net.minecraft.inventory.InventoryCraftResult | 64 | 自洽（写入无夹取，不截断） |
 
-与 T2a §2.1 的差异：其标题「14 个 vanilla 类」指 `FixedCompatTargets` 原版 IInventory 跳过表 14 项（含 InventoryEnderChest 继承项与 InventoryLargeChest 转发项）；early mixin `@Mixin` 列表由 13 类降为 12 类——**InventoryLargeChest 按 T2a §2.1 预告（"由 T2b+T11 处置"）移出**。`FixedCompatTargets` 与 `DynamicCompatTargetProfile` 不在本任务租约内，未改动。
+与 T2a §2.1 的差异：其原标题「14 个 vanilla 类」指 `FixedCompatTargets` 原版 IInventory 跳过表 14 项（含 InventoryEnderChest 继承项与 InventoryLargeChest 转发项）；early mixin `@Mixin` 列表由 13 类降为 12 类——**InventoryLargeChest 按 T2a §2.1 预告（"由 T2b+T11 处置"）移出**。T2a §2.1 标题的错误计数已按本表口径修正为 12 类。`FixedCompatTargets` 与 `DynamicCompatTargetProfile` 不在本任务租约内，未改动。
 
 ## 3. 排除类与缺口（明确非吞物 bug）
 

@@ -34,8 +34,8 @@
   `IInventory#getInventoryStackLimit()` 取较小值。`inventory.getInventoryStackLimit()` 返回非正值时不进入该 `min`
   分支，该非正值路径不属于此 mixin 的安全保证。
 - `ContainerMixin` 通过 `ContainerInsertHooks` 将声明的槽位上限与库存上限合并后再参与合并。
-- `VanillaInventoryLimitMixin` 当前覆盖一组原版库存实现，并仍通过 `resolveInventoryWriteLimit` 处理写入上下文；
-  `VanillaInventoryWriteMixin` 负责建立和清理该上下文。
+- `VanillaInventoryLimitMixin` 覆盖编译期显式目标表内的一组原版库存实现（12 类，见 [T2b 原版目标表](agent/t2b-%E5%8E%9F%E7%89%88%E7%9B%AE%E6%A0%87%E8%A1%A8.md) §2），按 `getInventoryStackLimit()I` 返回值替换处理；
+  旧 inventory-write 状态通道（`VanillaInventoryWriteMixin`、`StackLimitHooks.resolveInventoryWriteLimit`）已随 T4a 移除，当前工作副本中不存在。
 - `InventoryPlayerAddResourceMixin` 在 `canMergeStacks` 和 `addResource` 中各有一个直接调用 `resolveInventoryClampLimit`
   的业务点。这两个调用点仍然存在，不能按“没有调用方”处理。
 - `StackCountCodec` 让大数量在网络包中可传输；`ItemStackNbtMixin`、`PacketBufferMixin` 和 `PacketUtilMixin`
@@ -49,12 +49,12 @@ Forge 1.12.2 的 `SlotItemHandler` 源码中：
 - `getSlotStackLimit()` 直接查询 `itemHandler.getSlotLimit(index)`。
 - `getItemStackLimit(ItemStack)` 会通过 `insertItem(..., true)` 模拟插入并计算可接受数量；可修改 handler 会暂时清空并恢复槽位。
 
-当前 `SlotItemHandlerMixin` 仍修改这两个方法：`getSlotStackLimit()` 在原值等于 64 时保持原值，否则返回原值与全局上限的较大值；
-`getItemStackLimit()` 再调用 `resolveItemHandlerSlotLimit`。这段代码不能被描述成“只有 handler 已报告大于 64 才会提升”，也不能作为未知
-handler 的安全证明：原值为 1 的槽位也会进入非 64 分支，是已知限制，本文不把它当作最终容量准入规则。
+当前 `SlotItemHandlerMixin` 只保留 `getItemStackLimit()` 的 `@ModifyReturnValue`（调用 `resolveItemHandlerSlotLimit`，按
+`min(slotLimit, itemLimit)` 收敛）；`getSlotStackLimit()` 的独立动态上限注入已按 T3 移出，槽位上限自然跟随 handler 侧真实来源。
+原先“在原值等于 64 时保持原值，否则与全局上限取较大值”的描述属 T3 前状态，与当前源码不符，不得再作为当前实现引用。
 
-`ForgeItemHandlerLimitMixin` 当前的显式目标包括 `ItemStackHandler`、`EntityEquipmentInvWrapper`、`InvWrapper`、
-`SidedInvWrapper`、`CombinedInvWrapper` 和 `RangedWrapper`。这是现状登记，不是对这些目标全部安全的结论。
+`ForgeItemHandlerLimitMixin` 当前的显式目标只有 `ItemStackHandler` 与 `EntityEquipmentInvWrapper` 两个自洽类；`InvWrapper`、
+`SidedInvWrapper`、`CombinedInvWrapper`、`RangedWrapper` 已按 T3 移出注入（转发 wrapper 不是独立容量来源）。这是现状登记，不是对这些目标全部安全的结论。
 
 AE2 相关内部槽类型和输出限制：项目代码尝试设置，第三方真实写入无源码不可判定。
 
@@ -208,17 +208,22 @@ Markdown 规则，再合并 DSL 规则，即 `markdownRules + dslRules`。每个
 
 ## 已知限制
 
-1. **容量目标尚未完成统一准入审计。** 当前显式 Forge mixin 仍覆盖若干转发 wrapper，`SlotItemHandlerMixin` 仍对非 64 原值使用
-   `Math.max`，`Ae2ItemHandlerInsertLimiter` 仍有按实现类型划分的信任项，并在真实插入分支把一次 `offered` stack
-   分成多个分片后循环多次真实写入；这是当前多次真实分片风险，不等同于写入后的补偿，不能替代 T2/T3/T10 的写入证据。
-2. **原版目标仍是现行广覆盖实现。** `VanillaInventoryLimitMixin` 还没有 T11 规划中的编译期目标表；当前目标集合也不能被写成已完成的安全登记。
-3. **第三方源码缺失。** 当前仓库没有以下 late 目标 mod 的可读源码或对应依赖 jar，目标真实写入路径统一为
+1. **容量目标尚未完成统一准入审计。** `ForgeItemHandlerLimitMixin` 当前只保留 `ItemStackHandler` 与 `EntityEquipmentInvWrapper`
+   两个自洽目标（转发 wrapper 已按 T3 移出）；`SlotItemHandlerMixin` 只剩 `getItemStackLimit()` 收敛注入，原 `Math.max` 分支已移除；
+   `Ae2ItemHandlerInsertLimiter` 仍是含按实现类型划分信任项的限幅工具类，但已不在 AE2 热路径上（仅供测试/探针直接使用），
+   其真实插入分支仍会把一次 `offered` 分成多片循环写入——这是该工具类自身的多次真实分片风险，不等同于写入后的补偿，
+   也不能替代 T2/T3/T10 的写入证据。
+2. **原版目标表的闭合范围有限。** `VanillaInventoryLimitMixin` 已改为编译期显式目标表（12 类，`VanillaInventoryTargets.TARGETS`，
+   含登记护栏测试），但表内结论只覆盖这 12 类的写入路径；表外目标（`InventoryLargeChest`、`TileEntityBeacon`、`ContainerEnchantment`
+   匿名子类等）的处置不能由该表外推，且本文不把该表写成已完成独立复核的安全登记。
+3. **第三方源码缺失。** 当前仓库没有以下 15 个 late 目标 mod 的可读源码或对应依赖 jar，目标真实写入路径统一为
    **无源码不可判定**：`appliedenergistics2`、`actuallyadditions`、`brandonscore`、`cyclopscore`、`enderio`、`ic2`、`mantle`、
-   `refinedstorage`、`storagenetwork`、`integrateddynamics`、`limelib`、`immersiveengineering`。存在我方 mixin 文件不等于拥有目标
+   `refinedstorage`、`storagenetwork`、`integrateddynamics`、`limelib`、`immersiveengineering`、`nuclearcraft`、`colossalchests`、
+   `gregtech`（缺失 jar 台账见 [T2a 登记表](agent/t2a-%E5%AE%B9%E9%87%8F%E7%AB%99%E7%82%B9%E7%99%BB%E8%AE%B0%E8%A1%A8.md) §5）。存在我方 mixin 文件不等于拥有目标
    mod 的实现源码。AE2 相关内部槽类型和输出限制只可写为“项目代码尝试设置，第三方真实写入无源码不可判定”。
 4. **`resolveInventoryClampLimit` 不能删除。** 两个直接业务调用点在 `InventoryPlayerAddResourceMixin` 的 `canMergeStacks`
-   与 `addResource`；`resolveInventoryWriteLimit` 还通过写入上下文调用该 clamp。T4a 只能按任务清单分别处理上下文通道，不能把
-   resolver 当成无用代码。
+   与 `addResource`（`resolveInventoryWriteLimit` 及旧 inventory-write 上下文已随 T4a 移除，`src/` 无命中）。不能把
+   resolver 当成无用代码按“没有调用方”删除。
 5. **非标准库存路径未闭合。** 完全绕过 vanilla `Slot`/`Container` 或 Forge 标准 handler 契约的自定义容器，需要独立取得真实写入证据；当前不因类名扩大容量。
 6. **运行时审计尚未落地。** 现有 wrapper 诊断测试若只运行未打 mixin 的 Forge 基线，不能证明 mixin 生效态的守恒，也不能替代
    T12 的真实投喂报告。审计必须排除 `simulate=true`，并且只观察、不补偿。
@@ -237,7 +242,8 @@ Markdown 规则，再合并 DSL 规则，即 `markdownRules + dslRules`。每个
 ## 规划事项
 
 以下只引用 [重构任务清单](agent/%E9%87%8D%E6%9E%84%E4%BB%BB%E5%8A%A1%E6%B8%85%E5%8D%95.md) 的后续任务；本次文档更新没有执行它们的生产实现。
-**T3、T11、T13 当前均未完成，本文不把现有目标列表、诊断测试或 mixin 加载记录写成完成证明。**
+**T13 未完成；T3 的 Forge handler 目标收敛已按决策记录 §3.5 实施（本轮只按源码更新了本文描述），T11 的原版目标表已在源码中落地但验收状态以任务清单为准；
+本文不把现有目标列表、诊断测试或 mixin 加载记录写成完成证明。**
 
 - **T2a / T2b + T11：容量准入与原版目标表。** 依据 Forge/vanilla 的查询与写入源码建立“自洽 / 断链 / 转发”登记，替换运行时
   `== 64` 猜测；保留 `resolveInventoryClampLimit` 的两个直接业务调用点，并对 `InventoryLargeChest`、主动收紧的原版实现和匿名类单独取证，同时为

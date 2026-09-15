@@ -8,7 +8,7 @@
 **当前构建事实（2026-08-10）**：MixinBooter `11.13` + CleanMix `0.7.1`；Mixin 配置通过 manifest
 `MixinConnector` 装载 `StackUpUpMixinConnector : IMixinConnector`。10.7、`IEarlyMixinLoader`/`ILateMixinLoader`、旧注册方式和
 JSONL 守恒报告均为历史基线，不得写成当前实现。T12 方案 A 已归档且不再作为 T13 依赖；T8.0 为 PARTIAL，T8.2/T13
-为 BLOCKED，T14.1–T14.6 为 PARTIAL，T16 为 UNKNOWN（产物未形成、尚未开始）。T14.7 是一份已知限制清单，不是准入门。
+为 BLOCKED，T14.1–T14.6 是当时查过留下的审计参考材料（不是待验收任务），T16 为 UNKNOWN（产物未形成、尚未开始）。T14.7 是一份已知限制清单，不是准入门。
 
 文中术语固定如下：
 
@@ -441,7 +441,7 @@ T13 的最终矩阵中的回扩处置状态只能是“已回扩”或“决定�
 - **历史决策：** T9-R1/T9-R3 将 MixinBooter 11 设为计划内必选迁移。当时还打算迁完再走一道发布前矩阵复核，那份复核的产出就是现在的 `t14.7-发布前矩阵.md`——一份已查证据和已知限制的记录，不卡任何后续任务。当时的 10.7/旧 loader 记录只代表迁移前基线。
 - **当前结果：** 11.13 已进入构建，CleanMix `0.7.1` 作为编译期 AP；旧 `IEarlyMixinLoader`/`ILateMixinLoader` 注册路径已由 `IMixinConnector` 取代。迁移的 refmap/AP、dev connector 装载和服务端结果见 §8.6.1、§8.8；`t14.7-发布前矩阵.md` 里还留着没查清的限制项。
 - 任何生产混淆、第三方写入、高风险 Mixin 或未独立复核项目仍只能写 `UNKNOWN`/`无源码不可判定`，不得以 11.13 已装载推出发布准入通过。
-- **T14 状态：** [`T14 Mixin 生态与注入重构`](%E9%87%8D%E6%9E%84%E4%BB%BB%E5%8A%A1%E6%B8%85%E5%8D%95.md)；T14 及 T14.0–T14.7 的范围与 DAG 以该清单当前内容为准（收口版只剩状态表和 DAG，不再按节号引用）。T14.1–T14.6 当前还是 PARTIAL；T14.7 就是 `t14.7-发布前矩阵.md` 那份已知限制清单，不是准入门，里面仍有未闭合项。11.13 迁移已实施，但实施记录不等于发布通过。缺 jar、未运行生命周期验证或其他关键证据缺失时继续保留 **无源码不可判定**或 `UNKNOWN`，不得写成通过。T14 的对照记录仍保留于 [`借鉴仓库与重构对照.md`](%E5%80%9F%E9%89%B4%E4%BB%93%E5%BA%93%E4%B8%8E%E9%87%8D%E6%9E%84%E5%AF%B9%E7%85%A7.md)「5.1 T14：Mixin 生态与注入重构」及其子节，仅作历史/对照证据，不替代清单里的当前范围。
+- **T14 状态：** [重构任务清单](%E9%87%8D%E6%9E%84%E4%BB%BB%E5%8A%A1%E6%B8%85%E5%8D%95.md)（T14 只在「T9/T14 版本与 Mixin」小节和「依赖 DAG」里出现，清单没给 T14 起过正式名）；T14.0–T14.7 的范围与先后关系以该清单当前内容为准（收口版只剩状态表和 DAG，不再按节号引用）。T14.1–T14.6 是当时查过留下的审计参考材料，不是待验收任务；T14.7 就是 `t14.7-发布前矩阵.md` 那份已知限制清单，不是准入门，里面仍有未闭合项。11.13 迁移已实施，但实施记录不等于发布通过。缺 jar、未运行生命周期验证或其他关键证据缺失时继续保留 **无源码不可判定**或 `UNKNOWN`，不得写成通过。T14 的对照记录仍保留于 [`借鉴仓库与重构对照.md`](%E5%80%9F%E9%89%B4%E4%BB%93%E5%BA%93%E4%B8%8E%E9%87%8D%E6%9E%84%E5%AF%B9%E7%85%A7.md)「5.1 T14：Mixin 生态与注入重构」及其子节，仅作历史/对照证据，不替代清单里的当前范围。
 - 关联资料：[`Mixin 生态与注入最佳实践`](mixin-%E7%94%9F%E6%80%81%E4%B8%8E%E6%B3%A8%E5%85%A5%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5.md)、[`借鉴仓库与重构对照`](%E5%80%9F%E9%89%B4%E4%BB%93%E5%BA%93%E4%B8%8E%E9%87%8D%E6%9E%84%E5%AF%B9%E7%85%A7.md)、[`重构任务清单`](%E9%87%8D%E6%9E%84%E4%BB%BB%E5%8A%A1%E6%B8%85%E5%8D%95.md)（T9 MixinBooter 11 迁移取证、T9-R1/R3 版本与路径均见其状态表与历史决策索引）、[MixinBooter 官方仓库](https://github.com/CleanroomMC/MixinBooter)、[CleanMix 官方仓库](https://github.com/CleanroomMC/CleanMix)、[SpongePowered/Mixin](https://github.com/SpongePowered/Mixin)、[LlamaLad7/MixinExtras](https://github.com/LlamaLad7/MixinExtras) 和 [CleanroomMC/MixinExtras](https://github.com/CleanroomMC/MixinExtras)。
 
 - **T9-R3 历史迁移路径决策（2026-08-08）：** 本段保留迁移前的顺序、触发条件和回滚边界；实际实施结果见 §8.6.1 与 §8.8。10.7/旧 loader 是历史基线，11.13/0.7.1/`IMixinConnector` 是当前事实。

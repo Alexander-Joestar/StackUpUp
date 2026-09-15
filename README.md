@@ -13,7 +13,7 @@ English documentation: [README.en.md](README.en.md)
 - 目标版本：Minecraft **1.12.2** + Forge **14.23.5.2847**
 - 当前版本：**0.2.4**
 - 规则系统：DSL v2，支持 `.su` 与带 `state` / `gate` 的 `.su.md`
-- 兼容层：MixinBooter **11.13** + CleanMix **0.7.1**；通过 `IMixinConnector` 注册 Mixin 配置，ASM 仅保留为旧兼容/早期加载兜底；10.7 与旧 loader 仅为历史基线
+- 兼容层：MixinBooter **11.17** + CleanMix **0.7.2**；通过 `IMixinConnector` 注册 Mixin 配置，ASM 仅保留为旧兼容/早期加载兜底；10.7 与旧 loader 仅为历史基线
 
 ## 下载
 
@@ -23,7 +23,7 @@ English documentation: [README.en.md](README.en.md)
 
 1. 安装 Minecraft **1.12.2** 与 Forge **14.23.5.2847**。
 2. 安装依赖：
-   - [MixinBooter](https://www.curseforge.com/minecraft/mc-mods/mixin-booter) **11.13**
+   - [MixinBooter](https://www.curseforge.com/minecraft/mc-mods/mixin-booter) **11.17**
    - [Forgelin-Continuous](https://www.curseforge.com/minecraft/mc-mods/forgelin-continuous) **2.3.0.0**
    当前项目构建验证使用上述版本；其他版本未由本仓库验证。
 3. 将 StackUpUp 的 jar 放入 `mods/` 文件夹。
@@ -131,7 +131,7 @@ StackUpUp 对遵循原版堆叠语义的模组通常直接生效；对自行写�
 - Gradle wrapper 还是 9.4.0；升级影响整个构建，要改再说。
 - `cursegradle` 插件还挂在 `build.gradle.kts:17`；移除会影响发布流程。
 - `idea-ext` 还是 1.1.7，能升但收益不大。
-- `asm`/`guava`/`gson` 三个 annotationProcessor（`build.gradle.kts:57-59`）**别删**——CleanMix 0.7.1 是 MixinBooter 11.13 生成 refmap 必需的，删了 refmap 就没了。
+- `asm`/`guava`/`gson` 三个 annotationProcessor（`build.gradle.kts:57-59`）**别删**——CleanMix 0.7.2 是 MixinBooter 11.17 生成 refmap 必需的，删了 refmap 就没了。
 
 ## 来源
 

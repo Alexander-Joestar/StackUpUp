@@ -15,7 +15,7 @@ Chinese README: [README.md](README.md) (Chinese)
 - Target: Minecraft **1.12.2** + Forge **14.23.5.2847**
 - Current version: **0.2.4**
 - Rule system: DSL v2, using `.su` files or Markdown `.su.md` containers with `state` and `gate`
-- Compatibility layer: MixinBooter **11.13** + CleanMix **0.7.1**, with Mixin configs registered through `IMixinConnector`; ASM is kept only for legacy compatibility and early-loading fallbacks. MixinBooter 10.7 and the old loaders are historical baselines only
+- Compatibility layer: MixinBooter **11.17** + CleanMix **0.7.2**, with Mixin configs registered through `IMixinConnector`; ASM is kept only for legacy compatibility and early-loading fallbacks. MixinBooter 10.7 and the old loaders are historical baselines only
 
 ## Download
 
@@ -25,7 +25,7 @@ Download StackUpUp from [CurseForge](https://www.curseforge.com/minecraft/mc-mod
 
 1. Install Minecraft **1.12.2** and Forge **14.23.5.2847**.
 2. Install the required dependencies:
-    - [MixinBooter](https://www.curseforge.com/minecraft/mc-mods/mixin-booter) **11.13**
+    - [MixinBooter](https://www.curseforge.com/minecraft/mc-mods/mixin-booter) **11.17**
     - [Forgelin-Continuous](https://www.curseforge.com/minecraft/mc-mods/forgelin-continuous) **2.3.0.0**
       Current project build validation uses these versions; other versions have not been verified by this repository.
 3. Put the StackUpUp jar into the `mods/` folder.

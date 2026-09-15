@@ -45,7 +45,7 @@
 项目面向 Minecraft 1.12.2、Forge 14.23.5.2847；文本 DSL 为每个 `ItemStack` 求动态上限，原版和兼容模组路径由 Mixin 与窄范围
 ASM 承载。Kotlin 业务代码、Java core/early transformer 与 Mixin 分工明确，JUnit 5 测试位于 `src/test/kotlin`。
 
-当前 Mixin 构建基线是 MixinBooter **11.13**、CleanMix **0.7.1** 编译期 annotation processor，入口为 Sponge Mixin 的
+当前 Mixin 构建基线是 MixinBooter **11.17**、CleanMix **0.7.2** 编译期 annotation processor，入口为 Sponge Mixin 的
 `IMixinConnector`。MixinBooter 10.7、`IEarlyMixinLoader`/`ILateMixinLoader` 和旧注册方式只能作为历史资料，不能写成当前实现。
 
 生产混淆 refmap、第三方 jar 的真实写入路径、复杂 Mixin 行为和同一客户端完整 F3+T 结果，必须以对应版本的源码、构建产物或运行证据为准；缺证据就标
@@ -81,7 +81,7 @@ ASM 承载。Kotlin 业务代码、Java core/early transformer 与 Mixin 分工�
 ## Mixin、ASM 与 core/early 约束
 
 目标类、方法和 descriptor 明确时优先使用当前版本支持的 Mixin；原版/Forge 基础路径按当前 connector 与环境阶段注册，Mixin
-无法表达时才用窄范围 ASM。已被 Mixin 接管的目标须核对固定跳过表；不得以旧 loader 规则推断 11.13 行为。
+无法表达时才用窄范围 ASM。已被 Mixin 接管的目标须核对固定跳过表；不得以旧 loader 规则推断 11.17 行为。
 
 包裹原调用使用 `@WrapOperation`，修改表达式结果使用 `@ModifyExpressionValue`；不得新增 `@Redirect`。静态 handler 使用 Java
 `private static`，重载注入必须写完整 descriptor。

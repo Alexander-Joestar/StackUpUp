@@ -2,7 +2,7 @@
 
 > 状态：PARTIAL（当前基线已同步；T8.0、T14 与 T16 仍有未闭合项）
 
-本页只提供代理接手入口，不复制规则正文或会话信息。当前构建事实是 MixinBooter **11.13** + CleanMix **0.7.1**；项目通过 manifest 的 `MixinConnector` 装载 `StackUpUpMixinConnector`（`IMixinConnector`）。10.7 与 `IEarlyMixinLoader`/`ILateMixinLoader` 仅保留为历史基线。
+本页只提供代理接手入口，不复制规则正文或会话信息。当前构建事实是 MixinBooter **11.17** + CleanMix **0.7.2**；项目通过 manifest 的 `MixinConnector` 装载 `StackUpUpMixinConnector`（`IMixinConnector`）。10.7 与 `IEarlyMixinLoader`/`ILateMixinLoader` 仅保留为历史基线。
 
 ## 接手执行顺序
 
@@ -19,7 +19,7 @@
 ## 当前架构决策
 
 - [compatibility-decision-record.md](compatibility-decision-record.md)：记录兼容层选型、容量安全取舍和已知限制；现行短决策记录。
-- [mixin-生态与注入最佳实践.md](mixin-%E7%94%9F%E6%80%81%E4%B8%8E%E6%B3%A8%E5%85%A5%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5.md)：记录当前 MixinBooter 11.13、CleanMix 0.7.1、`IMixinConnector`、注入器选择和证据边界；10.7/旧 loader 仅作历史对照，不是当前注册方式，也不是生产实现完成证明。
+- [mixin-生态与注入最佳实践.md](mixin-%E7%94%9F%E6%80%81%E4%B8%8E%E6%B3%A8%E5%85%A5%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5.md)：记录当前 MixinBooter 11.17、CleanMix 0.7.2、`IMixinConnector`、注入器选择和证据边界；10.7/旧 loader 仅作历史对照，不是当前注册方式，也不是生产实现完成证明。
 - [借鉴仓库与重构对照.md](%E5%80%9F%E9%89%B4%E4%BB%93%E5%BA%93%E4%B8%8E%E9%87%8D%E6%9E%84%E5%AF%B9%E7%85%A7.md)：提供 StackUp 与 biggerstacks-Unofficial 的只读对照及 StackUpUp 重构借鉴边界；现行研究/代理参考，不是生产实现完成证明。
 
 ## 任务规划与状态

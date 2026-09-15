@@ -35,6 +35,7 @@ class DevAutomationClientDriver(private val controller: DevAutomationController 
             hasWorld = minecraft.world != null,
             hasPlayer = player != null,
             targetItemObserved = player?.inventory?.mainInventory?.any(::matchesTargetItem) == true,
+            inUnpausedWorld = minecraft.world != null && minecraft.currentScreen == null,
             resourceReloadRequested = DevAutomationConfig.resourceReload,
         )
 
@@ -53,8 +54,9 @@ class DevAutomationClientDriver(private val controller: DevAutomationController 
 
     /**
      * T8.0：输出客户端操作指示。客户端资源重载（F3+T）必须由人工在真实窗口操作——锁屏/无头环境下
-     * 自动化注入不可行，且 F3+T 属于真实交互。本方法把「请在客户端主菜单按 F3+T」写入日志与指导文件，
-     * 并记录重载前自有消息解析状态，供人工操作后对比。
+     * 自动化注入不可行，且 F3+T 属于真实交互。本方法只在世界内未暂停（`currentScreen == null`）时被调用：
+     * 主菜单/暂停菜单下 `currentScreen != null`，1.12.2 的 F3 处理块被整块跳过，此时提示按键必然 no-op。
+     * 指示写入日志与指导文件，并记录重载前自有消息解析状态，供人工操作后对比。
      */
     private fun logReloadResourcesGuidance() {
         if (reloadGuidanceLogged) {
@@ -63,7 +65,8 @@ class DevAutomationClientDriver(private val controller: DevAutomationController 
         reloadGuidanceLogged = true
         val message = resolveLocalizedMessageOrUnavailable()
         StackUpUp.logger?.info(
-            "开发自动验收[T8.0]：请在客户端主菜单按 F3+T 触发完整资源重载（SimpleReloadableResourceManager 链路）；" +
+            "开发自动验收[T8.0]：已进入世界且未打开任何界面，请现在按 F3+T 触发完整资源重载" +
+                "（SimpleReloadableResourceManager 链路）；" +
                 "重载前自有消息 key=message.stackupup.command.reload.success -> {}",
             message,
         )
@@ -73,10 +76,11 @@ class DevAutomationClientDriver(private val controller: DevAutomationController 
             guidanceFile.writeText(
                 buildString {
                     appendLine("T8.0 客户端资源重载基线（人工操作指引）")
-                    appendLine("1. 在客户端主菜单（本日志出现时）按 F3+T 触发完整资源重载。")
+                    appendLine("1. 本指引出现时已在世界内且未打开任何界面，请现在按 F3+T 触发完整资源重载。")
+                    appendLine("   注意：主菜单/暂停菜单下 currentScreen != null，F3 处理块被跳过，此时 F3+T 无效。")
                     appendLine("2. 观察游戏内消息/日志，确认资源重载完成（第二次 Reloading ResourceManager）。")
                     appendLine("3. 重载前自有消息状态：$message")
-                    appendLine("4. 重载完成后（进世界后）在日志中查看 '重载后自有消息' 记录。")
+                    appendLine("4. 重载完成后再核对该消息 key 的解析结果，日志中查看 '重载后自有消息' 记录。")
                     appendLine("参考判据：run/logs/latest.log 出现第二次 'Reloading ResourceManager' 行。")
                 },
             )

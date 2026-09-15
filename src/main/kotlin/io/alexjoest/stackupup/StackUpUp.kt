@@ -168,23 +168,24 @@ class StackUpUp {
 
         @JvmStatic
         @Synchronized
-        fun setState(name: String, value: Boolean) {
+        fun setState(name: String, value: Boolean): Boolean {
             val before = stateService.readStates() ?: run {
                 logger?.warn("Cannot read current state set before writing '{}' because world markdown storage is unavailable", name)
-                return
+                return false
             }
             val changed = stateService.setState(name, value) ?: run {
                 logger?.warn("Cannot write state '{}' because world markdown storage is unavailable", name)
-                return
+                return false
             }
-            if (!changed) return
+            if (!changed) return false
             // 只有 gate 求值结果实际变化才重建规则缓存；无 gate 引用或结果不变时跳过 reload。
             val after = before + (name to value)
             val file = RuleSourceLocator.resolveWorldMarkdownFile()
             if (file == null || !GateReloadCheck.needsReload(file.readLines(Charsets.UTF_8), before, after)) {
-                return
+                return true
             }
             reload()
+            return true
         }
 
         @JvmStatic

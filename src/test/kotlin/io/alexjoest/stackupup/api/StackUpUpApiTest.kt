@@ -59,9 +59,7 @@ class StackUpUpApiTest {
 
     @Test
     fun `getLimit 无规则时返回物品原始上限`() {
-        val item = object : Item() {
-            override fun getItemStackLimit(stack: ItemStack): Int = 16
-        }.setRegistryName(ResourceLocation("stackupup_api_test", "plain_item"))
+        val item = FixedLimitItem(16).setRegistryName(ResourceLocation("stackupup_api_test", "plain_item"))
 
         assertEquals(16, StackUpUpApi.getLimit(ItemStack(item, 1, 0)))
     }
@@ -76,9 +74,7 @@ class StackUpUpApiTest {
                 ),
             ),
         )
-        val item = object : Item() {
-            override fun getItemStackLimit(stack: ItemStack): Int = 64
-        }.setRegistryName(ResourceLocation("stackupup_api_test", "ruled_item"))
+        val item = FixedLimitItem(64).setRegistryName(ResourceLocation("stackupup_api_test", "ruled_item"))
 
         assertEquals(512, StackUpUpApi.getLimit(ItemStack(item, 1, 0)))
     }
@@ -151,6 +147,52 @@ class StackUpUpApiTest {
         assertFalse(StackUpUpApi.reload())
     }
 
+    @Test
+    fun `setState 触发 gate 翻转时重载规则并更新上限`() {
+        val item = FixedLimitItem(64).setRegistryName(ResourceLocation("stackupup_api_test", "gated_item"))
+        RuleFileLocator.setConfigDirectory(File(tempDir, "config"))
+        writeWorldMarkdownDocument(
+            listOf(
+                "# state",
+                "- phase1 = false",
+                "",
+                "# rules",
+                "## state(\"phase1\")",
+                "```stackupup",
+                "item = stackupup_api_test:gated_item -> 128",
+                "```",
+            ),
+        )
+        assertEquals(64, StackUpUpApi.getLimit(ItemStack(item, 1, 0)))
+
+        assertTrue(StackUpUpApi.setState("phase1", true))
+
+        assertEquals(128, StackUpUpApi.getLimit(ItemStack(item, 1, 0)))
+    }
+
+    @Test
+    fun `setState 未被任何 gate 引用时不重载规则`() {
+        val item = FixedLimitItem(64).setRegistryName(ResourceLocation("stackupup_api_test", "ungated_item"))
+        RuleFileLocator.setConfigDirectory(File(tempDir, "config"))
+        writeWorldMarkdownDocument(
+            listOf(
+                "# state",
+                "- phase1 = false",
+                "",
+                "# rules",
+                "## always",
+                "```stackupup",
+                "item = stackupup_api_test:ungated_item -> 128",
+                "```",
+            ),
+        )
+
+        assertTrue(StackUpUpApi.setState("phase1", true))
+
+        assertEquals(64, StackUpUpApi.getLimit(ItemStack(item, 1, 0)))
+        assertEquals(true, StackUpUpApi.getState("phase1"))
+    }
+
     private fun writeWorldMarkdownState(vararg states: Pair<String, Boolean>) {
         worldMarkdownFile.parentFile?.mkdirs()
         val content = buildString {
@@ -161,4 +203,13 @@ class StackUpUpApiTest {
         }
         worldMarkdownFile.writeText(content, Charsets.UTF_8)
     }
+
+    private fun writeWorldMarkdownDocument(lines: List<String>) {
+        worldMarkdownFile.parentFile?.mkdirs()
+        worldMarkdownFile.writeText(lines.joinToString("\n", postfix = "\n"), Charsets.UTF_8)
+    }
+}
+
+private class FixedLimitItem(private val limit: Int) : Item() {
+    override fun getItemStackLimit(stack: ItemStack): Int = limit
 }

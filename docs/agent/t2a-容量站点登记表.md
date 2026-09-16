@@ -3,7 +3,7 @@
 > 任务：T2a「容量补丁准入规则」（docs/agent/重构任务清单.md 当前状态表）；编译期三分类与 patch 目标登记表，只登记事实与准入规则，不修改生产目标。
 > 状态：PARTIAL（登记表已产出并复核；部分项 UNKNOWN 见正文，独立复核待指派，未完成前不得宣称 PASS）。证据基线：当前工作副本（T4a 已应用：inventory-write 通道已移除，`VanillaInventoryWriteMixin` 已删除、`StackLimitHooks.resolveInventoryWriteLimit` 已不存在，`rg` 复核无命中）+ `build/rfg/minecraft-src/java/` 为 Forge/vanilla 反编译源码；第三方模组 jar 缺失，写入路径一律 **无源码不可判定**（缺失 jar 见 §5）；生产代码路径一律使用 repo-relative 形式（`src/main/java/...`、`src/main/kotlin/...`）；所有行号与工作副本一致（2026-08-08 `rg`/`sed` 复核）。
 
-## 1. 三分类定义（共同准则原文见 docs/agent/重构任务清单.md「状态口径」与「验收卡」）
+## 1. 三分类定义（判定共同准则见 AGENTS.md「容量与 remainder 不变量」）
 
 - **自洽**：真实写入在落盘前重新读取同一上限来源，或使用与广告值相同的底层来源。
 - **断链**：只改变广告值，真实写入不读取该值，也没有可靠 remainder。

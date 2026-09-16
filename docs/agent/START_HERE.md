@@ -8,7 +8,7 @@
 
 - 规范：[AGENTS.md](../../AGENTS.md)（唯一规范）；硬门槛：[2026-04-18-hard-rules.md](2026-04-18-hard-rules.md)。
 - 任务与状态：[重构任务清单.md](%E9%87%8D%E6%9E%84%E4%BB%BB%E5%8A%A1%E6%B8%85%E5%8D%95.md)。
-- 决策：[compatibility-decision-record.md](compatibility-decision-record.md)；Mixin 生态：[mixin-生态与注入最佳实践.md](mixin-%E7%94%9F%E6%80%81%E4%B8%8E%E6%B3%A8%E5%85%A5%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5.md)；编排：[子代理库.md](%E5%AD%90%E4%BB%A3%E7%90%86%E5%BA%93.md)。
+- 决策：[compatibility-decision-record.md](compatibility-decision-record.md)；Mixin 生态：[mixin-生态与注入最佳实践.md](mixin-%E7%94%9F%E6%80%81%E4%B8%8E%E6%B3%A8%E5%85%A5%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5.md)；对照研究：[借鉴仓库与重构对照.md](%E5%80%9F%E9%89%B4%E4%BB%93%E5%BA%93%E4%B8%8E%E9%87%8D%E6%9E%84%E5%AF%B9%E7%85%A7.md)；编排：[子代理库.md](%E5%AD%90%E4%BB%A3%E7%90%86%E5%BA%93.md)。
 - 用户文档：[README.md](../../README.md)、[README.en.md](../../README.en.md)、[CHANGELOG.md](../../CHANGELOG.md)、[DSL-v2-规则示例.md](../DSL-v2-%E8%A7%84%E5%88%99%E7%A4%BA%E4%BE%8B.md)、[StackUpUp-实现与兼容性说明.md](../StackUpUp-%E5%AE%9E%E7%8E%B0%E4%B8%8E%E5%85%BC%E5%AE%B9%E6%80%A7%E8%AF%B4%E6%98%8E.md)、[runServer-自动化回归.md](../runServer-%E8%87%AA%E5%8A%A8%E5%8C%96%E5%9B%9E%E5%BD%92.md)。
 
 ## 未闭合项

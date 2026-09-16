@@ -1,8 +1,8 @@
 # 领域硬门槛
 
-> 状态：PARTIAL（规范材料已产出；本文件内的门槛与「当前实现」已按源码同步，但文末「已知限制」与「计划中的任务（未实现）」所列文件内未实现项未闭合，未完成独立复核，不得记为通过）。
+> 状态：PARTIAL（文末「已知限制」与「计划中的任务」所列未实现项未闭合，未完成独立复核，不得记为通过）。
 
-> 根级 `AGENTS.md` 负责通用协作规范；本文件只记录 coremod、Mixin、容量安全、开发自动验收和规则内核的可执行门槛。本文中的“当前实现”只表示能在现有源码中定位到的行为；“已知限制”表示证据不足或仍需运行验证；“计划中的任务”不属于当前实现。
+> 通用协作规范见根级 `AGENTS.md`；本文件只记 coremod、Mixin、容量安全、开发自动验收和规则内核的项目特有门槛。“当前实现”只表示能在现有源码中定位到的行为；“已知限制”表示证据不足或仍需运行验证；“计划中的任务”不属于当前实现。
 
 ## Coremod early path：纯 Java 与字节码禁区
 **当前实现**
@@ -14,9 +14,7 @@
 
 **门槛**
 
-- `src/main/java/.../core/` 的 early path 必须保持纯 Java。禁止引入 `kotlin.collections`、`kotlin.sequences`、`kotlin.text`、`kotlin.io`、`kotlin.ranges` 及 Kotlin 函数运行时。
-- 禁止 lambda、方法引用、`use {}`，以及会生成 `WhenMappings` 或 `NoWhenBranchMatchedException` 的 `enum + when` 写法。
-- 使用显式循环、JDK 集合和朴素条件；不要用语法糖把 Kotlin 或函数对象带入类加载早期路径。
+- `src/main/java/.../core/` 的 early path 必须保持纯 Java：不得引入 `kotlin.collections`、`kotlin.sequences`、`kotlin.text`、`kotlin.io`、`kotlin.ranges` 及 Kotlin 函数运行时，不得使用 lambda、方法引用、`use {}` 或会生成 `WhenMappings`/`NoWhenBranchMatchedException` 的 `enum + when`；用显式循环、JDK 集合和朴素条件。
 - `ClassHierarchyRepository` 不得依赖 `org.objectweb.asm.tree`；层级判定只读父类、接口和必要签名。
 - `DynamicCompatMethodProbe` 保持一次按方法名的 profile-aware 扫描：没有候选方法名时直接跳过，不做层级分类；命中后只能确认当前类直接声明了相应方法名，不能据此确认完整 descriptor 或方法内常量的语义位置。
 - 每次修改 coremod early path 后，至少检查 `DynamicCompatEarlyPathBytecodeTest` 和 `CoremodHierarchyBytecodeSafetyTest`。源码目录是 Java 不是通过字节码门槛的证明。
@@ -68,11 +66,10 @@
 
 **不可协商的门槛**
 
-- 对外广告的容量不得大于真实写入容量。审查一个目标时必须同时核对广告方法（`getInventoryStackLimit`、`getSlotLimit` 或 slot 方法）和实际写入方法（如 `insertItem`、`setInventorySlotContents` 或其 delegate 的 clamp）。
-- 未知 `IItemHandler` 不动态扩容。不能根据接口实现、类名、包装器返回值或“主动表态”猜测其背后库存能写入多少。
-- 不复活 remainder-system：禁止在真实写入后重新计算余量、回填、重试、补偿，或用事后余量改变业务结果。`simulate` 的结果不能替代真实写入证据。
+- 审查一个目标时必须同时核对广告方法（`getInventoryStackLimit`、`getSlotLimit` 或 slot 方法）和实际写入方法（如 `insertItem`、`setInventorySlotContents` 或其 delegate 的 clamp）；不能根据接口实现、类名、包装器返回值或“主动表态”猜测其背后库存能写入多少。
 - 真实写入审计必须分开记录 offered、实际落库、原调用返回的 remainder、目标类和 slot；不能把模拟调用与真实调用混为一条证据。
-- `EntityEquipmentInvWrapper`、Forge 转发 wrapper 或任何第三方包装器若要调整容量，必须分别覆盖空槽/已有堆叠、`simulate` /真实写入和 remainder；不能从包装器自身返回值推导未核对的 delegate 容量。
+- 不复活 remainder-system：`simulate` 的结果不能替代真实写入证据，禁止在真实写入后重算余量、回填、重试、补偿，或用事后余量改变业务结果。
+- `EntityEquipmentInvWrapper`、Forge 转发 wrapper 或任何第三方包装器若要调整容量，必须分别覆盖空槽/已有堆叠、`simulate`/真实写入和 remainder；不能从包装器自身返回值推导未核对的 delegate 容量。
 
 **已知限制**
 
@@ -83,7 +80,7 @@
 **当前实现**
 
 - 1.12.2 `ResourceLocation.splitObjectName` 按第一个冒号分隔 namespace，冒号之后整体作为 path；path 可以含多个冒号。
-- `RuleLiteralMatcherCompiler` 先处理 `@meta` 语法，再按实际 grammar 处理数值结尾的冒号 metadata sugar；现有 `RuleCompilerTest` 覆盖这两种 metadata 语法，但不替代对任意多冒号 path 的单独验证。
+- item 字面量的唯一 metadata 写法是 `@整数` / `@*`（`ItemLiteralSyntax`）；旧 `:meta` 简写已移除，多冒号字面量保持原值（`RuleCompilerTest` 覆盖 `@meta`，`RuleLiteralMatcherTest` 覆盖多冒号 path）。
 
 **门槛与限制**
 
@@ -105,7 +102,7 @@
 ## MixinExtras 选择
 **当前实现**
 
-- MixinBooter 提供运行时 MixinExtras；源码侧不额外塞独立 runtime jar。11 迁移后按目标版本打包关系重新核对本句。
+- MixinBooter 11.17 在运行时提供 MixinExtras（内嵌 Cleanroom fork），源码侧不额外塞独立 runtime jar（`gradle/libs.versions.toml:20-23`、`build.gradle.kts:49-66`）。
 - 包裹原调用的现有样例使用 `@WrapOperation`，例如 `ContainerMixin`、`RenderItemMixin`、`ItemGridHandlerMixin` 和 `ItemGridHandlerPortableMixin`。
 - 只修改表达式结果的现有样例使用 `@ModifyExpressionValue`，例如 `CommandGiveMixin`。
 
@@ -115,7 +112,7 @@
 - 只改一个表达式的结果：优先 `@ModifyExpressionValue`；只改方法返回值：使用合适的 `@ModifyReturnValue`。
 - 不为新目标继续写 `@Redirect`，除非语义确实无法由上述注入表达，并在变更证据中说明原因；IDE 对 pseudo target 的误报先修类路径和索引，不得直接回退到 ASM。
 - 重载方法必须写完整 descriptor，例如 `getInventoryStackLimit()I` 与 `getInventoryStackLimit(I)I` 不得混淆。
-- 现有 `@Redirect` 不代表已经全部迁移；本文件不把未来迁移写成当前实现。
+- `src/main` 已无 `@Redirect`；各 Mixin 源码测试断言不得回退到 `@Redirect`/`@Overwrite`。
 
 ## Late loader 与本地 jar 语义
 **当前实现**
@@ -153,7 +150,7 @@
 
 **已知限制**
 
-- `failFast` 覆盖服务端驱动的失败入口：单场景规则注入失败、目标未解析、验证失败、边界探针失败，矩阵规则注入失败、矩阵 unresolved failures 与兼容探针 failures 均经 `handleFailure`（DevAutomationServerDriver.kt:290-296）或 :179 的矩阵分支统一处理（failFast 抛出、否则记录并按 `autoShutdown` 停服）。唯一不走该门的是客户端驱动：规则注入失败与目标缺失只调用 `controller.abort()`（DevAutomationClientDriver.kt:129-131、146-152），不抛异常也无进程退出码，故不能写成两端统一 fail-fast。
+- `failFast` 覆盖服务端驱动的失败入口：单场景规则注入失败、目标未解析、验证失败、边界探针失败，矩阵规则注入失败、矩阵 unresolved failures 与兼容探针 failures 均经 `handleFailure`（DevAutomationServerDriver.kt:290-296）或 :179 的矩阵分支统一处理（failFast 抛出、否则记录并按 `autoShutdown` 停服）。唯一不走该门的是客户端驱动：规则注入失败与目标缺失只调用 `controller.abort()`（DevAutomationClientDriver.kt:133-137、149-158），不抛异常也无进程退出码，故不能写成两端统一 fail-fast。
 
 ## 规则内核边界
 **当前实现**
@@ -180,11 +177,5 @@
 - 收紧 early path 的函数对象、层级读取失败和字节码门槛，并以对应 bytecode tests 复核。
 - 为动态 ASM 补齐 descriptor 与语义位置证据，或把不满足证据要求的目标移出动态补丁。
 - 完成 wrapper、backing inventory、AE2 插入路径的容量守恒审计；在此之前不扩大 trusted 范围，也不把现有 remainder 聚合当作通用方案。
-- dev 自动化的异常分类与未知 ID 已按源码收敛（缺失类 skip、链接/可用性异常 failure、未知 ID failure）；剩余失败入口（规则注入、目标物品解析、客户端注入）的 fail-fast 统一仍待实现与测试验证。
+- 剩余失败入口（规则注入、目标物品解析、客户端注入）的 fail-fast 统一仍待实现与测试验证。
 - 用 Gradle/IDE classpath 证据确认本地 jar 语义，并用真实客户端 Forge 资源重载链验证 F3+T 本地化。
-
-## 变更结论与证据边界
-
-- 任何“当前实现”结论都必须能回到源码、生成字节码、单元/集成测试或真实客户端/服务端运行证据；静态推测不得写成通过。
-- 第三方源码缺失统一写“无源码不可判定”，并保留缺失依赖清单；补齐源码或等价可审计证据后才能重新判定。
-- 计划中的条目不是当前实现；完成代码和验证闭环前不得标为已完成，也不复述过时任务编号。

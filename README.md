@@ -106,6 +106,45 @@ StackUpUp 对遵循原版堆叠语义的模组通常直接生效；对自行写�
 - LimeLib
 - ImmersiveEngineering
 
+### 关闭单个模组的兼容补丁
+
+StackUpUp 没有为每个兼容模组提供自定义开关，也不需要：直接使用 MixinBooter 自带的黑名单即可关掉任意一个补丁。
+
+编辑 `config/mixinbooter.cfg`，把要关闭的配置文件名加进 `general` 段的 `blacklistedConfigs`：
+
+```
+general {
+    # Mixin configurations that should never be loaded.
+    S:blacklistedConfigs <
+        mixins.stackupup.late.enderio.json
+     >
+}
+```
+
+- 填的是**配置文件名**（含 `.json`），不是开关名。MixinBooter 对黑名单做整串精确匹配，写 `enderio` 或 `EnderIO` 都不会命中。
+- 改完需要**重启游戏或服务端**：MixinBooter 在 coremod 阶段就读这份配置并拉黑，`/stackupup reload` 这类运行期重载不会让它生效，也不会把它重新打开。
+- 被拉黑的配置不会装载，对应模组的兼容补丁因此完全不生效；该配置本来就没装载时填写它也无副作用。请勿拉黑核心配置 `mixins.stackupup.early.json`，那会一并停用原版库存等基础路径。
+
+目前可用的 late 配置文件名共 15 个（取自 jar 内实际存在的 `mixins.stackupup.late.*.json`）：
+
+```
+mixins.stackupup.late.actuallyadditions.json
+mixins.stackupup.late.ae2.json
+mixins.stackupup.late.brandonscore.json
+mixins.stackupup.late.colossalchests.json
+mixins.stackupup.late.cyclopscore.json
+mixins.stackupup.late.enderio.json
+mixins.stackupup.late.gregtech.json
+mixins.stackupup.late.ic2.json
+mixins.stackupup.late.immersiveengineering.json
+mixins.stackupup.late.integrateddynamics.json
+mixins.stackupup.late.limelib.json
+mixins.stackupup.late.mantle.json
+mixins.stackupup.late.nuclearcraft.json
+mixins.stackupup.late.refinedstorage.json
+mixins.stackupup.late.storagenetwork.json
+```
+
 更完整的实现说明见 [docs/StackUpUp-实现与兼容性说明.md](docs/StackUpUp-%E5%AE%9E%E7%8E%B0%E4%B8%8E%E5%85%BC%E5%AE%B9%E6%80%A7%E8%AF%B4%E6%98%8E.md)。
 
 ## 和原版 StackUp 的区别

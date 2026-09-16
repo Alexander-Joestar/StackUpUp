@@ -13,6 +13,28 @@ import net.minecraftforge.event.entity.player.ItemTooltipEvent
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
 import net.minecraftforge.fml.common.gameevent.TickEvent
 
+/**
+ * 决定 tooltip 上数量相关行的输出去重结果：
+ * `emitExactCount` 对应 `x <精确数量>` 行，`emitStackCurrentMax` 对应 `Stack: 当前/上限` 行。
+ */
+internal data class TooltipCountLines(val emitExactCount: Boolean, val emitStackCurrentMax: Boolean)
+
+/**
+ * 纯函数：同一数量只保留一条数量行。
+ * `Stack: 当前/上限` 行会显示时跳过 `x` 行；否则 `x` 行作为唯一精确值来源。
+ */
+internal fun resolveTooltipCountLines(mode: TooltipStackDisplayMode, isAdvanced: Boolean, abbreviated: Boolean): TooltipCountLines {
+    val emitStackCurrentMax = when (mode) {
+        TooltipStackDisplayMode.OFF -> false
+        TooltipStackDisplayMode.ADVANCED -> isAdvanced
+        TooltipStackDisplayMode.ALWAYS -> true
+    }
+    return TooltipCountLines(
+        emitExactCount = abbreviated && !emitStackCurrentMax,
+        emitStackCurrentMax = emitStackCurrentMax,
+    )
+}
+
 class ProxyClient : ProxyCommon() {
     private var pendingRuleStatusReminder: Boolean = true
     private var pendingConflictToast: List<String> = emptyList()
@@ -26,25 +48,26 @@ class ProxyClient : ProxyCommon() {
         }
 
         val stackCount = event.itemStack.count
-        val count = stackCount.toString()
-        val countA = StackCountTextLayout.abbreviate(renderer, count, StackRenderHooks.SLOT_MAX_WIDTH, true)
-        if (countA.abbreviated) {
+        val countA = StackCountTextLayout.abbreviate(renderer, stackCount.toString(), StackRenderHooks.SLOT_MAX_WIDTH, true)
+        val lines = resolveTooltipCountLines(
+            StackUpUpConfig.client.tooltipStackDisplayMode,
+            event.flags.isAdvanced,
+            countA.abbreviated,
+        )
+
+        if (lines.emitExactCount) {
             event.toolTip.add("x ${StackCountTextLayout.formatGroupedCount(stackCount)}")
         }
 
-        when (StackUpUpConfig.client.tooltipStackDisplayMode) {
-            TooltipStackDisplayMode.OFF -> return
-            TooltipStackDisplayMode.ADVANCED -> if (!event.flags.isAdvanced) return
-            TooltipStackDisplayMode.ALWAYS -> Unit
+        if (lines.emitStackCurrentMax) {
+            event.toolTip.add(
+                I18n.format(
+                    RuleMessageKey.TOOLTIP_CURRENT_MAX.translationKey,
+                    StackCountTextLayout.formatGroupedCount(event.itemStack.count),
+                    StackCountTextLayout.formatGroupedCount(event.itemStack.maxStackSize),
+                ),
+            )
         }
-
-        event.toolTip.add(
-            I18n.format(
-                RuleMessageKey.TOOLTIP_CURRENT_MAX.translationKey,
-                StackCountTextLayout.formatGroupedCount(event.itemStack.count),
-                StackCountTextLayout.formatGroupedCount(event.itemStack.maxStackSize),
-            ),
-        )
     }
 
     @SubscribeEvent

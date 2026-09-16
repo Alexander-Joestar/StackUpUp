@@ -29,7 +29,7 @@ object RuleRuntimeCoordinator {
     fun lastReport(): RuleReloadReport = lastReportState
 
     /**
-     * 重载规则文件、刷新运行时快照，并恢复已备份的堆叠上限。
+     * 重载规则文件并刷新运行时快照。
      */
     fun reload(enableDslRules: Boolean = StackUpUpConfig.general.enableDslRules): RuleReloadReport {
         val primaryRulesFile = RuleFileLocator.resolve()
@@ -57,7 +57,6 @@ object RuleRuntimeCoordinator {
     private fun publishSuccessfulReload(report: RuleReloadReport, enableDslRules: Boolean): RuleReloadReport {
         val oreDictIndex = if (enableDslRules) OreDictIndex.createDefault() else RuleRuntime.oreDictIndex()
         RuleRuntime.replaceRuntime(report.snapshot, oreDictIndex)
-        StackSizeBackupRegistry.restoreAll()
         lastReportState = report
         return report
     }

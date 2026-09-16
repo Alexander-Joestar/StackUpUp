@@ -18,9 +18,11 @@ config.stackupup.general.enableDslRules.name=Enable DSL v2 Rules
 config.stackupup.client.tooltipStackDisplayMode.name=Tooltip Stack Display
 config.stackupup.general.ruleComplexityWarnings.name=Rule Complexity Warnings
 config.stackupup.general.maxStackSize.name=Global Compatibility Max Stack Size
+config.stackupup.general.craftingSlotLimit.name=Crafting Slot Limit
 config.stackupup.general.enableDslRules.tooltip=Load DSL v2 rules from config/stackupup/*.su, with world and user overrides layered on top.
 config.stackupup.client.tooltipStackDisplayMode.tooltip=Choose when to show current stack size and max stack size in tooltips.
 config.stackupup.general.ruleComplexityWarnings.tooltip=Warn when the ruleset becomes unusually large or long.
+config.stackupup.general.craftingSlotLimit.tooltip=Slot limit advertised by crafting containers (workbench grid and craft result). Caps how much a single shift-craft can move, avoiding lag and misclicks with large stacks. 64 matches vanilla.
 
 commands.stackupup.usage=/stackupup <reload|edit|state>
 commands.stackupup.reload.success=Reloaded StackUpUp rules.

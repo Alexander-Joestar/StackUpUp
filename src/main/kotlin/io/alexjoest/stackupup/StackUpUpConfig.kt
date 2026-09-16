@@ -14,6 +14,10 @@ object StackUpUpConfig {
     var activeMaxStackSize: Int = 64
 
     @JvmField
+    @Config.Ignore
+    var activeCraftingSlotLimit: Int = 64
+
+    @JvmField
     @Config.Name("general")
     @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.general.name")
     val general: General = General()
@@ -26,6 +30,7 @@ object StackUpUpConfig {
     @JvmStatic
     fun applyReloadControlledValues() {
         activeMaxStackSize = general.maxStackSize
+        activeCraftingSlotLimit = general.craftingSlotLimit
     }
 
     class General {
@@ -45,6 +50,15 @@ object StackUpUpConfig {
         @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.general.maxStackSize.name")
         @Config.RangeInt(min = 1, max = Int.MAX_VALUE)
         var maxStackSize: Int = 64
+
+        // 合成容器（工作台网格 + 合成结果槽）的槽位上限：大堆叠下按 shift 合成会一次搬运极大量物品，
+        // 造成卡顿与误操作，故给这两个类单独设上限。默认 64 与原版一致；全局兼容上限被抬高时，
+        // 合成槽位按本值收敛（该项即为此意图）。
+        @JvmField
+        @Config.Comment("Slot limit advertised by crafting containers (workbench grid and craft result slot). Default 64 matches vanilla.")
+        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.general.craftingSlotLimit.name")
+        @Config.RangeInt(min = 1, max = Int.MAX_VALUE)
+        var craftingSlotLimit: Int = 64
     }
 
     class Client {

@@ -132,6 +132,51 @@ Current late mixin targets registered for attempted loading include:
 - LimeLib
 - ImmersiveEngineering
 
+### Disabling a single mod's compatibility patch
+
+StackUpUp does not ship a per-mod toggle, and does not need one: use MixinBooter's own blacklist to turn off any
+single patch.
+
+Edit `config/mixinbooter.cfg` and add the config file name to `blacklistedConfigs` in the `general` section:
+
+```
+general {
+    # Mixin configurations that should never be loaded.
+    S:blacklistedConfigs <
+        mixins.stackupup.late.enderio.json
+     >
+}
+```
+
+- The entry is the **config file name** (including `.json`), not a toggle name. MixinBooter matches the whole string
+  exactly, so `enderio` or `EnderIO` will not match.
+- Restart the game or server afterwards: MixinBooter reads this config and applies the blacklist during the coremod
+  phase, so a runtime reload such as `/stackupup reload` will neither apply nor undo it.
+- A blacklisted config is simply not loaded, so that mod's compatibility patch has no effect at all. Listing a config
+  that would not have been loaded anyway is harmless. Do not blacklist the core config
+  `mixins.stackupup.early.json`, as that also disables the base paths such as vanilla inventories.
+
+The 15 config file names currently available (taken from the `mixins.stackupup.late.*.json` files actually present in
+the jar):
+
+```
+mixins.stackupup.late.actuallyadditions.json
+mixins.stackupup.late.ae2.json
+mixins.stackupup.late.brandonscore.json
+mixins.stackupup.late.colossalchests.json
+mixins.stackupup.late.cyclopscore.json
+mixins.stackupup.late.enderio.json
+mixins.stackupup.late.gregtech.json
+mixins.stackupup.late.ic2.json
+mixins.stackupup.late.immersiveengineering.json
+mixins.stackupup.late.integrateddynamics.json
+mixins.stackupup.late.limelib.json
+mixins.stackupup.late.mantle.json
+mixins.stackupup.late.nuclearcraft.json
+mixins.stackupup.late.refinedstorage.json
+mixins.stackupup.late.storagenetwork.json
+```
+
 For implementation notes, see [docs/StackUpUp-实现与兼容性说明.md](docs/StackUpUp-%E5%AE%9E%E7%8E%B0%E4%B8%8E%E5%85%BC%E5%AE%B9%E6%80%A7%E8%AF%B4%E6%98%8E.md) (Chinese).
 
 ## Differences From StackUp

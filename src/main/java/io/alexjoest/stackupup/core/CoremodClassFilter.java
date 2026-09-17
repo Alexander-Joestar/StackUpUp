@@ -14,8 +14,6 @@ public final class CoremodClassFilter {
         "javax/",
         "jdk/",
         "kotlin/",
-        "net/minecraft/launchwrapper/",
-        "net/minecraftforge/",
         "org/spongepowered/",
         "sun/",
         "zone/rong/mixinbooter/"

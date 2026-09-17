@@ -14,6 +14,16 @@ class CoremodClassFilterTest {
     }
 
     @Test
+    fun shouldSkipLoaderInfrastructureClasses() {
+        // FML/launchwrapper 属于装载器基础设施：让它们进入 DynamicCompatTransformer 会在
+        // FML 错误处理路径上被二次变换。前缀只覆盖基础设施包，不覆盖 net/minecraft/ 游戏类。
+        assertEquals(true, CoremodClassFilter.shouldSkip("net/minecraftforge/fml/common/Loader"))
+        assertEquals(true, CoremodClassFilter.shouldSkip("net/minecraftforge/fml/relauncher/IFMLLoadingPlugin"))
+        assertEquals(true, CoremodClassFilter.shouldSkip("net/minecraft/launchwrapper/LaunchClassLoader"))
+        assertEquals(true, CoremodClassFilter.shouldSkip("net/minecraft/launchwrapper/injector/VanillaTweakInjector"))
+    }
+
+    @Test
     fun shouldNotSkipGameAndModClasses() {
         assertEquals(false, CoremodClassFilter.shouldSkip("net/minecraft/item/ItemStack"))
         assertEquals(false, CoremodClassFilter.shouldSkip("net/minecraft/tileentity/TileEntityChest"))

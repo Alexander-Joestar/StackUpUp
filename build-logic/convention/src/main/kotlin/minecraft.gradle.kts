@@ -87,10 +87,12 @@ tasks.withType<ProcessResources> {
     inputs.property("mcversion", minecraft.mcVersion)
 
     // Replace various properties in mcmod.info and pack.mcmeta if applicable
+    // mcVersion 是 Provider，expand() 不解析 Provider 只做 toString()，会把
+    // "extension 'minecraft' property 'mcVersion'" 写进产物 mcmod.info；必须显式取值。
     filesMatching(arrayListOf("mcmod.info", "pack.mcmeta")) {
         expand(
             "version" to modVersion,
-            "mcversion" to minecraft.mcVersion,
+            "mcversion" to minecraft.mcVersion.get(),
         )
     }
 

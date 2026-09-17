@@ -13,6 +13,8 @@ import org.apache.logging.log4j.core.LogEvent
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.nio.file.Files
+import java.nio.file.Paths
 import org.apache.logging.log4j.core.Logger as CoreLogger
 
 /**
@@ -106,6 +108,62 @@ class StackUpUpMixinConnectorSkipLogTest {
             messages.any { it.contains("mixins.stackupup.late.ghost.json") && it.contains("not registered") },
             "未知配置不得无条件入队且必须留 ERROR 日志，实际: $messages",
         )
+    }
+
+    @Test
+    fun connectorAe2Probe_shouldFallbackWhenForgePresenceIsUnavailable() {
+        var cleanroomProbeCalled = false
+        val present = StackUpUpMixinConnector().isModPresentForConnector(
+            "ae2",
+            forgeProbe = { throw NullPointerException("namedMods") },
+            cleanroomProbe = {
+                cleanroomProbeCalled = true
+                true
+            },
+        )
+        assertTrue(present, "Forge connector probe 过早失败时必须尝试 Cleanroom fallback")
+        assertTrue(cleanroomProbeCalled, "Forge connector probe 不可用时必须调用 Cleanroom fallback")
+    }
+
+    @Test
+    fun connectorAe2Probe_shouldHonorKnownForgeAbsenceWithoutFallback() {
+        var cleanroomProbeCalled = false
+        val present = StackUpUpMixinConnector().isModPresentForConnector(
+            "ae2",
+            forgeProbe = { false },
+            cleanroomProbe = {
+                cleanroomProbeCalled = true
+                true
+            },
+        )
+        assertFalse(present, "Forge 已明确报告 mod 缺失时不得被 fallback 覆盖")
+        assertFalse(cleanroomProbeCalled, "Forge 已明确报告结果时不得调用 fallback")
+    }
+
+    @Test
+    fun connectorSource_shouldUseSafeAe2ProbeAndKeepQueuePredicate() {
+        val source = String(
+            Files.readAllBytes(
+                Paths.get(
+                    "src",
+                    "main",
+                    "kotlin",
+                    "io",
+                    "alexjoest",
+                    "stackupup",
+                    "bootstrap",
+                    "StackUpUpMixinConnector.kt",
+                ),
+            ),
+            Charsets.UTF_8,
+        )
+        assertTrue(source.contains("isModPresentForConnector(modId)"), "生产 connector 必须使用安全 mod probe")
+        assertFalse(source.contains("Loader.isModLoaded"), "connector 阶段不得直接调用 Loader.isModLoaded")
+        assertTrue(source.contains("getIndexedModList"), "Forge probe 必须读取 connector 阶段安全的 indexed mod map")
+        assertTrue(source.contains("cleanroomAe2Presence"), "Forge probe 不可用时必须保留 Cleanroom fallback")
+        assertTrue(source.contains("shouldQueue(module.config, isModPresent)"), "必须保留 shouldQueue 注入式谓词")
+        assertTrue(source.contains("ModDiscoverer.isModPresent"), "非 ae2 模块必须保留 ModDiscoverer probe")
+        assertTrue(source.contains("Mixins.addConfiguration"), "生产路径必须保留条件配置入队")
     }
 
     @Test

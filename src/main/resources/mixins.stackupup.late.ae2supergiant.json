@@ -1,0 +1,14 @@
+{
+  "package": "io.alexjoest.stackupup.mixin.late.ae2supergiant",
+  "refmap": "mixins.StackUpUp.refmap.json",
+  "target": "@env(DEFAULT)",
+  "minVersion": "0.8",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "AppEngInternalInventoryMixin",
+    "InternalInventoryMixin",
+    "ContainerAdapterMixin"
+  ],
+  "client": [],
+  "server": []
+}

@@ -3,6 +3,7 @@ package io.alexjoest.stackupup.bootstrap
 import io.alexjoest.stackupup.StackUpUpCore
 import io.alexjoest.stackupup.StackUpUpIds
 import io.alexjoest.stackupup.config.MixinToggles
+import net.minecraftforge.fml.common.Loader
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.spongepowered.asm.mixin.Mixins
@@ -28,7 +29,7 @@ import zone.rong.mixinbooter.service.ModDiscoverer
  * - early：冲突检测（[StackUpUpCore.ensureConflictState]）非空 → ERROR + 不 add（冲突禁用设计）；通过 →
  *   核心配置正向校验 fail-fast（[MixinConfigValidator.requireCoreConfigValid]）后 add；
  * - late：正向校验（[MixinConfigValidator.validateConfigs] + logProblems）→ 按模块表逐配置判断 mod 在场
- *   （[ModDiscoverer.isModPresent]）+ [MixinToggles] 开关 → 条件 add；不在模块表的配置不装载。
+ *   （[ModDiscoverer.isModPresent]；Supergiant `ae2` 使用 Forge [Loader.isModLoaded]）+ [MixinToggles] 开关 → 条件 add；不在模块表的配置不装载。
  */
 class StackUpUpMixinConnector : IMixinConnector {
     private val logger: Logger = LogManager.getLogger("stackupup.mixin.connector")
@@ -61,8 +62,15 @@ class StackUpUpMixinConnector : IMixinConnector {
         MixinConfigValidator.logProblems(problems)
         // late 目标类全部来自第三方 mod（T2a §5 无 jar/源码），目标存在性不校验，记录 UNKNOWN。
         logger.info("Late mixin configs target third-party mod classes; target existence is not validated (UNKNOWN, no third-party sources)")
+        val isModPresent: (String) -> Boolean = { modId ->
+            if (modId == "ae2") {
+                Loader.isModLoaded("ae2")
+            } else {
+                ModDiscoverer.isModPresent(modId)
+            }
+        }
         for (module in modules) {
-            if (!shouldQueue(module.config) { modId -> ModDiscoverer.isModPresent(modId) }) {
+            if (!shouldQueue(module.config, isModPresent)) {
                 continue
             }
             Mixins.addConfiguration(module.config)
@@ -88,7 +96,7 @@ class StackUpUpMixinConnector : IMixinConnector {
 
     /**
      * 单配置装载决策（原 shouldMixinConfigQueue(Context) 语义；connect() 无 Context 参数，mod 在场判断改为
-     * 注入式谓词，生产路径由 [connectLate] 传入 [ModDiscoverer.isModPresent]）。
+     * 注入式谓词，生产路径由 [connectLate] 传入按 modId 分派的在场判断）。
      */
     internal fun shouldQueue(config: String, isModPresent: (String) -> Boolean): Boolean {
         val module = modules.firstOrNull { it.config == config }
@@ -116,6 +124,7 @@ class StackUpUpMixinConnector : IMixinConnector {
 
     internal val modules: List<LateMixinModule> = listOf(
         LateMixinModule(StackUpUpIds.LATE_AE2_MIXIN_CONFIG, "appliedenergistics2", "ae2") { MixinToggles.ae2 },
+        LateMixinModule(StackUpUpIds.LATE_AE2_SUPERGIANT_MIXIN_CONFIG, "ae2", "ae2Supergiant") { MixinToggles.ae2Supergiant },
         LateMixinModule(StackUpUpIds.LATE_BRANDONSCORE_MIXIN_CONFIG, "brandonscore", "brandonsCore") { MixinToggles.brandonsCore },
         LateMixinModule(StackUpUpIds.LATE_ACTUALLY_ADDITIONS_MIXIN_CONFIG, "actuallyadditions", "actuallyAdditions") { MixinToggles.actuallyAdditions },
         LateMixinModule(StackUpUpIds.LATE_CYCLOPSCORE_MIXIN_CONFIG, "cyclopscore", "cyclopsCore") { MixinToggles.cyclopsCore },

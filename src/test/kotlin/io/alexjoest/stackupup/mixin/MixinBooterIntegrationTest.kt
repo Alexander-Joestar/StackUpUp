@@ -28,6 +28,7 @@ class MixinBooterIntegrationTest {
         assertEquals(
             listOf(
                 "mixins.stackupup.late.ae2.json",
+                "mixins.stackupup.late.ae2supergiant.json",
                 "mixins.stackupup.late.brandonscore.json",
                 "mixins.stackupup.late.actuallyadditions.json",
                 "mixins.stackupup.late.cyclopscore.json",

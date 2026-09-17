@@ -47,6 +47,9 @@ public final class FixedCompatTargets {
         // 已由 late mixin 独占负责的第三方库存
         e("appeng.tile.inventory.AppEngInternalInventory"),
         e("appeng.tile.inventory.AppEngInternalAEInventory"),
+        e("ae2.util.inv.AppEngInternalInventory"),
+        e("ae2.api.inventories.InternalInventory"),
+        e("ae2.api.inventories.ContainerAdapter"),
         eProbeCovered("org.cyclops.cyclopscore.inventory.SimpleInventory"),
 
         // Forge item handler / wrapper

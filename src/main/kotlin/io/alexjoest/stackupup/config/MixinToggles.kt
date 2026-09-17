@@ -3,6 +3,8 @@ package io.alexjoest.stackupup.config
 object MixinToggles {
     @JvmField var ae2 = true
 
+    @JvmField var ae2Supergiant = true
+
     @JvmField var brandonsCore = true
 
     @JvmField var actuallyAdditions = true

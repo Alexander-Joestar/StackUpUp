@@ -3,11 +3,16 @@ package io.alexjoest.stackupup.bootstrap
 import io.alexjoest.stackupup.StackUpUpCore
 import io.alexjoest.stackupup.StackUpUpIds
 import io.alexjoest.stackupup.config.MixinToggles
+import net.minecraft.launchwrapper.Launch
+import net.minecraftforge.fml.common.Loader
+import net.minecraftforge.fml.common.LoaderState.ModState
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.spongepowered.asm.mixin.Mixins
 import org.spongepowered.asm.mixin.connect.IMixinConnector
 import zone.rong.mixinbooter.service.ModDiscoverer
+import java.io.File
+import java.util.jar.JarFile
 
 /**
  * Mixin 装载入口（MixinBooter 11 官方路径，替代已弃用的 [zone.rong.mixinbooter.IEarlyMixinLoader] 与
@@ -28,7 +33,8 @@ import zone.rong.mixinbooter.service.ModDiscoverer
  * - early：冲突检测（[StackUpUpCore.ensureConflictState]）非空 → ERROR + 不 add（冲突禁用设计）；通过 →
  *   核心配置正向校验 fail-fast（[MixinConfigValidator.requireCoreConfigValid]）后 add；
  * - late：正向校验（[MixinConfigValidator.validateConfigs] + logProblems）→ 按模块表逐配置判断 mod 在场
- *   （[ModDiscoverer.isModPresent]）+ [MixinToggles] 开关 → 条件 add；不在模块表的配置不装载。
+ *   （[ModDiscoverer.isModPresent]；Supergiant `ae2` 使用 connector-safe 的 Forge indexed probe，
+ *   不可用时回退到 Cleanroom marker probe）+ [MixinToggles] 开关 → 条件 add；不在模块表的配置不装载。
  */
 class StackUpUpMixinConnector : IMixinConnector {
     private val logger: Logger = LogManager.getLogger("stackupup.mixin.connector")
@@ -61,12 +67,120 @@ class StackUpUpMixinConnector : IMixinConnector {
         MixinConfigValidator.logProblems(problems)
         // late 目标类全部来自第三方 mod（T2a §5 无 jar/源码），目标存在性不校验，记录 UNKNOWN。
         logger.info("Late mixin configs target third-party mod classes; target existence is not validated (UNKNOWN, no third-party sources)")
+        val isModPresent: (String) -> Boolean = { modId ->
+            isModPresentForConnector(modId)
+        }
         for (module in modules) {
-            if (!shouldQueue(module.config) { modId -> ModDiscoverer.isModPresent(modId) }) {
+            if (!shouldQueue(module.config, isModPresent)) {
                 continue
             }
             Mixins.addConfiguration(module.config)
         }
+    }
+
+    internal fun isModPresentForConnector(
+        modId: String,
+        forgeProbe: () -> Boolean? = { safeForgeModPresence(modId) },
+        cleanroomProbe: () -> Boolean = { cleanroomAe2Presence() },
+    ): Boolean {
+        if (modId != AE2_MOD_ID) {
+            return ModDiscoverer.isModPresent(modId)
+        }
+        val forgePresence = try {
+            forgeProbe()
+        } catch (e: Throwable) {
+            logger.warn(
+                "Forge mod presence probe for '{}' failed during connector initialization; trying Cleanroom marker probe",
+                modId,
+                e,
+            )
+            null
+        }
+        if (forgePresence != null) {
+            return forgePresence
+        }
+        return try {
+            cleanroomProbe()
+        } catch (e: Throwable) {
+            logger.warn(
+                "Cleanroom marker probe for '{}' failed; treating mod as absent",
+                modId,
+                e,
+            )
+            false
+        }
+    }
+
+    private fun safeForgeModPresence(modId: String): Boolean? {
+        return try {
+            val loader = Loader.instance()
+            val mod = loader.getIndexedModList()[modId] ?: return null
+            loader.getModState(mod) != ModState.DISABLED
+        } catch (e: Throwable) {
+            logger.warn(
+                "Forge indexed mod presence probe for '{}' is unavailable during connector initialization; " +
+                    "trying Cleanroom marker probe",
+                modId,
+                e,
+            )
+            null
+        }
+    }
+
+    private fun cleanroomAe2Presence(): Boolean {
+        val classLoaders = listOfNotNull(
+            javaClass.classLoader,
+            Thread.currentThread().contextClassLoader,
+        ).distinct()
+        if (AE2_SUPERGIANT_MARKERS.any { marker ->
+                classLoaders.any { classLoader ->
+                    try {
+                        classLoader.getResource(marker) != null
+                    } catch (e: Throwable) {
+                        logger.warn("Cleanroom marker resource lookup failed for '{}'", marker, e)
+                        false
+                    }
+                }
+            }
+        ) {
+            return true
+        }
+        val minecraftHome: File? = try {
+            Launch.minecraftHome
+        } catch (e: Throwable) {
+            logger.warn("Unable to read Launch.minecraftHome for Cleanroom marker probe", e)
+            null
+        } ?: return false
+        return listOf(
+            File(minecraftHome, "mods"),
+            File(File(minecraftHome, "mods"), "1.12.2"),
+        ).distinct().any(::cleanroomJarDirectoryPresence)
+    }
+
+    private fun cleanroomJarDirectoryPresence(directory: File): Boolean {
+        if (!directory.isDirectory) {
+            return false
+        }
+        val candidates = try {
+            directory.listFiles()
+                ?.filter { file ->
+                    file.isFile && (file.name.endsWith(".jar", ignoreCase = true) || file.name.endsWith(".zip", ignoreCase = true))
+                }
+                .orEmpty()
+        } catch (e: Throwable) {
+            logger.warn("Unable to list candidate mods in '{}' for Cleanroom marker probe", directory, e)
+            return false
+        }
+        return candidates.any(::jarContainsAe2SupergiantMarker)
+    }
+
+    private fun jarContainsAe2SupergiantMarker(file: File): Boolean = try {
+        JarFile(file).use { jar ->
+            AE2_SUPERGIANT_MARKERS.any { marker -> jar.getEntry(marker) != null }
+        }
+    } catch (e: Throwable) {
+        logger.debug("Unable to inspect '{}' for Cleanroom marker", file, e)
+        false
     }
 
     /**
@@ -88,7 +202,7 @@ class StackUpUpMixinConnector : IMixinConnector {
 
     /**
      * 单配置装载决策（原 shouldMixinConfigQueue(Context) 语义；connect() 无 Context 参数，mod 在场判断改为
-     * 注入式谓词，生产路径由 [connectLate] 传入 [ModDiscoverer.isModPresent]）。
+     * 注入式谓词，生产路径由 [connectLate] 传入按 modId 分派的在场判断）。
      */
     internal fun shouldQueue(config: String, isModPresent: (String) -> Boolean): Boolean {
         val module = modules.firstOrNull { it.config == config }
@@ -116,6 +230,7 @@ class StackUpUpMixinConnector : IMixinConnector {
 
     internal val modules: List<LateMixinModule> = listOf(
         LateMixinModule(StackUpUpIds.LATE_AE2_MIXIN_CONFIG, "appliedenergistics2", "ae2") { MixinToggles.ae2 },
+        LateMixinModule(StackUpUpIds.LATE_AE2_SUPERGIANT_MIXIN_CONFIG, "ae2", "ae2Supergiant") { MixinToggles.ae2Supergiant },
         LateMixinModule(StackUpUpIds.LATE_BRANDONSCORE_MIXIN_CONFIG, "brandonscore", "brandonsCore") { MixinToggles.brandonsCore },
         LateMixinModule(StackUpUpIds.LATE_ACTUALLY_ADDITIONS_MIXIN_CONFIG, "actuallyadditions", "actuallyAdditions") { MixinToggles.actuallyAdditions },
         LateMixinModule(StackUpUpIds.LATE_CYCLOPSCORE_MIXIN_CONFIG, "cyclopscore", "cyclopsCore") { MixinToggles.cyclopsCore },
@@ -133,4 +248,12 @@ class StackUpUpMixinConnector : IMixinConnector {
         LateMixinModule(StackUpUpIds.LATE_COLOSSALCHESTS_MIXIN_CONFIG, "colossalchests", "colossalChests") { MixinToggles.colossalChests },
         LateMixinModule(StackUpUpIds.LATE_GREGTECH_MIXIN_CONFIG, "gregtech", "gregTech") { MixinToggles.gregTech },
     )
+
+    private companion object {
+        private const val AE2_MOD_ID = "ae2"
+        private val AE2_SUPERGIANT_MARKERS = listOf(
+            "ae2/api/inventories/InternalInventory.class",
+            "ae2/util/inv/AppEngInternalInventory.class",
+        )
+    }
 }

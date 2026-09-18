@@ -26,7 +26,7 @@
 - **simulate 分离**：`simulate=true` 只是预览；`simulate=false` 才是真实写入证据。审计分别记录 `offered`、实际落库量、原调用返回的 `remainder`、目标类和 `slot`。
 - **禁止事后补偿**：真实写入后禁止重新计算余量、回填源栈或槽位、重试、补偿，或以事后状态改写业务结果；守恒审计只能观察、报告和失败。
 - **未知 handler 不扩容**：未知 `IItemHandler` 的 `getSlotLimit`、wrapper 返回值或接口类型不能证明其内部 setter、delegate 和持久化路径可承载更大堆叠；无写入证据就保持原上限。
-- **Mixin 优先、ASM 兜底**：目标类、方法、完整 descriptor 和行为明确时优先窄范围 Mixin；Mixin 无法表达且写入/控制流证据闭合时才保留窄范围 ASM。ASM 不能绕过容量证据，也不能用方法名或 `BIPUSH 64` 单独证明语义。
+- **当前兼容只走显式 Mixin**：目标类、方法、完整 descriptor 和行为明确时使用 connector 注册的 early/late Mixin；已移除的 dynamic ASM replacement layer 不再作为 Mixin 的兜底，也不得重新引入。历史 ASM 方法名或 `BIPUSH 64` 命中不能证明容量语义。
 - **Fail Fast**：核心原版/Forge 路径目标缺失、descriptor 不符或注入次数不满足时必须失败并留下可定位信息；只有明确可选的第三方版本差异才允许软失败，且必须记录结构化诊断。
 
 ### 1.3 不以注解数量评价质量
@@ -264,7 +264,7 @@ Forge/FML + LaunchWrapper
 | `late/AppEngAdaptorItemHandlerMixin.java`、`core/Ae2ItemHandlerInsertLimiter.java` | T12 方案 A（2026-08-08，已归档）：mixin 无任何注入（保留为 config 入口保险丝），AE2 `insertItem` 原样执行，热路径零分支零分配（不用 `operation.call`：varargs 产生 Object[] 与装箱）；`Ae2ItemHandlerInsertLimiter` 保留为纯工具类（仅测试/探针直接使用），分片循环与白名单不在热路径 | “不吞”由原版/Forge remainder 契约结构性保证；边界探针 `probeBoundaryLimit` 验证 `insertItem(N)` 全存 / 追加 `insertItem(1)` 被拒；第三方内部写入缺证据时仍标 `UNKNOWN`，不得写成已扩容证明；该方案不作为 T13 依赖或解锁条件。 |
 | `late/ItemGridHandlerMixin.java:13-24` 与 portable 版本 | `@WrapOperation` 带 `require=0`，当前不调用 `original` | 加载缺失诊断；确定是否有意替换 `Math.min`；验证多 wrapper 叠加、原 operation 调用契约和抽取真实结果。 |
 | `early/RenderItemMixin.java:13-29` | 渲染文本调用用 `@WrapOperation` 但当前不调用 `original` | 确认是否有意完全替换字体绘制；验证客户端渲染、颜色/坐标/空文本和其他渲染 Mixin 共存，不能仅凭注解名称认为它保留原调用。 |
-| `core/DynamicCompatMethodProbe.java:32-58`、`core/CompatibilityLimitPatch.java:56-85` | 动态 ASM 只按方法名识别，命中方法内替换所有 `BIPUSH 64`；probe 不按 descriptor、常量位置或语义确认 | 不能把方法名/常量命中写成目标闭合；逐个补 descriptor 和语义位置证据，确认 Mixin 已接管目标进入 `FixedCompatTargets`，并检查动态 transformer 不二次命中。 |
+| `core/DynamicCompatMethodProbe.java:32-58`、`core/CompatibilityLimitPatch.java:56-85`（历史已移除） | 历史 dynamic ASM 曾只按方法名识别并替换匹配方法内所有 `BIPUSH 64`；probe 不按 descriptor、常量位置或语义确认 | 仅保留为历史审计证据；当前以 `StackUpUpMixinConnector` 注册的显式 early/late Mixin 为准，按目标 descriptor 和真实写入路径验证，不恢复动态 transformer 或固定跳过表。 |
 | `src/test/kotlin/.../RefinedStorageMixinSourceTest.kt:11-19` | 只检查源码含 WrapOperation 且不含 Redirect | 保留为结构护栏，但增加真实行为/变换后字节码/注入匹配验证；不能把测试名当运行时证明。 |
 | `StackUpUpCore.kt`、`bootstrap/StackUpUpMixinConnector.kt` | 当前 core 入口保留 IFMLLoadingPlugin；`IMixinConnector` 条件注册 early JSON，并保留冲突、校验、mod presence 和 toggle 逻辑 | 继续核对冲突 coremod、排除包、manifest 和 LaunchWrapper classloader；dev/SRG 已装载，生产 notch 与完整矩阵仍未闭合。 |
 | `bootstrap/StackUpUpLateMixinLoader.kt`（历史已删除） | 10.7 旧 late loader 按 Context、mod presence、toggle 排队配置 | 仅作迁移对照；当前逻辑集中在 `StackUpUpMixinConnector`，不得恢复 deprecated loader 或把历史路径写成现状。 |
@@ -272,7 +272,7 @@ Forge/FML + LaunchWrapper
 ### 8.1 当前实现的额外已知限制
 
 - **[当前项目事实] AE2 热路径已零逻辑化（方案 A，2026-08-08）**：`late/AppEngAdaptorItemHandlerMixin.java` 不再含任何注入（仅保留为 AE2 late config 入口保险丝），`AdaptorItemHandler#addItems` 对 `IItemHandler#insertItem` 的调用原样执行，热路径零分支零分配；不用 `@WrapOperation` + `operation.call` 的原因见 §6.2（varargs 生成 Object[] 与装箱分配）。"不吞"由原版/Forge remainder 契约结构性保证：超量时 `insertItem` 返回 remainder，由 AE2 侧自行回收，我方不干预。`Ae2ItemHandlerInsertLimiter.java` 保留为纯工具类（仅 `Ae2ItemHandlerInsertLimiterTest`/`WrapperCapacityDiagnosticTest` 等测试护栏使用），分片循环不在热路径；运行期验证由 `DevAutomationServerDriver#probeBoundaryLimit`（insertItem(N) 全存 / 追加 insertItem(1) 被拒）承担。这仍不是“未知 handler 已扩容”的证明——未知 handler 写入容量依旧不可判定，只是我方不再干预投喂语义。
-- **[当前项目事实] 动态 ASM 未闭合**：`DynamicCompatMethodProbe.java:32-58` 只按方法名识别，`CompatibilityLimitPatch.java:56-85` 替换匹配方法内所有 `BIPUSH 64`；`DynamicCompatTransformer.java:21-49` 应用补丁，`FixedCompatTargets.java:29-64` 是固定跳过表。当前没有按 descriptor 和常量语义位置建立完整单一事实源；重构时先核对 Mixin 目标、固定表、动态 transformer 的避让关系，不能把 ASM 命中写成容量或方法语义证明。
+- **[历史证据，已移除] dynamic ASM replacement layer**：`DynamicCompatMethodProbe.java:32-58` 曾只按方法名识别，`CompatibilityLimitPatch.java:56-85` 曾替换匹配方法内所有 `BIPUSH 64`；`DynamicCompatTransformer.java:21-49` 曾应用补丁，`FixedCompatTargets.java:29-64` 曾作为固定跳过表。该层已从当前源码移除，不能再写成当前限制或实现；当前兼容行为以 `StackUpUpMixinConnector` 注册的显式 early/late Mixin 为准，按目标 descriptor、配置和真实写入路径分别验证。
 - **[当前项目事实] 其他完整控制流/协议替换**：`InventoryHelperMixin.java:17-25`、`PacketBufferMixin.java:16-59`、`PacketUtilMixin.java:16-39` 都在 HEAD 取消原方法，分别涉及实体掉落拆分和 ItemStack 网络协议；必须按原版源码、异常、两端读写和数量守恒审查，不能套用普通返回值修改的低风险判断。
 - **[当前项目事实] coremod 异常分类缺口**：`StackUpUpCore.kt:35-49` 的冲突检测捕获 `Throwable` 后返回空列表，异常可能被误判为“没有冲突”。与 Fail Fast 冲突，迁移或重构时必须保留可定位诊断并单独测试，当前不能标为已闭合。
 - **[当前项目事实/UNKNOWN] 核心注入显式失败门尚未逐项收敛**：early JSON `:1-7` 未声明 `required: true`；`EntityItemMergeMixin.java:11-17`、`ContainerMixin.java:14-20`、`ItemStackNbtMixin.java:39-52`、`PacketBufferMixin.java:16-20,36-39` 未显式写最低 `require`。这些是代表性样例，不是完整枚举；完整清单须逐项扫描 early JSON 及全部 injection。当前框架默认行为及最终匹配结果未由本文件运行验证，只能记录为“规则要求与现状之间的审查项”，不能写成核心 fail-fast 已通过。
@@ -290,7 +290,7 @@ delegate 链：每一层查询和写入的来源
 simulate=true 结果
 simulate=false：offered、写入前后数量、storedDelta、remainderCount
 守恒：storedDelta + remainderCount == offered
-Mixin/ASM 目标与完整 descriptor
+Mixin 目标与完整 descriptor
 证据状态：自洽 / 转发 / 断链 / 无源码不可判定
 ```
 
@@ -305,8 +305,8 @@ Mixin/ASM 目标与完整 descriptor
 - Mixin AP 成功，refmap 生成且包含每个需混淆的目标；检查最终 jar 中配置和 refmap 路径。
 - 目标方法 descriptor、静态性、handler 参数和 `@At(target)` 与目标版本字节码一致。
 - 核心 injection 匹配数符合预期；可选目标的 `require=0` 只在明确 optional 情况使用并留日志/报告。
-- 检查转换后类：旧 Redirect 是否真被移除、WrapOperation 是否保留正确 `Operation` 链、原调用次数是否正确、无重复 ASM/Mixin 改写。
-- 动态 ASM 额外检查 `DynamicCompatMethodProbe` 的 descriptor 盲区、`CompatibilityLimitPatch` 的 `BIPUSH 64` 语义位置、`DynamicCompatTransformer` 的空输入/重复命中以及 `FixedCompatTargets` 与显式 Mixin 目标逐项对齐。
+- 检查转换后类：旧 Redirect 是否真被移除、WrapOperation 是否保留正确 `Operation` 链、原调用次数是否正确、无重复 Mixin 改写。
+- 历史 dynamic ASM 证据只作为迁移审计背景：确认 `DynamicCompatMethodProbe`、`CompatibilityLimitPatch`、`DynamicCompatTransformer` 和 `FixedCompatTargets` 已不在当前源码路径中；当前只核对 connector 注册的显式 Mixin 配置、目标 descriptor、匹配数和变换结果。
 - 核心 injection 分开检查注入器级 `require`、配置级 `required`、`injectors.defaultRequire` 与实际匹配数；`expect` 只按 debug-only 语义单独登记；仍依赖框架默认值必须标为未收敛。
 - 按项目门槛覆盖 `CoremodHierarchyBytecodeSafetyTest`、`EarlyMixinBytecodeSafetyTest` 和 `MixinBooterIntegrationTest`；这些是静态/集成门槛，不能替代真实容量行为。
 
@@ -349,8 +349,8 @@ Mixin/ASM 目标与完整 descriptor
 - **允许修改**：精确的源码、配置和测试路径；未列出的路径不可写。
 - **禁止事项**：禁止的 Redirect/Overwrite、未知 handler 扩容、写入后补偿、额外 runtime jar、生命周期命令或外部操作。
 - **基线证据**：本地源码/字节码路径、当前依赖坐标、官方仓库 URL、DeepWiki 页面、缺失 jar 和冲突记录。
-- **安全不变量**：容量守恒、simulate 分离、原操作调用契约、Fail Fast 和 Mixin 优先/ASM 兜底边界。
-- **注入选择**：说明为何用 `@Inject`、`@WrapOperation`、`@ModifyExpressionValue`、`@ModifyReturnValue` 或其他工具，以及为何没用更高风险工具。
+- **安全不变量**：容量守恒、simulate 分离、原操作调用契约、Fail Fast 和 connector 注册的显式 Mixin 边界。
+- **注入选择**：说明为何用 `@Inject`、`@WrapOperation`、`@ModifyExpressionValue`、`@ModifyReturnValue` 或其他 Mixin 工具，以及为何没用更高风险工具。
 - **验证方式**：逐条列出实际执行的结构检查、测试、运行任务和结果；未执行项标明未执行及原因。
 - **代理分工与租约**：作者、独立复核者、每个文件的唯一写租约和交接边界。
 - **结论状态**：只能使用 `PASS`、`FAIL`、`BLOCKED`、`UNKNOWN` 或 `PARTIAL`；无独立复核、运行证据或关键第三方源码时不得写 `PASS`。
@@ -374,4 +374,4 @@ Mixin/ASM 目标与完整 descriptor
 - `@Inject` 局部 callback 优于无理由的完整方法接管；`HEAD + cancellable`、`@Redirect` 和 `@Overwrite` 都要承担明确的共存与行为证明责任。
 - 当前项目事实是 MixinBooter 11.13 + CleanMix 0.7.1 + manifest `MixinConnector`/`IMixinConnector`；10.7 与 `IEarlyMixinLoader`/`ILateMixinLoader` 仅作历史对照。dev/SRG provider、refmap 和 connector 装载已有证据，但生产 notch、第三方容量、高风险 Mixin 和完整矩阵未闭合，不得把迁移实施写成发布准入通过。
 - 容量任务永远同时审查广告和真实写入：`storedDelta + remainderCount == offered`，区分 simulate，禁止写入后补偿；未知 handler 不动态扩容。
-- Mixin 能表达时优先 Mixin，确实不能表达且证据闭合时才用窄范围 ASM；任何未验证项如实保持 `UNKNOWN`。
+- 当前兼容目标使用 connector 注册的显式 early/late Mixin；已移除 dynamic ASM replacement layer，不因历史代码或常量命中重新引入 ASM。任何未验证项如实保持 `UNKNOWN`。

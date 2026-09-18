@@ -95,8 +95,8 @@ remainder；这是它自身写入链的事实。不能把这个结论传播给�
 ### 未知 handler 与转发 wrapper
 
 容量准入规则是：未知 `IItemHandler` 不动态扩容。`getSlotLimit()` 只能说明接口报告的值；在看不到实现的情况下，不能按类名、接口实现关系或
-`64` 这个数猜测它的写入容量。当前 dynamic ASM 对 `ITEM_HANDLER` profile 直接不生成补丁，但 `SlotItemHandlerMixin` 的非 64
-分支仍可能从槽位广告面扩大未知 handler 的原值；因此这是目标不变量尚未被当前实现完全落实的已知差距。
+`64` 这个数猜测它的写入容量。当前已移除 dynamic ASM replacement layer，未知 handler 不会因缺少显式目标而回退扩容；但
+`SlotItemHandlerMixin` 的现行 Mixin 路径仍可能从槽位广告面扩大未知 handler 的原值，因此这是目标不变量尚未被当前实现完全落实的已知差距。
 
 转发 wrapper 不能因为 wrapper 自己返回一个数就扩大广告：
 
@@ -121,7 +121,9 @@ remainder；这是它自身写入链的事实。不能把这个结论传播给�
 remainder。这是当前存在的多次真实分片及其守恒风险，不等同于真实写入完成后的补偿。禁止的写入后补偿是：真实写入后重新计算余量、回填、重试或再次写入，以改变业务结果；当前分片实现也不能作为这种做法的设计先例。T10/T12
 必须明确审查并收敛它。未来守恒审计只能记录 `offered`、写入前后状态、remainder、handler 类名、slot 和调用点，不能修正结果。
 
-## Mixin/ASM 分层
+## Mixin 分层
+
+当前兼容架构以 `StackUpUpMixinConnector` 注册的显式 early/late Mixin 为唯一入口：原版和 Forge 基础路径由 early 配置覆盖，具体模组由 connector 按 mod presence 与 `MixinToggles` 条件加入对应 late 配置。旧的 dynamic ASM replacement layer（`DynamicCompatTransformer`、`DynamicCompatMethodProbe`、`CompatibilityLimitPatch`、`FixedCompatTargets`）已移除，不再参与运行时兼容；下文若引用这些类，仅表示历史实现和历史审计证据。
 
 ### Early Mixin
 
@@ -144,22 +146,22 @@ mod id 为：
 
 late 配置中的我方 mixin 只说明“补丁尝试在哪个目标方法上加载”，不说明第三方真实写入容量；第三方目标的写入语义统一按“无源码不可判定”处理。
 
-### ASM 与固定跳过表
+### 历史 dynamic ASM 证据（已移除）
 
-`DynamicCompatTransformer` 是遗留的窄动态层：
+以下内容记录已移除的 dynamic ASM replacement layer，仅用于解释历史审计结论，不描述当前运行时路径：
 
-1. `basicClass` 为空时直接返回；`transformedName` 为空时使用备用类名。
-2. `CoremodClassFilter` 过滤确定无关的基础运行时类。
-3. `DynamicCompatMethodProbe` 只扫描当前类直接声明的方法。
-4. `FixedCompatTargets` 中的目标跳过 dynamic ASM。
-5. `CompatibilityLimitPatch` 只把目标方法中写死的原版 64 替换为 `StackLimitHooks.getCompatibilityStackSize()`；
-   `ITEM_HANDLER` profile 不生成补丁。
+1. `DynamicCompatTransformer` 曾在 `basicClass` 为空时直接返回，并在 `transformedName` 为空时使用备用类名。
+2. `CoremodClassFilter` 曾过滤确定无关的基础运行时类。
+3. `DynamicCompatMethodProbe` 曾只扫描当前类直接声明的方法。
+4. `FixedCompatTargets` 曾让显式 Mixin 目标跳过 dynamic ASM。
+5. `CompatibilityLimitPatch` 曾把目标方法中写死的原版 64 替换为 `StackLimitHooks.getCompatibilityStackSize()`；
+   `ITEM_HANDLER` profile 曾不生成补丁。
 
-当前 ASM 按方法名（含映射名）识别候选、按目标方法名查找 `BIPUSH 64` 字节码常量并替换，方法 descriptor 和常量所在的
-真实写入/语义位置尚未闭合；命中方法名或字节码常量只说明补丁尝试，不构成真实容量写入证据。ASM early path 使用 Java
-以避免 Kotlin 标准库在 coremod 早期加载，但 `CompatibilityLimitPatch` 仍使用 `Consumer<ClassNode>` 和 lambda，
-不满足 early path 的字节码禁用要求，属于待修护栏问题。已由显式 Mixin 接管的目标不能再由 ASM 重复补丁；`FixedCompatTargets`
-是跳过表，不是已经完成的容量安全目标表，T2/T11 仍需建立带写入证据的编译期登记。
+历史 ASM 按方法名（含映射名）识别候选、按目标方法名查找 `BIPUSH 64` 字节码常量并替换，方法 descriptor 和常量所在的
+真实写入/语义位置未闭合；命中方法名或字节码常量只说明历史补丁尝试，不构成真实容量写入证据。其 early path 使用 Java
+以避免 Kotlin 标准库在 coremod 早期加载，但 `CompatibilityLimitPatch` 曾使用 `Consumer<ClassNode>` 和 lambda，
+不满足 early path 的字节码禁用要求。该层现已移除，当前不存在 ASM 与显式 Mixin 的重复补丁；T2/T11 的容量登记应以现行显式
+Mixin 目标和真实写入证据为准。
 
 ## 规则数据流
 
@@ -174,7 +176,7 @@ late 配置中的我方 mixin 只说明“补丁尝试在哪个目标方法上�
   → RuleRuntime.replaceRuntime()
   → StackLimitService.resolve(StackContext)
   → StackLimitHooks.*
-  → early/late Mixin 或窄 ASM
+  → StackUpUpMixinConnector 注册的 early/late Mixin
 ```
 
 ### 来源与编译
@@ -232,9 +234,10 @@ Markdown 规则，再合并 DSL 规则，即 `markdownRules + dslRules`。每个
 8. **本地化重载缺少真实基线。** 当前 `ProxyClient` 只在语言代码变化时调用 `RuleMessages.syncLanguage`；标准 F3+T
    会重建语言资源，不能用某个局部 `LanguageMap` 调用或代码静态推断代替真实客户端 F3+T。T8.0 必须先记录同语言代码下资源重载前后的消息解析和注入结果。
 9. **重载错误的原子发布语义尚未闭合。** `RuleReloadPipeline` 可以返回带错误的报告，而当前协调器仍把返回快照交给发布路径；不能把“报告含错误时保留旧运行态”当作当前保证。
-10. **early path 字节码护栏和 ASM 语义识别仍有缺口。** `DynamicCompatMethodProbe` 当前按当前类直接声明的方法名（含映射名）识别候选，
-    `CompatibilityLimitPatch` 按目标方法名查找 `BIPUSH 64`；方法 descriptor 和该常量所在的真实写入/语义位置尚未闭合。另有
-    `Consumer<ClassNode>` 和 lambda 的 early path 字节码禁用问题；虽然源文件是 Java，但不能把当前 ASM 层写成护栏已全部通过。
+10. **历史 dynamic ASM 证据未形成容量闭环（该层已移除）。** `DynamicCompatMethodProbe` 曾按当前类直接声明的方法名（含映射名）识别候选，
+    `CompatibilityLimitPatch` 曾按目标方法名查找 `BIPUSH 64`；方法 descriptor 和该常量所在的真实写入/语义位置未闭合。另有
+    `Consumer<ClassNode>` 和 lambda 的 early path 字节码禁用问题。当前不再有 dynamic ASM 层；兼容行为以
+    `StackUpUpMixinConnector` 注册的显式 early/late Mixin 为准，现行 Mixin 目标仍须分别按真实写入路径取证。
 11. **规则主文件创建会改变 legacy fallback。** `RuleSourceLocator.resolveLoadOrder()` 只在 `main.su` 不存在时加入旧规则文件，而
     `RuleReloadPipeline.loadDslRules()` 会在读取前创建缺失的 `main.su`；缺失的 `main.su` 被 pipeline 创建后，若旧
     `stackupup-rules.su` 仍存在，下一次 reload 将不再满足 legacy fallback 条件，加载结果可能改变。该迁移语义尚未显式定型。
@@ -245,9 +248,9 @@ Markdown 规则，再合并 DSL 规则，即 `markdownRules + dslRules`。每个
 **T13 未完成；T3 的 Forge handler 目标收敛已按决策记录 §3.5 实施（本轮只按源码更新了本文描述），T11 的原版目标表已在源码中落地但验收状态以任务清单为准；
 本文不把现有目标列表、诊断测试或 mixin 加载记录写成完成证明。**
 
-- **T2a / T2b + T11：容量准入与原版目标表。** 依据 Forge/vanilla 的查询与写入源码建立“自洽 / 断链 / 转发”登记，替换运行时
-  `== 64` 猜测；保留 `resolveInventoryClampLimit` 的两个直接业务调用点，并对 `InventoryLargeChest`、主动收紧的原版实现和匿名类单独取证，同时为
-  ASM 目标明确 owner/name/descriptor 和常量所在的真实语义位置。
+- **T2a / T2b + T11：容量准入与原版目标表。** 依据 Forge/vanilla 的查询与写入源码建立“自洽 / 断链 / 转发”登记，替换历史运行时
+  `== 64` 猜测；保留 `resolveInventoryClampLimit` 的两个直接业务调用点，并对 `InventoryLargeChest`、主动收紧的原版实现和匿名类单独取证，
+  现行目标以显式 Mixin 的 owner/name/descriptor 和真实写入语义登记。
 - **T3：Forge handler 目标收敛。** 重新审查 `ItemStackHandler`、各转发 wrapper、`EntityEquipmentInvWrapper` 与
   `SlotItemHandler`；不把 wrapper 作为独立广告 patch，不把 Forge wrapper 的 remainder 事实改写成“必吞”，并分别闭合 Forge 与
   vanilla entity 写入路径。

@@ -57,8 +57,7 @@ class StackUpUpCore : IFMLLoadingPlugin {
             }
         }
 
-        // internal：early mixin 装载入口（StackUpUpMixinConnector.connect）与动态 transformer 注册
-        // （getASMTransformerClass）共用同一冲突判定，保证两处装载决策一致。
+        // internal：early mixin 装载入口（StackUpUpMixinConnector.connect）使用的冲突判定。
         internal fun ensureConflictState(): List<String> {
             if (isDisabledForConflict()) {
                 return conflictingMods()
@@ -75,18 +74,14 @@ class StackUpUpCore : IFMLLoadingPlugin {
         }
     }
 
-    override fun getASMTransformerClass(): Array<String> = if (ensureConflictState().isEmpty()) {
-        arrayOf(StackUpUpIds.DYNAMIC_COMPAT_TRANSFORMER_CLASS_NAME)
-    } else {
-        emptyArray()
-    }
+    override fun getASMTransformerClass(): Array<String> = emptyArray()
 
     override fun getModContainerClass(): String? = null
 
     override fun getSetupClass(): String? = null
 
     override fun injectData(data: MutableMap<String, Any>) {
-        // coremod 注入阶段不要主动触发业务配置类加载，避免被自己的 transformer 反向卷入。
+        // coremod 注入阶段不要主动触发业务配置类加载，避免引入业务初始化副作用。
         if (isDisabledForConflict()) {
             return
         }

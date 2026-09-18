@@ -1,7 +1,6 @@
 package io.alexjoest.stackupup.dev
 
 import com.google.common.base.Defaults.defaultValue
-import io.alexjoest.stackupup.core.FixedCompatTargets
 import net.minecraft.item.ItemStack
 import java.lang.reflect.Field
 import java.lang.reflect.InvocationTargetException
@@ -62,7 +61,9 @@ internal fun evaluateProbeAvailability(check: () -> Boolean): ProbeAvailability 
     ProbeAvailability.failed(formatProbeThrowable(throwable))
 }
 
-internal fun expectedFixedTargetProbeCoverage(): Set<String> = FixedCompatTargets.probeTargets().toSet()
+internal fun expectedFixedTargetProbeCoverage(): Set<String> = setOf(
+    "org.cyclops.cyclopscore.inventory.SimpleInventory",
+)
 
 internal fun appendProbeFailureCause(summary: String, throwable: Throwable?): String {
     if (throwable == null) {

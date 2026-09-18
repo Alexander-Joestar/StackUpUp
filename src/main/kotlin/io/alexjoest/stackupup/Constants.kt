@@ -28,7 +28,6 @@ object StackUpUpIds {
     const val PROXY_CLIENT_CLASS_NAME: String = "$PACKAGE_NAME.ProxyClient"
     const val PROXY_COMMON_CLASS_NAME: String = "$PACKAGE_NAME.ProxyCommon"
     const val CONFIG_GUI_FACTORY_CLASS_NAME: String = "$PACKAGE_NAME.config.ConfigGuiFactory"
-    const val DYNAMIC_COMPAT_TRANSFORMER_CLASS_NAME: String = "$CORE_PACKAGE_NAME.DynamicCompatTransformer"
     const val STACK_LIMIT_HOOKS_INTERNAL_NAME: String = "io/alexjoest/stackupup/StackLimitHooks"
 
     const val EARLY_MIXIN_CONFIG: String = "mixins.$MOD_ID.early.json"

@@ -61,10 +61,6 @@ internal fun evaluateProbeAvailability(check: () -> Boolean): ProbeAvailability 
     ProbeAvailability.failed(formatProbeThrowable(throwable))
 }
 
-internal fun expectedFixedTargetProbeCoverage(): Set<String> = setOf(
-    "org.cyclops.cyclopscore.inventory.SimpleInventory",
-)
-
 internal fun appendProbeFailureCause(summary: String, throwable: Throwable?): String {
     if (throwable == null) {
         return summary

@@ -9,7 +9,6 @@ import java.lang.reflect.Proxy
 
 internal object CyclopsCoreSimpleInventoryLimitProbe : DevCompatProbe {
     override val id: String = "cyclopscore_simple_inventory_limit"
-    override val isFixedTargetProbe: Boolean = true
     override val primaryTargetClass: String = "org.cyclops.cyclopscore.inventory.SimpleInventory"
 
     override fun run(server: MinecraftServer): DevCompatProbeResult {

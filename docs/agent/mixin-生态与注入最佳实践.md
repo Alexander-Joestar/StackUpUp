@@ -55,7 +55,7 @@
 | LlamaLad7 MixinExtras | [LlamaLad7/MixinExtras](https://github.com/LlamaLad7/MixinExtras) | 解释 Extras 注入器语义和链式设计（[DeepWiki](https://deepwiki.com/LlamaLad7/MixinExtras)：WrapOperation、ModifyExpressionValue、ModifyReceiver、WrapMethod、Local/Share/LocalRef；另核对官方 [WrapWithCondition Wiki](https://github.com/LlamaLad7/MixinExtras/wiki/WrapWithCondition)）；初始化、打包和版本兼容仍须核对当前平台。 |
 | SpongePowered Mixin | [SpongePowered/Mixin](https://github.com/SpongePowered/Mixin) | 原生注入器、Shadow、Accessor/Invoker、AP/refmap 基础（[DeepWiki](https://deepwiki.com/SpongePowered/Mixin)：Bootstrap、Transformation、Injection、AP、Accessor）；当前项目运行的是 MixinBooter 11.17 搭配 CleanMix 0.7.2，不能把上游发行版本号直接当作运行时事实。 |
 
-**DeepWiki 冲突记录**：MixinBooter 的 DeepWiki 问答仍以 `IEarlyMixinLoader`/`ILateMixinLoader` two-phase 为核心；该结果是旧索引，不代表当前 11.17 注册路径。官方当前 README 对 11.x 写明 early/late divide 已淡出且接口 deprecated，并给出 Manifest `MixinConfigs`/`MixinConnector`；本项目当前通过 manifest `MixinConnector` 加载 `IMixinConnector`，详见 CDR §8.8。
+**DeepWiki 冲突记录**：MixinBooter 的 DeepWiki 问答仍以 `IEarlyMixinLoader`/`ILateMixinLoader` two-phase 为核心；该结果是旧索引，不代表当前 11.17 注册路径。官方当前 README 对 11.x 写明 early/late divide 已淡出且接口 deprecated，并给出 Manifest `MixinConfigs`/`MixinConnector`；本项目当前通过 manifest `MixinConnector` 加载 `IMixinConnector`，详见 CDR §8.9（迁移阶段入口背景见 §8.8）。
 
 **搜索失败记录**：本次通用 WebSearch 请求因服务端 HTTP 402 membership verification 失败，未采用其结果；官方 GitHub 页面可直接访问。
 
@@ -81,7 +81,7 @@
 迁移不是“改一行坐标”。11.13/0.7.1/`IMixinConnector` 迁移已完成并作为历史阶段留档；当前基线为 11.17/0.7.2，准入证据仍需独立复核。以下清单同时规定迁移调查和当前验收边界：
 
 1. **版本和来源**：当前锁定 MixinBooter 11.17、CleanMix 0.7.2、Cleanroom MixinExtras fork 0.5.5 的来源和最终运行时 jar；列出 compileOnly、annotationProcessor、runtime 和内嵌关系。11.13/0.7.1 仅作为迁移阶段历史记录。
-2. **注册路径**：检查当前 jar 的 manifest、`MixinConfigs`、`MixinConnector`、`IMixinConnector`、实际 `Mixins.addConfiguration` 调用和 Forge 1.12.2 classloader 顺序；不能只读 README。当前 dev/SRG connector 装载证据见 CDR §8.8。
+2. **注册路径**：检查当前 jar 的 manifest、`MixinConfigs`、`MixinConnector`、`IMixinConnector`、实际 `Mixins.addConfiguration` 调用和 Forge 1.12.2 classloader 顺序；不能只读 README。当前 11.17/0.7.2 的 dev/SRG connector 装载证据见 CDR §8.9，11.13/0.7.1 入口仅作迁移阶段历史对照（§8.8）。
 3. **loader 迁移结果**：确认 `StackUpUpMixinConnector` 保留 early 配置、late mod-gate、冲突禁用逻辑和 `MixinToggles`；旧 `IEarlyMixinLoader`/`ILateMixinLoader` 仅为历史对照，不得当作当前入口。
 4. **Extras 运行时**：确认 `@WrapOperation` 等注入器来自 Cleanroom provider、bootstrap 是否由 MixinBooter 自动完成、是否存在重复 provider/service 或 shading/relocation 冲突；当前 11.17/0.7.2 的 dev/SRG provider 证据见 CDR §8.9，11.13/0.7.1 证据仅作历史对照。
 5. **AP/refmap**：用 11.17/0.7.2 依赖重新生成并检查 refmap；当前 CleanMix 0.7.2 以编译期 AP 生成 refmap，生产 notch 消费仍未实测；继续核对 Java 8 bytecode、目标 descriptor 和 `remap=false` 边界。11.13/0.7.1 的 AP/refmap 结果仅作迁移阶段历史记录。
@@ -325,7 +325,7 @@ Mixin 目标与完整 descriptor
 
 ### 9.4 运行任务边界
 
-涉及 coremod、Mixin、MixinExtras、自动化参数或 connector 时，项目规范要求至少覆盖相应 `runServerAutoTest`；矩阵任务使用 `runServerAutoTestMatrix` 或明确的 `run*AutoTest` 入口。运行前确认本地 jar、FML 扫描目录、server/client 侧和自动化开关，避免把缺依赖误报成 Mixin 失败。当前 connector 的 dev/SRG 服务端证据见 CDR §8.8：最近一次矩阵通过（2026-08-10），此后代码改动未经矩阵重跑。
+涉及 coremod、Mixin、MixinExtras、自动化参数或 connector 时，项目规范要求至少覆盖相应 `runServerAutoTest`；矩阵任务使用 `runServerAutoTestMatrix` 或明确的 `run*AutoTest` 入口。运行前确认本地 jar、FML 扫描目录、server/client 侧和自动化开关，避免把缺依赖误报成 Mixin 失败。当前 11.17/0.7.2 connector 的 dev/SRG 服务端证据见 CDR §8.9：最近一次矩阵通过（2026-09-15），此后代码改动未经矩阵重跑。11.13/0.7.1 的 2026-08-10 结果仅作迁移阶段历史记录。
 
 未实际运行的检查必须在交接中写“未执行”，不得把静态搜索、编译通过或文档推理写成运行通过。
 

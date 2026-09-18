@@ -86,7 +86,7 @@
 
 ## 3. late mixin 容量站点（src/main/java/io/alexjoest/stackupup/mixin/late/，**当前 25 个 .java 文件**，审计当时 18）
 
-全部为 `@Pseudo` 第三方目标，经 `StackUpUpMixinConnector` 按 `ModDiscoverer.isModPresent(module.modId)` + `MixinToggles` 排队装载（src/main/kotlin/io/alexjoest/stackupup/bootstrap/StackUpUpMixinConnector.kt:57-70、:117-135；旧 `StackUpUpLateMixinLoader` 已删除）。对应模组 jar 缺失（§5），写入路径一律 **无源码不可判定**；「证据」列只给出我方 mixin 的可观察注入点，不得冒充第三方写入路径证据。方法 descriptor 仅为我方注解声明，未核实第三方实际签名（重载区分以我方注解写法为准）。
+全部为 `@Pseudo` 第三方目标，经 `StackUpUpMixinConnector` 按 `ModDiscoverer.isModPresent(module.modId)` + `MixinToggles` 排队装载（src/main/kotlin/io/alexjoest/stackupup/bootstrap/StackUpUpMixinConnector.kt:58-70、:220-239；旧 `StackUpUpLateMixinLoader` 已删除）。对应模组 jar 缺失（§5），写入路径一律 **无源码不可判定**；「证据」列只给出我方 mixin 的可观察注入点，不得冒充第三方写入路径证据。方法 descriptor 仅为我方注解声明，未核实第三方实际签名（重载区分以我方注解写法为准）。
 
 | 站点（mixins.* 配置） | 目标类 | 我方注入的方法/点 | 分类 | 证据（file:line） | 缺失 jar |
 | --- | --- | --- | --- | --- | --- |
@@ -116,14 +116,16 @@
 | NuclearCraftTileInventoryLimitMixin（nuclearcraft.json，审计后新增） | 4 个 nc.tile.*Inventory 抽象基类（TileInventory / TileFluidInventory / TileEnergyInventory / TileEnergyFluidInventory） | 以 mixin 类方法体直接覆写 `getInventoryStackLimit()I`（无注入注解；接口 default 不能直接 patch，字节码证据 CDR §3.9） | 无源码不可判定（广告值替换；NC 夹取点动态读该方法，CDR §3.10-B） | src/main/java/.../mixin/late/NuclearCraftTileInventoryLimitMixin.java:25-39 | nuclearcraft |
 | NuclearCraftDistributorNoDropMixin（nuclearcraft.json，审计后新增） | nc.multiblock.distributor.Distributor | `cullInventory()Z` 与 `dropOverflow(Ljava/util/List;)V` 各一处 `@Inject(HEAD, cancellable)`（require=0；不裁不丢） | 非容量站点（不改变上限广告；取消裁减/掉落，CDR §3.10-B） | src/main/java/.../mixin/late/NuclearCraftDistributorNoDropMixin.java:33-47 | nuclearcraft |
 
-## 4. 动态兼容层（core/ 目录，第三组：配置面）
+## 4. 动态兼容层（历史中间层，已删除；旧 core/ 配置面）
 
-- `DynamicCompatTargetProfile`（src/main/java/io/alexjoest/stackupup/core/DynamicCompatTargetProfile.java:12-18）：INVENTORY = `net.minecraft.inventory.IInventory`，候选方法名 `{getInventoryStackLimit, func_70297_j_}`；ITEM_HANDLER = `net.minecraftforge.items.IItemHandler`，候选方法名 `{getSlotLimit}`；SLOT = `net.minecraft.inventory.Slot`，候选方法名 `{getItemStackLimit, func_178170_b, getSlotStackLimit, func_75219_a}`。该 profile 是目标类型 + 候选方法名配置，**不是完整单一事实源**（AGENTS.md「Mixin、ASM 与 core/early 约束」第 3 条）；descriptor 未在配置面区分（`getItemStackLimit` 存在 `(Lnet/minecraft/item/ItemStack;)I` 与旧无参两种）。
-- `DynamicCompatMethodProbe`（DynamicCompatMethodProbe.java:33-46）：只按方法名扫描当前类直接声明的方法，**不按 descriptor 确认签名**。
-- `DynamicCompatTargetClassifier`（DynamicCompatTargetProfile.java:60-81）：`FixedCompatTargets.contains` 优先跳过；Slot 子类 → SLOT；IItemHandler 实现 → ITEM_HANDLER；IInventory 实现 → INVENTORY。
-- `CompatibilityLimitPatch`（src/main/java/io/alexjoest/stackupup/core/CompatibilityLimitPatch.java:39-53、:56-86）：**ITEM_HANDLER profile 直接返回空（:43-46）——动态层实际上不会 patch 任何 `getSlotLimit` 声明类**；SLOT/INVENTORY 仅把对应方法内的 `bipush 64` 替换为 `getCompatibilityStackSize()`（:56-86）。
-- 注册：`DynamicCompatTransformer`（DynamicCompatTransformer.java:16-37）经 `StackUpUpCore.getASMTransformerClass`（src/main/kotlin/io/alexjoest/stackupup/StackUpUpCore.kt:67-70）。
-- `FixedCompatTargets` 固定跳过表（src/main/java/io/alexjoest/stackupup/core/FixedCompatTargets.java:29-61），26 项：
+> 本节保留删除提交 `9cff8e7` 前的动态 ASM 审计证据，不描述当前运行时。当前 `StackUpUpCore.getASMTransformerClass()` 在 `src/main/kotlin/io/alexjoest/stackupup/StackUpUpCore.kt:77` 返回 `emptyArray()`；`DynamicCompatTargetProfile`、`DynamicCompatMethodProbe`、`DynamicCompatTargetClassifier`、`CompatibilityLimitPatch`、`DynamicCompatTransformer` 与 `FixedCompatTargets` 均已删除，当前不存在动态 ASM 注册、profile、probe 或 skip 表。
+
+- **历史中间状态（已删除）** `DynamicCompatTargetProfile`（历史路径 `src/main/java/io/alexjoest/stackupup/core/DynamicCompatTargetProfile.java:12-18`）：INVENTORY = `net.minecraft.inventory.IInventory`，候选方法名 `{getInventoryStackLimit, func_70297_j_}`；ITEM_HANDLER = `net.minecraftforge.items.IItemHandler`，候选方法名 `{getSlotLimit}`；SLOT = `net.minecraft.inventory.Slot`，候选方法名 `{getItemStackLimit, func_178170_b, getSlotStackLimit, func_75219_a}`。该 profile 是目标类型 + 候选方法名配置，**不是完整单一事实源**（AGENTS.md「Mixin、ASM 与 core/early 约束」第 3 条）；descriptor 未在配置面区分（`getItemStackLimit` 存在 `(Lnet/minecraft/item/ItemStack;)I` 与旧无参两种）。
+- **历史中间状态（已删除）** `DynamicCompatMethodProbe`（历史路径 `DynamicCompatMethodProbe.java:33-46`）：只按方法名扫描当前类直接声明的方法，**不按 descriptor 确认签名**。
+- **历史中间状态（已删除）** `DynamicCompatTargetClassifier`（历史路径 `DynamicCompatTargetProfile.java:60-81`）：`FixedCompatTargets.contains` 优先跳过；Slot 子类 → SLOT；IItemHandler 实现 → ITEM_HANDLER；IInventory 实现 → INVENTORY。
+- **历史中间状态（已删除）** `CompatibilityLimitPatch`（历史路径 `src/main/java/io/alexjoest/stackupup/core/CompatibilityLimitPatch.java:39-53、:56-86`）：**ITEM_HANDLER profile 直接返回空（:43-46）——历史动态层实际上不会 patch 任何 `getSlotLimit` 声明类**；SLOT/INVENTORY 仅把对应方法内的 `bipush 64` 替换为 `getCompatibilityStackSize()`（:56-86）。
+- **历史中间状态（已删除）** 注册：`DynamicCompatTransformer`（历史路径 `DynamicCompatTransformer.java:16-37`）曾经经 `StackUpUpCore.getASMTransformerClass` 注册。
+- **历史中间状态（已删除）** `FixedCompatTargets` 固定跳过表（历史路径 `src/main/java/io/alexjoest/stackupup/core/FixedCompatTargets.java:29-61`），26 项：
   - 原版 IInventory 14 项：TileEntityDispenser、TileEntityChest、TileEntityFurnace、TileEntityBrewingStand、TileEntityHopper、TileEntityShulkerBox、EntityMinecartContainer、InventoryPlayer、InventoryBasic、InventoryEnderChest、InventoryLargeChest、InventoryMerchant、InventoryCrafting、InventoryCraftResult（与 §2.1 的 early mixin 目标一一对应；InventoryEnderChest 经继承 InventoryBasic 实现覆盖，`InventoryEnderChest.java:9`）；
   - late mixin 独占 3 项：AppEngInternalInventory、AppEngInternalAEInventory、SimpleInventory（probeCovered=true）；
   - Forge handler/wrapper 9 项：SlotItemHandler（probeCovered=true）、ItemStackHandler、VanillaDoubleChestItemHandler、EntityEquipmentInvWrapper、EmptyHandler、InvWrapper（probeCovered=true）、SidedInvWrapper（probeCovered=true）、CombinedInvWrapper（probeCovered=true）、RangedWrapper（probeCovered=true）。
@@ -136,11 +138,11 @@ late 目标 **当前 15 个模组** jar 均缺失（文件名/版本未登记，
 
 ## 6. patch 目标集合与登记表比对规则（未登记目标失败规则）
 
-1. **未登记目标失败而非警告**：任何 early/late mixin、`DynamicCompatTargetProfile` 或 `FixedCompatTargets` 中新增/改动的目标，若不在本登记表 §2/§3/§4 内，登记护栏测试必须失败（Fail Fast），不得静默继续（T2a 目标见 docs/agent/重构任务清单.md「DAG」T2a 节点；失败机制落地由 T2b+T11 执行）。
+1. **未登记目标失败而非警告**：任何现行 early/late mixin 中新增/改动的目标，若不在本登记表 §2/§3 内，登记护栏测试必须失败（Fail Fast），不得静默继续（T2a 目标见 docs/agent/重构任务清单.md「DAG」T2a 节点；失败机制落地由 T2b+T11 执行）。历史 §4 动态 ASM 目标不再参与当前登记双向校验。
 2. **登记表与实现双向一致**：表内目标必须有对应实现证据（file:line）；实现中存在但表内缺失 = 未登记目标 = 失败。
 3. **descriptor 必须完整**：重载方法必须写完整 descriptor（如 `getInventoryStackLimit()I` vs `getInventoryStackLimit(I)I`、`getItemStackLimit()I` vs `getItemStackLimit(Lnet/minecraft/item/ItemStack;)I`），缺失 descriptor 的目标不得进入构建。
 4. **三分类判定更新**：目标分类变更必须附写入路径源码证据；`无源码不可判定` 条目只能因补齐对应 jar/源码或运行时证据（T12.5 报告）升级，不得按类名/注释补结论。
-5. **动态层边界**：`DynamicCompatMethodProbe` 只按方法名探测；凡按 descriptor 区分重载的目标不得依赖动态层覆盖，必须显式 mixin 或显式跳过（FixedCompatTargets）。
+5. **历史动态层边界（已删除）**：历史 `DynamicCompatMethodProbe` 只按方法名探测，无法按 descriptor 区分重载；该缺口保留作删除前审计证据。当前没有动态 ASM，重载目标必须走显式 mixin 与完整 descriptor 登记；不得恢复隐式 probe/skip 机制。
 6. **守恒底线**：自洽站点在模拟抬高状态下必须满足 `storedDelta + remainderCount == inserted`（只读审计公式，不是写入后补偿算法）；真实写入后禁止重算余量、回填、重试、补偿。
 7. **`== 64` 哨兵待替换**：§2.1/§2.2/§2.3 及 8 个 late mixin 中现存的 `original == 64` 判据（VanillaInventoryLimitMixin.java:47、ForgeItemHandlerLimitMixin.java:31、SlotItemHandlerMixin.java:26；late 侧 AppEngInternalInventory/AppEngInternalAEInventory/BrandonsCoreInventoryLimit/EnderIOMachineInventoryLimit/EnderIOSlottedInventoryLimit/IEInventoryHandler/IEMachineSlotLimit/SimpleInventory 八个 mixin）是本表要取代的准入判据；本表登记完成即不得再以哨兵作为「该目标是否可 patch」的依据。
 8. **例外**：非容量站点（§2.4 的 usePickedItemLimit、§3 的 AppEngAdaptorItemHandlerMixin〔方案 A 后已无注入，仅保留类入口〕、§2.6）不受规则 1 约束，但须在表中注明性质。
@@ -199,7 +201,7 @@ late 目标 **当前 15 个模组** jar 均缺失（文件名/版本未登记，
 | §2.5 CommandGive / CommandReplaceItem / EntityItemMerge / ServerRecipeBookHelper | 源码 | 行号已关联；无运行时事件 |
 | §2.6 非容量站点 | 不标注 | 非容量广告/写入站点，不进入证据标注范围（§6 规则 8） |
 | §3 late mixin（**当前 25 个 .java**，审计当时 18） | UNKNOWN（无源码） | 缺失 jar（§5）；JSONL 无事件对应任一登记目标类（#2 类名非任何登记目标，不得据其升级）；审计后新增 7 个（CDR §3.10/§3.11）同属无源码面 |
-| §4 动态兼容层（profile/probe/patch/FixedCompatTargets） | 源码（项目自身 core 代码） | 行号已关联（§4）；无运行时事件（ITEM_HANDLER profile 直接返回空，CompatibilityLimitPatch.java:43-46） |
+| §4 动态兼容层（profile/probe/patch/FixedCompatTargets，历史中间层，已删除） | 历史源码证据 | 删除前行号已关联（§4）；当前无运行时事件、无动态 ASM 注册，`StackUpUpCore.getASMTransformerClass()` 返回空数组 |
 
 ### 9.3 T3/T10 收缩后的判定引用刷新（2026-08-08）
 

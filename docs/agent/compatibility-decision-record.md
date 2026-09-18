@@ -47,10 +47,10 @@ storedDelta + remainderCount == offered
 
 1. 目标类、方法和完整 descriptor 明确，优先使用按模组加载的 late mixin。
 2. 原版或 Forge 基础路径使用 early mixin。
-3. 已由 mixin 接管的目标必须从动态 ASM 跳过表核对，不能重复注入。
-4. 只有 mixin 无法表达且有明确写入证据时，才考虑 ASM。
+3. **历史边界**：在动态 ASM 存在的中间版本中，已由 mixin 接管的目标还必须从动态 ASM 跳过表核对，不能重复注入；动态 ASM 已由删除提交 `9cff8e7` 移除，当前不存在该跳过表或重复注入面。
+4. 只有 mixin 无法表达且有明确写入证据时，才考虑窄范围 ASM；当前不保留动态 ASM 实现，未来恢复必须重新取得完整目标、写入面和独立准入证据。
 
-新的兼容补丁不按上游 StackUp 的 `IInventory`/`Slot` 继承关系无条件放大，也不把动态 ASM 扩展到未知 `IItemHandler`。
+新的兼容补丁不按上游 StackUp 的 `IInventory`/`Slot` 继承关系无条件放大；当前不恢复或扩展已删除的动态 ASM 层，也不对未知 `IItemHandler` 动态扩容。
 
 ### 1.4 未知 `IItemHandler` 不扩容
 
@@ -287,14 +287,14 @@ Forge wrapper 文档明确它通过 `EntityLivingBase#getItemStackFromSlot` / `s
 
 按 §3.5 未决事项（wrapper 探针期望仍按旧语义 `getSlotLimit == compat`），修正 `src/main/kotlin/io/alexjoest/stackupup/dev/DevWrapperCompatProbes.kt` 两个转发 wrapper 探针的断言预期：
 
-- 事实：`InvWrapper#getSlotLimit(I)I` 与 `SidedInvWrapper#getSlotLimit(I)I` 是转发 wrapper，运行期直接返回 delegate 的 `getInventoryStackLimit()`（§3.5 三分类"转发"，`ForgeItemHandlerLimitMixin` 已收敛移除注入；`FixedCompatTargets` 以 probeCovered=true 显式跳过）。探针代理库存 `createInventoryProxy`/`createSidedInventoryProxy` 的 `getInventoryStackLimit` 硬编码 64，当 `activeMaxStackSize`=10000 时旧预期（== compat）必然失败——该失败为预存问题（§8.6.2 记录，与 MixinBooter 迁移无关），本修正属探针预期而非生产容量逻辑。
-- 变更：`verifySingleSlotLimit` 增加 `expected` 参数；`InvWrapperLimitProbe`/`SidedInvWrapperLimitProbe` 预期改为 `delegateInventoryStackLimit(inventory)`（反射读取代理库存实际广告的 `getInventoryStackLimit`，运行期 SRG 名 `func_70297_j_`，固定 64），断言语义改为 "wrapper 广告 == delegate 上限"。`CombinedInvWrapperLimitProbe`/`RangedWrapperLimitProbe`（ItemStackHandler 提升场景）与 `SlotItemHandlerLimitProbe`（handler 广告跟随）保持 `getCompatibilityStackSize()` 预期不变；`FixedCompatTargets` 与生产容量逻辑未改动。
+- 事实：`InvWrapper#getSlotLimit(I)I` 与 `SidedInvWrapper#getSlotLimit(I)I` 是转发 wrapper，运行期直接返回 delegate 的 `getInventoryStackLimit()`（§3.5 三分类"转发"，`ForgeItemHandlerLimitMixin` 已收敛移除注入；**历史动态 ASM 阶段**曾由 `FixedCompatTargets` 以 probeCovered=true 显式跳过）。探针代理库存 `createInventoryProxy`/`createSidedInventoryProxy` 的 `getInventoryStackLimit` 硬编码 64，当 `activeMaxStackSize`=10000 时旧预期（== compat）必然失败——该失败为预存问题（§8.6.2 记录，与 MixinBooter 迁移无关），本修正属探针预期而非生产容量逻辑。
+- 变更：`verifySingleSlotLimit` 增加 `expected` 参数；`InvWrapperLimitProbe`/`SidedInvWrapperLimitProbe` 预期改为 `delegateInventoryStackLimit(inventory)`（反射读取代理库存实际广告的 `getInventoryStackLimit`，运行期 SRG 名 `func_70297_j_`，固定 64），断言语义改为 "wrapper 广告 == delegate 上限"。`CombinedInvWrapperLimitProbe`/`RangedWrapperLimitProbe`（ItemStackHandler 提升场景）与 `SlotItemHandlerLimitProbe`（handler 广告跟随）保持 `getCompatibilityStackSize()` 预期不变；**当时的历史动态层** `FixedCompatTargets` 与生产容量逻辑未改动，前者已随动态 ASM 删除。
 - 验证（实际执行）：`runServerAutoTestMatrix` BUILD SUCCESSFUL（exit 0，外层 Exec 与子 Gradle `runServerAutoTest` 均通过，无 autotest-failed marker）：activeMaxStackSize=10000 下 5 个 wrapper 探针全绿——`combined_inv_wrapper_limit 槽位上限=[10000,10000]`、`inv_wrapper_limit 槽位上限=64`、`ranged_wrapper_limit 槽位上限=[10000,10000]`、`sided_inv_wrapper_limit 槽位上限=64`、`slot_item_handler_limit 槽位上限=10000 物品上限=10000`；未装 mod 探针按规则跳过、GT 矩阵跳过、探针结束自动停服。`./gradlew test` 全量 BUILD SUCCESSFUL（0 failures）；spotlessCheck 仅剩 `RuleFieldContextProvider.kt` 预存违规（租约外，未修），本任务改动文件无 spotless 违规。
 - 剩余风险：inv/sided 探针只观测广告值、不覆盖写入路径（写入面判定仍按 §3.1/§3.5 源码事实）；`activeMaxStackSize`=64 时新预期与旧预期等价（64==64），行为不变，无回归面。
 - **取代关系：** 本节结论取代 §8.8「验证结果」中 `runServerAutoTestMatrix` FAILED（`inv_wrapper_limit`/`sided_inv_wrapper_limit` 槽位上限=64 预期=10000）的记录——该记录为探针预期问题，已由本节修正并实测通过。此后最近一次矩阵运行（2026-08-10，`run/logs/autotest-report.txt` 最终状态 PASS）同样无该两项失败；2026-08-10 之后的代码改动未经矩阵重跑，故当前工作副本不因此节记为矩阵通过。
 ## 4. 当前限制
 
-1. 动态 patch 基类可能传播到没有覆盖方法的第三方子类；静态目标表不能穷举第三方实现。没有源码或可重复运行证据的条目统一为 **无源码不可判定**。
+1. **历史动态 ASM 限制（已删除）**：删除提交 `9cff8e7` 前，动态 patch 基类可能传播到没有覆盖方法的第三方子类；静态目标表不能穷举第三方实现。该风险与 profile/probe/skip 表均保留作历史审计证据，当前不存在动态 patch 层。没有源码或可重复运行证据的条目仍统一为 **无源码不可判定**。
 2. `ForgeItemHandlerLimitMixin` 已按 §3.5 收敛为两个自洽目标（ItemStackHandler、EntityEquipmentInvWrapper），四个转发 wrapper 与 `SlotItemHandler#getSlotStackLimit` 的独立注入已移除（T3 执行，2026-08-08）。
 3. 当前 AE2 热路径已按方案 A（§3.8）改为 mixin 原样透传，`Ae2ItemHandlerInsertLimiter` 白名单保留为纯工具类（仅测试使用，§3.6 判定不变）；"不吞"由 remainder 契约结构性保证 + 边界探针验证，不再有守恒审计。AE2 的 `AdaptorItemHandler`、三个 pattern terminal 目标及其第三方内部写入链在本记录中没有对应第三方源码，统一记为 **无源码不可判定**，不能用项目自己的 mixin 名称补出结论。
 4. `InventoryLargeChest` 的上限转发与按 index 写入存在结构性不一致风险；T11 不能仅保留现有 mixin 目标而跳过两半箱验证。
@@ -510,14 +510,14 @@ T13 的最终矩阵中的回扩处置状态只能是“已回扩”或“决定�
 **无源码不可判定与迁移行为边界：** 当前 11.17/cleanmix-0.7.2/Cleanroom MixinExtras 0.5.5 已有 dev/SRG 编译和服务端加载证据（§8.9），11.13/0.7.1 时期的证据见 §8.6.1、§8.8；但第三方容量写入路径、生产混淆环境的 connector/refmap 消费及高风险 Mixin 行为仍按既有证据缺口处理，第三方 jar 缺源码处为**无源码不可判定**。`t14.7-发布前矩阵.md` 里还留着没查清的限制项，所以不能把迁移实施记录写成发布通过。第三方容量写入目标缺口维持既有台账（`compatibility-decision-record.md:156-163`、`mixin-生态与注入最佳实践.md:97-101`），本复核不重列。DeepWiki 全部查询只作架构/职责佐证，不作版本化运行事实；GitHub API 限流与 DeepWiki 未索引均已按上表逐条记录，未把失败项写成通过。
 ### 8.8 IMixinConnector 装载入口迁移（2026-08-10 追加）
 
-本节记录把 mixin 装载入口从 deprecated 的 `IEarlyMixinLoader`/`ILateMixinLoader` 迁移到 `IMixinConnector`（MixinBooter 11 官方路径）的真实实施记录。只换装载入口，装载语义（冲突禁用/动态条件/校验/日志）全部保留。
+本节记录把 mixin 装载入口从 deprecated 的 `IEarlyMixinLoader`/`ILateMixinLoader` 迁移到 `IMixinConnector`（MixinBooter 11 官方路径）的真实实施记录。只换装载入口；下列 validator/旧 loader 校验描述属于当时的中间版本，后续已删除或由 connector 的现行决策函数替换，不能当作当前实现。
 
 - **实施变更（逐文件）：**
-  - 新建 `src/main/kotlin/io/alexjoest/stackupup/bootstrap/StackUpUpMixinConnector.kt`：`class StackUpUpMixinConnector : IMixinConnector`，`connect()` 先 early（`StackUpUpCore.ensureConflictState()` 冲突非空 → ERROR + 不 add；通过 → `MixinConfigValidator.requireCoreConfigValid` fail-fast 后 `Mixins.addConfiguration(EARLY_MIXIN_CONFIG)`，early 段异常按 ERROR 隔离、不连带中止 late），再 late（`validateConfigs` + `logProblems` 正向校验 → 按模块表逐配置 `ModDiscoverer.isModPresent(modId)` + `MixinToggles` 条件 add；不在模块表的配置不装载）。决策函数 `shouldQueueEarly(conflicts)`/`shouldQueue(config, isModPresent)` 为 internal 供测试注入谓词；模块表 `LateMixinModule` 15 项自 `StackUpUpLateMixinLoader` 逐字迁移。
+  - 新建 `src/main/kotlin/io/alexjoest/stackupup/bootstrap/StackUpUpMixinConnector.kt`：`class StackUpUpMixinConnector : IMixinConnector`。**当时中间版本记录**：`connect()` 曾在 early `Mixins.addConfiguration` 前调用 `MixinConfigValidator.requireCoreConfigValid`，late 曾调用 `validateConfigs`/`logProblems`；这些自定义 validator 调用及其双向校验后来由提交 `30a5976` 删除。**当前事实**：early 由 `connectEarly` 依据 `StackUpUpCore.ensureConflictState()` 和 `shouldQueueEarly` 决定是否 `Mixins.addConfiguration`（当前文件 `:46-55`、`:179-190`）；late 由 `connectLate` 遍历当前 `modules`，`shouldQueue` 对未知配置、mod 缺失和 toggle 关闭分别作决策/INFO 或 ERROR 记录（`:58-67`、`:196-215`），不保留 validator。
   - `src/main/kotlin/io/alexjoest/stackupup/StackUpUpCore.kt`：移除 `IEarlyMixinLoader` 实现与 `getMixinConfigs()`；`ensureConflictState()` 由 private 改 internal（connector 与 `getASMTransformerClass` 共用同一冲突判定）；IFMLLoadingPlugin 其余（`getASMTransformerClass`/`injectData`/`COREMOD_ACTIVE_PROPERTY`）不变。
   - 删除 `src/main/kotlin/io/alexjoest/stackupup/bootstrap/StackUpUpLateMixinLoader.kt`。
   - `build-logic/convention/src/main/kotlin/minecraft.gradle.kts`：jar manifest 新增 `MixinConnector` → `io.alexjoest.stackupup.bootstrap.StackUpUpMixinConnector`（useMixins 门控；属性名取自 CleanMix 0.7.1 `Constants.ManifestAttributes.MIXINCONNECTOR = "MixinConnector"`，`MixinPlatformAgentDefault.accept/prepare` 读取）。
-  - 测试：`StackUpUpLateMixinLoaderSkipLogTest` → `StackUpUpMixinConnectorSkipLogTest`（6 用例，谓词注入替代 Context）；`MixinBooterIntegrationTest` 重写（early/late 配置名稳定、模块表、按 mod 在场决策、connector 源码结构检查）；`MixinConfigValidatorTest`/`MixinConfigRegistrationAlignmentTest` 改用模块表；三个 mixin source test 改 `shouldQueue` 谓词注入。
+  - 测试（历史迁移记录）：`StackUpUpLateMixinLoaderSkipLogTest` 后改名为 `StackUpUpMixinConnectorSkipLogTest`（6 用例，谓词注入替代 Context）；`MixinBooterIntegrationTest` 重写为当前 connector 模块表/结构测试。`MixinConfigValidatorTest` 与 `MixinConfigRegistrationAlignmentTest` 属 validator 中间实现，后续已删除；当前不应把它们列为现行测试。
 
 - **关键证据（11.13 源码 `/tmp/mb11src` 与 cleanmix-0.7.1 实测）：**
   - 注册链：`ModDiscoverer.discover()`（MixinBooterPlugin 构造期）扫描 mods 目录与 LaunchClassLoader URL 上的 jar，记录 manifest 带 `MixinConfigs`/`MixinConnector` 的 jar → `MixinBooterService.getMixinContainers()` → `MixinPlatformManager.inject()`（injectData 内 `platform.inject()`，MixinBooterPlugin.java:60）再扫描容器 → `MixinPlatformAgentDefault.prepare()` 读 manifest 属性 → `addConnector` → `MixinConnectorManager.inject()` 实例化并调 `connect()`。
@@ -526,7 +526,7 @@ T13 的最终矩阵中的回扩处置状态只能是“已回扩”或“决定�
   - `Context`（zone.rong.mixinbooter）已 deprecated（11.0 起），connect() 无 Context 参数；mod 在场判断改用 `zone.rong.mixinbooter.service.ModDiscoverer.isModPresent(String)`（public static，源码实证），与旧 `Context.isModPresent`（内部即 `presentMods.contains`，presentMods 来自 `ModDiscoverer.getPresentMods()`）同一数据源。
   - 全部 16 个 mixin 配置（early 1 + late 15）`"target": "@env(DEFAULT)"`；11.13 CleanMix 模型 DEFAULT 配置统一在 DEFAULT 阶段（EnvironmentStateTweaker → gotoPhase(DEFAULT)，位于 injectData 之后）装载，connect() 在 injectData 内 add 早/晚配置无行为差异（运行日志实证：early 配置 `Preparing config mixins.stackupup.early.json (20)` + 全部目标 APPLY）。
 - **验证结果（实际执行）：**
-  - `test` 全量：BUILD SUCCESSFUL（含重写后 `StackUpUpMixinConnectorSkipLogTest` 6/6、`MixinBooterIntegrationTest` 5/5、`MixinConfigRegistrationAlignmentTest` 2/2 等，0 failures）。三护栏用例含在 `test` 内（`MixinBooterIntegrationTest`/`EarlyMixinBytecodeSafetyTest`/`CoremodHierarchyBytecodeSafetyTest` 全部通过）。
+  - `test` 全量：BUILD SUCCESSFUL（含重写后 `StackUpUpMixinConnectorSkipLogTest` 6/6、`MixinBooterIntegrationTest` 5/5 等，0 failures）。`MixinConfigRegistrationAlignmentTest` 是 validator 中间版本测试，后来已删除，不属于当前验证结果。三护栏用例含在 `test` 内（`MixinBooterIntegrationTest`/`EarlyMixinBytecodeSafetyTest`/`CoremodHierarchyBytecodeSafetyTest` 全部通过）。
   - `spotlessCheck`：FAILED，但仅剩**预存违规** `src/main/kotlin/io/alexjoest/stackupup/rules/field/RuleFieldContextProvider.kt`（enum 单行化，jj 工作区未改动该文件，租约外不修）；本次迁移新增/改写的全部文件通过 spotless。
   - deprecation 警告：`compileKotlin compileTestKotlin --rerun-tasks` 全量重编，`IEarlyMixinLoader`/`ILateMixinLoader`/`Context` 警告 0 残留（8.6.1 记录的 6 主 + 15 测处已消除）；剩余 2 条警告均为既有无关项（StackLimitHooksTest 旧重载、WrapperCapacityDiagnosticTest 空性）。
   - `runServerAutoTestMatrix`：**最近一次（2026-08-10）通过**——`run/logs/autotest-report.txt` 最终状态 `PASS`、`run/logs/latest.log` 同批次（无 `autotest-failed.marker`）。2026-08-09 本迁移首次运行时曾失败于 `inv_wrapper_limit`/`sided_inv_wrapper_limit` 槽位上限=64 预期=10000；**该失败已被 §3.12 推翻**：其为探针预期问题（转发 wrapper 探针期望仍按旧语义 `getSlotLimit == compat`），§3.12 已把预期改为 `delegateInventoryStackLimit(inventory)` 并实测通过（见 §3.12 取代关系）。迁移装载链本身的证据：`Successfully loaded Mixin Connector`、early 配置 20 mixins 准备并 APPLY（ItemMixin/ContainerMixin/SlotLimitMixin/SlotItemHandlerMixin/ForgeItemHandlerLimitMixin×2/VanillaInventoryLimitMixin×9 等）、15 个 late 配置按 mod 缺失逐条 INFO 跳过、combined/ranged/slot_item_handler 三探针 10000 通过。

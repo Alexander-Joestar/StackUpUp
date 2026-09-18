@@ -13,9 +13,9 @@
 
 ## 项目基线
 
-Minecraft 1.12.2、Forge 14.23.5.2847；Kotlin 业务代码与 Java core/early transformer、Mixin 分工，JUnit 5 测试在 `src/test/kotlin`。
+Minecraft 1.12.2、Forge 14.23.5.2847；Kotlin 业务代码与 Java Mixin handler 分工，`StackUpUpCore` 仅作为 Forge coremod 入口，不提供兼容性 ASM transformer；JUnit 5 测试在 `src/test/kotlin`。
 构建需 **JDK 25**：RFG **2.0.2** 插件类为 class file 69，且自身要求 Gradle >= 9.2（wrapper 为 9.4.0）；JDK 21 在配置阶段即以 `UnsupportedClassVersionError` 失败。这只约束构建所用的 Gradle JVM，项目 Java toolchain 仍固定为 8（`build-logic/convention/src/main/kotlin/jvm.gradle.kts:9`），客户端运行期要求未因此改动。
-当前 Mixin 基线 MixinBooter **11.17** + CleanMix **0.7.2** 编译期 annotation processor，入口 Sponge Mixin `IMixinConnector`（`StackUpUpMixinConnector`）；10.7 与 `IEarlyMixinLoader`/`ILateMixinLoader` 只是历史资料，不得写成当前实现。
+当前 Mixin 基线 MixinBooter **11.17** + CleanMix **0.7.2** 编译期 annotation processor，入口 Sponge Mixin `IMixinConnector`（`StackUpUpMixinConnector`）；兼容性注入当前只通过显式 early/late Mixin 完成。10.7 与 `IEarlyMixinLoader`/`ILateMixinLoader` 只是历史资料，不得写成当前实现。
 
 ## DSL 规则链
 
@@ -27,10 +27,10 @@ Minecraft 1.12.2、Forge 14.23.5.2847；Kotlin 业务代码与 Java core/early t
 **对外广告容量不得大于真实写入容量**，容量必须来自目标对象实际写入路径。只有库存上限为正时才取 `min(dynamicLimit, inventory.getInventoryStackLimit())`；未知 `IItemHandler` 不动态扩容，兼容目标先证实真实 `getInventoryStackLimit()`/`getSlotLimit()`。
 `insertItem` 与 `setStackInSlot`/vanilla setter 是不同写入路径，证据不可互替。区分 `simulate` 与真实写入，真实 `insertItem(..., false)` 必须满足 `storedDelta + remainderCount == offered`；写入后禁止重算余量、回填、重试或补偿。
 
-## Mixin、ASM 与 core/early 约束
+## Mixin 与 coremod 入口约束
 
-目标、方法和 descriptor 明确时优先 Mixin，Mixin 表达不了才用窄范围 ASM；不得以旧 loader 规则推断 11.17 行为。包裹原调用用 `@WrapOperation`，改表达式结果用 `@ModifyExpressionValue`，不得新增 `@Redirect`；静态 handler 用 Java `private static`，重载注入写完整 descriptor。
-`src/main/java` 的 core/early 与 Mixin 保持纯 Java：不得依赖 Kotlin 集合、序列、文本、IO、范围、lambda、方法引用或 `use {}`，不得引入生成 `WhenMappings`/`NoWhenBranchMatchedException` 的写法；transformer 必须处理空 `transformedName` 和 `basicClass`。禁止用反射替代功能、测试或审查。
+目标、方法和 descriptor 明确时使用显式 Mixin；不得恢复已删除的 dynamic ASM 兼容链路或以旧 loader 规则推断 11.17 行为。包裹原调用用 `@WrapOperation`，改表达式结果用 `@ModifyExpressionValue`，不得新增 `@Redirect`；静态 handler 用 Java `private static`，重载注入写完整 descriptor。
+`src/main/java` 的 Mixin handler 保持纯 Java：不得依赖 Kotlin 集合、序列、文本、IO、范围、lambda、方法引用或 `use {}`，不得引入生成 `WhenMappings`/`NoWhenBranchMatchedException` 的写法。`StackUpUpCore` 只承担 Forge coremod 入口和冲突状态，不承担兼容性字节码改写。禁止用反射替代功能、测试或审查。
 
 ## Fail Fast 与验证
 

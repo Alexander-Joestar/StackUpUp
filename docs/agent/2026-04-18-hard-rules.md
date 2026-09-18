@@ -2,60 +2,34 @@
 
 > 状态：PARTIAL（文末「已知限制」与「计划中的任务」所列未实现项未闭合，未完成独立复核，不得记为通过）。
 
-> 通用协作规范见根级 `AGENTS.md`；本文件只记 coremod、Mixin、容量安全、开发自动验收和规则内核的项目特有门槛。“当前实现”只表示能在现有源码中定位到的行为；“已知限制”表示证据不足或仍需运行验证；“计划中的任务”不属于当前实现。
+> 通用协作规范见根级 `AGENTS.md`；本文件只记 Mixin 引导、容量安全、开发自动验收和规则内核的项目特有门槛。“当前实现”只表示能在现有源码中定位到的行为；“历史机制”表示已删除或仅用于解释背景的实现，不得当作当前事实；“已知限制”表示证据不足或仍需运行验证；“计划中的任务”不属于当前实现。
 
-## Coremod early path：纯 Java 与字节码禁区
+## Mixin early path：纯 Java 与注入边界
 **当前实现**
 
-- 动态早期链路是 `DynamicCompatTransformer → CompatibilityLimitPatch → TypeRelationshipResolver → ClassHierarchyRepository`。
-- `DynamicCompatTransformer.transform` 对 `basicClass == null` 返回 `null`，对 `transformedName == null` 回退到 `name`；这两个输入约束必须保持。
-- `DynamicCompatMethodProbe` 只扫描当前类直接声明的方法名；`ClassHierarchyRepository` 只读取父类和接口签名，不为层级判断构造完整 `ClassNode`。
-- early path 中 `NameConverter.toSlashName` / `toDotName` 是 slash/dot 类名归一化的唯一入口；新增代码不得复制字符串替换实现。
+- `StackUpUpCore` 是 Forge coremod 入口，但 `getASMTransformerClass()` 返回空数组；它只负责 coremod 生命周期和冲突状态，不执行兼容性字节码改写。
+- `StackUpUpMixinConnector` 通过 Sponge Mixin `IMixinConnector` 注册 early 配置及按模组和开关选择的 late 配置；当前兼容注入由显式 Mixin 完成。
+- early/late Mixin 类分别位于 `src/main/java/.../mixin/early/` 与 `src/main/java/.../mixin/late/`，目标由 Mixin 配置 JSON 和 `@Mixin` 声明确定，不通过未知类扫描推断目标。
+- 当前不存在 `MixinConfigValidator`；配置装载边界是 connector、模块表和 Mixin 配置本身，不能把已删除 validator 描述成当前校验入口。
 
 **门槛**
 
-- `src/main/java/.../core/` 的 early path 必须保持纯 Java：不得引入 `kotlin.collections`、`kotlin.sequences`、`kotlin.text`、`kotlin.io`、`kotlin.ranges` 及 Kotlin 函数运行时，不得使用 lambda、方法引用、`use {}` 或会生成 `WhenMappings`/`NoWhenBranchMatchedException` 的 `enum + when`；用显式循环、JDK 集合和朴素条件。
-- `ClassHierarchyRepository` 不得依赖 `org.objectweb.asm.tree`；层级判定只读父类、接口和必要签名。
-- `DynamicCompatMethodProbe` 保持一次按方法名的 profile-aware 扫描：没有候选方法名时直接跳过，不做层级分类；命中后只能确认当前类直接声明了相应方法名，不能据此确认完整 descriptor 或方法内常量的语义位置。
-- 每次修改 coremod early path 后，至少检查 `DynamicCompatEarlyPathBytecodeTest` 和 `CoremodHierarchyBytecodeSafetyTest`。源码目录是 Java 不是通过字节码门槛的证明。
+- `src/main/java/.../mixin/` 的兼容性 Mixin handler 必须保持纯 Java：不得引入 `kotlin.collections`、`kotlin.sequences`、`kotlin.text`、`kotlin.io`、`kotlin.ranges` 及 Kotlin 函数运行时，不得使用 lambda、方法引用、`use {}` 或会生成 `WhenMappings`/`NoWhenBranchMatchedException` 的 `enum + when`；用显式循环、JDK 集合和朴素条件。
+- 目标方法签名必须由源码或字节码确认；重载注入必须用完整 descriptor。仅凭类名、接口关系、方法名或字节码中的 `64` 不能证明真实写入容量或目标语义位置。
+- 能由 Mixin 表达的返回值修改、表达式结果修改或原调用包裹必须使用相应 Mixin 注入；不得恢复泛化 ASM 兼容链路。
+- 每次修改 early Mixin、late Mixin 或 connector 后，按改动范围检查对应 Mixin 配置、源码护栏和 `MixinBooterIntegrationTest`；未执行的运行验证不得记为通过。
 
-**已知限制**
+**历史机制（已删除，仅保留背景）**
 
-- `CompatibilityLimitPatch.java` 仍以 `Consumer<ClassNode>` 和 `node -> { ... }` 生成补丁，与本节禁止 lambda/函数对象的门槛冲突；现有字节码测试没有覆盖 `invokedynamic`，因此不能把 early path 记为已通过。
-- `ClassHierarchyRepository` 当前在资源缺失或 ASM 解析异常时返回空 metadata，并抑制关闭流异常；这会混淆“无法读取”和“确实没有层级”，不能作为安全分类证据。
+- 旧版本曾使用 dynamic ASM 链路（包括 `DynamicCompatTransformer`、`CompatibilityLimitPatch`、`DynamicCompatMethodProbe`、`ClassHierarchyRepository`、`FixedCompatTargets` 等类）按类层级、方法名或字节码模式推断兼容目标；`MixinConfigValidator` 也曾作为配置校验概念出现。
+- 这些机制已从当前源码删除，不能作为当前数据源、跳过表、测试目标或扩展入口。保留其历史安全教训：方法名或 `BIPUSH 64` 命中不能替代完整 descriptor、常量语义位置和真实写入路径证据。
+- 因此不再维护 dynamic ASM 的 early path、固定目标表、probe/classifier/patch planner 或对应 bytecode test；当前新增兼容目标必须进入明确的 early/late Mixin 配置并核对实际写入路径。
 
-## Mixin/ASM 迁移准入检查表
+## Mixin 目标与容量安全边界
 
-迁移旧 ASM 目标前，四项必须同时成立：
-
-1. 目标类在明确的模组或原版/Forge 基础路径中稳定存在，并能确定应由 late 或 early Mixin 负责。
-2. 目标方法签名已由源码或字节码确认；重载必须用完整 descriptor 区分。静态 ASM 可能按方法名/字节码位置寻找 `BIPUSH 64`，命中本身不能替代该常量语义位置的证据，也不等于 descriptor 已闭合。
-3. 所需行为能由 Mixin 表达为返回值修改、表达式结果修改或原调用包裹；不能表达或受加载阶段限制时，才保留窄范围 ASM。
-4. 有测试或实际运行验证证明该目标不会被 dynamic ASM 二次命中；需要避让时，固定类已进入 `FixedCompatTargets`。
-
-已明确的 late Mixin 目标不得重新放回泛化 ASM；未知 `IItemHandler` 不得作为快速扩容的理由，也不得用 remainder-system 修复吞物品。
-
-## 固定目标与动态 ASM 边界
-**当前实现**
-
-- `DynamicCompatTargetProfile` 保存各 profile 的目标类型和补丁目标方法数组。
-- 候选方法名仍由 `DynamicCompatMethodProbe` 直接匹配，补丁 helper 名称仍在 `CompatibilityLimitPatch`；不能把三者描述成已闭合的单一事实源。
-- `FixedCompatTargets` 是 dynamic ASM 固定跳过目标的唯一数据源；实际 transform 路径的 `CompatibilityLimitPatch.planFor(..., basicClass)` 先交给 `DynamicCompatMethodProbe` 检查当前类直接声明的候选方法名，再分类和生成补丁。
-- 固定表与 probe 职责不可互换：固定表只表达需要避让的固定目标，probe 只提供当前类是否声明候选方法名的证据；probe 不扩充固定表，固定表也不代替声明探测。late mixin 模块表只描述配置装载，不是 dynamic ASM 的跳过表。
-
-**门槛**
-
-- 已由显式 Mixin 接管、且 dynamic ASM 需要避让的类，必须进入 `FixedCompatTargets`；不要在 transformer、classifier、patch planner 各自维护样例名单。
-- `PlayerInvWrapper`、`SlotCrafting` 等只继承父类行为的桥接子类，不要为名义完整重复补 static Mixin；按方法名探测确认其未直接声明候选方法名后，dynamic ASM 应跳过它们。
-- 对当前类字节码未直接声明候选方法名的继承类，dynamic ASM 不进行改写。未知类不得仅因实现某个接口、类名相似或返回 `64` 就被推断为可扩容目标；接口关系必须与当前类直接声明的候选方法名及其他目标证据同时成立。
-- 动态补丁只能修改已确认的目标方法和已确认的字节码模式；不得借 ASM 绕过真实写入容量证据。
-- 核对固定表时必须逐项对照显式 `@Mixin` 目标和实际写入方法；固定表命中、Mixin 配置包含类名或 `probeTargets` 子集都不能代替该对照，也不能证明容量守恒。
-- 第三方 jar 没有可核对源码或字节码写入路径时，结论必须写“无源码不可判定”，并列出缺失的 jar；不得用类名、方法名或我方注释冒充写入路径证据。
-
-**已知限制**
-
-- `DynamicCompatMethodProbe` 仅按方法名识别当前类直接声明的候选方法，`CompatibilityLimitPatch` 再按方法名匹配并替换匹配方法内的所有 `BIPUSH 64`；方法 descriptor 与常量的语义位置均未确认，不得把它描述成已完成 descriptor-aware、语义精确的动态补丁。
-- `FixedCompatTargets` 与 `ForgeItemHandlerLimitMixin` 的目标集合不完全相同：`ForgeItemHandlerLimitMixin` 当前只改写 `net.minecraftforge.items.ItemStackHandler` 和 `net.minecraftforge.items.wrapper.EntityEquipmentInvWrapper` 两个自洽类；固定表另列出无需注入的 `net.minecraftforge.items.VanillaDoubleChestItemHandler`、`net.minecraftforge.items.wrapper.EmptyHandler`，以及已移出注入的 `InvWrapper`、`SidedInvWrapper`、`CombinedInvWrapper`、`RangedWrapper`；`net.minecraftforge.items.SlotItemHandler` 另由 `SlotItemHandlerMixin` 目标覆盖。现有相关测试中，`CompatibilityLimitPatchTest` 的固定名单检查未传入 `basicClass`，`DynamicCompatTargetClassifierTest` 的对应断言只检查固定分类跳过及 `probeTargets` 子集，`EarlyMixinConfigTest` 只检查配置文本包含 Mixin 名称；没有测试证明固定表与显式 Mixin 逐项对齐，也没有测试证明 early Mixin 应用时 wrapper、backing inventory 与实际写入路径组合的容量安全。
+- 已登记的 early/late Mixin 目标必须有明确目标类、方法和加载配置；目标名单以 Mixin 配置 JSON、`@Mixin` 声明和 connector 模块表为准。
+- Mixin 配置包含类名、connector 模块表或注入命中本身都不能代替对实际写入方法的核对；第三方 jar 没有可核对源码或字节码写入路径时，结论必须写“无源码不可判定”，并列出缺失的 jar。
+- 未知 `IItemHandler` 不得作为快速扩容的理由，也不得用 remainder-system 修复吞物品。
 
 ## 容量广告、Forge wrapper 与 remainder
 **当前实现**
@@ -125,8 +99,8 @@
 - `run/mods/*.jar` 进入编译/索引并由 FML 扫描，不能再额外放入运行时 classpath，否则会 duplicate mods。
 - `local-dev-mods/*.jar` 才能作为普通本地开发模组额外进入运行时 classpath；若带 `ContainedDeps`，改走 `run/mods` 目录扫描，不走 classpath。
 - `run/mods/*.jar.disable` 表示停用运行但保留开发期编译索引；准备阶段可去掉 `.disable` 供索引或扫描使用，但不得因此把它当成额外 runtime classpath 来源。
-- late 模块清单与 `FixedCompatTargets` 必须分别维护；有 late 配置不等于 dynamic ASM 必须跳过该类。
-- 改动 late loader、Mixin 配置或本地依赖语义后，执行 `MixinBooterIntegrationTest`，并检查实际启动是否出现重复装载或缺失内嵌依赖。
+- late 模块清单只负责 Mixin 配置装载条件；它不替代 Mixin 配置中的目标核对，也不应引入已删除的 dynamic ASM 跳过表。
+- 改动 late Mixin connector、Mixin 配置或本地依赖语义后，执行 `MixinBooterIntegrationTest`，并检查实际启动是否出现重复装载或缺失内嵌依赖。
 
 **已知限制**
 
@@ -145,7 +119,7 @@
 - 只有“明确缺失”可以 skip。链接异常、类加载异常、可用性检查异常、探针执行异常必须记为失败并保留摘要；不得把任意 `Throwable` 伪装成未加载。
 - `failFast` 只决定失败后是否中止/抛错，不得把失败改写成 skip 或 pass。自动化日志必须区分通过、跳过和失败。
 - 探针必须按当前 `RuleRuntime.limitService().contextRequirements()` 解析上下文；不能使用过时的默认需求替代正式路径。
-- 改动 coremod、Mixin 或自动化参数层后，至少执行 `CoremodHierarchyBytecodeSafetyTest`、`EarlyMixinBytecodeSafetyTest`、`MixinBooterIntegrationTest` 和 `runServerAutoTest`。未执行的项目必须标为未验证。
+- 改动 Mixin connector、Mixin 配置或自动化参数层后，至少执行 `EarlyMixinBytecodeSafetyTest`、`MixinBooterIntegrationTest` 和 `runServerAutoTest`。未执行的项目必须标为未验证；`StackUpUpCore` 仅作 Forge 入口时不适用已删除 dynamic ASM 的 bytecode test。
 - `dev/` 不新增只包一层调用的薄文件；可复用且有独立行为的单元才保留独立类型。
 
 **已知限制**
@@ -174,8 +148,7 @@
 
 ## 计划中的任务（未实现）
 
-- 收紧 early path 的函数对象、层级读取失败和字节码门槛，并以对应 bytecode tests 复核。
-- 为动态 ASM 补齐 descriptor 与语义位置证据，或把不满足证据要求的目标移出动态补丁。
+- 收紧 Mixin early path 的 Java 字节码边界，并以对应 Mixin bytecode tests 复核。
 - 完成 wrapper、backing inventory、AE2 插入路径的容量守恒审计；在此之前不扩大 trusted 范围，也不把现有 remainder 聚合当作通用方案。
 - 剩余失败入口（规则注入、目标物品解析、客户端注入）的 fail-fast 统一仍待实现与测试验证。
 - 用 Gradle/IDE classpath 证据确认本地 jar 语义，并用真实客户端 Forge 资源重载链验证 F3+T 本地化。

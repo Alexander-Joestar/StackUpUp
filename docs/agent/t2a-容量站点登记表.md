@@ -151,7 +151,7 @@ late 目标 **当前 15 个模组** jar 均缺失（文件名/版本未登记，
 
 新增/修改任何容量 patch 目标前逐项核对：
 
-- [ ] 目标类与完整方法 descriptor 已写入本登记表（§2/§3/§4 对应分组）；
+- [ ] 目标类与完整方法 descriptor 已写入本登记表（当前 §2/§3 对应分组；已删除的历史 §4 不参与当前登记）；
 - [ ] 已给出真实写入路径源码证据（vanilla/Forge 用 `build/rfg/minecraft-src/` 行号；第三方无源码则标 `无源码不可判定` 并列入 §5 缺失 jar）；
 - [ ] 三分类判定已按共同准则（§1）完成，未用 `== 64` 哨兵、类名或第三方表态代替证据；
 - [ ] 若为第三方目标：对应模组 jar 已补入 `local-dev-mods/`/`run/mods/` 或已有 T12.5 运行时证据，否则不得升级分类；
@@ -214,7 +214,7 @@ late 目标 **当前 15 个模组** jar 均缺失（文件名/版本未登记，
 ### 9.4 2026-09 计数 lane 复核（配置/文件/模组数刷新）
 
 - §3 标题文件数与 §5 缺失 jar 台账按当前工作副本刷新：late **25 个 .java 文件**（审计当时 18）、缺失模组 **15 个**（审计当时 12；新增 nuclearcraft、colossalchests、gregtech）。§3 表补登审计后新增的 7 个 late mixin 行（ColossalChestsTile / EnderIOInventorySlotLimit / EnderIOInventoryNoDrop / GregTechMetaItem ×2 / NuclearCraftTileInventoryLimit / NuclearCraftDistributorNoDrop），来源 CDR §3.10/§3.11。
-- §3 表内 early/late 计数不与 t14.1 §1 冲突：当前 16 个 `mixins.stackupup*.json`（early 1 + late 15），47 注册项 / 45 个 @Mixin 类；本表 §3 只登记容量/非容量站点，不重复配置数口径。
+- §3 表内 early/late 计数不与 t14.1 §1 冲突：当前 17 个 `mixins.stackupup*.json`（early 1 + late 16），47 注册项 / 45 个 @Mixin 类；本表 §3 只登记容量/非容量站点，不重复配置数口径。
 - 未改变任何分类判定：审计后新增 7 项中 5 项为容量站点、2 项（EnderIONoDrop、NCDistributorNoDrop）已在表中标注「非容量站点」；全部第三方条目维持 **无源码不可判定**（§5）。
 
 ## 10. 复核记录

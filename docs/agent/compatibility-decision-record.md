@@ -401,7 +401,7 @@ T13 的最终矩阵中的回扩处置状态只能是“已回扩”或“决定�
 ### 8.1 已决策：当前构建事实与历史/上游资料分层
 
 - **当前构建事实：** `gradle/libs.versions.toml:20-23,29-31` 为 MixinBooter `11.17`、CleanMix `0.7.2`；`build.gradle.kts:49-66` 将 CleanMix 作为编译期 annotation processor 挂载。当前注册入口是 manifest `MixinConnector` 指向 `StackUpUpMixinConnector`，不是旧 loader。11.17/0.7.2 于 2026-09-15 由 11.13/0.7.1 成对升级，过程与验证见 §8.9。
-- `src/main/kotlin/io/alexjoest/stackupup/bootstrap/StackUpUpMixinConnector.kt:12-37,41-69` 实现 `IMixinConnector`，统一执行 early/late 配置校验、冲突处理、mod presence 和 toggle 决策；其公共无参 `class` 形态是当前装载约束。
+- `src/main/kotlin/io/alexjoest/stackupup/bootstrap/StackUpUpMixinConnector.kt:12-37,41-69` 实现 `IMixinConnector`，执行 early/late 配置入队与决策：early 处理冲突，late 处理未知配置、mod presence 和 toggle；已删除的 `MixinConfigValidator` 双向配置校验不属于当前 connector。其公共无参 `class` 形态是当前装载约束。
 - **历史基线：** MixinBooter 10.7、`IEarlyMixinLoader`/`ILateMixinLoader`、`MixinTweaker` 和外部 LlamaLad7 MixinExtras 0.5.0 只用于版本对照。旧事实不得覆盖当前 11.17/0.7.2/connector。
 - **上游资料：** [MixinBooter 官方 README](https://github.com/CleanroomMC/MixinBooter) 说明 11.x 基于 CleanMix、旧 early/late 接口 deprecated，并支持 manifest `MixinConfigs`/`MixinConnector`；精确行为仍以当前 jar、构建产物和运行日志为准。
 - 11.13 迁移、connector、CleanMix AP/refmap 和 provider 证据已记录于 §8.6.1、§8.8，11.17/0.7.2 成对升级见 §8.9；这些局部验证不能写成发布通过，剩下的缺口如实记在 `t14.7-发布前矩阵.md` 的已知限制清单里。
@@ -524,7 +524,7 @@ T13 的最终矩阵中的回扩处置状态只能是“已回扩”或“决定�
   - **dev 环境可用性（已实证）**：RFG 2.0.2 `MCPTasks.java` 的 `runServer`/`runClient` classpath 均含 `task.classpath(taskJar)`（:598-601/:610-613），即 `build/libs/StackUpUp-0.2.4-dev.jar` 以 jar 形式在 dev 运行时 classpath 上，会被 ModDiscoverer 扫描；运行日志 `[CleanMix]: Successfully loaded Mixin Connector [io.alexjoest.stackupup.bootstrap.StackUpUpMixinConnector]` 实证 dev 发现成功。
   - **Kotlin object 不可用于 connector（与任务预设的 object 写法偏离，须记录）**：`MixinConnectorManager.loadConnectors()` 用 `connectorClass.getDeclaredConstructor().newInstance()` 且**不调用 setAccessible**（MixinConnectorManager.java:82）；Kotlin object 编译为私有构造器 → `newInstance()` 抛 IllegalAccessException → connector 永不装载。故实现为普通 `class`（公共无参构造，javap 实证 `public io.alexjoest.stackupup.bootstrap.StackUpUpMixinConnector()`），与旧 `ILateMixinLoader`（class + 公共无参构造）同一约束。任务原文写 `object`，此处以源码证据为准偏离并记录。
   - `Context`（zone.rong.mixinbooter）已 deprecated（11.0 起），connect() 无 Context 参数；mod 在场判断改用 `zone.rong.mixinbooter.service.ModDiscoverer.isModPresent(String)`（public static，源码实证），与旧 `Context.isModPresent`（内部即 `presentMods.contains`，presentMods 来自 `ModDiscoverer.getPresentMods()`）同一数据源。
-  - 全部 16 个 mixin 配置（early 1 + late 15）`"target": "@env(DEFAULT)"`；11.13 CleanMix 模型 DEFAULT 配置统一在 DEFAULT 阶段（EnvironmentStateTweaker → gotoPhase(DEFAULT)，位于 injectData 之后）装载，connect() 在 injectData 内 add 早/晚配置无行为差异（运行日志实证：early 配置 `Preparing config mixins.stackupup.early.json (20)` + 全部目标 APPLY）。
+  - 当前全部 17 个 mixin 配置（early 1 + late 16）声明 `"target": "@env(DEFAULT)"`；11.13 CleanMix 模型 DEFAULT 配置统一在 DEFAULT 阶段（EnvironmentStateTweaker → gotoPhase(DEFAULT)，位于 injectData 之后）装载，connect() 在 injectData 内 add 早/晚配置无行为差异（运行日志实证：early 配置 `Preparing config mixins.stackupup.early.json (20)` + 全部目标 APPLY）。
 - **验证结果（实际执行）：**
   - `test` 全量：BUILD SUCCESSFUL（含重写后 `StackUpUpMixinConnectorSkipLogTest` 6/6、`MixinBooterIntegrationTest` 5/5 等，0 failures）。`MixinConfigRegistrationAlignmentTest` 是 validator 中间版本测试，后来已删除，不属于当前验证结果。三护栏用例含在 `test` 内（`MixinBooterIntegrationTest`/`EarlyMixinBytecodeSafetyTest`/`CoremodHierarchyBytecodeSafetyTest` 全部通过）。
   - `spotlessCheck`：FAILED，但仅剩**预存违规** `src/main/kotlin/io/alexjoest/stackupup/rules/field/RuleFieldContextProvider.kt`（enum 单行化，jj 工作区未改动该文件，租约外不修）；本次迁移新增/改写的全部文件通过 spotless。

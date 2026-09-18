@@ -16,14 +16,14 @@
 
 - `src/main/java/.../mixin/` 的兼容性 Mixin handler 必须保持纯 Java：不得引入 `kotlin.collections`、`kotlin.sequences`、`kotlin.text`、`kotlin.io`、`kotlin.ranges` 及 Kotlin 函数运行时，不得使用 lambda、方法引用、`use {}` 或会生成 `WhenMappings`/`NoWhenBranchMatchedException` 的 `enum + when`；用显式循环、JDK 集合和朴素条件。
 - 目标方法签名必须由源码或字节码确认；重载注入必须用完整 descriptor。仅凭类名、接口关系、方法名或字节码中的 `64` 不能证明真实写入容量或目标语义位置。
-- 能由 Mixin 表达的返回值修改、表达式结果修改或原调用包裹必须使用相应 Mixin 注入；不得恢复泛化 ASM 兼容链路。
+- 能由 Mixin 表达的返回值修改、表达式结果修改或原调用包裹必须使用相应 Mixin 注入；当前兼容性注入不保留窄范围 ASM、dynamic ASM 或 `FixedCompatTargets` 路径。
 - 每次修改 early Mixin、late Mixin 或 connector 后，按改动范围检查对应 Mixin 配置、源码护栏和 `MixinBooterIntegrationTest`；未执行的运行验证不得记为通过。
 
-**历史机制（已删除，仅保留背景）**
+**历史机制（已删除，以下不是当前规则）**
 
 - 旧版本曾使用 dynamic ASM 链路（包括 `DynamicCompatTransformer`、`CompatibilityLimitPatch`、`DynamicCompatMethodProbe`、`ClassHierarchyRepository`、`FixedCompatTargets` 等类）按类层级、方法名或字节码模式推断兼容目标；`MixinConfigValidator` 也曾作为配置校验概念出现。
-- 这些机制已从当前源码删除，不能作为当前数据源、跳过表、测试目标或扩展入口。保留其历史安全教训：方法名或 `BIPUSH 64` 命中不能替代完整 descriptor、常量语义位置和真实写入路径证据。
-- 因此不再维护 dynamic ASM 的 early path、固定目标表、probe/classifier/patch planner 或对应 bytecode test；当前新增兼容目标必须进入明确的 early/late Mixin 配置并核对实际写入路径。
+- 这些机制已从当前源码删除，不能作为当前数据源、跳过表、测试目标或扩展入口；`FixedCompatTargets` 也不再是当前 Mixin 目标登记或避让表。保留其历史安全教训：方法名或 `BIPUSH 64` 命中不能替代完整 descriptor、常量语义位置和真实写入路径证据。
+- 因此不再维护 dynamic ASM 的 early path、窄 ASM 补丁、固定目标表、probe/classifier/patch planner 或对应 bytecode test；当前新增兼容目标必须进入明确的 early/late Mixin 配置并核对实际写入路径。
 
 ## Mixin 目标与容量安全边界
 

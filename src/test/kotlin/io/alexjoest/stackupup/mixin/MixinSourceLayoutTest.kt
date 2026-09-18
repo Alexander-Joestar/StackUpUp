@@ -27,7 +27,7 @@ class MixinSourceLayoutTest {
             .filter { it.toString().endsWith(".java") }
             .map { mixinRoot.relativize(it).toString().replace('\\', '/') }
             // VanillaInventoryTargets 是 T2b 原版目标表的编译期常量表（docs/agent/t2b-原版目标表.md），
-            // 非运行时 helper，与 core/FixedCompatTargets 同类，豁免混入检查。
+            // 非运行时 helper，豁免混入检查。
             .filterNot { it.endsWith("Mixin.java") || it.endsWith("VanillaInventoryTargets.java") }
             .sorted()
             .toList()

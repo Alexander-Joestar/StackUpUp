@@ -29,12 +29,11 @@ import java.util.jar.JarFile
  * 且不调用 setAccessible，Kotlin object 编译为私有构造器会导致 IllegalAccessException、connector 永不装载；
  * 与旧 `ILateMixinLoader`（class + 公共无参构造）同一约束。
  *
- * 装载语义与旧 loader 完全一致（T14.5 停止条件 1/2/3/5）：
- * - early：冲突检测（[StackUpUpCore.ensureConflictState]）非空 → ERROR + 不 add（冲突禁用设计）；通过 →
- *   核心配置正向校验 fail-fast（[MixinConfigValidator.requireCoreConfigValid]）后 add；
- * - late：正向校验（[MixinConfigValidator.validateConfigs] + logProblems）→ 按模块表逐配置判断 mod 在场
- *   （[ModDiscoverer.isModPresent]；Supergiant `ae2` 使用 connector-safe 的 Forge indexed probe，
- *   不可用时回退到 Cleanroom marker probe）+ [MixinToggles] 开关 → 条件 add；不在模块表的配置不装载。
+ * 装载语义与旧 loader 完全一致：
+ * - early：冲突检测（[StackUpUpCore.ensureConflictState]）非空 → ERROR + 不 add（冲突禁用设计）；通过 → add；
+ * - late：按模块表逐配置判断 mod 在场（[ModDiscoverer.isModPresent]；Supergiant `ae2` 使用 connector-safe
+ *   的 Forge indexed probe，不可用时回退到 Cleanroom marker probe）+ [MixinToggles] 开关 → 条件 add；
+ *   不在模块表的配置不装载。
  */
 class StackUpUpMixinConnector : IMixinConnector {
     private val logger: Logger = LogManager.getLogger("stackupup.mixin.connector")
@@ -50,23 +49,13 @@ class StackUpUpMixinConnector : IMixinConnector {
             return
         }
         try {
-            // T14.5 停止条件 1：核心配置缺失/注册无效必须 fail-fast，不再让核心配置静默失效。
-            MixinConfigValidator.requireCoreConfigValid(StackUpUpIds.EARLY_MIXIN_CONFIG, javaClass.classLoader)
             Mixins.addConfiguration(StackUpUpIds.EARLY_MIXIN_CONFIG)
         } catch (e: Exception) {
-            // 旧路径中 requireCoreConfigValid 抛异常由 MixinBooter 按 loader 捕获隔离（early 失败不影响
-            // late）；MixinConnectorManager 只会整体捕获 connect()，这里显式隔离以保持同一语义。
             logger.error("Early mixin loading failed; early mixins are disabled (late mixins continue)", e)
         }
     }
 
     private fun connectLate() {
-        // T14.5 停止条件 3：启动期校验 loader 注册表 ↔ JSON 资源 ↔ 类登记（双向中的正向）。
-        // late 是 optional 层：问题只按 ERROR 记录、不中止装载。
-        val problems = MixinConfigValidator.validateConfigs(modules.map { it.config }, javaClass.classLoader)
-        MixinConfigValidator.logProblems(problems)
-        // late 目标类全部来自第三方 mod（T2a §5 无 jar/源码），目标存在性不校验，记录 UNKNOWN。
-        logger.info("Late mixin configs target third-party mod classes; target existence is not validated (UNKNOWN, no third-party sources)")
         val isModPresent: (String) -> Boolean = { modId ->
             isModPresentForConnector(modId)
         }

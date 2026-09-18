@@ -15,7 +15,7 @@ Chinese README: [README.md](README.md) (Chinese)
 - Target: Minecraft **1.12.2** + Forge **14.23.5.2847**
 - Current version: **0.2.4**
 - Rule system: DSL v2, using `.su` files or Markdown `.su.md` containers with `state` and `gate`
-- Compatibility layer: MixinBooter **11.17** + CleanMix **0.7.2**, with Mixin configs registered through `IMixinConnector`; ASM is kept only for legacy compatibility and early-loading fallbacks. MixinBooter 10.7 and the old loaders are historical baselines only
+- Compatibility layer: MixinBooter **11.17** + CleanMix **0.7.2**, with the current compatibility layer implemented through Mixin configs registered by `IMixinConnector`; `StackUpUpCore` returns no ASM transformers. MixinBooter 10.7 and the old loaders are historical baselines only
 
 ## Download
 
@@ -102,20 +102,19 @@ max stack limit as `count/limit`.
 StackUpUp usually works out of the box for mods that follow vanilla stack-size semantics. Mods that hard-code `64`,
 bypass `ItemStack#getMaxStackSize()`, or implement custom inventory logic may need targeted patches.
 
-The core safety rule is: **advertised capacity must not be larger than real write capacity.** Dynamic ASM is retained
-only for old unknown `IInventory`, `Slot`, and similar legacy inventory paths; dynamic ASM for unknown `IItemHandler`
-implementations is intentionally disabled. Even when an unknown `IItemHandler#getSlotLimit()` literally returns 64, that
-is not proof that the real write capacity can be raised. Advertising a higher value in that case lets vanilla push too
-many items into storage that cannot actually accept them, which can cause truncation, item loss, or conflicts with the
+The core safety rule is: **advertised capacity must not be larger than real write capacity.** Unknown `IItemHandler`
+implementations are not dynamically expanded. Even when an unknown `IItemHandler#getSlotLimit()` literally returns 64,
+that is not proof that the real write capacity can be raised. Advertising a higher value in that case lets vanilla push
+too many items into storage that cannot actually accept them, which can cause truncation, item loss, or conflicts with the
 mod's own overflow handling.
 
-For registered targets currently attempted for loading, StackUpUp registers Mixin configs through `IMixinConnector` and
-attempts to modify real `getInventoryStackLimit()` / `getSlotLimit()` style entry points so slot limits follow. When
-third-party source is unavailable, the real write path is "无源码不可判定" (cannot be determined without source), and
-class names or registration alone do not establish write capacity. Old ASM remains only as a legacy and early-loading
-fallback, not as the preferred way to add compatibility. AE2 Plan A is archived: its hot path passes `insertItem`
-through without a project wrapper, relying on the vanilla/Forge remainder contract and a boundary probe; no JSONL
-conservation report or write-after-the-fact remainder refill is used.
+Current compatibility patches are Mixin-only: `StackUpUpMixinConnector` registers Mixin configs through
+`IMixinConnector`, and `StackUpUpCore` returns no ASM transformers. For registered targets currently attempted for
+loading, these configs target real `getInventoryStackLimit()` / `getSlotLimit()` style entry points so slot limits follow.
+When third-party source is unavailable, the real write path is "无源码不可判定" (cannot be determined without source),
+and class names or registration alone do not establish write capacity. AE2 Plan A is archived: its hot path passes
+`insertItem` through without a project wrapper, relying on the vanilla/Forge remainder contract and a boundary probe; no
+JSONL conservation report or write-after-the-fact remainder refill is used.
 
 Current late mixin targets registered for attempted loading (the `StackUpUpMixinConnector` module table, 16 configs):
 
@@ -187,9 +186,8 @@ For implementation notes, see [docs/StackUpUp-实现与兼容性说明.md](docs/
 ## Differences From StackUp
 
 Compared with StackUp, StackUpUp targets Minecraft **1.12.2**, uses **DSL v2** rules designed for item IDs, metadata,
-Ore Dictionary names, and creative-tab matching, centers compatibility on **MixinBooter + Mixin** with ASM reduced to
-legacy and early-loading support, and adds client display scaling, abbreviation, and tooltip support for very large
-stack counts.
+Ore Dictionary names, and creative-tab matching, centers compatibility on **MixinBooter + Mixin**, and adds client display
+scaling, abbreviation, and tooltip support for very large stack counts.
 
 ## Development And Verification
 

@@ -3,7 +3,7 @@
 > 状态：PARTIAL（源码入口已同步；未知 probe ID、可用性异常与探针执行异常已按源码记录为失败而非跳过。最近一次矩阵运行通过（2026-08-10，`run/logs/autotest-report.txt` 最终状态 PASS），但此后代码改动未经矩阵重跑，独立复核与完整运行门仍未闭合）
 > 文档定位：源码核对说明，描述当前构建脚本、自动化入口与驱动源码，不是运行结果报告；未运行或未独立复核的自动验收不写成“已通过”。
 >
-> 当前构建基线：MixinBooter 11.13 + CleanMix 0.7.1，Mixin 配置经 `IMixinConnector` 注册；10.7 与旧 early/late loader 仅作历史记录。
+> 当前构建基线：MixinBooter 11.17 + CleanMix 0.7.2，Mixin 配置经 `IMixinConnector` 注册；10.7 与旧 early/late loader 仅作历史记录。
 
 ## 当前实现
 

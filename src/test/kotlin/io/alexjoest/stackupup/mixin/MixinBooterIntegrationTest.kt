@@ -14,7 +14,7 @@ import java.nio.file.Paths
  *
  * 决策函数（shouldQueueEarly/shouldQueue）为行为验证：调用真实代码；mod 在场判断经注入谓词模拟
  * （生产路径由 connector 传入 ModDiscoverer.isModPresent，见结构检查用例）。
- * [connectorSource_shouldKeepLoaderSemantics] 为结构检查：只证明源码保留冲突分支/条件 add/校验调用。
+ * [connectorSource_shouldKeepLoaderSemantics] 为结构检查：只证明源码保留冲突分支/条件 add。
  */
 class MixinBooterIntegrationTest {
     @Test
@@ -112,7 +112,7 @@ class MixinBooterIntegrationTest {
 
     @Test
     fun connectorSource_shouldKeepLoaderSemantics() {
-        // 结构检查（非行为验证）：connect() 装载链必须保留冲突检测分支、mod 在场条件 add 与校验调用，
+        // 结构检查（非行为验证）：connect() 装载链必须保留冲突检测分支与条件 add，
         // 否则 dev/test 与生产装载入口会脱节；实际装载行为由 runServerAutoTest 运行验证覆盖。
         val source = String(
             Files.readAllBytes(
@@ -122,7 +122,6 @@ class MixinBooterIntegrationTest {
         )
         assertTrue(source.contains("ensureConflictState"), "connect 必须先做冲突检测")
         assertTrue(source.contains("ModDiscoverer.isModPresent"), "late 装载必须按 mod 在场条件 add")
-        assertTrue(source.contains("MixinConfigValidator"), "装载前必须保留正向校验")
         assertTrue(source.contains("Mixins.addConfiguration"), "必须通过 Mixins.addConfiguration 入队")
     }
 

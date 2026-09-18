@@ -117,15 +117,19 @@ fallback, not as the preferred way to add compatibility. AE2 Plan A is archived:
 through without a project wrapper, relying on the vanilla/Forge remainder contract and a boundary probe; no JSONL
 conservation report or write-after-the-fact remainder refill is used.
 
-Current late mixin targets registered for attempted loading include:
+Current late mixin targets registered for attempted loading (the `StackUpUpMixinConnector` module table, 16 configs):
 
 - Applied Energistics 2
+- Applied Energistics 2 Supergiant
 - Actually Additions
 - BrandonsCore
+- ColossalChests
 - CyclopsCore
 - Ender IO
+- GregTech
 - IC2
 - Mantle
+- NuclearCraft
 - Refined Storage
 - Simple Storage Network
 - IntegratedDynamics
@@ -156,12 +160,13 @@ general {
   that would not have been loaded anyway is harmless. Do not blacklist the core config
   `mixins.stackupup.early.json`, as that also disables the base paths such as vanilla inventories.
 
-The 15 config file names currently available (taken from the `mixins.stackupup.late.*.json` files actually present in
+The 16 config file names currently available (taken from the `mixins.stackupup.late.*.json` files actually present in
 the jar):
 
 ```
 mixins.stackupup.late.actuallyadditions.json
 mixins.stackupup.late.ae2.json
+mixins.stackupup.late.ae2supergiant.json
 mixins.stackupup.late.brandonscore.json
 mixins.stackupup.late.colossalchests.json
 mixins.stackupup.late.cyclopscore.json
@@ -188,7 +193,17 @@ stack counts.
 
 ## Development And Verification
 
-Common verification commands:
+**The build requires JDK 25 and Gradle 9.2+.** Minecraft is wired in through RetroFuturaGradle (RFG) **2.0.2**, whose
+plugin classes are compiled to class file 69 (Java 25) and which itself requires Gradle >= 9.2. Running Gradle on JDK 21
+or lower fails during configuration (`UnsupportedClassVersionError: com/gtnewhorizons/retrofuturagradle/UserDevPlugin
+... class file version 69.0`); the build never starts. The bundled wrapper is Gradle 9.4.0, which satisfies the
+minimum, so no wrapper change is needed.
+
+This constrains the **Gradle JVM used for builds** only: the project Java toolchain stays pinned to 8
+(`build-logic/convention/src/main/kotlin/jvm.gradle.kts:9`), and the dev client is launched by that Java 8 toolchain.
+The mod's runtime requirements are unchanged.
+
+Common verification commands (with `JAVA_HOME` pointing at JDK 25):
 
 ```powershell
 .\gradlew.bat test

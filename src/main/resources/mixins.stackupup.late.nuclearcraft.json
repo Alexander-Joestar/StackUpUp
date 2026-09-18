@@ -1,7 +1,7 @@
 {
   "required": false,
   "package": "io.alexjoest.stackupup.mixin.late",
-  "refmap": "mixins.StackUpUp.refmap.json",
+  "refmap": "${refmap}",
   "target": "@env(DEFAULT)",
   "compatibilityLevel": "JAVA_8",
   "mixins": [

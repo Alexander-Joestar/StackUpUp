@@ -14,6 +14,7 @@
 ## 项目基线
 
 Minecraft 1.12.2、Forge 14.23.5.2847；Kotlin 业务代码与 Java core/early transformer、Mixin 分工，JUnit 5 测试在 `src/test/kotlin`。
+构建需 **JDK 25**：RFG **2.0.2** 插件类为 class file 69，且自身要求 Gradle >= 9.2（wrapper 为 9.4.0）；JDK 21 在配置阶段即以 `UnsupportedClassVersionError` 失败。这只约束构建所用的 Gradle JVM，项目 Java toolchain 仍固定为 8（`build-logic/convention/src/main/kotlin/jvm.gradle.kts:9`），客户端运行期要求未因此改动。
 当前 Mixin 基线 MixinBooter **11.17** + CleanMix **0.7.2** 编译期 annotation processor，入口 Sponge Mixin `IMixinConnector`（`StackUpUpMixinConnector`）；10.7 与 `IEarlyMixinLoader`/`ILateMixinLoader` 只是历史资料，不得写成当前实现。
 
 ## DSL 规则链

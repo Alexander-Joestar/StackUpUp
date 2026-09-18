@@ -91,15 +91,19 @@ StackUpUp 对遵循原版堆叠语义的模组通常直接生效；对自行写�
 
 对已登记并尝试加载的目标，StackUpUp 通过 `IMixinConnector` 注册 Mixin 配置，作用于真实 `getInventoryStackLimit()` / `getSlotLimit()` 等容量入口，再让槽位上限跟随；第三方真实写入路径缺源码时为“无源码不可判定”，不能仅凭目标类名或注册结果推断写入能力。旧 ASM 仅作历史兼容和早期加载兜底，不再是新增兼容首选。AE2 方案 A 已归档：热路径原样透传 `insertItem`，运行期依赖 Forge remainder 契约和边界探针，不使用 JSONL 守恒报告，也不采用写入后回填。
 
-当前已登记并尝试加载的 late mixin 目标包括：
+当前已登记并尝试加载的 late mixin 目标（`StackUpUpMixinConnector` 模块表，16 个配置）：
 
 - Applied Energistics 2
+- Applied Energistics 2 Supergiant
 - Actually Additions
 - BrandonsCore
+- ColossalChests
 - CyclopsCore
 - Ender IO
+- GregTech
 - IC2
 - Mantle
+- NuclearCraft
 - Refined Storage
 - Simple Storage Network
 - IntegratedDynamics
@@ -125,11 +129,12 @@ general {
 - 改完需要**重启游戏或服务端**：MixinBooter 在 coremod 阶段就读这份配置并拉黑，`/stackupup reload` 这类运行期重载不会让它生效，也不会把它重新打开。
 - 被拉黑的配置不会装载，对应模组的兼容补丁因此完全不生效；该配置本来就没装载时填写它也无副作用。请勿拉黑核心配置 `mixins.stackupup.early.json`，那会一并停用原版库存等基础路径。
 
-目前可用的 late 配置文件名共 15 个（取自 jar 内实际存在的 `mixins.stackupup.late.*.json`）：
+目前可用的 late 配置文件名共 16 个（取自 jar 内实际存在的 `mixins.stackupup.late.*.json`）：
 
 ```
 mixins.stackupup.late.actuallyadditions.json
 mixins.stackupup.late.ae2.json
+mixins.stackupup.late.ae2supergiant.json
 mixins.stackupup.late.brandonscore.json
 mixins.stackupup.late.colossalchests.json
 mixins.stackupup.late.cyclopscore.json
@@ -153,7 +158,11 @@ mixins.stackupup.late.storagenetwork.json
 
 ## 开发与验证
 
-常用验证命令：
+**构建需要 JDK 25 和 Gradle 9.2+。** 本项目用 RetroFuturaGradle（RFG）**2.0.2** 接入 Minecraft；该版本的插件类编译为 class file 69（Java 25），且自身要求在 Gradle >= 9.2 时运行。用 JDK 21 或更低版本跑 Gradle 会在配置阶段就失败（`UnsupportedClassVersionError: com/gtnewhorizons/retrofuturagradle/UserDevPlugin ... class file version 69.0`），构建不会开始。仓库自带的 wrapper 是 Gradle 9.4.0，满足下限，无需改动。
+
+这只约束**构建所用的 Gradle JVM**：项目 Java toolchain 仍固定为 8（`build-logic/convention/src/main/kotlin/jvm.gradle.kts:9`），开发客户端也由该 Java 8 toolchain 启动；模组运行期要求未因此改动。
+
+常用验证命令（`JAVA_HOME` 指向 JDK 25）：
 
 ```powershell
 .\gradlew.bat test

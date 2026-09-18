@@ -19,11 +19,6 @@ object DevCompatProbeRunner {
 
     internal fun probeIds(): List<String> = probes.map(DevCompatProbe::id)
 
-    internal fun fixedTargetCoverage(): Set<String> = probes.asSequence()
-        .filter(DevCompatProbe::isFixedTargetProbe)
-        .flatMap { it.coveredClasses.asSequence() }
-        .toSet()
-
     fun run(server: MinecraftServer): List<String> {
         val availableIds = probes.map(DevCompatProbe::id)
         val selectedIds = selectRequestedProbeIds(DevAutomationConfig.compatProbeIds, availableIds)
@@ -85,12 +80,8 @@ internal data class ProbeAvailability(val available: Boolean, val failureSummary
 
 internal interface DevCompatProbe {
     val id: String
-    val isFixedTargetProbe: Boolean
-        get() = false
     val primaryTargetClass: String?
         get() = null
-    val coveredClasses: Array<String>
-        get() = primaryTargetClass?.let { arrayOf(it) } ?: emptyArray()
 
     fun isAvailable(): Boolean = primaryTargetClass?.let(::hasClass) ?: true
 

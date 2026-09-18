@@ -8,13 +8,12 @@ import net.minecraft.util.EnumFacing
 
 internal object InvWrapperLimitProbe : DevCompatProbe {
     override val id: String = "inv_wrapper_limit"
-    override val isFixedTargetProbe: Boolean = true
     override val primaryTargetClass: String = "net.minecraftforge.items.wrapper.InvWrapper"
 
     override fun run(server: MinecraftServer): DevCompatProbeResult {
         val inventory = createInventoryProxy()
         // T3 判定（decision-record §3.5）：InvWrapper 是转发 wrapper，getSlotLimit 转发 delegate 的
-        // getInventoryStackLimit；FixedCompatTargets 显式跳过下，探针验证的正是"转发到 delegate 上限"，
+        // getInventoryStackLimit；探针验证的正是"转发到 delegate 上限"，
         // 预期取代理库存实际广告的 getInventoryStackLimit（固定 64），而非全局 compat 上限。
         val expected = delegateInventoryStackLimit(inventory)
         return verifySingleSlotLimit(primaryTargetClass, expected) { wrapperClass ->
@@ -25,7 +24,6 @@ internal object InvWrapperLimitProbe : DevCompatProbe {
 
 internal object CombinedInvWrapperLimitProbe : DevCompatProbe {
     override val id: String = "combined_inv_wrapper_limit"
-    override val isFixedTargetProbe: Boolean = true
     override val primaryTargetClass: String = "net.minecraftforge.items.wrapper.CombinedInvWrapper"
 
     override fun run(server: MinecraftServer): DevCompatProbeResult {
@@ -43,7 +41,6 @@ internal object CombinedInvWrapperLimitProbe : DevCompatProbe {
 
 internal object SidedInvWrapperLimitProbe : DevCompatProbe {
     override val id: String = "sided_inv_wrapper_limit"
-    override val isFixedTargetProbe: Boolean = true
     override val primaryTargetClass: String = "net.minecraftforge.items.wrapper.SidedInvWrapper"
 
     override fun run(server: MinecraftServer): DevCompatProbeResult {
@@ -60,7 +57,6 @@ internal object SidedInvWrapperLimitProbe : DevCompatProbe {
 
 internal object RangedWrapperLimitProbe : DevCompatProbe {
     override val id: String = "ranged_wrapper_limit"
-    override val isFixedTargetProbe: Boolean = true
     override val primaryTargetClass: String = "net.minecraftforge.items.wrapper.RangedWrapper"
 
     override fun run(server: MinecraftServer): DevCompatProbeResult {
@@ -79,7 +75,6 @@ internal object RangedWrapperLimitProbe : DevCompatProbe {
 
 internal object SlotItemHandlerLimitProbe : DevCompatProbe {
     override val id: String = "slot_item_handler_limit"
-    override val isFixedTargetProbe: Boolean = true
     override val primaryTargetClass: String = "net.minecraftforge.items.SlotItemHandler"
 
     override fun run(server: MinecraftServer): DevCompatProbeResult {

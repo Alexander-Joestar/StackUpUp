@@ -1,14 +1,12 @@
 package io.alexjoest.stackupup.dev
 
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class DevCompatProbeCatalogTest {
     @Test
-    fun fixedProbes_shouldBeInDefaultCatalog() {
+    fun compatProbes_shouldBeInDefaultCatalog() {
         val probeIds = DevCompatProbeRunner.probeIds()
-        assertEquals(expectedFixedTargetProbeCoverage(), DevCompatProbeRunner.fixedTargetCoverage())
         assertTrue("cyclopscore_simple_inventory_limit" in probeIds)
         assertTrue("combined_inv_wrapper_limit" in probeIds)
         assertTrue("ranged_wrapper_limit" in probeIds)

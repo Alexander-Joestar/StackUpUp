@@ -268,7 +268,7 @@ class WrapperCapacityDiagnosticTest {
             "无法读取 $className.class"
         }.use { it.readBytes() }
 
-    /** 结构检查辅助：断言字节码原始文本中包含指定 ASCII 序列（与 DynamicCompatEarlyPathBytecodeTest 同型私有扩展）。 */
+    /** 结构检查辅助：断言字节码原始文本中包含指定 ASCII 序列。 */
     private fun ByteArray.containsAscii(value: String): Boolean {
         if (isEmpty()) {
             return false

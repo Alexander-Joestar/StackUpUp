@@ -126,7 +126,7 @@ class StackUpUpMixinConnectorSkipLogTest {
     }
 
     @Test
-    fun connectorAe2Probe_shouldHonorKnownForgeAbsenceWithoutFallback() {
+    fun connectorAe2Probe_shouldFallbackWhenModDiscovererReportsAbsence() {
         var cleanroomProbeCalled = false
         val present = StackUpUpMixinConnector().isModPresentForConnector(
             "ae2",
@@ -136,8 +136,8 @@ class StackUpUpMixinConnectorSkipLogTest {
                 true
             },
         )
-        assertFalse(present, "Forge 已明确报告 mod 缺失时不得被 fallback 覆盖")
-        assertFalse(cleanroomProbeCalled, "Forge 已明确报告结果时不得调用 fallback")
+        assertTrue(present, "ModDiscoverer 未发现 mod 时必须尝试 Cleanroom fallback")
+        assertTrue(cleanroomProbeCalled, "ModDiscoverer 返回 false 时必须调用 fallback")
     }
 
     @Test
@@ -159,7 +159,8 @@ class StackUpUpMixinConnectorSkipLogTest {
         )
         assertTrue(source.contains("isModPresentForConnector(modId)"), "生产 connector 必须使用安全 mod probe")
         assertFalse(source.contains("Loader.isModLoaded"), "connector 阶段不得直接调用 Loader.isModLoaded")
-        assertTrue(source.contains("indexedModList"), "Forge probe 必须读取 connector 阶段安全的 indexed mod map")
+        assertFalse(source.contains("Loader.instance()"), "connector 阶段不得触发 Forge Loader 初始化")
+        assertFalse(source.contains("indexedModList"), "connector 阶段不得直接读取 Forge indexed mod map")
         assertTrue(source.contains("cleanroomAe2Presence"), "Forge probe 不可用时必须保留 Cleanroom fallback")
         assertTrue(source.contains("shouldQueue(config, isModPresent)"), "必须保留 shouldQueue 注入式谓词")
         assertTrue(source.contains("ModDiscoverer.isModPresent"), "非 ae2 模块必须保留 ModDiscoverer probe")

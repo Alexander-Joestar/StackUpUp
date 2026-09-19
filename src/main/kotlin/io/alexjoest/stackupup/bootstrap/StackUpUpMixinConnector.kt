@@ -47,10 +47,7 @@ class StackUpUpMixinConnector : IMixinConnector {
             return
         }
         try {
-            logger.warn(
-                "Diagnostic build: skipping early mixin registration for '{}'; early mixins are intentionally disabled (late mixins continue)",
-                StackUpUpIds.EARLY_MIXIN_CONFIG,
-            )
+            Mixins.addConfiguration(StackUpUpIds.EARLY_MIXIN_CONFIG)
         } catch (e: Exception) {
             logger.error("Early mixin loading failed; early mixins are disabled (late mixins continue)", e)
         }
@@ -101,13 +98,16 @@ class StackUpUpMixinConnector : IMixinConnector {
         }
     }
 
-    private fun safeForgeModPresence(modId: String): Boolean? {
+    private fun safeForgeModPresence(modId: String): Boolean? = try {
+        ModDiscoverer.isModPresent(modId)
+    } catch (e: Throwable) {
         logger.warn(
-            "Forge indexed mod presence probe intentionally disabled for '{}' during diagnostic connector initialization; " +
+            "Forge mod presence probe for '{}' is unavailable during connector initialization; " +
                 "trying Cleanroom marker probe",
             modId,
+            e,
         )
-        return null
+        null
     }
 
     private fun cleanroomAe2Presence(): Boolean {

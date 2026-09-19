@@ -1,5 +1,6 @@
 package io.alexjoest.stackupup
 
+import io.alexjoest.stackupup.compat.nuclearcraft.NuclearCraftCompat
 import net.minecraftforge.common.config.Config
 
 @Config(modid = StackUpUp.CONFIG_ID, name = StackUpUp.PUBLIC_ID, category = "")
@@ -23,6 +24,11 @@ object StackUpUpConfig {
     val general: General = General()
 
     @JvmField
+    @Config.Name("compat")
+    @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compat.name")
+    val compat: Compat = Compat()
+
+    @JvmField
     @Config.Name("client")
     @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.client.name")
     val client: Client = Client()
@@ -30,7 +36,8 @@ object StackUpUpConfig {
     @JvmStatic
     fun applyReloadControlledValues() {
         activeMaxStackSize = general.maxStackSize
-        activeCraftingSlotLimit = general.craftingSlotLimit
+        activeCraftingSlotLimit = compat.vanilla.craftingSlotLimit.takeIf { it > 0 } ?: Constants.VANILLA_STACK_LIMIT
+        NuclearCraftCompat.applyConfiguredUpgradeStackLimits()
     }
 
     class General {
@@ -50,15 +57,49 @@ object StackUpUpConfig {
         @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.general.maxStackSize.name")
         @Config.RangeInt(min = 1, max = Int.MAX_VALUE)
         var maxStackSize: Int = 64
+    }
 
-        // 合成容器（工作台网格 + 合成结果槽）的槽位上限：大堆叠下按 shift 合成会一次搬运极大量物品，
-        // 造成卡顿与误操作，故给这两个类单独设上限。默认 64 与原版一致；全局兼容上限被抬高时，
-        // 合成槽位按本值收敛（该项即为此意图）。
+    class Compat {
         @JvmField
-        @Config.Comment("Slot limit advertised by crafting containers (workbench grid and craft result slot). Default 64 matches vanilla.")
-        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.general.craftingSlotLimit.name")
-        @Config.RangeInt(min = 1, max = Int.MAX_VALUE)
-        var craftingSlotLimit: Int = 64
+        @Config.Name("vanilla")
+        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compat.vanilla.name")
+        val vanilla: Vanilla = Vanilla()
+
+        @JvmField
+        @Config.Name("nuclearcraft")
+        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compat.nuclearcraft.name")
+        val nuclearcraft: NuclearCraft = NuclearCraft()
+    }
+
+    class Vanilla {
+        @JvmField
+        @Config.Comment(
+            "Crafting container slot limit. 0 keeps the vanilla/default behavior; values above 0 set a custom limit; " +
+                "Int.MAX_VALUE - 1 means unlimited. May affect game balance / 会影响游戏平衡.",
+        )
+        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compat.vanilla.craftingSlotLimit.name")
+        @Config.RangeInt(min = 0, max = Int.MAX_VALUE - 1)
+        var craftingSlotLimit: Int = 0
+    }
+
+    class NuclearCraft {
+        @JvmField
+        @Config.Comment(
+            "Speed upgrade stack limit. 0 keeps NuclearCraft's default (64); values above 0 set a custom limit; " +
+                "Int.MAX_VALUE - 1 means unlimited. May affect game balance / 会影响游戏平衡.",
+        )
+        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compat.nuclearcraft.speedUpgradeLimit.name")
+        @Config.RangeInt(min = 0, max = Int.MAX_VALUE - 1)
+        var speedUpgradeLimit: Int = 0
+
+        @JvmField
+        @Config.Comment(
+            "Energy upgrade stack limit. 0 keeps NuclearCraft's default (64); values above 0 set a custom limit; " +
+                "Int.MAX_VALUE - 1 means unlimited. May affect game balance / 会影响游戏平衡.",
+        )
+        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compat.nuclearcraft.energyUpgradeLimit.name")
+        @Config.RangeInt(min = 0, max = Int.MAX_VALUE - 1)
+        var energyUpgradeLimit: Int = 0
     }
 
     class Client {

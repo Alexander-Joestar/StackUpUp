@@ -74,8 +74,9 @@ object StackUpUpConfig {
     class Vanilla {
         @JvmField
         @Config.Comment(
-            "Crafting container slot limit. 0 keeps the vanilla/default behavior; values above 0 set a custom limit; " +
-                "Int.MAX_VALUE - 1 means unlimited. May affect game balance / 会影响游戏平衡.",
+            "Crafting container slot limit. ",
+            "0 keeps the vanilla/default behavior; values above 0 set a custom limit; ",
+            "Int.MAX_VALUE - 1 means unlimited. May affect game balance",
         )
         @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compat.vanilla.craftingSlotLimit.name")
         @Config.RangeInt(min = 0, max = Int.MAX_VALUE - 1)

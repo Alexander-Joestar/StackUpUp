@@ -39,8 +39,7 @@ class StackUpUpMixinConnector : IMixinConnector {
     private val logger: Logger = LogManager.getLogger("stackupup.mixin.connector")
 
     override fun connect() {
-        connectEarly()
-        connectLate()
+        logger.warn("Diagnostic build: connector execution disabled; early and late mixin registration are skipped")
     }
 
     private fun connectEarly() {

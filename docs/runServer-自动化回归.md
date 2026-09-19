@@ -3,7 +3,7 @@
 > 状态：PARTIAL（源码入口已同步；未知 probe ID、可用性异常与探针执行异常已按源码记录为失败而非跳过。最近一次矩阵运行通过（2026-08-10，`run/logs/autotest-report.txt` 最终状态 PASS），但此后代码改动未经矩阵重跑，独立复核与完整运行门仍未闭合）
 > 文档定位：源码核对说明，描述当前构建脚本、自动化入口与驱动源码，不是运行结果报告；未运行或未独立复核的自动验收不写成“已通过”。
 >
-> 当前构建基线：MixinBooter 11.13 + CleanMix 0.7.1，Mixin 配置经 `IMixinConnector` 注册；10.7 与旧 early/late loader 仅作历史记录。
+> 当前构建基线：MixinBooter 11.17 + CleanMix 0.7.2，Mixin 配置经 `IMixinConnector` 注册；10.7 与旧 early/late loader 仅作历史记录。
 
 ## 当前实现
 
@@ -69,7 +69,7 @@
 
 矩阵内建目标为 `IngotSteel`、`PlateSteel`、`DustSteel`、`VacuumTube`；目标全部未解析且 `gregtech` 未加载时只跳过内建 GT/metadata 专项，部分未解析或 `gregtech` 已加载但全部未解析则形成失败。内建循环逐目标捕获执行异常后继续其他目标；内建循环正常完成后才运行 `DevCompatProbeRunner` 注册的兼容探针。兼容探针只有明确的 `ClassNotFoundException` 才按目标模组未加载跳过；其他可用性异常、探针执行异常和未知 probe ID 都记录失败（`DevAutomationServerDriver.kt:111-184`、`DevCompatProbeSupport.kt:10-17,59-63`、`DevCompatProbeRunner.kt:27-74`）。
 
-安全底线是“对外广告容量不大于真实写入路径容量”。当前 `evaluateProbeResult` 直接拒绝 `actualLimit > slotLimit`，并按 `min(requested, actualLimit, slotLimit)` 同时校验真实存入量和 remainder；这只覆盖探针实际使用的 `ItemStackHandler` 写入面，不等于所有未知 handler 或第三方路径已闭合。未知 `IItemHandler` 的 dynamic ASM 路径不扩展，`SlotItemHandler` 现状仍有非 64 分支风险，不能因接口实现推断容量安全。Forge `EntityEquipmentInvWrapper#insertItem` 会计算插入上限并返回 `remainder`；`setStackInSlot` 与 vanilla setter 是另一条写入路径，不能用该 `insertItem` 的 limit/remainder 行为概括。第三方写入路径没有源码证据时，结论只能写“无源码不可判定”，不能依据类名或代理探针臆测。
+安全底线是“对外广告容量不大于真实写入路径容量”。当前 `evaluateProbeResult` 直接拒绝 `actualLimit > slotLimit`，并按 `min(requested, actualLimit, slotLimit)` 同时校验真实存入量和 remainder；这只覆盖探针实际使用的 `ItemStackHandler` 写入面，不等于所有未知 handler 或第三方路径已闭合。当前已移除 dynamic ASM replacement layer，未知 `IItemHandler` 不因缺少显式 Mixin 目标而扩容；`SlotItemHandler` 现状仍有非 64 分支风险，不能因接口实现推断容量安全。Forge `EntityEquipmentInvWrapper#insertItem` 会计算插入上限并返回 `remainder`；`setStackInSlot` 与 vanilla setter 是另一条写入路径，不能用该 `insertItem` 的 limit/remainder 行为概括。第三方写入路径没有源码证据时，结论只能写“无源码不可判定”，不能依据类名或代理探针臆测。
 
 ## 日志与报告定位
 

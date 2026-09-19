@@ -1,11 +1,12 @@
 {
   "required": false,
-  "package": "io.alexjoest.stackupup.mixin.late",
+  "package": "io.alexjoest.stackupup.mixin.late.nuclearcraft",
   "refmap": "${refmap}",
   "target": "@env(DEFAULT)",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
     "NuclearCraftTileInventoryLimitMixin",
-    "NuclearCraftDistributorNoDropMixin"
+    "NuclearCraftDistributorNoDropMixin",
+    "NuclearCraftUpgradeStackLimitMixin"
   ]
 }

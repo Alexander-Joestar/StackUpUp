@@ -16,7 +16,7 @@ class LocalizedMessagesTest {
         assertEquals(english.size, chinese.size)
         assertEquals(english.keys, chinese.keys)
         // 结构检查：当前两份 lang 文件的已知键总数，防止任一侧漏键。
-        assertEquals(86, english.size)
+        assertEquals(93, english.size)
     }
 
     @Test

@@ -20,7 +20,7 @@ abstract class BrandonsCoreInventoryLimitMixin {
     @Shadow(remap = false)
     private int stackLimit;
 
-    /**
+        /**
      * 构造期把 stackLimit 字段扩到全局兼容上限，这样：
      * - getInventoryStackLimit() 直接返回扩展值
      * - setInventorySlotContents 里的截断检查

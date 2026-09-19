@@ -4,8 +4,6 @@ import io.alexjoest.stackupup.StackUpUpCore
 import io.alexjoest.stackupup.StackUpUpIds
 import io.alexjoest.stackupup.config.MixinToggles
 import net.minecraft.launchwrapper.Launch
-import net.minecraftforge.fml.common.Loader
-import net.minecraftforge.fml.common.LoaderState.ModState
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.spongepowered.asm.mixin.Mixins
@@ -39,7 +37,8 @@ class StackUpUpMixinConnector : IMixinConnector {
     private val logger: Logger = LogManager.getLogger("stackupup.mixin.connector")
 
     override fun connect() {
-        logger.warn("Diagnostic build: connector execution disabled; early and late mixin registration are skipped")
+        connectEarly()
+        connectLate()
     }
 
     private fun connectEarly() {
@@ -103,19 +102,12 @@ class StackUpUpMixinConnector : IMixinConnector {
     }
 
     private fun safeForgeModPresence(modId: String): Boolean? {
-        return try {
-            val loader = Loader.instance()
-            val mod = loader.indexedModList[modId] ?: return null
-            loader.getModState(mod) != ModState.DISABLED
-        } catch (e: Throwable) {
-            logger.warn(
-                "Forge indexed mod presence probe for '{}' is unavailable during connector initialization; " +
-                    "trying Cleanroom marker probe",
-                modId,
-                e,
-            )
-            null
-        }
+        logger.warn(
+            "Forge indexed mod presence probe intentionally disabled for '{}' during diagnostic connector initialization; " +
+                "trying Cleanroom marker probe",
+            modId,
+        )
+        return null
     }
 
     private fun cleanroomAe2Presence(): Boolean {

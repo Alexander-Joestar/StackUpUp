@@ -29,8 +29,8 @@ import java.util.jar.JarFile
  *
  * 装载语义与旧 loader 完全一致：
  * - early：冲突检测（[StackUpUpCore.ensureConflictState]）非空 → ERROR + 不 add（冲突禁用设计）；通过 → add；
- * - late：按模块表逐配置判断 mod 在场（[ModDiscoverer.isModPresent]；Supergiant `ae2` 使用 connector-safe
- *   的 Forge indexed probe，不可用时回退到 Cleanroom marker probe）+ [MixinToggles] 开关 → 条件 add；
+ * - late：按模块表逐配置判断 mod 在场（[ModDiscoverer.isModPresent]；Supergiant `ae2` 的结果为 false
+ *   或不可用时回退到 Cleanroom marker probe）+ [MixinToggles] 开关 → 条件 add；
  *   不在模块表的配置不装载。
  */
 class StackUpUpMixinConnector : IMixinConnector {
@@ -77,14 +77,14 @@ class StackUpUpMixinConnector : IMixinConnector {
             forgeProbe()
         } catch (e: Throwable) {
             logger.warn(
-                "Forge mod presence probe for '{}' failed during connector initialization; trying Cleanroom marker probe",
+                "ModDiscoverer presence probe for '{}' failed during connector initialization; trying Cleanroom marker probe",
                 modId,
                 e,
             )
             null
         }
-        if (forgePresence != null) {
-            return forgePresence
+        if (forgePresence == true) {
+            return true
         }
         return try {
             cleanroomProbe()
@@ -99,10 +99,10 @@ class StackUpUpMixinConnector : IMixinConnector {
     }
 
     private fun safeForgeModPresence(modId: String): Boolean? = try {
-        ModDiscoverer.isModPresent(modId)
+        if (ModDiscoverer.isModPresent(modId)) true else null
     } catch (e: Throwable) {
         logger.warn(
-            "Forge mod presence probe for '{}' is unavailable during connector initialization; " +
+            "ModDiscoverer presence probe for '{}' is unavailable during connector initialization; " +
                 "trying Cleanroom marker probe",
             modId,
             e,

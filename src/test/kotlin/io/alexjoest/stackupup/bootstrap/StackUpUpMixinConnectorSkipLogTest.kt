@@ -126,7 +126,7 @@ class StackUpUpMixinConnectorSkipLogTest {
     }
 
     @Test
-    fun connectorAe2Probe_shouldHonorKnownForgeAbsenceWithoutFallback() {
+    fun connectorAe2Probe_shouldFallbackWhenModDiscovererReportsAbsence() {
         var cleanroomProbeCalled = false
         val present = StackUpUpMixinConnector().isModPresentForConnector(
             "ae2",
@@ -136,8 +136,8 @@ class StackUpUpMixinConnectorSkipLogTest {
                 true
             },
         )
-        assertFalse(present, "Forge 已明确报告 mod 缺失时不得被 fallback 覆盖")
-        assertFalse(cleanroomProbeCalled, "Forge 已明确报告结果时不得调用 fallback")
+        assertTrue(present, "ModDiscoverer 未发现 mod 时必须尝试 Cleanroom fallback")
+        assertTrue(cleanroomProbeCalled, "ModDiscoverer 返回 false 时必须调用 fallback")
     }
 
     @Test

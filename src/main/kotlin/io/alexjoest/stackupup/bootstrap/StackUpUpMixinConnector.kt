@@ -103,7 +103,7 @@ class StackUpUpMixinConnector : IMixinConnector {
     private fun safeForgeModPresence(modId: String): Boolean? {
         return try {
             val loader = Loader.instance()
-            val mod = loader.getIndexedModList()[modId] ?: return null
+            val mod = loader.indexedModList[modId] ?: return null
             loader.getModState(mod) != ModState.DISABLED
         } catch (e: Throwable) {
             logger.warn(
@@ -134,12 +134,12 @@ class StackUpUpMixinConnector : IMixinConnector {
         ) {
             return true
         }
-        val minecraftHome: File? = try {
+        val minecraftHome: File = try {
             Launch.minecraftHome
         } catch (e: Throwable) {
             logger.warn("Unable to read Launch.minecraftHome for Cleanroom marker probe", e)
-            null
-        } ?: return false
+            return false
+        }
         return listOf(
             File(minecraftHome, "mods"),
             File(File(minecraftHome, "mods"), "1.12.2"),

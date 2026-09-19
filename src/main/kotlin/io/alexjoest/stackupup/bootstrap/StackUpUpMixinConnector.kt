@@ -49,7 +49,10 @@ class StackUpUpMixinConnector : IMixinConnector {
             return
         }
         try {
-            Mixins.addConfiguration(StackUpUpIds.EARLY_MIXIN_CONFIG)
+            logger.warn(
+                "Diagnostic build: skipping early mixin registration for '{}'; early mixins are intentionally disabled (late mixins continue)",
+                StackUpUpIds.EARLY_MIXIN_CONFIG,
+            )
         } catch (e: Exception) {
             logger.error("Early mixin loading failed; early mixins are disabled (late mixins continue)", e)
         }

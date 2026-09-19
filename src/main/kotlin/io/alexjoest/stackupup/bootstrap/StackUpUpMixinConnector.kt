@@ -59,11 +59,11 @@ class StackUpUpMixinConnector : IMixinConnector {
         val isModPresent: (String) -> Boolean = { modId ->
             isModPresentForConnector(modId)
         }
-        for (module in modules) {
-            if (!shouldQueue(module.config, isModPresent)) {
+        for ((config) in modules) {
+            if (!shouldQueue(config, isModPresent)) {
                 continue
             }
-            Mixins.addConfiguration(module.config)
+            Mixins.addConfiguration(config)
         }
     }
 

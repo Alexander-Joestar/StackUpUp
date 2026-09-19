@@ -13,7 +13,7 @@ English documentation: [README.en.md](README.en.md)
 - 目标版本：Minecraft **1.12.2** + Forge **14.23.5.2847**
 - 当前版本：**0.2.4**
 - 规则系统：DSL v2，支持 `.su` 与带 `state` / `gate` 的 `.su.md`
-- 兼容层：MixinBooter **11.17** + CleanMix **0.7.2**；通过 `IMixinConnector` 注册 Mixin 配置，ASM 仅保留为旧兼容/早期加载兜底；10.7 与旧 loader 仅为历史基线
+- 兼容层：MixinBooter **11.17** + CleanMix **0.7.2**；当前仅通过 `IMixinConnector` 注册 Mixin 配置，`StackUpUpCore` 不再注册 ASM transformer；10.7 与旧 loader 仅为历史基线
 
 ## 下载
 
@@ -87,9 +87,9 @@ tab = buildingBlocks -> 256
 
 StackUpUp 对遵循原版堆叠语义的模组通常直接生效；对自行写死 `64`、绕过 `ItemStack#getMaxStackSize()` 或有特殊库存逻辑的模组，可能需要额外补丁。
 
-核心安全原则：**对外广告容量不能大于真实写入容量。** 动态 ASM 只保留给未知旧式 `IInventory` / `Slot` 路径，未知 `IItemHandler` 的动态 ASM 已故意禁用；即使其 `getSlotLimit()` 字面返回 64，也不能据此证明真实写入容量可以扩大，否则 vanilla 可能投入超出库存真实承受能力的物品，触发截断、吞物品或与模组溢出逻辑冲突。
+核心安全原则：**对外广告容量不能大于真实写入容量。** 未知 `IItemHandler` 实现不做动态扩容；即使其 `getSlotLimit()` 字面返回 64，也不能据此证明真实写入容量可以扩大，否则 vanilla 可能投入超出库存真实承受能力的物品，触发截断、吞物品或与模组溢出逻辑冲突。
 
-对已登记并尝试加载的目标，StackUpUp 通过 `IMixinConnector` 注册 Mixin 配置，作用于真实 `getInventoryStackLimit()` / `getSlotLimit()` 等容量入口，再让槽位上限跟随；第三方真实写入路径缺源码时为“无源码不可判定”，不能仅凭目标类名或注册结果推断写入能力。旧 ASM 仅作历史兼容和早期加载兜底，不再是新增兼容首选。AE2 方案 A 已归档：热路径原样透传 `insertItem`，运行期依赖 Forge remainder 契约和边界探针，不使用 JSONL 守恒报告，也不采用写入后回填。
+当前兼容补丁均通过 `StackUpUpMixinConnector` 经 `IMixinConnector` 注册的 Mixin 配置实现，作用于真实 `getInventoryStackLimit()` / `getSlotLimit()` 等容量入口；`StackUpUpCore` 不注册 ASM transformer。第三方真实写入路径缺源码时为“无源码不可判定”，不能仅凭目标类名或注册结果推断写入能力。AE2 方案 A 已归档：热路径原样透传 `insertItem`，运行期依赖 Forge remainder 契约和边界探针，不使用 JSONL 守恒报告，也不采用写入后回填。
 
 当前已登记并尝试加载的 late mixin 目标（`StackUpUpMixinConnector` 模块表，16 个配置）：
 
@@ -154,7 +154,7 @@ mixins.stackupup.late.storagenetwork.json
 
 ## 和原版 StackUp 的区别
 
-与 StackUp 相比，StackUpUp 锁定 Minecraft **1.12.2**，规则升级为 **DSL v2**（按物品、metadata、矿物辞典、创造标签页分层配置），兼容层以 **MixinBooter + Mixin** 为主（ASM 仅作旧兼容和早期加载兜底），客户端数量显示增加缩放、缩写和 Tooltip 辅助显示。
+与 StackUp 相比，StackUpUp 锁定 Minecraft **1.12.2**，规则升级为 **DSL v2**（按物品、metadata、矿物辞典、创造标签页分层配置），兼容层采用 **MixinBooter + Mixin**，客户端数量显示增加缩放、缩写和 Tooltip 辅助显示。
 
 ## 开发与验证
 

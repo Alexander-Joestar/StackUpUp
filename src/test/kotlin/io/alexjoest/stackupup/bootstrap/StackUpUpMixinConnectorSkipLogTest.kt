@@ -159,7 +159,7 @@ class StackUpUpMixinConnectorSkipLogTest {
         )
         assertTrue(source.contains("isModPresentForConnector(modId)"), "生产 connector 必须使用安全 mod probe")
         assertFalse(source.contains("Loader.isModLoaded"), "connector 阶段不得直接调用 Loader.isModLoaded")
-        assertTrue(source.contains("getIndexedModList"), "Forge probe 必须读取 connector 阶段安全的 indexed mod map")
+        assertTrue(source.contains("indexedModList"), "Forge probe 必须读取 connector 阶段安全的 indexed mod map")
         assertTrue(source.contains("cleanroomAe2Presence"), "Forge probe 不可用时必须保留 Cleanroom fallback")
         assertTrue(source.contains("shouldQueue(module.config, isModPresent)"), "必须保留 shouldQueue 注入式谓词")
         assertTrue(source.contains("ModDiscoverer.isModPresent"), "非 ae2 模块必须保留 ModDiscoverer probe")

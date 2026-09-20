@@ -83,6 +83,14 @@ tab = buildingBlocks -> 256
 
 若槽位中的短数字不够清楚，可在配置里开启 Tooltip 堆叠显示，以 `数量/上限` 展示当前数量和最大堆叠上限。
 
+## 配置
+
+启动一次游戏或服务端后，配置文件为 `config/stackupup.cfg`；配置 GUI 和文件中的分组结构一致。修改后可保存配置并重启，或执行 `/stackupup reload` 让可运行期配置重新应用：
+
+- `general.maxStackSize`：全局兼容最大堆叠上限，默认 `64`；规则结果和兼容入口都不会超过这个值。
+- `compat.vanilla.craftingSlotLimit`：工作台网格与合成结果槽上限，默认 `64`。`0` 保持原版/默认行为，大于 `0` 使用指定上限。这主要是性能（Performance）设置：按住 Shift 批量合成极大堆叠可能造成严重卡顿，不是平衡开关。实际上限还会受 `general.maxStackSize` 与物品/配方限制收紧。
+- `compat.nuclearcraft.speedUpgradeLimit` 与 `compat.nuclearcraft.energyUpgradeLimit`：NuclearCraft 速度/能量升级的堆叠上限，默认 `0`（保持 NuclearCraft 默认值 `64`）；大于 `0` 时使用自定义上限。NuclearCraft 未加载时，这些设置不生效。
+
 ## 兼容性
 
 StackUpUp 对遵循原版堆叠语义的模组通常直接生效；对自行写死 `64`、绕过 `ItemStack#getMaxStackSize()` 或有特殊库存逻辑的模组，可能需要额外补丁。
@@ -91,7 +99,7 @@ StackUpUp 对遵循原版堆叠语义的模组通常直接生效；对自行写�
 
 当前兼容补丁均通过 `StackUpUpMixinConnector` 经 `IMixinConnector` 注册的 Mixin 配置实现，作用于真实 `getInventoryStackLimit()` / `getSlotLimit()` 等容量入口；`StackUpUpCore` 不注册 ASM transformer。第三方真实写入路径缺源码时为“无源码不可判定”，不能仅凭目标类名或注册结果推断写入能力。AE2 方案 A 已归档：热路径原样透传 `insertItem`，运行期依赖 Forge remainder 契约和边界探针，不使用 JSONL 守恒报告，也不采用写入后回填。
 
-当前已登记并尝试加载的 late mixin 目标（`StackUpUpMixinConnector` 模块表，16 个配置）：
+当前已登记并尝试加载的 late mixin 目标（`StackUpUpMixinConnector` 模块表，17 个配置）：
 
 - Applied Energistics 2
 - Applied Energistics 2 Supergiant
@@ -104,6 +112,7 @@ StackUpUp 对遵循原版堆叠语义的模组通常直接生效；对自行写�
 - IC2
 - Mantle
 - NuclearCraft
+- Tech Reborn (via RebornCore)
 - Refined Storage
 - Simple Storage Network
 - IntegratedDynamics
@@ -129,7 +138,7 @@ general {
 - 改完需要**重启游戏或服务端**：MixinBooter 在 coremod 阶段就读这份配置并拉黑，`/stackupup reload` 这类运行期重载不会让它生效，也不会把它重新打开。
 - 被拉黑的配置不会装载，对应模组的兼容补丁因此完全不生效；该配置本来就没装载时填写它也无副作用。请勿拉黑核心配置 `mixins.stackupup.early.json`，那会一并停用原版库存等基础路径。
 
-目前可用的 late 配置文件名共 16 个（取自 jar 内实际存在的 `mixins.stackupup.late.*.json`）：
+目前可用的 late 配置文件名共 17 个（取自 jar 内实际存在的 `mixins.stackupup.late.*.json`）：
 
 ```
 mixins.stackupup.late.actuallyadditions.json
@@ -147,6 +156,7 @@ mixins.stackupup.late.limelib.json
 mixins.stackupup.late.mantle.json
 mixins.stackupup.late.nuclearcraft.json
 mixins.stackupup.late.refinedstorage.json
+mixins.stackupup.late.techreborn.json
 mixins.stackupup.late.storagenetwork.json
 ```
 

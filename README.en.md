@@ -97,6 +97,15 @@ which forces capped compact text before fitting and any font scaling, e.g. `1-99
 If abbreviated slot text is not enough context, enable the tooltip stack display option to show the current count and
 max stack limit as `count/limit`.
 
+## Configuration
+
+After the first game or server launch, the configuration file is `config/stackupup.cfg`; its groups match the in-game
+configuration screen. Save the configuration and restart, or run `/stackupup reload` to reapply values that are reloadable:
+
+- `general.maxStackSize`: global compatibility stack limit, default `64`; rule results and compatibility entry points are clamped to this value.
+- `compat.vanilla.craftingSlotLimit`: workbench grid and crafting-result slot limit, default `64`. `0` keeps vanilla/default behavior; values above `0` use the custom limit. This is mainly a Performance setting: holding Shift to batch-craft very large stacks can cause severe lag, not a balance switch. The effective limit can still be reduced by `general.maxStackSize` and item/recipe limits.
+- `compat.nuclearcraft.speedUpgradeLimit` and `compat.nuclearcraft.energyUpgradeLimit`: NuclearCraft speed/energy upgrade stack limits, default `0` (keep NuclearCraft's default `64`); values above `0` use a custom limit. These settings have no effect when NuclearCraft is not loaded.
+
 ## Compatibility
 
 StackUpUp usually works out of the box for mods that follow vanilla stack-size semantics. Mods that hard-code `64`,
@@ -116,7 +125,7 @@ and class names or registration alone do not establish write capacity. AE2 Plan 
 `insertItem` through without a project wrapper, relying on the vanilla/Forge remainder contract and a boundary probe; no
 JSONL conservation report or write-after-the-fact remainder refill is used.
 
-Current late mixin targets registered for attempted loading (the `StackUpUpMixinConnector` module table, 16 configs):
+Current late mixin targets registered for attempted loading (the `StackUpUpMixinConnector` module table, 17 configs):
 
 - Applied Energistics 2
 - Applied Energistics 2 Supergiant
@@ -129,6 +138,7 @@ Current late mixin targets registered for attempted loading (the `StackUpUpMixin
 - IC2
 - Mantle
 - NuclearCraft
+- Tech Reborn (via RebornCore)
 - Refined Storage
 - Simple Storage Network
 - IntegratedDynamics
@@ -159,7 +169,7 @@ general {
   that would not have been loaded anyway is harmless. Do not blacklist the core config
   `mixins.stackupup.early.json`, as that also disables the base paths such as vanilla inventories.
 
-The 16 config file names currently available (taken from the `mixins.stackupup.late.*.json` files actually present in
+The 17 config file names currently available (taken from the `mixins.stackupup.late.*.json` files actually present in
 the jar):
 
 ```
@@ -178,6 +188,7 @@ mixins.stackupup.late.limelib.json
 mixins.stackupup.late.mantle.json
 mixins.stackupup.late.nuclearcraft.json
 mixins.stackupup.late.refinedstorage.json
+mixins.stackupup.late.techreborn.json
 mixins.stackupup.late.storagenetwork.json
 ```
 

@@ -115,6 +115,7 @@
 | GregTechMetaPrefixItemMixin（gregtech.json，审计后新增） | gregtech.api.items.materialitem.MetaPrefixItem | 同上（`@ModifyReturnValue`，require=0） | 无源码不可判定（同上） | src/main/java/.../mixin/late/GregTechMetaPrefixItemMixin.java:25-45 | gregtech |
 | NuclearCraftTileInventoryLimitMixin（nuclearcraft.json，审计后新增） | 4 个 nc.tile.*Inventory 抽象基类（TileInventory / TileFluidInventory / TileEnergyInventory / TileEnergyFluidInventory） | 以 mixin 类方法体直接覆写 `getInventoryStackLimit()I`（无注入注解；接口 default 不能直接 patch，字节码证据 CDR §3.9） | 无源码不可判定（广告值替换；NC 夹取点动态读该方法，CDR §3.10-B） | src/main/java/.../mixin/late/NuclearCraftTileInventoryLimitMixin.java:25-39 | nuclearcraft |
 | NuclearCraftDistributorNoDropMixin（nuclearcraft.json，审计后新增） | nc.multiblock.distributor.Distributor | `cullInventory()Z` 与 `dropOverflow(Ljava/util/List;)V` 各一处 `@Inject(HEAD, cancellable)`（require=0；不裁不丢） | 非容量站点（不改变上限广告；取消裁减/掉落，CDR §3.10-B） | src/main/java/.../mixin/late/NuclearCraftDistributorNoDropMixin.java:33-47 | nuclearcraft |
+| RebornCoreInventoryMixin（techreborn.json，当前新增） | reborncore.common.util.Inventory | `getInventoryStackLimit()I` 返回值替换为兼容上限（`@ModifyReturnValue`，require=0） | 无源码不可判定（Tech Reborn 通过 RebornCore 共享该容量入口；真实 setter/handler 仍需第三方源码或运行证据） | src/main/java/.../mixin/late/techreborn/RebornCoreInventoryMixin.java:9-16 | techreborn、reborncore |
 
 ## 4. 动态兼容层（历史中间层，已删除；旧 core/ 配置面）
 
@@ -134,7 +135,7 @@
 
 ## 5. 缺失第三方 jar 台账（P0 基线：`local-dev-mods/` 不存在、`run/mods/` 为空）
 
-late 目标 **当前 15 个模组** jar 均缺失（文件名/版本未登记，不得补猜）：`appliedenergistics2`（AE2）、`brandonscore`、`actuallyadditions`、`cyclopscore`、`enderio`、`ic2`、`mantle`、`refinedstorage`、`storagenetwork`、`integrateddynamics`、`limelib`、`immersiveengineering`、`nuclearcraft`、`colossalchests`、`gregtech`（**审计当时为 12 个**，nuclearcraft/colossalchests/gregtech 为审计后新增）。当前工作副本 `run/mods/`、`local-dev-mods/` 均为空（gitignored），无任何可读第三方字节码/源码。Forge 自身 wrapper 与 vanilla 反编译源码不属缺失项（§2/§4 已按 repo-relative 源码核验）。注：CDR §3.10/§3.11 的 Colossal Chests / GregTech / NuclearCraft 源码审阅使用本工作副本之外的本地 `../mods-under-test/` 副本，仓库内无可运行 jar，故上述三者仍计入「jar 缺失」台账（缺失的是可运行 jar，非源码副本）。
+late 目标 **当前 16 个模组** jar 均缺失（文件名/版本未登记，不得补猜）：`appliedenergistics2`（AE2）、`brandonscore`、`actuallyadditions`、`cyclopscore`、`enderio`、`ic2`、`mantle`、`refinedstorage`、`storagenetwork`、`integrateddynamics`、`limelib`、`immersiveengineering`、`nuclearcraft`、`colossalchests`、`gregtech`、`techreborn`（通过 `reborncore`，其对应 jar 同样缺失；**审计当时为 12 个**，nuclearcraft/colossalchests/gregtech/techreborn 为审计后新增）。当前工作副本 `run/mods/`、`local-dev-mods/` 均为空（gitignored），无任何可读第三方字节码/源码。Forge 自身 wrapper 与 vanilla 反编译源码不属缺失项（§2/§4 已按 repo-relative 源码核验）。注：CDR §3.10/§3.11 的 Colossal Chests / GregTech / NuclearCraft 源码审阅使用本工作副本之外的本地 `../mods-under-test/` 副本，仓库内无可运行 jar，故上述条目仍计入「jar 缺失」台账（缺失的是可运行 jar，非源码副本）。
 
 ## 6. patch 目标集合与登记表比对规则（未登记目标失败规则）
 
@@ -213,7 +214,7 @@ late 目标 **当前 15 个模组** jar 均缺失（文件名/版本未登记，
 
 ### 9.4 2026-09 计数 lane 复核（配置/文件/模组数刷新）
 
-- §3 标题文件数与 §5 缺失 jar 台账按当前工作副本刷新：late **25 个 .java 文件**（审计当时 18）、缺失模组 **15 个**（审计当时 12；新增 nuclearcraft、colossalchests、gregtech）。§3 表补登审计后新增的 7 个 late mixin 行（ColossalChestsTile / EnderIOInventorySlotLimit / EnderIOInventoryNoDrop / GregTechMetaItem ×2 / NuclearCraftTileInventoryLimit / NuclearCraftDistributorNoDrop），来源 CDR §3.10/§3.11。
+- §3 标题文件数与 §5 缺失 jar 台账按当前工作副本刷新：late **26 个 .java 文件**（审计当时 18）、缺失模组 **16 个**（审计当时 12；新增 nuclearcraft、colossalchests、gregtech、techreborn）。§3 表补登审计后新增的 late mixin 行（ColossalChestsTile / EnderIOInventorySlotLimit / EnderIOInventoryNoDrop / GregTechMetaItem ×2 / NuclearCraftTileInventoryLimit / NuclearCraftDistributorNoDrop / RebornCoreInventory），来源 CDR §3.10/§3.11 与当前 Tech Reborn 兼容配置。
 - §3 表内 early/late 计数不与 t14.1 §1 冲突：当前 17 个 `mixins.stackupup*.json`（early 1 + late 16），47 注册项 / 45 个 @Mixin 类；本表 §3 只登记容量/非容量站点，不重复配置数口径。
 - 未改变任何分类判定：审计后新增 7 项中 5 项为容量站点、2 项（EnderIONoDrop、NCDistributorNoDrop）已在表中标注「非容量站点」；全部第三方条目维持 **无源码不可判定**（§5）。
 

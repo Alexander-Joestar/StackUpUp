@@ -43,6 +43,7 @@ class MixinBooterIntegrationTest {
                 "mixins.stackupup.late.nuclearcraft.json",
                 "mixins.stackupup.late.colossalchests.json",
                 "mixins.stackupup.late.gregtech.json",
+                "mixins.stackupup.late.techreborn.json",
             ),
             StackUpUpMixinConnector().modules.map { it.config },
         )
@@ -108,6 +109,9 @@ class MixinBooterIntegrationTest {
 
         assertTrue(connector.shouldQueue("mixins.stackupup.late.gregtech.json", present("gregtech")))
         assertFalse(connector.shouldQueue("mixins.stackupup.late.gregtech.json", present()))
+
+        assertTrue(connector.shouldQueue("mixins.stackupup.late.techreborn.json", present("techreborn")))
+        assertFalse(connector.shouldQueue("mixins.stackupup.late.techreborn.json", present()))
     }
 
     @Test

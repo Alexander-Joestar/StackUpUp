@@ -230,6 +230,7 @@ class StackUpUpMixinConnector : IMixinConnector {
         LateMixinModule(StackUpUpIds.LATE_NUCLEARCRAFT_MIXIN_CONFIG, "nuclearcraft", "nuclearCraft") { MixinToggles.nuclearCraft },
         LateMixinModule(StackUpUpIds.LATE_COLOSSALCHESTS_MIXIN_CONFIG, "colossalchests", "colossalChests") { MixinToggles.colossalChests },
         LateMixinModule(StackUpUpIds.LATE_GREGTECH_MIXIN_CONFIG, "gregtech", "gregTech") { MixinToggles.gregTech },
+        LateMixinModule(StackUpUpIds.LATE_TECHREBORN_MIXIN_CONFIG, "techreborn", "techReborn") { MixinToggles.techReborn },
     )
 
     private companion object {

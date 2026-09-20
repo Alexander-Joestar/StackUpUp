@@ -1,4 +1,4 @@
-package io.alexjoest.stackupup.mixin.late;
+package io.alexjoest.stackupup.mixin.late.refinedstorage;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -8,8 +8,8 @@ import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
 
 @Pseudo
-@Mixin(targets = "com.raoulvdberge.refinedstorage.apiimpl.network.grid.handler.ItemGridHandler", remap = false)
-public abstract class ItemGridHandlerMixin {
+@Mixin(targets = "com.raoulvdberge.refinedstorage.apiimpl.network.grid.handler.ItemGridHandlerPortable", remap = false)
+public abstract class ItemGridHandlerPortableMixin {
     @WrapOperation(
         method = "onExtract(Lnet/minecraft/entity/player/EntityPlayerMP;Ljava/util/UUID;II)V",
         at = @At(value = "INVOKE", target = "Ljava/lang/Math;min(JJ)J"),

@@ -1,13 +1,10 @@
 {
-  "package": "io.alexjoest.stackupup.mixin.late",
+  "package": "io.alexjoest.stackupup.mixin.late.storagenetwork",
   "refmap": "${refmap}",
   "target": "@env(DEFAULT)",
   "minVersion": "0.8",
   "compatibilityLevel": "JAVA_8",
-  "mixins": [
-    "SimpleInventoryMixin",
-    "TileInventoryMixin"
-  ],
+  "mixins": [],
   "client": [],
   "server": []
 }

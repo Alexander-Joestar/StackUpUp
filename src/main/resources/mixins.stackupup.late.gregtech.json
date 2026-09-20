@@ -1,6 +1,6 @@
 {
   "required": false,
-  "package": "io.alexjoest.stackupup.mixin.late",
+  "package": "io.alexjoest.stackupup.mixin.late.gregtech",
   "refmap": "${refmap}",
   "target": "@env(DEFAULT)",
   "compatibilityLevel": "JAVA_8",

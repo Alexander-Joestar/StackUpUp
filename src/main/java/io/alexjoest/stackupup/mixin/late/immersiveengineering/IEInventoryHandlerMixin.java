@@ -1,4 +1,4 @@
-package io.alexjoest.stackupup.mixin.late;
+package io.alexjoest.stackupup.mixin.late.immersiveengineering;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;

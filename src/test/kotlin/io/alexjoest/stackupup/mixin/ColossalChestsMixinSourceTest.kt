@@ -13,7 +13,7 @@ class ColossalChestsMixinSourceTest {
     fun colossalChestsTileMixin_shouldPatchInventoryConstructionStackLimit() {
         val config = String(Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.late.colossalchests.json")), Charsets.UTF_8)
         val mixin = String(
-            Files.readAllBytes(Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/ColossalChestsTileMixin.java")),
+            Files.readAllBytes(Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/colossalchests/ColossalChestsTileMixin.java")),
             Charsets.UTF_8,
         )
 
@@ -35,7 +35,7 @@ class ColossalChestsMixinSourceTest {
 
         // 字节码结构检查：编译产物必须真实携带 @Mixin/@ModifyConstant 注解与目标方法名
         // （注解值以 UTF8 存于常量池，containsAscii 可证），防止源文件与编译产物脱节。
-        val mixinClass = Class.forName("io.alexjoest.stackupup.mixin.late.ColossalChestsTileMixin")
+        val mixinClass = Class.forName("io.alexjoest.stackupup.mixin.late.colossalchests.ColossalChestsTileMixin")
         val classBytes = requireNotNull(mixinClass.getResourceAsStream("ColossalChestsTileMixin.class")) {
             "无法读取 ColossalChestsTileMixin.class"
         }.use { it.readBytes() }

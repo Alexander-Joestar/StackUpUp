@@ -1,4 +1,4 @@
-package io.alexjoest.stackupup.mixin.late;
+package io.alexjoest.stackupup.mixin.late.ae2;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;

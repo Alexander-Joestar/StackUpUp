@@ -13,7 +13,7 @@ class NuclearCraftMixinSourceTest {
     fun nuclearCraftMixin_shouldPatchRealCapacitySourceNotSplitOnlyExpansion() {
         val config = String(Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.late.nuclearcraft.json")), Charsets.UTF_8)
         val mixin = String(
-            Files.readAllBytes(Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/NuclearCraftTileInventoryLimitMixin.java")),
+            Files.readAllBytes(Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/nuclearcraft/NuclearCraftTileInventoryLimitMixin.java")),
             Charsets.UTF_8,
         )
 
@@ -51,7 +51,7 @@ class NuclearCraftMixinSourceTest {
         val config = String(Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.late.nuclearcraft.json")), Charsets.UTF_8)
         val source = String(
             Files.readAllBytes(
-                Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/NuclearCraftDistributorNoDropMixin.java"),
+                Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/nuclearcraft/NuclearCraftDistributorNoDropMixin.java"),
             ),
             Charsets.UTF_8,
         )
@@ -69,7 +69,7 @@ class NuclearCraftMixinSourceTest {
 
         // 字节码结构检查：编译产物必须真实携带 @Mixin 注解、@Inject 注入器与目标串
         // （注解值以 UTF8 存于常量池，containsAscii 可证），防止源文件与编译产物脱节。
-        val mixinClass = Class.forName("io.alexjoest.stackupup.mixin.late.NuclearCraftDistributorNoDropMixin")
+        val mixinClass = Class.forName("io.alexjoest.stackupup.mixin.late.nuclearcraft.NuclearCraftDistributorNoDropMixin")
         val classBytes = requireNotNull(mixinClass.getResourceAsStream("NuclearCraftDistributorNoDropMixin.class")) {
             "无法读取 NuclearCraftDistributorNoDropMixin.class"
         }.use { it.readBytes() }

@@ -1,5 +1,5 @@
 {
-  "package": "io.alexjoest.stackupup.mixin.late",
+  "package": "io.alexjoest.stackupup.mixin.late.actuallyadditions",
   "refmap": "${refmap}",
   "target": "@env(DEFAULT)",
   "minVersion": "0.8",

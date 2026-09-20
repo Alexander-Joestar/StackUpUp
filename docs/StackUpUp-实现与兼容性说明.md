@@ -28,6 +28,14 @@
 `src/main/kotlin/io/alexjoest/stackupup/limit/RuleRuntime.kt`、
 `src/main/kotlin/io/alexjoest/stackupup/RuleRuntimeCoordinator.kt`。
 
+### 配置结构
+
+`StackUpUpConfig` 的配置分为 `general`、`compat` 和 `client` 三组。`general.maxStackSize` 是全局兼容上限，默认值为
+`64`；`compat.vanilla.craftingSlotLimit` 是工作台网格与合成结果槽的性能上限，默认值为 `64`，`0` 保持原版/默认行为，
+而不是平衡设置。NuclearCraft 兼容配置位于 `compat.nuclearcraft`：`speedUpgradeLimit` 和 `energyUpgradeLimit` 默认值为
+`0`，分别表示保留 NuclearCraft 的默认升级堆叠上限；正值才覆盖对应升级类型。配置重载由
+`StackUpUpConfig.applyReloadControlledValues()` 统一应用。
+
 ### 原版库存、槽位与网络路径
 
 - `SlotLimitMixin` 先求物品动态上限；仅当 `inventory.getInventoryStackLimit() > 0` 时，才与 `Slot` 背后的
@@ -142,7 +150,8 @@ remainder。这是当前存在的多次真实分片及其守恒风险，不等�
 mod id 为：
 
 `appliedenergistics2`、`actuallyadditions`、`brandonscore`、`cyclopscore`、`enderio`、`ic2`、`mantle`、`refinedstorage`、
-`storagenetwork`、`integrateddynamics`、`limelib`、`immersiveengineering`、`nuclearcraft`、`colossalchests`、`gregtech`。
+`storagenetwork`、`integrateddynamics`、`limelib`、`immersiveengineering`、`nuclearcraft`、`colossalchests`、`gregtech`、
+`techreborn`（通过 RebornCore）。
 
 late 配置中的我方 mixin 只说明“补丁尝试在哪个目标方法上加载”，不说明第三方真实写入容量；第三方目标的写入语义统一按“无源码不可判定”处理。
 
@@ -218,11 +227,10 @@ Markdown 规则，再合并 DSL 规则，即 `markdownRules + dslRules`。每个
 2. **原版目标表的闭合范围有限。** `VanillaInventoryLimitMixin` 已改为编译期显式目标表（12 类，`VanillaInventoryTargets.TARGETS`，
    含登记护栏测试），但表内结论只覆盖这 12 类的写入路径；表外目标（`InventoryLargeChest`、`TileEntityBeacon`、`ContainerEnchantment`
    匿名子类等）的处置不能由该表外推，且本文不把该表写成已完成独立复核的安全登记。
-3. **第三方源码缺失。** 当前仓库没有以下 15 个 late 目标 mod 的可读源码或对应依赖 jar，目标真实写入路径统一为
+3. **第三方源码缺失。** 当前仓库没有以下 16 个 late 目标 mod 的可读源码或对应依赖 jar，目标真实写入路径统一为
    **无源码不可判定**：`appliedenergistics2`、`actuallyadditions`、`brandonscore`、`cyclopscore`、`enderio`、`ic2`、`mantle`、
    `refinedstorage`、`storagenetwork`、`integrateddynamics`、`limelib`、`immersiveengineering`、`nuclearcraft`、`colossalchests`、
-   `gregtech`（缺失 jar 台账见 [T2a 登记表](agent/t2a-%E5%AE%B9%E9%87%8F%E7%AB%99%E7%82%B9%E7%99%BB%E8%AE%B0%E8%A1%A8.md) §5）。存在我方 mixin 文件不等于拥有目标
-   mod 的实现源码。AE2 相关内部槽类型和输出限制只可写为“项目代码尝试设置，第三方真实写入无源码不可判定”。
+   `gregtech`、`techreborn`/`reborncore`（缺失 jar 台账见 [T2a 登记表](agent/t2a-%E5%AE%B9%E9%87%8F%E7%AB%99%E7%82%B9%E7%99%BB%E8%AE%B0%E8%A1%A8.md) §5）。Tech Reborn 的当前补丁仅尝试修改 RebornCore `Inventory#getInventoryStackLimit()`；这不等于拥有 RebornCore 的真实 setter/handler 源码证据。存在我方 mixin 文件不等于拥有目标 mod 的实现源码。AE2 相关内部槽类型和输出限制只可写为“项目代码尝试设置，第三方真实写入无源码不可判定”。
 4. **`resolveInventoryClampLimit` 不能删除。** 两个直接业务调用点在 `InventoryPlayerAddResourceMixin` 的 `canMergeStacks`
    与 `addResource`（`resolveInventoryWriteLimit` 及旧 inventory-write 上下文已随 T4a 移除，`src/` 无命中）。不能把
    resolver 当成无用代码按“没有调用方”删除。

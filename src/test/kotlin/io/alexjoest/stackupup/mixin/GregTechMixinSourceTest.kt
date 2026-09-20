@@ -13,7 +13,7 @@ class GregTechMixinSourceTest {
     fun gregTechMetaItemMixin_shouldNormalizeDirectCallSurfaceLikeItemMixin() {
         val config = String(Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.late.gregtech.json")), Charsets.UTF_8)
         val mixin = String(
-            Files.readAllBytes(Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/GregTechMetaItemMixin.java")),
+            Files.readAllBytes(Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/gregtech/GregTechMetaItemMixin.java")),
             Charsets.UTF_8,
         )
 
@@ -43,7 +43,7 @@ class GregTechMixinSourceTest {
     @Test
     fun gregTechMetaPrefixItemMixin_shouldNormalizeDirectCallSurfaceLikeItemMixin() {
         val mixin = String(
-            Files.readAllBytes(Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/GregTechMetaPrefixItemMixin.java")),
+            Files.readAllBytes(Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/gregtech/GregTechMetaPrefixItemMixin.java")),
             Charsets.UTF_8,
         )
 
@@ -87,7 +87,7 @@ class GregTechMixinSourceTest {
     }
 
     private fun compiledBytes(className: String): ByteArray {
-        val mixinClass = Class.forName("io.alexjoest.stackupup.mixin.late.$className")
+        val mixinClass = Class.forName("io.alexjoest.stackupup.mixin.late.gregtech.$className")
         return requireNotNull(mixinClass.getResourceAsStream("$className.class")) {
             "无法读取 $className.class"
         }.use { it.readBytes() }

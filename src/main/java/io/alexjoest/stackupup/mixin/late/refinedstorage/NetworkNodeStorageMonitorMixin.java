@@ -1,4 +1,4 @@
-package io.alexjoest.stackupup.mixin.late;
+package io.alexjoest.stackupup.mixin.late.refinedstorage;
 
 import io.alexjoest.stackupup.StackLimitHooks;
 import org.spongepowered.asm.mixin.Mixin;

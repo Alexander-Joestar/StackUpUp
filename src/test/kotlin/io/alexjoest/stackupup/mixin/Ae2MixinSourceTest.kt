@@ -9,8 +9,8 @@ import java.nio.file.Paths
 class Ae2MixinSourceTest {
     @Test
     fun ae2Mixin_shouldCoverConstructorConstantAndNotDeadInjectMissingMethod() {
-        assertCoversConstructorOnly("src/main/java/io/alexjoest/stackupup/mixin/late/AppEngInternalInventoryMixin.java")
-        assertCoversConstructorOnly("src/main/java/io/alexjoest/stackupup/mixin/late/AppEngInternalAEInventoryMixin.java")
+        assertCoversConstructorOnly("src/main/java/io/alexjoest/stackupup/mixin/late/ae2/AppEngInternalInventoryMixin.java")
+        assertCoversConstructorOnly("src/main/java/io/alexjoest/stackupup/mixin/late/ae2/AppEngInternalAEInventoryMixin.java")
     }
 
     @Test
@@ -19,7 +19,7 @@ class Ae2MixinSourceTest {
         assertTrue(config.contains("AppEngAdaptorItemHandlerMixin"), "AE2 late config 应继续加载 AdaptorItemHandler 入口保险丝")
 
         val source = String(
-            Files.readAllBytes(Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/AppEngAdaptorItemHandlerMixin.java")),
+            Files.readAllBytes(Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/ae2/AppEngAdaptorItemHandlerMixin.java")),
             Charsets.UTF_8,
         )
         assertTrue(source.contains("@Pseudo"), "AE2 AdaptorItemHandler mixin 应允许目标类不在编译类路径")
@@ -35,7 +35,7 @@ class Ae2MixinSourceTest {
         assertTrue(config.contains("AppEngPatternTermMixin"), "AE2 late config 应加载样板终端空白样板槽补丁")
 
         val source = String(
-            Files.readAllBytes(Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/AppEngPatternTermMixin.java")),
+            Files.readAllBytes(Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/ae2/AppEngPatternTermMixin.java")),
             Charsets.UTF_8,
         )
         assertTrue(source.contains("@Pseudo"), "AE2 PatternEncoder mixin 应允许目标类不在编译类路径")

@@ -1,4 +1,4 @@
-package io.alexjoest.stackupup.mixin.late;
+package io.alexjoest.stackupup.mixin.late.enderio;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;

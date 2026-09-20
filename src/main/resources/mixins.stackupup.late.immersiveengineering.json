@@ -1,5 +1,5 @@
 {
-  "package": "io.alexjoest.stackupup.mixin.late",
+  "package": "io.alexjoest.stackupup.mixin.late.immersiveengineering",
   "required": false,
   "refmap": "${refmap}",
   "target": "@env(DEFAULT)",

@@ -11,7 +11,7 @@ class EnderIOMixinSourceTest {
     fun enderIoMachineMixin_shouldTargetNoArgInventoryLimitDescriptor() {
         val source = String(
             Files.readAllBytes(
-                Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/EnderIOMachineInventoryLimitMixin.java"),
+                Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/enderio/EnderIOMachineInventoryLimitMixin.java"),
             ),
             Charsets.UTF_8,
         )
@@ -23,7 +23,7 @@ class EnderIOMixinSourceTest {
     fun enderIoSlottedMixin_shouldTargetSlotAwareInventoryLimitDescriptor() {
         val source = String(
             Files.readAllBytes(
-                Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/EnderIOSlottedInventoryLimitMixin.java"),
+                Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/enderio/EnderIOSlottedInventoryLimitMixin.java"),
             ),
             Charsets.UTF_8,
         )
@@ -35,7 +35,7 @@ class EnderIOMixinSourceTest {
     fun enderIoInventorySlotMixin_shouldGuard64AndPreserveExplicitLimitsAndCrafterOverride() {
         val config = String(Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.late.enderio.json")), Charsets.UTF_8)
         val source = String(
-            Files.readAllBytes(Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/EnderIOInventorySlotLimitMixin.java")),
+            Files.readAllBytes(Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/enderio/EnderIOInventorySlotLimitMixin.java")),
             Charsets.UTF_8,
         )
 
@@ -57,7 +57,7 @@ class EnderIOMixinSourceTest {
         val config = String(Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.late.enderio.json")), Charsets.UTF_8)
         val source = String(
             Files.readAllBytes(
-                Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/EnderIOInventoryNoDropMixin.java"),
+                Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/enderio/EnderIOInventoryNoDropMixin.java"),
             ),
             Charsets.UTF_8,
         )
@@ -85,7 +85,7 @@ class EnderIOMixinSourceTest {
 
         // 字节码结构检查：编译产物必须真实携带 @Mixin 注解、@WrapOperation 注入器与两个 @At 目标串
         // （注解值以 UTF8 存于常量池，containsAscii 可证），防止源文件与编译产物脱节。
-        val mixinClass = Class.forName("io.alexjoest.stackupup.mixin.late.EnderIOInventoryNoDropMixin")
+        val mixinClass = Class.forName("io.alexjoest.stackupup.mixin.late.enderio.EnderIOInventoryNoDropMixin")
         val classBytes = requireNotNull(mixinClass.getResourceAsStream("EnderIOInventoryNoDropMixin.class")) {
             "无法读取 EnderIOInventoryNoDropMixin.class"
         }.use { it.readBytes() }

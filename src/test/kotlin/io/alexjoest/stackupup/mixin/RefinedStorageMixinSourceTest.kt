@@ -9,8 +9,8 @@ import java.nio.file.Paths
 class RefinedStorageMixinSourceTest {
     @Test
     fun rsExtractMixin_shouldPreferWrapOperation() {
-        assertUsesWrapOperation("src/main/java/io/alexjoest/stackupup/mixin/late/ItemGridHandlerMixin.java")
-        assertUsesWrapOperation("src/main/java/io/alexjoest/stackupup/mixin/late/ItemGridHandlerPortableMixin.java")
+        assertUsesWrapOperation("src/main/java/io/alexjoest/stackupup/mixin/late/refinedstorage/ItemGridHandlerMixin.java")
+        assertUsesWrapOperation("src/main/java/io/alexjoest/stackupup/mixin/late/refinedstorage/ItemGridHandlerPortableMixin.java")
     }
 
     private fun assertUsesWrapOperation(path: String) {

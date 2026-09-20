@@ -1,0 +1,11 @@
+{
+  "required": false,
+  "package": "io.alexjoest.stackupup.mixin.late.techreborn",
+  "target": "@env(DEFAULT)",
+  "refmap": "${refmap}",
+  "minVersion": "0.8",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "RebornCoreInventoryMixin"
+  ]
+}

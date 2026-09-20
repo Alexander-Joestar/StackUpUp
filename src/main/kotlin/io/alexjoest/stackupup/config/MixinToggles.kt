@@ -32,4 +32,6 @@ object MixinToggles {
     @JvmField var colossalChests = true
 
     @JvmField var gregTech = true
+
+    @JvmField var techReborn = true
 }

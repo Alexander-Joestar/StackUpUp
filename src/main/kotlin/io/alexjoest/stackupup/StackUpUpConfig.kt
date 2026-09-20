@@ -74,20 +74,20 @@ object StackUpUpConfig {
     class Vanilla {
         @JvmField
         @Config.Comment(
-            "Crafting container slot limit. ",
-            "0 keeps the vanilla/default behavior; values above 0 set a custom limit; ",
+            "Crafting container slot limit. Mainly a Performance setting: holding Shift to batch-craft large stacks can cause severe lag. ",
+            "0 keeps the vanilla/default behavior; values above 0 set a custom limit; default is 64. ",
             "Int.MAX_VALUE means unlimited. May affect game balance",
         )
         @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compat.vanilla.craftingSlotLimit.name")
         @Config.RangeInt(min = 0)
-        var craftingSlotLimit: Int = 0
+        var craftingSlotLimit: Int = 64
     }
 
     class NuclearCraft {
         @JvmField
         @Config.Comment(
-            "Speed upgrade stack limit. 0 keeps NuclearCraft's default (64); values above 0 set a custom limit;",
-            "Int.MAX_VALUE means unlimited. May affect game balance / 会影响游戏平衡.",
+            "Speed upgrade stack limit. 0 keeps NuclearCraft's default (64); values above 0 set a custom limit.",
+            "May affect game balance",
         )
         @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compat.nuclearcraft.speedUpgradeLimit.name")
         @Config.RangeInt(min = 0)
@@ -95,8 +95,8 @@ object StackUpUpConfig {
 
         @JvmField
         @Config.Comment(
-            "Energy upgrade stack limit. 0 keeps NuclearCraft's default (64); values above 0 set a custom limit;",
-            "Int.MAX_VALUE means unlimited. May affect game balance / 会影响游戏平衡.",
+            "Energy upgrade stack limit. 0 keeps NuclearCraft's default (64); values above 0 set a custom limit.",
+            "May affect game balance",
         )
         @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compat.nuclearcraft.energyUpgradeLimit.name")
         @Config.RangeInt(min = 0)

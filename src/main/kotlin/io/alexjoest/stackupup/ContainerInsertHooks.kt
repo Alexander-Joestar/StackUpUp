@@ -7,8 +7,7 @@ object ContainerInsertHooks {
     @JvmStatic
     fun resolveMergeSlotLimit(slot: Slot, stack: ItemStack, declaredSlotLimit: Int): Int {
         val inventoryLimit = slot.inventory.inventoryStackLimit
-        val effective = minOf(declaredSlotLimit, if (inventoryLimit > 0) inventoryLimit else Constants.VANILLA_STACK_LIMIT)
-        if (!slot.hasStack) return effective
-        return StackLimitHooks.resolveDynamicSlotLimit(stack, effective)
+        val dynamic = StackLimitHooks.resolveDynamicSlotLimit(stack, declaredSlotLimit)
+        return if (inventoryLimit > 0) minOf(dynamic, inventoryLimit) else dynamic
     }
 }

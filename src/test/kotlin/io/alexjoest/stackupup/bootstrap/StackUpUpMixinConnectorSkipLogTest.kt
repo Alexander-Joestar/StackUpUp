@@ -2,7 +2,6 @@ package io.alexjoest.stackupup.bootstrap
 
 import io.alexjoest.stackupup.StackUpUpCore
 import io.alexjoest.stackupup.StackUpUpIds
-import io.alexjoest.stackupup.config.MixinToggles
 import org.apache.logging.log4j.Level
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.core.Appender
@@ -23,7 +22,7 @@ import org.apache.logging.log4j.core.Logger as CoreLogger
  * 断言真实 logger 输出：项目 classpath 的 log4j-core 是裁剪 jar（无 ListAppender，
  * `./gradlew dependencies --configuration testCompileClasspath` 与 javap 证据），因此测试自带最小
  * [CollectingAppender]（实现 core.Appender 接口）挂到目标 logger 上捕获消息。
- * - mod 缺失 / MixinToggles 关闭 / 未知配置 → 结构化日志 + 拒绝装载；
+ * - mod 缺失 / 未知配置 → 结构化日志 + 拒绝装载；
  * - required:false 配置（brandonscore）mod 缺失同样记录；
  * - 冲突禁用保留设计语义（拒绝 early 装载）但必须 ERROR 说明原因。
  *
@@ -76,25 +75,6 @@ class StackUpUpMixinConnectorSkipLogTest {
             messages.any { it.contains(StackUpUpIds.LATE_BRANDONSCORE_MIXIN_CONFIG) },
             "required:false 配置缺失同样必须记录，实际: $messages",
         )
-    }
-
-    @Test
-    fun toggleOff_shouldLogStructuredSkipAndReturnFalse() {
-        val original = MixinToggles.ic2
-        try {
-            MixinToggles.ic2 = false
-            val messages = capturedLogs {
-                assertFalse(
-                    StackUpUpMixinConnector().shouldQueue(StackUpUpIds.LATE_IC2_MIXIN_CONFIG) { it == "ic2" },
-                )
-            }
-            assertTrue(
-                messages.any { it.contains(StackUpUpIds.LATE_IC2_MIXIN_CONFIG) && it.contains("MixinToggles.ic2") },
-                "toggle 关闭必须点名开关，实际: $messages",
-            )
-        } finally {
-            MixinToggles.ic2 = original
-        }
     }
 
     @Test

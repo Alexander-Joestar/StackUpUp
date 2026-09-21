@@ -2,7 +2,6 @@ package io.alexjoest.stackupup.bootstrap
 
 import io.alexjoest.stackupup.StackUpUpCore
 import io.alexjoest.stackupup.StackUpUpIds
-import io.alexjoest.stackupup.config.MixinToggles
 import net.minecraft.launchwrapper.Launch
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
@@ -30,7 +29,7 @@ import java.util.jar.JarFile
  * 装载语义与旧 loader 完全一致：
  * - early：冲突检测（[StackUpUpCore.ensureConflictState]）非空 → ERROR + 不 add（冲突禁用设计）；通过 → add；
  * - late：按模块表逐配置判断 mod 在场（[ModDiscoverer.isModPresent]；Supergiant `ae2` 的结果为 false
- *   或不可用时回退到 Cleanroom marker probe）+ [MixinToggles] 开关 → 条件 add；
+ *   或不可用时回退到 Cleanroom marker probe）→ 条件 add；
  *   不在模块表的配置不装载。
  */
 class StackUpUpMixinConnector : IMixinConnector {
@@ -190,7 +189,7 @@ class StackUpUpMixinConnector : IMixinConnector {
     internal fun shouldQueue(config: String, isModPresent: (String) -> Boolean): Boolean {
         val module = modules.firstOrNull { it.config == config }
         if (module == null) {
-            // T14.5 停止条件 3：不在模块表的配置不再无条件入队（原 ?: return true 会绕过 mod/toggle 检查静默全量装载）。
+            // T14.5 停止条件 3：不在模块表的配置不再无条件入队（原 ?: return true 会绕过模块检查静默全量装载）。
             logger.error(
                 "Refusing to queue unknown late mixin config '{}': not registered in the module table",
                 config,
@@ -202,35 +201,29 @@ class StackUpUpMixinConnector : IMixinConnector {
             logger.info("Skipping late mixin config '{}': required mod '{}' is not present", module.config, module.modId)
             return false
         }
-        if (!module.toggle()) {
-            logger.info("Skipping late mixin config '{}': MixinToggles.{} is disabled", module.config, module.toggleName)
-            return false
-        }
         return true
     }
 
-    internal data class LateMixinModule(val config: String, val modId: String, val toggleName: String, val toggle: () -> Boolean)
+    internal data class LateMixinModule(val config: String, val modId: String)
 
     internal val modules: List<LateMixinModule> = listOf(
-        LateMixinModule(StackUpUpIds.LATE_AE2_MIXIN_CONFIG, "appliedenergistics2", "ae2") { MixinToggles.ae2 },
-        LateMixinModule(StackUpUpIds.LATE_AE2_SUPERGIANT_MIXIN_CONFIG, "ae2", "ae2Supergiant") { MixinToggles.ae2Supergiant },
-        LateMixinModule(StackUpUpIds.LATE_BRANDONSCORE_MIXIN_CONFIG, "brandonscore", "brandonsCore") { MixinToggles.brandonsCore },
-        LateMixinModule(StackUpUpIds.LATE_ACTUALLY_ADDITIONS_MIXIN_CONFIG, "actuallyadditions", "actuallyAdditions") { MixinToggles.actuallyAdditions },
-        LateMixinModule(StackUpUpIds.LATE_CYCLOPSCORE_MIXIN_CONFIG, "cyclopscore", "cyclopsCore") { MixinToggles.cyclopsCore },
-        LateMixinModule(StackUpUpIds.LATE_ENDERIO_MIXIN_CONFIG, "enderio", "enderIo") { MixinToggles.enderIo },
-        LateMixinModule(StackUpUpIds.LATE_IC2_MIXIN_CONFIG, "ic2", "ic2") { MixinToggles.ic2 },
-        LateMixinModule(StackUpUpIds.LATE_MANTLE_MIXIN_CONFIG, "mantle", "mantle") { MixinToggles.mantle },
-        LateMixinModule(StackUpUpIds.LATE_REFINED_STORAGE_MIXIN_CONFIG, "refinedstorage", "refinedStorage") { MixinToggles.refinedStorage },
-        LateMixinModule(StackUpUpIds.LATE_STORAGE_NETWORK_MIXIN_CONFIG, "storagenetwork", "storageNetwork") { MixinToggles.storageNetwork },
-        LateMixinModule(StackUpUpIds.LATE_INTEGRATEDDYNAMICS_MIXIN_CONFIG, "integrateddynamics", "integratedDynamics") { MixinToggles.integratedDynamics },
-        LateMixinModule(StackUpUpIds.LATE_LIMELIB_MIXIN_CONFIG, "limelib", "limeLib") { MixinToggles.limeLib },
-        LateMixinModule(StackUpUpIds.LATE_IMMERSIVEENGINEERING_MIXIN_CONFIG, "immersiveengineering", "immersiveEngineering") {
-            MixinToggles.immersiveEngineering
-        },
-        LateMixinModule(StackUpUpIds.LATE_NUCLEARCRAFT_MIXIN_CONFIG, "nuclearcraft", "nuclearCraft") { MixinToggles.nuclearCraft },
-        LateMixinModule(StackUpUpIds.LATE_COLOSSALCHESTS_MIXIN_CONFIG, "colossalchests", "colossalChests") { MixinToggles.colossalChests },
-        LateMixinModule(StackUpUpIds.LATE_GREGTECH_MIXIN_CONFIG, "gregtech", "gregTech") { MixinToggles.gregTech },
-        LateMixinModule(StackUpUpIds.LATE_TECHREBORN_MIXIN_CONFIG, "techreborn", "techReborn") { MixinToggles.techReborn },
+        LateMixinModule(StackUpUpIds.LATE_AE2_MIXIN_CONFIG, "appliedenergistics2"),
+        LateMixinModule(StackUpUpIds.LATE_AE2_SUPERGIANT_MIXIN_CONFIG, "ae2"),
+        LateMixinModule(StackUpUpIds.LATE_BRANDONSCORE_MIXIN_CONFIG, "brandonscore"),
+        LateMixinModule(StackUpUpIds.LATE_ACTUALLY_ADDITIONS_MIXIN_CONFIG, "actuallyadditions"),
+        LateMixinModule(StackUpUpIds.LATE_CYCLOPSCORE_MIXIN_CONFIG, "cyclopscore"),
+        LateMixinModule(StackUpUpIds.LATE_ENDERIO_MIXIN_CONFIG, "enderio"),
+        LateMixinModule(StackUpUpIds.LATE_IC2_MIXIN_CONFIG, "ic2"),
+        LateMixinModule(StackUpUpIds.LATE_MANTLE_MIXIN_CONFIG, "mantle"),
+        LateMixinModule(StackUpUpIds.LATE_REFINED_STORAGE_MIXIN_CONFIG, "refinedstorage"),
+        LateMixinModule(StackUpUpIds.LATE_STORAGE_NETWORK_MIXIN_CONFIG, "storagenetwork"),
+        LateMixinModule(StackUpUpIds.LATE_INTEGRATEDDYNAMICS_MIXIN_CONFIG, "integrateddynamics"),
+        LateMixinModule(StackUpUpIds.LATE_LIMELIB_MIXIN_CONFIG, "limelib"),
+        LateMixinModule(StackUpUpIds.LATE_IMMERSIVEENGINEERING_MIXIN_CONFIG, "immersiveengineering"),
+        LateMixinModule(StackUpUpIds.LATE_NUCLEARCRAFT_MIXIN_CONFIG, "nuclearcraft"),
+        LateMixinModule(StackUpUpIds.LATE_COLOSSALCHESTS_MIXIN_CONFIG, "colossalchests"),
+        LateMixinModule(StackUpUpIds.LATE_GREGTECH_MIXIN_CONFIG, "gregtech"),
+        LateMixinModule(StackUpUpIds.LATE_TECHREBORN_MIXIN_CONFIG, "techreborn"),
     )
 
     private companion object {

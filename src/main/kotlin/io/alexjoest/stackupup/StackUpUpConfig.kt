@@ -14,9 +14,8 @@ object StackUpUpConfig {
     @Config.Ignore
     var activeMaxStackSize: Int = 64
 
-    @JvmField
-    @Config.Ignore
-    var activeCraftingSlotLimit: Int = 64
+    val craftingSlotLimit: Int
+        get() = compat.vanilla.craftingSlotLimit.takeIf { it > 0 } ?: Constants.VANILLA_STACK_LIMIT
 
     @JvmField
     @Config.Name("general")
@@ -36,7 +35,6 @@ object StackUpUpConfig {
     @JvmStatic
     fun applyReloadControlledValues() {
         activeMaxStackSize = general.maxStackSize
-        activeCraftingSlotLimit = compat.vanilla.craftingSlotLimit.takeIf { it > 0 } ?: Constants.VANILLA_STACK_LIMIT
         NuclearCraftCompat.applyConfiguredUpgradeStackLimits()
     }
 
@@ -74,8 +72,7 @@ object StackUpUpConfig {
     class Vanilla {
         @JvmField
         @Config.Comment(
-            "Crafting container slot limit. Mainly a Performance setting rather than a balance setting: holding Shift to batch-craft very large stacks can cause severe lag. ",
-            "0 keeps the vanilla/default behavior; values above 0 set a custom limit; default is 64.",
+            "Crafting container slot limit. Mainly a Performance setting rather than a balance setting: holding Shift to batch-craft very large stacks can cause severe lag. Values above 0 set a custom limit; 0 keeps vanilla behavior.",
         )
         @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compat.vanilla.craftingSlotLimit.name")
         @Config.RangeInt(min = 0)
@@ -84,13 +81,17 @@ object StackUpUpConfig {
 
     class NuclearCraft {
         @JvmField
-        @Config.Comment("Speed upgrade stack limit. 0 keeps NuclearCraft's default (64); values above 0 set a custom limit.")
+        @Config.Comment(
+            "Speed upgrade stack limit. Values above 0 set a custom limit; 0 keeps NuclearCraft's native behavior.",
+        )
         @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compat.nuclearcraft.speedUpgradeLimit.name")
         @Config.RangeInt(min = 0)
         var speedUpgradeLimit: Int = 0
 
         @JvmField
-        @Config.Comment("Energy upgrade stack limit. 0 keeps NuclearCraft's default (64); values above 0 set a custom limit.")
+        @Config.Comment(
+            "Energy upgrade stack limit. Values above 0 set a custom limit; 0 keeps NuclearCraft's native behavior.",
+        )
         @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compat.nuclearcraft.energyUpgradeLimit.name")
         @Config.RangeInt(min = 0)
         var energyUpgradeLimit: Int = 0

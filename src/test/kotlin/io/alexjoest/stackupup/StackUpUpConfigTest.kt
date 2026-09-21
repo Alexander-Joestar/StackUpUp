@@ -79,4 +79,28 @@ class StackUpUpConfigTest {
             StackUpUpConfig.General::class.java.getDeclaredField("enableScripting")
         }
     }
+
+    @Test
+    fun craftingSlotLimit_shouldDefaultToVanillaAndRespectCustomValues() {
+        assertThrows(NoSuchFieldException::class.java) {
+            StackUpUpConfig::class.java.getDeclaredField("activeCraftingSlotLimit")
+        }
+
+        val previousCraftingSlotLimit = StackUpUpConfig.compat.vanilla.craftingSlotLimit
+        try {
+            StackUpUpConfig.compat.vanilla.craftingSlotLimit = 64
+            assertEquals(64, StackUpUpConfig.craftingSlotLimit)
+
+            StackUpUpConfig.compat.vanilla.craftingSlotLimit = 0
+            assertEquals(Constants.VANILLA_STACK_LIMIT, StackUpUpConfig.craftingSlotLimit)
+
+            StackUpUpConfig.compat.vanilla.craftingSlotLimit = -1
+            assertEquals(Constants.VANILLA_STACK_LIMIT, StackUpUpConfig.craftingSlotLimit)
+
+            StackUpUpConfig.compat.vanilla.craftingSlotLimit = 128
+            assertEquals(128, StackUpUpConfig.craftingSlotLimit)
+        } finally {
+            StackUpUpConfig.compat.vanilla.craftingSlotLimit = previousCraftingSlotLimit
+        }
+    }
 }

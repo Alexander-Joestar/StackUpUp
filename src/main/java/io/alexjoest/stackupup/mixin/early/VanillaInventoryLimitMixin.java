@@ -29,7 +29,7 @@ import org.spongepowered.asm.mixin.injection.At;
  * <p>例外（条件上限）：{@link InventoryCrafting} 与 {@link InventoryCraftResult} 是合成容器
  * （工作台网格 + 合成结果槽），大堆叠下 shift 合成会一次搬运极大量物品，导致卡顿与误操作。
  * 这两个类的 {@code getInventoryStackLimit()} 不改用全局兼容上限，而是取
- * {@code min(全局兼容上限, 配置项 general.craftingSlotLimit)}（即用户要求的
+ * {@code min(全局兼容上限, 配置项 compat.vanilla.craftingSlotLimit)}（即用户要求的
  * "size > 配置 ? 配置 : size" 语义）：默认 64 与原版一致，但会把这个上限施加在合成容器上，
  * 因此当全局兼容上限被抬高时，合成槽位仍按默认 64 收敛（这正是本配置项的意图）。
  * 配置值以 1 为下界兜底（等价于 {@code coerceAtLeast(1)}）：上限 0 会让 Container
@@ -60,7 +60,7 @@ abstract class VanillaInventoryLimitMixin {
     private int stackupup$replaceCompatibilityLimit(int original) {
         int compatibilityLimit = StackLimitHooks.getCompatibilityStackSize();
         if ((Object) this instanceof InventoryCrafting || (Object) this instanceof InventoryCraftResult) {
-            int configuredLimit = StackUpUpConfig.activeCraftingSlotLimit;
+            int configuredLimit = StackUpUpConfig.INSTANCE.getCraftingSlotLimit();
             return Math.max(1, Math.min(compatibilityLimit, configuredLimit));
         }
         return compatibilityLimit;

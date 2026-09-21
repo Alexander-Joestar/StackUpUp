@@ -27,9 +27,9 @@ config.stackupup.compat.nuclearcraft.energyUpgradeLimit.name=能量升级堆叠�
 config.stackupup.general.enableDslRules.tooltip=从 config/stackupup/*.su 加载 DSL v2 规则，并叠加世界规则与用户覆盖规则。
 config.stackupup.client.tooltipStackDisplayMode.tooltip=选择何时在 Tooltip 中显示当前数量与最大堆叠上限。
 config.stackupup.general.ruleComplexityWarnings.tooltip=当规则条目过多或规则过长时给出提醒。
-config.stackupup.compat.vanilla.craftingSlotLimit.tooltip=合成容器槽位上限。主要是性能（Performance）设置而非平衡设置：按住 Shift 批量合成极大堆叠时可能造成严重卡顿。0 表示保持原版/默认行为；大于 0 表示指定自定义上限；默认值为 64。
-config.stackupup.compat.nuclearcraft.speedUpgradeLimit.tooltip=速度升级堆叠上限。0 表示保持 NuclearCraft 默认值（64）；大于 0 表示指定自定义上限。
-config.stackupup.compat.nuclearcraft.energyUpgradeLimit.tooltip=能量升级堆叠上限。0 表示保持 NuclearCraft 默认值（64）；大于 0 表示指定自定义上限。
+config.stackupup.compat.vanilla.craftingSlotLimit.tooltip=合成容器槽位上限。主要是性能（Performance）设置而非平衡设置：按住 Shift 批量合成极大堆叠时可能造成严重卡顿。大于 0 表示指定自定义上限；0 表示保持原版行为。
+config.stackupup.compat.nuclearcraft.speedUpgradeLimit.tooltip=速度升级堆叠上限。大于 0 表示指定自定义上限；0 表示保持 NuclearCraft 原生行为。
+config.stackupup.compat.nuclearcraft.energyUpgradeLimit.tooltip=能量升级堆叠上限。大于 0 表示指定自定义上限；0 表示保持 NuclearCraft 原生行为。
 
 commands.stackupup.usage=/stackupup <reload|edit|state>
 commands.stackupup.reload.success=已重新加载 StackUpUp 规则。

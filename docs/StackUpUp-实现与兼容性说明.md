@@ -131,7 +131,7 @@ remainder。这是当前存在的多次真实分片及其守恒风险，不等�
 
 ## Mixin 分层
 
-当前兼容架构以 `StackUpUpMixinConnector` 注册的显式 early/late Mixin 为唯一入口：原版和 Forge 基础路径由 early 配置覆盖，具体模组由 connector 按 mod presence 与 `MixinToggles` 条件加入对应 late 配置。旧的 dynamic ASM replacement layer（`DynamicCompatTransformer`、`DynamicCompatMethodProbe`、`CompatibilityLimitPatch`、`FixedCompatTargets`）已移除，不再参与运行时兼容；下文若引用这些类，仅表示历史实现和历史审计证据。
+当前兼容架构以 `StackUpUpMixinConnector` 注册的显式 early/late Mixin 为唯一入口：原版和 Forge 基础路径由 early 配置覆盖，具体模组由 connector 按目标 mod presence 条件加入对应 late 配置；单个已登记配置的禁用入口是 MixinBooter `config/mixinbooter.cfg` 的 `general.blacklistedConfigs`，修改后需重启。旧的 dynamic ASM replacement layer（`DynamicCompatTransformer`、`DynamicCompatMethodProbe`、`CompatibilityLimitPatch`、`FixedCompatTargets`）已移除，不再参与运行时兼容；下文若引用这些类，仅表示历史实现和历史审计证据。
 
 ### Early Mixin
 
@@ -146,7 +146,7 @@ remainder。这是当前存在的多次真实分片及其守恒风险，不等�
 
 ### Late Mixin
 
-`StackUpUpMixinConnector` 为每个模块登记一个 late mixin 配置，并同时检查目标 mod 是否存在和对应 `MixinToggles` 开关。当前登记的
+`StackUpUpMixinConnector` 为每个模块登记一个 late mixin 配置，并检查目标 mod 是否存在；单个已登记配置的禁用入口是 MixinBooter `config/mixinbooter.cfg` 的 `general.blacklistedConfigs`，修改后需重启。当前登记的
 mod id 为：
 
 `appliedenergistics2`、`actuallyadditions`、`brandonscore`、`cyclopscore`、`enderio`、`ic2`、`mantle`、`refinedstorage`、

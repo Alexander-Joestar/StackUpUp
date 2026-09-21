@@ -28,8 +28,7 @@ class StackUpUpApiTest {
     private lateinit var worldMarkdownFile: File
     private lateinit var previousSnapshot: RuleSnapshot
     private lateinit var previousIndex: OreDictIndex
-    private var previousActiveMaxStackSize: Int = 64
-    private var previousConfiguredMaxStackSize: Int = 64
+    private var previousMaxStackSize: Int = 64
 
     @BeforeEach
     fun setUp() {
@@ -40,17 +39,14 @@ class StackUpUpApiTest {
         RuleSourceLocator.setWorldDirectoryForTests(worldDir)
         previousSnapshot = RuleRuntime.currentSnapshot()
         previousIndex = RuleRuntime.oreDictIndex()
-        previousActiveMaxStackSize = StackUpUpConfig.activeMaxStackSize
-        previousConfiguredMaxStackSize = StackUpUpConfig.general.maxStackSize
-        StackUpUpConfig.general.maxStackSize = 10240
-        StackUpUpConfig.activeMaxStackSize = 10240
+        previousMaxStackSize = StackUpUpConfig.maxStackSize
+        StackUpUpConfig.maxStackSize = 10240
         RuleRuntime.replaceRuntime(RuleSnapshot(version = 0L, rules = emptyList()), previousIndex)
     }
 
     @AfterEach
     fun tearDown() {
-        StackUpUpConfig.general.maxStackSize = previousConfiguredMaxStackSize
-        StackUpUpConfig.activeMaxStackSize = previousActiveMaxStackSize
+        StackUpUpConfig.maxStackSize = previousMaxStackSize
         RuleRuntime.replaceRuntime(previousSnapshot, previousIndex)
         RuleSourceLocator.setWorldDirectoryForTests(null)
         RuleFileLocator.resetForTests()

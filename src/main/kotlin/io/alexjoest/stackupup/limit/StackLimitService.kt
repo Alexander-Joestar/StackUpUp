@@ -20,7 +20,7 @@ class StackLimitService internal constructor(private val snapshot: RuleSnapshot,
 
     fun resolve(context: StackContext): Int {
         if (!snapshot.hasRules) {
-            return context.baseLimit.coerceIn(1, StackUpUpConfig.activeMaxStackSize)
+            return context.baseLimit.coerceIn(1, StackUpUpConfig.maxStackSize)
         }
 
         val fast = fastCache
@@ -89,7 +89,7 @@ class StackLimitService internal constructor(private val snapshot: RuleSnapshot,
                 result = rule.action.apply(result)
             }
         }
-        return result.coerceIn(1, StackUpUpConfig.activeMaxStackSize)
+        return result.coerceIn(1, StackUpUpConfig.maxStackSize)
     }
 
     @Deprecated("Use resolve(StackContext)")

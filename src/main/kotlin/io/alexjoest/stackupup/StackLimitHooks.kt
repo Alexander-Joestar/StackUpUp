@@ -38,7 +38,7 @@ object StackLimitHooks {
     val RANDOM: Random = Random()
 
     @JvmStatic
-    fun getCompatibilityStackSize(): Int = StackUpUpConfig.activeMaxStackSize
+    fun getCompatibilityStackSize(): Int = StackUpUpConfig.maxStackSize
 
     @JvmStatic
     @Deprecated("Internal stack limit resolution has moved to ItemStack/StackContext; this overload is kept only for legacy callers.")

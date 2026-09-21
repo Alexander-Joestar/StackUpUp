@@ -11,17 +11,16 @@ import java.io.File
 import kotlin.io.path.createTempDirectory
 
 class MarkdownRuleSourceTest {
-    private var previousMaxStackSize: Int = StackUpUpConfig.activeMaxStackSize
+    private var previousMaxStackSize: Int = StackUpUpConfig.maxStackSize
 
     @AfterEach
     fun restoreMaxStackSize() {
-        StackUpUpConfig.general.maxStackSize = previousMaxStackSize
-        StackUpUpConfig.activeMaxStackSize = previousMaxStackSize
+        StackUpUpConfig.maxStackSize = previousMaxStackSize
     }
 
     @Test
     fun shouldCompileOnlyEnabledMarkdownRuleBlocks() {
-        previousMaxStackSize = StackUpUpConfig.activeMaxStackSize
+        previousMaxStackSize = StackUpUpConfig.maxStackSize
         val result = MarkdownRuleSource.fromLines(
             listOf(
                 "# state",
@@ -40,9 +39,8 @@ class MarkdownRuleSourceTest {
             gateContext = RuleGateContext(loadedMods = setOf("storagenetwork")),
         )
 
-        val previousMaxStackSize = StackUpUpConfig.activeMaxStackSize
-        StackUpUpConfig.general.maxStackSize = 10240
-        StackUpUpConfig.activeMaxStackSize = 10240
+        val previousMaxStackSize = StackUpUpConfig.maxStackSize
+        StackUpUpConfig.maxStackSize = 10240
         assertEquals(1, result.snapshot.rules.size, "compiled rules=${result.snapshot.rules}")
         assertEquals("item = minecraft:egg -> 128", result.snapshot.rules.single().sourceLine)
         val service = StackLimitService(result.snapshot)
@@ -52,8 +50,7 @@ class MarkdownRuleSourceTest {
             assertEquals(128, service.resolve(context))
             assertTrue(result.errors.isEmpty())
         } finally {
-            StackUpUpConfig.general.maxStackSize = previousMaxStackSize
-            StackUpUpConfig.activeMaxStackSize = previousMaxStackSize
+            StackUpUpConfig.maxStackSize = previousMaxStackSize
         }
     }
 
@@ -83,9 +80,8 @@ class MarkdownRuleSourceTest {
             )
         }
 
-        previousMaxStackSize = StackUpUpConfig.activeMaxStackSize
-        StackUpUpConfig.general.maxStackSize = 10240
-        StackUpUpConfig.activeMaxStackSize = 10240
+        previousMaxStackSize = StackUpUpConfig.maxStackSize
+        StackUpUpConfig.maxStackSize = 10240
 
         val result = MarkdownRuleSource.fromFiles(listOf(pack, world))
         val service = StackLimitService(result.snapshot)
@@ -95,8 +91,7 @@ class MarkdownRuleSourceTest {
             assertEquals(128, service.resolve(context))
             assertTrue(result.errors.isEmpty())
         } finally {
-            StackUpUpConfig.general.maxStackSize = previousMaxStackSize
-            StackUpUpConfig.activeMaxStackSize = previousMaxStackSize
+            StackUpUpConfig.maxStackSize = previousMaxStackSize
         }
     }
 
@@ -129,9 +124,8 @@ class MarkdownRuleSourceTest {
             ),
         )
 
-        previousMaxStackSize = StackUpUpConfig.activeMaxStackSize
-        StackUpUpConfig.general.maxStackSize = 10240
-        StackUpUpConfig.activeMaxStackSize = 10240
+        previousMaxStackSize = StackUpUpConfig.maxStackSize
+        StackUpUpConfig.maxStackSize = 10240
 
         val result = MarkdownRuleSource.fromParsedFiles(listOf(first, second))
 
@@ -139,8 +133,7 @@ class MarkdownRuleSourceTest {
             assertEquals(listOf("item = minecraft:egg -> 64"), result.snapshot.rules.map { it.sourceLine })
             assertTrue(result.errors.isEmpty())
         } finally {
-            StackUpUpConfig.general.maxStackSize = previousMaxStackSize
-            StackUpUpConfig.activeMaxStackSize = previousMaxStackSize
+            StackUpUpConfig.maxStackSize = previousMaxStackSize
         }
     }
 }

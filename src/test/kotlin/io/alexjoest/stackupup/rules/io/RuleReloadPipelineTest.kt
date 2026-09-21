@@ -15,13 +15,12 @@ class RuleReloadPipelineTest {
             writeText("item = minecraft:egg -> 2048\n")
         }
 
-        val previous = StackUpUpConfig.activeMaxStackSize
-        StackUpUpConfig.general.maxStackSize = 10240
-        StackUpUpConfig.activeMaxStackSize = 10240
+        val previous = StackUpUpConfig.maxStackSize
+        StackUpUpConfig.maxStackSize = 10240
         val report = try {
             RuleReloadPipeline.loadDslRules(rulesFile, listOf(rulesFile))
         } finally {
-            StackUpUpConfig.activeMaxStackSize = previous
+            StackUpUpConfig.maxStackSize = previous
         }
 
         assertTrue(report.warnings.isEmpty(), "合法规则不应产生额外规则告警。")
@@ -34,13 +33,12 @@ class RuleReloadPipelineTest {
             writeText("item = minecraft:egg -> 500000\n")
         }
 
-        val previous = StackUpUpConfig.activeMaxStackSize
-        StackUpUpConfig.general.maxStackSize = 10240
-        StackUpUpConfig.activeMaxStackSize = 10240
+        val previous = StackUpUpConfig.maxStackSize
+        StackUpUpConfig.maxStackSize = 10240
         val report = try {
             RuleReloadPipeline.loadDslRules(rulesFile, listOf(rulesFile))
         } finally {
-            StackUpUpConfig.activeMaxStackSize = previous
+            StackUpUpConfig.maxStackSize = previous
         }
 
         assertEquals(1, report.warnings.size)

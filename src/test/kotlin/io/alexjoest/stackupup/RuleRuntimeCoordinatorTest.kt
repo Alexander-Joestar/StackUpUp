@@ -137,14 +137,12 @@ class RuleRuntimeCoordinatorTest {
             .apply { writeText("item = minecraft:egg -> 500000\n", Charsets.UTF_8) }
         val previousSnapshot = RuleRuntime.currentSnapshot()
         val previousIndex = RuleRuntime.oreDictIndex()
-        val previousActiveMaxStackSize = StackUpUpConfig.activeMaxStackSize
-        val previousConfiguredMaxStackSize = StackUpUpConfig.general.maxStackSize
+        val previousMaxStackSize = StackUpUpConfig.maxStackSize
 
         RuleFileLocator.setConfigDirectory(configDir)
         RuleSourceLocator.setWorldDirectoryForTests(File(tempDir, "world").apply { mkdirs() })
         // 500000 超出本期上限 10240 -> 只产生 clamp 告警，不产生错误。
-        StackUpUpConfig.general.maxStackSize = 10240
-        StackUpUpConfig.activeMaxStackSize = 10240
+        StackUpUpConfig.maxStackSize = 10240
 
         try {
             val report = RuleRuntimeCoordinator.reload(enableDslRules = true)
@@ -158,8 +156,7 @@ class RuleRuntimeCoordinatorTest {
             assertEquals(report, RuleRuntimeCoordinator.lastReport())
             assertSame(report.snapshot, RuleRuntime.currentSnapshot())
         } finally {
-            StackUpUpConfig.general.maxStackSize = previousConfiguredMaxStackSize
-            StackUpUpConfig.activeMaxStackSize = previousActiveMaxStackSize
+            StackUpUpConfig.maxStackSize = previousMaxStackSize
             RuleRuntime.replaceRuntime(previousSnapshot, previousIndex)
             RuleSourceLocator.setWorldDirectoryForTests(null)
             RuleFileLocator.resetForTests()

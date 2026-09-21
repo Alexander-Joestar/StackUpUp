@@ -17,17 +17,15 @@ class DevRuleInjectorTest {
 
     @BeforeEach
     fun setUp() {
-        previousMaxStackSize = StackUpUpConfig.activeMaxStackSize
-        StackUpUpConfig.general.maxStackSize = 10240
-        StackUpUpConfig.activeMaxStackSize = 10240
+        previousMaxStackSize = StackUpUpConfig.maxStackSize
+        StackUpUpConfig.maxStackSize = 10240
         previousSnapshot = RuleRuntime.currentSnapshot()
         DevRuleInjector.resetForTests()
     }
 
     @AfterEach
     fun restoreState() {
-        StackUpUpConfig.general.maxStackSize = previousMaxStackSize
-        StackUpUpConfig.activeMaxStackSize = previousMaxStackSize
+        StackUpUpConfig.maxStackSize = previousMaxStackSize
         RuleRuntime.replaceSnapshot(previousSnapshot)
         DevRuleInjector.resetForTests()
     }

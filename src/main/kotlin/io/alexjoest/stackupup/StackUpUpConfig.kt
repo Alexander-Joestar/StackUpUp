@@ -10,9 +10,11 @@ object StackUpUpConfig {
     @Config.Ignore
     var coremodActive: Boolean = false
 
-    @JvmField
-    @Config.Ignore
-    var activeMaxStackSize: Int = 64
+    var maxStackSize: Int
+        get() = general.maxStackSize
+        set(value) {
+            general.maxStackSize = value
+        }
 
     val craftingSlotLimit: Int
         get() = compat.vanilla.craftingSlotLimit.takeIf { it > 0 } ?: Constants.VANILLA_STACK_LIMIT
@@ -34,7 +36,6 @@ object StackUpUpConfig {
 
     @JvmStatic
     fun applyReloadControlledValues() {
-        activeMaxStackSize = general.maxStackSize
         NuclearCraftCompat.applyConfiguredUpgradeStackLimits()
     }
 

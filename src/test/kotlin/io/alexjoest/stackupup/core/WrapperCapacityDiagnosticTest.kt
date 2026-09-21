@@ -50,14 +50,13 @@ class WrapperCapacityDiagnosticTest {
 
     @BeforeEach
     fun setUpCompatLimit() {
-        previousMaxStackSize = StackUpUpConfig.activeMaxStackSize
-        StackUpUpConfig.general.maxStackSize = COMPAT_LIMIT
-        StackUpUpConfig.activeMaxStackSize = COMPAT_LIMIT
+        previousMaxStackSize = StackUpUpConfig.maxStackSize
+        StackUpUpConfig.maxStackSize = COMPAT_LIMIT
     }
 
     @AfterEach
     fun restoreCompatLimit() {
-        StackUpUpConfig.activeMaxStackSize = previousMaxStackSize
+        StackUpUpConfig.maxStackSize = previousMaxStackSize
     }
 
     /** InvWrapper.getSlotLimit 是否直接转发背后 IInventory 的真实上限（不得被抬到兼容上限）。 */

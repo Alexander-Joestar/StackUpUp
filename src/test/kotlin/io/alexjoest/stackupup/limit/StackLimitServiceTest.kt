@@ -18,14 +18,13 @@ class StackLimitServiceTest {
 
     @BeforeEach
     fun setUpMaxStackSize() {
-        previousMaxStackSize = StackUpUpConfig.activeMaxStackSize
-        StackUpUpConfig.general.maxStackSize = 10240
-        StackUpUpConfig.activeMaxStackSize = 10240
+        previousMaxStackSize = StackUpUpConfig.maxStackSize
+        StackUpUpConfig.maxStackSize = 10240
     }
 
     @AfterEach
     fun restoreMaxStackSize() {
-        StackUpUpConfig.activeMaxStackSize = previousMaxStackSize
+        StackUpUpConfig.maxStackSize = previousMaxStackSize
     }
 
     @Test
@@ -116,9 +115,8 @@ class StackLimitServiceTest {
 
     @Test
     fun runtimeResult_shouldBeClampedByMaxStackSize() {
-        val previous = StackUpUpConfig.activeMaxStackSize
-        StackUpUpConfig.general.maxStackSize = 256
-        StackUpUpConfig.activeMaxStackSize = 256
+        val previous = StackUpUpConfig.maxStackSize
+        StackUpUpConfig.maxStackSize = 256
         try {
             val snapshot = RuleSnapshot(
                 version = 5L,
@@ -135,14 +133,13 @@ class StackLimitServiceTest {
                 ),
             )
         } finally {
-            StackUpUpConfig.activeMaxStackSize = previous
+            StackUpUpConfig.maxStackSize = previous
         }
     }
 
     @Test
     fun emptySnapshot_shouldClampBaseLimitWithoutCaching() {
-        StackUpUpConfig.general.maxStackSize = 128
-        StackUpUpConfig.activeMaxStackSize = 128
+        StackUpUpConfig.maxStackSize = 128
         val service = StackLimitService(RuleSnapshot(version = 10L, rules = emptyList()))
         val identity = context("minecraft:egg", "minecraft", 0, "item", baseLimit = 16)
 

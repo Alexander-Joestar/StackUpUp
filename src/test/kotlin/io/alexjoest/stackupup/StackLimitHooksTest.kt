@@ -26,14 +26,13 @@ class StackLimitHooksTest {
 
     @BeforeEach
     fun setUpMaxStackSize() {
-        previousMaxStackSize = StackUpUpConfig.activeMaxStackSize
-        StackUpUpConfig.general.maxStackSize = 10240
-        StackUpUpConfig.activeMaxStackSize = 10240
+        previousMaxStackSize = StackUpUpConfig.maxStackSize
+        StackUpUpConfig.maxStackSize = 10240
     }
 
     @AfterEach
     fun restoreMaxStackSize() {
-        StackUpUpConfig.activeMaxStackSize = previousMaxStackSize
+        StackUpUpConfig.maxStackSize = previousMaxStackSize
         RuleRuntime.replaceSnapshot(RuleSnapshot(version = 0L, rules = emptyList()))
         RuleRuntime.replaceOreDictIndex(OreDictIndex.fromStackLoader { emptySet() })
         GregTechMaterialResolver.resetResolverForTesting()
@@ -41,8 +40,7 @@ class StackLimitHooksTest {
 
     @Test
     fun getCompatibilityStackSize_shouldReturnGlobalMax() {
-        StackUpUpConfig.general.maxStackSize = 10240
-        StackUpUpConfig.activeMaxStackSize = 10240
+        StackUpUpConfig.maxStackSize = 10240
         assertEquals(10240, StackLimitHooks.getCompatibilityStackSize())
     }
 

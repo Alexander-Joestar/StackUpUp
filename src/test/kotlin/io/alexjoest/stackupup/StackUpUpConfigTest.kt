@@ -9,36 +9,38 @@ import org.junit.jupiter.api.Test
 class StackUpUpConfigTest {
     @Test
     fun configFacade_shouldExposeFlatRuntimeAccess() {
+        assertThrows(NoSuchFieldException::class.java) {
+            StackUpUpConfig::class.java.getDeclaredField("activeMaxStackSize")
+        }
+
         val previousEnableDslRules = StackUpUpConfig.general.enableDslRules
         val previousTooltipStackDisplayMode = StackUpUpConfig.client.tooltipStackDisplayMode
-        val previousMaxStackSize = StackUpUpConfig.general.maxStackSize
-        val previousActiveMaxStackSize = StackUpUpConfig.activeMaxStackSize
+        val previousMaxStackSize = StackUpUpConfig.maxStackSize
         val previousFontScaleMinimum = StackUpUpConfig.client.fontScaleMinimum
         val previousFontScaleMaximum = StackUpUpConfig.client.fontScaleMaximum
 
         try {
             StackUpUpConfig.general.enableDslRules = false
             StackUpUpConfig.client.tooltipStackDisplayMode = TooltipStackDisplayMode.ALWAYS
-            StackUpUpConfig.general.maxStackSize = 65536
+            StackUpUpConfig.maxStackSize = 65536
             StackUpUpConfig.client.fontScaleMinimum = 0.4
             StackUpUpConfig.client.fontScaleMaximum = 0.4
 
             assertFalse(StackUpUpConfig.general.enableDslRules)
             assertEquals(TooltipStackDisplayMode.ALWAYS, StackUpUpConfig.client.tooltipStackDisplayMode)
-            assertEquals(previousActiveMaxStackSize, StackUpUpConfig.activeMaxStackSize)
+            assertEquals(65536, StackUpUpConfig.maxStackSize)
+            assertEquals(65536, StackUpUpConfig.general.maxStackSize)
             assertEquals(0.4, StackUpUpConfig.client.fontScaleMinimum)
             assertEquals(0.4, StackUpUpConfig.client.fontScaleMaximum)
 
-            StackUpUpConfig.applyReloadControlledValues()
-
-            assertEquals(65536, StackUpUpConfig.activeMaxStackSize)
+            StackUpUpConfig.general.maxStackSize = 131072
+            assertEquals(131072, StackUpUpConfig.maxStackSize)
         } finally {
             StackUpUpConfig.general.enableDslRules = previousEnableDslRules
             StackUpUpConfig.client.tooltipStackDisplayMode = previousTooltipStackDisplayMode
-            StackUpUpConfig.general.maxStackSize = previousMaxStackSize
+            StackUpUpConfig.maxStackSize = previousMaxStackSize
             StackUpUpConfig.client.fontScaleMinimum = previousFontScaleMinimum
             StackUpUpConfig.client.fontScaleMaximum = previousFontScaleMaximum
-            StackUpUpConfig.activeMaxStackSize = previousActiveMaxStackSize
         }
     }
 

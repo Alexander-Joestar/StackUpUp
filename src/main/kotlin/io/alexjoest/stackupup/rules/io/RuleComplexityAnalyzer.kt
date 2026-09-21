@@ -29,7 +29,7 @@ object RuleComplexityAnalyzer {
     }
 
     private fun clampWarnings(snapshot: RuleSnapshot): List<LocalizedMessage> {
-        val max = StackUpUpConfig.activeMaxStackSize
+        val max = StackUpUpConfig.maxStackSize
         return snapshot.rules.mapNotNull { rule ->
             val setValue = rule.action.steps
                 .firstOrNull { it.kind == RuleStepKind.SET }

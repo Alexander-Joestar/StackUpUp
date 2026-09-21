@@ -60,8 +60,11 @@ abstract class VanillaInventoryLimitMixin {
     private int stackupup$replaceCompatibilityLimit(int original) {
         int compatibilityLimit = StackLimitHooks.getCompatibilityStackSize();
         if ((Object) this instanceof InventoryCrafting || (Object) this instanceof InventoryCraftResult) {
-            int configuredLimit = StackUpUpConfig.INSTANCE.getCraftingSlotLimit();
-            return Math.max(1, Math.min(compatibilityLimit, configuredLimit));
+            int limit = StackUpUpConfig.compat.vanilla.craftingSlotLimit;
+            if (limit <= 0) {
+                limit = 64;
+            }
+            return Math.max(1, Math.min(compatibilityLimit, limit));
         }
         return compatibilityLimit;
     }

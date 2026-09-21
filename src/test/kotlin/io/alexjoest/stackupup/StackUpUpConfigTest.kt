@@ -87,20 +87,23 @@ class StackUpUpConfigTest {
         assertThrows(NoSuchFieldException::class.java) {
             StackUpUpConfig::class.java.getDeclaredField("activeCraftingSlotLimit")
         }
+        assertThrows(NoSuchMethodException::class.java) {
+            StackUpUpConfig::class.java.getMethod("getCraftingSlotLimit")
+        }
 
         val previousCraftingSlotLimit = StackUpUpConfig.compat.vanilla.craftingSlotLimit
         try {
             StackUpUpConfig.compat.vanilla.craftingSlotLimit = 64
-            assertEquals(64, StackUpUpConfig.craftingSlotLimit)
+            assertEquals(64, StackUpUpConfig.compat.vanilla.craftingSlotLimit)
 
             StackUpUpConfig.compat.vanilla.craftingSlotLimit = 0
-            assertEquals(Constants.VANILLA_STACK_LIMIT, StackUpUpConfig.craftingSlotLimit)
+            assertEquals(0, StackUpUpConfig.compat.vanilla.craftingSlotLimit)
 
             StackUpUpConfig.compat.vanilla.craftingSlotLimit = -1
-            assertEquals(Constants.VANILLA_STACK_LIMIT, StackUpUpConfig.craftingSlotLimit)
+            assertEquals(-1, StackUpUpConfig.compat.vanilla.craftingSlotLimit)
 
             StackUpUpConfig.compat.vanilla.craftingSlotLimit = 128
-            assertEquals(128, StackUpUpConfig.craftingSlotLimit)
+            assertEquals(128, StackUpUpConfig.compat.vanilla.craftingSlotLimit)
         } finally {
             StackUpUpConfig.compat.vanilla.craftingSlotLimit = previousCraftingSlotLimit
         }

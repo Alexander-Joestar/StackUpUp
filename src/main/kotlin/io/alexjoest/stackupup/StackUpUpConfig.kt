@@ -16,9 +16,6 @@ object StackUpUpConfig {
             general.maxStackSize = value
         }
 
-    val craftingSlotLimit: Int
-        get() = compat.vanilla.craftingSlotLimit.takeIf { it > 0 } ?: Constants.VANILLA_STACK_LIMIT
-
     @JvmField
     @Config.Name("general")
     @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.general.name")

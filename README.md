@@ -13,7 +13,7 @@ English documentation: [README.en.md](README.en.md)
 - 目标版本：Minecraft **1.12.2** + Forge **14.23.5.2847**
 - 当前版本：**0.2.4**
 - 规则系统：DSL v2，支持 `.su` 与带 `state` / `gate` 的 `.su.md`
-- 兼容层：MixinBooter **11.17** + CleanMix **0.7.2**；当前仅通过 `IMixinConnector` 注册 Mixin 配置，`StackUpUpCore` 不再注册 ASM transformer；10.7 与旧 loader 仅为历史基线
+- 兼容层：[MixinBooter](https://github.com/CleanroomMC/MixinBooter) **11.17**（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/mixin-booter)）+ [CleanMix](https://github.com/CleanroomMC/CleanMix) **0.7.2**；当前仅通过 `IMixinConnector` 注册 Mixin 配置，`StackUpUpCore` 不再注册 ASM transformer；10.7 与旧 loader 仅为历史基线
 
 ## 下载
 
@@ -23,11 +23,18 @@ English documentation: [README.en.md](README.en.md)
 
 1. 安装 Minecraft **1.12.2** 与 Forge **14.23.5.2847**。
 2. 安装依赖：
-   - [MixinBooter](https://www.curseforge.com/minecraft/mc-mods/mixin-booter) **11.17**
-   - [Forgelin-Continuous](https://www.curseforge.com/minecraft/mc-mods/forgelin-continuous) **2.3.0.0**
+   - [MixinBooter](https://github.com/CleanroomMC/MixinBooter) **11.17**（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/mixin-booter)）
+   - [Forgelin-Continuous](https://github.com/CleanroomMC/Forgelin-Continuous) **2.3.0.0**（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/forgelin-continuous)）
    当前项目构建验证使用上述版本；其他版本未由本仓库验证。
 3. 将 StackUpUp 的 jar 放入 `mods/` 文件夹。
 4. 启动一次游戏或服务端，让模组生成配置与规则目录。
+
+## 相关项目
+
+- 基础设施：[Cleanroom Loader](https://github.com/CleanroomMC/Cleanroom)、[MixinBooter](https://github.com/CleanroomMC/MixinBooter)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/mixin-booter)）、[CleanMix](https://github.com/CleanroomMC/CleanMix)、[Forgelin-Continuous](https://github.com/CleanroomMC/Forgelin-Continuous)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/forgelin-continuous)）和 [RetroFuturaGradle](https://github.com/GTNewHorizons/RetroFuturaGradle)。
+- 存储与自动化：[Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/applied-energistics-2)）、[AE2 Supergiant](https://github.com/CleanroomMC/Applied-Energistics-2)、[Refined Storage](https://github.com/refinedmods/refinedstorage)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/refined-storage)）、[Simple Storage Network](https://github.com/Lothrazar/StorageNetwork)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/simple-storage-network)）和 [Integrated Dynamics](https://github.com/CyclopsMC/IntegratedDynamics)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/integrated-dynamics)）。
+- 工业与科技：[NuclearCraft: Overhauled](https://github.com/tomdodd4598/NuclearCraft)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/nuclearcraft-overhauled)）、[TechReborn](https://github.com/TechReborn/TechReborn)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/techreborn)）、[RebornCore](https://github.com/TechReborn/RebornCore)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/reborncore)）、[Ender IO](https://github.com/SleepyTrousers/EnderIO-1.5-1.12)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/ender-io)）、[GregTech CEu](https://github.com/GregTechCEu/GregTech)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/gregtech-ce-unofficial)）、[IndustrialCraft 2](https://www.curseforge.com/minecraft/mc-mods/industrial-craft) 和 [ProjectE](https://github.com/sinkillerj/ProjectE)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/projecte)）。
+- 建筑与库存：[Mantle](https://github.com/SlimeKnights/Mantle)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/mantle)）、[Tinkers' Construct](https://www.curseforge.com/minecraft/mc-mods/tinkers-construct)、[LimeLib](https://www.curseforge.com/minecraft/mc-mods/limelib)、[Immersive Engineering](https://github.com/BluSunrize/ImmersiveEngineering)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/immersive-engineering)）、[Colossal Chests](https://github.com/CyclopsMC/ColossalChests)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/colossal-chests)）、[Actually Additions](https://github.com/Ellpeck/ActuallyAdditions)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/actually-additions)）和 [Brandon's Core](https://github.com/bradleyq/BrandonsCore)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/brandons-core)）。
 
 ## 规则文件
 
@@ -101,23 +108,25 @@ StackUpUp 对遵循原版堆叠语义的模组通常直接生效；对自行写�
 
 当前已登记并尝试加载的 late mixin 目标（`StackUpUpMixinConnector` 模块表，17 个配置）：
 
-- Applied Energistics 2
-- Applied Energistics 2 Supergiant
-- Actually Additions
-- BrandonsCore
-- ColossalChests
+- [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/applied-energistics-2)）
+- [Applied Energistics 2 Supergiant](https://github.com/CleanroomMC/Applied-Energistics-2)
+- [Actually Additions](https://github.com/Ellpeck/ActuallyAdditions)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/actually-additions)）
+- [Brandon's Core](https://github.com/bradleyq/BrandonsCore)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/brandons-core)）
+- [Colossal Chests](https://github.com/CyclopsMC/ColossalChests)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/colossal-chests)）
 - CyclopsCore
-- Ender IO
-- GregTech
-- IC2
-- Mantle
-- NuclearCraft
-- Tech Reborn (via RebornCore)
-- Refined Storage
-- Simple Storage Network
-- IntegratedDynamics
-- LimeLib
-- ImmersiveEngineering
+- [Ender IO](https://github.com/SleepyTrousers/EnderIO-1.5-1.12)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/ender-io)）
+- [GregTech CEu](https://github.com/GregTechCEu/GregTech)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/gregtech-ce-unofficial)）
+- [IndustrialCraft 2](https://www.curseforge.com/minecraft/mc-mods/industrial-craft)
+- [Mantle](https://github.com/SlimeKnights/Mantle)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/mantle)）
+- [NuclearCraft: Overhauled](https://github.com/tomdodd4598/NuclearCraft)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/nuclearcraft-overhauled)）
+- [TechReborn](https://github.com/TechReborn/TechReborn)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/techreborn)），经 [RebornCore](https://github.com/TechReborn/RebornCore)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/reborncore)）
+- [Refined Storage](https://github.com/refinedmods/refinedstorage)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/refined-storage)）
+- [Simple Storage Network](https://github.com/Lothrazar/StorageNetwork)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/simple-storage-network)）
+- [Integrated Dynamics](https://github.com/CyclopsMC/IntegratedDynamics)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/integrated-dynamics)）
+- [LimeLib](https://www.curseforge.com/minecraft/mc-mods/limelib)
+- [Immersive Engineering](https://github.com/BluSunrize/ImmersiveEngineering)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/immersive-engineering)）
+
+其他常见兼容项目：[ProjectE](https://github.com/sinkillerj/ProjectE)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/projecte)）和 [Tinkers' Construct](https://github.com/SlimeKnights/TConstruct)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/tinkers-construct)，经 [Mantle](https://github.com/SlimeKnights/Mantle)）。
 
 ### 关闭单个模组的兼容补丁
 

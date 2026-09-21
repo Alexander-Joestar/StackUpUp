@@ -86,7 +86,7 @@
 
 ## 3. late mixin 容量站点（src/main/java/io/alexjoest/stackupup/mixin/late/，**当前 25 个 .java 文件**，审计当时 18）
 
-全部为 `@Pseudo` 第三方目标，经 `StackUpUpMixinConnector` 按 `ModDiscoverer.isModPresent(module.modId)` + `MixinToggles` 排队装载（src/main/kotlin/io/alexjoest/stackupup/bootstrap/StackUpUpMixinConnector.kt:58-70、:220-239；旧 `StackUpUpLateMixinLoader` 已删除）。对应模组 jar 缺失（§5），写入路径一律 **无源码不可判定**；「证据」列只给出我方 mixin 的可观察注入点，不得冒充第三方写入路径证据。方法 descriptor 仅为我方注解声明，未核实第三方实际签名（重载区分以我方注解写法为准）。
+全部为 `@Pseudo` 第三方目标，经 `StackUpUpMixinConnector` 按 `ModDiscoverer.isModPresent(module.modId)` 条件排队装载（src/main/kotlin/io/alexjoest/stackupup/bootstrap/StackUpUpMixinConnector.kt:58-70、:220-239；旧 `StackUpUpLateMixinLoader` 已删除）；单个已登记配置的禁用入口是 MixinBooter `config/mixinbooter.cfg` 的 `general.blacklistedConfigs`，修改后需重启。对应模组 jar 缺失（§5），写入路径一律 **无源码不可判定**；「证据」列只给出我方 mixin 的可观察注入点，不得冒充第三方写入路径证据。方法 descriptor 仅为我方注解声明，未核实第三方实际签名（重载区分以我方注解写法为准）。
 
 | 站点（mixins.* 配置） | 目标类 | 我方注入的方法/点 | 分类 | 证据（file:line） | 缺失 jar |
 | --- | --- | --- | --- | --- | --- |

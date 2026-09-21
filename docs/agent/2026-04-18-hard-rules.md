@@ -91,7 +91,7 @@
 ## Late loader 与本地 jar 语义
 **当前实现**
 
-- 对已登记的 late 模块，`StackUpUpMixinConnector`（`shouldQueue`，StackUpUpMixinConnector.kt:93-113）按配置、目标 mod 是否存在（`ModDiscoverer.isModPresent`）和 `MixinToggles` 决定是否排队；未登记 config 记 ERROR 并 `return false`（:95-102），不再无条件入队。
+- 对已登记的 late 模块，`StackUpUpMixinConnector`（`shouldQueue`，StackUpUpMixinConnector.kt:93-113）先按模块表确认配置，再按目标 mod 是否存在（`ModDiscoverer.isModPresent`）决定是否排队；单个已登记配置的禁用入口是 MixinBooter `config/mixinbooter.cfg` 的 `general.blacklistedConfigs`，修改后需重启。未登记 config 记 ERROR 并 `return false`（:95-102），不再无条件入队。
 - `run/mods/*.jar`、`local-dev-mods/*.jar` 和带 `.jar.disable` 后缀的开发依赖由 Gradle 分别准备；带 `ContainedDeps` 的 jar 需要 FML 目录扫描才能展开内嵌依赖。
 
 **门槛**

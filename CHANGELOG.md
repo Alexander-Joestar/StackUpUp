@@ -5,19 +5,20 @@
 ### 启动与运行时稳定性
 
 - 修复生产/Notch 混淆环境下的启动崩溃，移除早期 Connector 中违规的 Forge Loader 初始化。
-- 修复 AE2 Supergiant 在 Sponge Mixin 接口校验期间触发 `InvalidMixinException` 的启动崩溃。
+- 修复 [AE2 Supergiant](https://github.com/CleanroomMC/Applied-Energistics-2) 在 Sponge Mixin 接口校验期间触发 `InvalidMixinException` 的启动崩溃。
 
 ### 模组兼容与数据安全
 
-- 彻底修复 NuclearCraft 机器输出槽在产物超过 64 个时被硬编码截断并吞物的恶性问题。
-- 修复 TechReborn 研磨机、离心机等加工机器，以及铁合金炉在产物达到 64 个后误判满仓、卡死并停止工作的问题。
-- 完善两代 AE2 兼容：同时支持传统 Applied Energistics 2 与新版 AE2 Supergiant，修复外部处理器大堆叠插入和样板终端空白样板槽上限问题。
-- 为 NuclearCraft 速度与能量升级槽开放堆叠上限配置，默认值为 64 以避免过度强化，并支持按需扩展。
+- 彻底修复 [NuclearCraft: Overhauled](https://github.com/tomdodd4598/NuclearCraft)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/nuclearcraft-overhauled)）机器输出槽在产物超过 64 个时被硬编码截断并吞物的恶性问题。
+- 修复 [TechReborn](https://github.com/TechReborn/TechReborn)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/techreborn)）研磨机、离心机等加工机器，以及铁合金炉在产物达到 64 个后误判满仓、卡死并停止工作的问题；相关容量入口来自 [RebornCore](https://github.com/TechReborn/RebornCore)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/reborncore)）。
+- 完善两代 AE2 兼容：同时支持传统 [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/applied-energistics-2)）与新版 [AE2 Supergiant](https://github.com/CleanroomMC/Applied-Energistics-2)，修复外部处理器大堆叠插入和样板终端空白样板槽上限问题。
+- 为 [NuclearCraft: Overhauled](https://github.com/tomdodd4598/NuclearCraft)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/nuclearcraft-overhauled)）速度与能量升级槽开放堆叠上限配置，默认值为 64 以避免过度强化，并支持按需扩展。
 
 ### 性能与配置
 
 - 新增 `compat` 配置模块，支持通过 `compat.vanilla.craftingSlotLimit` 限制原版工作台槽位上限，避免按住 Shift 批量合成超大堆叠造成严重卡顿。
 - 新增 `alwaysCompactNumbers` 配置选项，在文本适配和字体缩放前使用有上限的紧凑堆叠数量显示（例如 `1.5K`、`0.1M`、`2.1B`）。
+- 兼容目标覆盖 [Ender IO](https://github.com/SleepyTrousers/EnderIO-1.5-1.12)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/ender-io)）、[GregTech CEu](https://github.com/GregTechCEu/GregTech)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/gregtech-ce-unofficial)）、[ProjectE](https://github.com/sinkillerj/ProjectE)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/projecte)）、[IndustrialCraft 2](https://www.curseforge.com/minecraft/mc-mods/industrial-craft)、[Mantle](https://github.com/SlimeKnights/Mantle)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/mantle)）、[Refined Storage](https://github.com/refinedmods/refinedstorage)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/refined-storage)）、[Simple Storage Network](https://github.com/Lothrazar/StorageNetwork)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/simple-storage-network)）、[Integrated Dynamics](https://github.com/CyclopsMC/IntegratedDynamics)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/integrated-dynamics)）、[LimeLib](https://www.curseforge.com/minecraft/mc-mods/limelib)、[Immersive Engineering](https://github.com/BluSunrize/ImmersiveEngineering)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/immersive-engineering)）、[Colossal Chests](https://github.com/CyclopsMC/ColossalChests)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/colossal-chests)）、[Actually Additions](https://github.com/Ellpeck/ActuallyAdditions)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/actually-additions)）和 [Brandon's Core](https://github.com/bradleyq/BrandonsCore)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/brandons-core)）。
 - 优化配置注释，明确标注性能与平衡影响，精简冗余说明。
 
 ### 规则运行时与架构清理
@@ -32,7 +33,7 @@
 
 ### 构建与验证
 
-- 构建链升级至 RetroFuturaGradle 2.0.2，并切换至 JDK 25。
+- 构建链升级至 [RetroFuturaGradle](https://github.com/GTNewHorizons/RetroFuturaGradle) **2.0.2**，并切换至 JDK 25；兼容层锁定 [MixinBooter](https://github.com/CleanroomMC/MixinBooter) **11.17**（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/mixin-booter)）、[CleanMix](https://github.com/CleanroomMC/CleanMix) **0.7.2**、[Cleanroom Loader](https://github.com/CleanroomMC/Cleanroom) 和 [Forgelin-Continuous](https://github.com/CleanroomMC/Forgelin-Continuous) **2.3.0.0**（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/forgelin-continuous)）。
 - 全量 422 项测试通过。
 
 ## 0.2.3

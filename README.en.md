@@ -15,7 +15,7 @@ Chinese README: [README.md](README.md) (Chinese)
 - Target: Minecraft **1.12.2** + Forge **14.23.5.2847**
 - Current version: **0.2.4**
 - Rule system: DSL v2, using `.su` files or Markdown `.su.md` containers with `state` and `gate`
-- Compatibility layer: MixinBooter **11.17** + CleanMix **0.7.2**, with the current compatibility layer implemented through Mixin configs registered by `IMixinConnector`; `StackUpUpCore` returns no ASM transformers. MixinBooter 10.7 and the old loaders are historical baselines only
+- Compatibility layer: [MixinBooter](https://github.com/CleanroomMC/MixinBooter) **11.17** ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/mixin-booter)) + [CleanMix](https://github.com/CleanroomMC/CleanMix) **0.7.2**, with the current compatibility layer implemented through Mixin configs registered by `IMixinConnector`; `StackUpUpCore` returns no ASM transformers. MixinBooter 10.7 and the old loaders are historical baselines only
 
 ## Download
 
@@ -25,11 +25,18 @@ Download StackUpUp from [CurseForge](https://www.curseforge.com/minecraft/mc-mod
 
 1. Install Minecraft **1.12.2** and Forge **14.23.5.2847**.
 2. Install the required dependencies:
-    - [MixinBooter](https://www.curseforge.com/minecraft/mc-mods/mixin-booter) **11.17**
-    - [Forgelin-Continuous](https://www.curseforge.com/minecraft/mc-mods/forgelin-continuous) **2.3.0.0**
+    - [MixinBooter](https://github.com/CleanroomMC/MixinBooter) **11.17** ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/mixin-booter))
+    - [Forgelin-Continuous](https://github.com/CleanroomMC/Forgelin-Continuous) **2.3.0.0** ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/forgelin-continuous))
       Current project build validation uses these versions; other versions have not been verified by this repository.
 3. Put the StackUpUp jar into the `mods/` folder.
 4. Start the game or server once so the config and rule directories are generated.
+
+## Related Projects
+
+- Infrastructure: [Cleanroom Loader](https://github.com/CleanroomMC/Cleanroom), [MixinBooter](https://github.com/CleanroomMC/MixinBooter) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/mixin-booter)), [CleanMix](https://github.com/CleanroomMC/CleanMix), [Forgelin-Continuous](https://github.com/CleanroomMC/Forgelin-Continuous) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/forgelin-continuous)), and [RetroFuturaGradle](https://github.com/GTNewHorizons/RetroFuturaGradle).
+- Storage and automation: [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/applied-energistics-2)), [AE2 Supergiant](https://github.com/CleanroomMC/Applied-Energistics-2), [Refined Storage](https://github.com/refinedmods/refinedstorage) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/refined-storage)), [Simple Storage Network](https://github.com/Lothrazar/StorageNetwork) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/simple-storage-network)), and [Integrated Dynamics](https://github.com/CyclopsMC/IntegratedDynamics) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/integrated-dynamics)).
+- Industry and technology: [NuclearCraft: Overhauled](https://github.com/tomdodd4598/NuclearCraft) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/nuclearcraft-overhauled)), [TechReborn](https://github.com/TechReborn/TechReborn) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/techreborn)), [RebornCore](https://github.com/TechReborn/RebornCore) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/reborncore)), [Ender IO](https://github.com/SleepyTrousers/EnderIO-1.5-1.12) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/ender-io)), [GregTech CEu](https://github.com/GregTechCEu/GregTech) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/gregtech-ce-unofficial)), [IndustrialCraft 2](https://www.curseforge.com/minecraft/mc-mods/industrial-craft), and [ProjectE](https://github.com/sinkillerj/ProjectE) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/projecte)).
+- Building and inventories: [Mantle](https://github.com/SlimeKnights/Mantle) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/mantle)), [Tinkers' Construct](https://github.com/SlimeKnights/TConstruct) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/tinkers-construct)), [LimeLib](https://www.curseforge.com/minecraft/mc-mods/limelib), [Immersive Engineering](https://github.com/BluSunrize/ImmersiveEngineering) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/immersive-engineering)), [Colossal Chests](https://github.com/CyclopsMC/ColossalChests) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/colossal-chests)), [Actually Additions](https://github.com/Ellpeck/ActuallyAdditions) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/actually-additions)), and [Brandon's Core](https://github.com/bradleyq/BrandonsCore) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/brandons-core)).
 
 ## Rule Files
 
@@ -127,23 +134,23 @@ JSONL conservation report or write-after-the-fact remainder refill is used.
 
 Current late mixin targets registered for attempted loading (the `StackUpUpMixinConnector` module table, 17 configs):
 
-- Applied Energistics 2
-- Applied Energistics 2 Supergiant
-- Actually Additions
-- BrandonsCore
-- ColossalChests
+- [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/applied-energistics-2))
+- [Applied Energistics 2 Supergiant](https://github.com/CleanroomMC/Applied-Energistics-2)
+- [Actually Additions](https://github.com/Ellpeck/ActuallyAdditions) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/actually-additions))
+- [Brandon's Core](https://github.com/bradleyq/BrandonsCore) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/brandons-core))
+- [Colossal Chests](https://github.com/CyclopsMC/ColossalChests) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/colossal-chests))
 - CyclopsCore
-- Ender IO
-- GregTech
-- IC2
-- Mantle
-- NuclearCraft
-- Tech Reborn (via RebornCore)
-- Refined Storage
-- Simple Storage Network
-- IntegratedDynamics
-- LimeLib
-- ImmersiveEngineering
+- [Ender IO](https://github.com/SleepyTrousers/EnderIO-1.5-1.12) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/ender-io))
+- [GregTech CEu](https://github.com/GregTechCEu/GregTech) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/gregtech-ce-unofficial))
+- [IndustrialCraft 2](https://www.curseforge.com/minecraft/mc-mods/industrial-craft)
+- [Mantle](https://github.com/SlimeKnights/Mantle) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/mantle))
+- [NuclearCraft: Overhauled](https://github.com/tomdodd4598/NuclearCraft) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/nuclearcraft-overhauled))
+- [TechReborn](https://github.com/TechReborn/TechReborn) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/techreborn)), via [RebornCore](https://github.com/TechReborn/RebornCore) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/reborncore))
+- [Refined Storage](https://github.com/refinedmods/refinedstorage) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/refined-storage))
+- [Simple Storage Network](https://github.com/Lothrazar/StorageNetwork) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/simple-storage-network))
+- [Integrated Dynamics](https://github.com/CyclopsMC/IntegratedDynamics) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/integrated-dynamics))
+- [LimeLib](https://www.curseforge.com/minecraft/mc-mods/limelib)
+- [Immersive Engineering](https://github.com/BluSunrize/ImmersiveEngineering) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/immersive-engineering))
 
 ### Disabling a single mod's compatibility patch
 

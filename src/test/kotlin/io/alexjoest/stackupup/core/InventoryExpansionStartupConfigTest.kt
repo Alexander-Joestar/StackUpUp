@@ -14,10 +14,22 @@ class InventoryExpansionStartupConfigTest {
     lateinit var temporaryDirectory: Path
 
     @Test
-    fun missingConfigDefaultsToDisabled() {
+    fun missingConfigDefaultsToBroadExpansion() {
         val configFile = temporaryDirectory.resolve("stackupup.cfg").toFile()
 
-        assertFalse(InventoryExpansionStartupConfig.loadEnabled(configFile))
+        assertTrue(InventoryExpansionStartupConfig.loadEnabled(configFile))
+        assertTrue(InventoryExpansionStartupConfig.load(configFile).capacityAllowed)
+    }
+
+    @Test
+    fun existingConfigWithoutSwitchKeepsBroadExpansionDefault() {
+        val configFile = File(temporaryDirectory.toFile(), "stackupup.cfg")
+        configFile.writeText("compat {\n}\n")
+
+        val policy = InventoryExpansionStartupConfig.load(configFile)
+
+        assertTrue(policy.enabled)
+        assertTrue(policy.capacityAllowed)
     }
 
     @Test
@@ -41,6 +53,19 @@ class InventoryExpansionStartupConfigTest {
         val policy = InventoryExpansionStartupConfig.load(configFile)
         assertTrue(policy.enabled)
         assertTrue(policy.capacityAllowed)
+    }
+
+    @Test
+    fun configuredFalseDisablesCapacityAsRestartFallback() {
+        val configFile = File(temporaryDirectory.toFile(), "stackupup.cfg")
+        configFile.writeText(
+            "compat {\n    inventoryexpansion {\n        B:enabled=false\n    }\n}\n",
+        )
+
+        val policy = InventoryExpansionStartupConfig.load(configFile)
+
+        assertFalse(policy.enabled)
+        assertFalse(policy.capacityAllowed)
     }
 
     @Test

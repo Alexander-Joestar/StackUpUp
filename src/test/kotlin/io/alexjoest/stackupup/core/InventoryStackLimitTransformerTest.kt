@@ -245,6 +245,13 @@ class InventoryStackLimitTransformerTest {
     }
 
     @Test
+    fun malformedClassBytes_shouldKeepOriginalBytes() {
+        val original = byteArrayOf(0, 1, 2, 3, 4)
+
+        assertArrayEquals(original, transformer.transform("example.MalformedInventory", null, original))
+    }
+
+    @Test
     fun hookUsesPreparedCompatibilityLimitAndPackageBlacklist() {
         InventoryStackLimitHook.configureExpansionEnabled(true)
         InventoryStackLimitHook.prepare(256, null)
@@ -257,6 +264,14 @@ class InventoryStackLimitTransformerTest {
         assertEquals(64, InventoryStackLimitHook.resolveInventoryStackLimit("bad.mod\$Inner", 64))
         assertEquals(256, InventoryStackLimitHook.resolveInventoryStackLimit("bad.module.Container", 64))
         assertEquals(256, InventoryStackLimitHook.resolveInventoryStackLimit("other.Container", 64))
+    }
+
+    @Test
+    fun emptyBlacklist_shouldNotTreatUnlistedInventoryAsNative64() {
+        InventoryStackLimitHook.configureExpansionEnabled(true)
+        InventoryStackLimitHook.prepare(256, emptyArray())
+
+        assertEquals(256, InventoryStackLimitHook.resolveInventoryStackLimit("third.party.Inventory", 64))
     }
 
     @Test
@@ -277,6 +292,19 @@ class InventoryStackLimitTransformerTest {
         assertEquals(64, InventoryStackLimitHook.resolveInventoryStackLimit("bad.mod.Inventory", 64))
         assertEquals(256, InventoryStackLimitHook.resolveInventoryStackLimit("example.Inventory", 64))
         assertTrue(InventoryStackLimitHook.isExpansionEnabled())
+    }
+
+    @Test
+    fun emergencyDisableAfterBroadDecision_remainsOffUntilRestart() {
+        InventoryStackLimitHook.resetForTesting()
+        InventoryStackLimitHook.configureExpansionEnabled(true)
+        InventoryStackLimitHook.prepare(256, null)
+
+        InventoryStackLimitHook.configureExpansionEnabled(false)
+        InventoryStackLimitHook.configureExpansionEnabled(true)
+
+        assertEquals(64, InventoryStackLimitHook.resolveInventoryStackLimit("example.Inventory", 64))
+        assertFalse(InventoryStackLimitHook.isExpansionEnabled())
     }
 
     @Test

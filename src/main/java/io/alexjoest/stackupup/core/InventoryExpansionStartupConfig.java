@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.ArrayList;
 
 public final class InventoryExpansionStartupConfig {
+    private static final boolean DEFAULT_ENABLED = true;
     private static volatile StartupPolicy startupPolicy;
 
     private InventoryExpansionStartupConfig() {
@@ -41,10 +42,10 @@ public final class InventoryExpansionStartupConfig {
 
     static StartupPolicy load(File configFile) {
         if (!configFile.isFile()) {
-            return new StartupPolicy(false, Collections.<String>emptyList());
+            return new StartupPolicy(DEFAULT_ENABLED, Collections.<String>emptyList());
         }
         Deque<String> categories = new ArrayDeque<>();
-        boolean enabled = false;
+        boolean enabled = DEFAULT_ENABLED;
         boolean enabledSeen = false;
         List<String> modIds = new ArrayList<>();
         boolean modIdsSeen = false;
@@ -98,7 +99,7 @@ public final class InventoryExpansionStartupConfig {
         } catch (IOException e) {
             throw new IllegalStateException("Unable to read inventory expansion startup config " + configFile, e);
         }
-        return new StartupPolicy(enabledSeen && enabled, modIds);
+        return new StartupPolicy(enabledSeen ? enabled : DEFAULT_ENABLED, modIds);
     }
 
     static void resetForTesting() {

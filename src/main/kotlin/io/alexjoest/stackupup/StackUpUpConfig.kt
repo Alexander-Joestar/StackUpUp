@@ -80,11 +80,11 @@ object StackUpUpConfig {
     class InventoryExpansion {
         @JvmField
         @Config.Comment(
-            "Enable generic third-party inventory and optional capacity compatibility expansion. Vanilla player/container stack-rule support remains enabled. Changes require a game restart.",
+            "Enable broad third-party inventory and optional capacity compatibility expansion by default. Set false only as a restart-time emergency fallback; vanilla player/container stack-rule support remains enabled. Changes require a game restart.",
         )
         @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compat.inventoryExpansion.enabled.name")
         @Config.RequiresMcRestart
-        var enabled: Boolean = false
+        var enabled: Boolean = true
     }
 
     class InventoryStackLimitBlacklist {

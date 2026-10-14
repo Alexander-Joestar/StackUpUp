@@ -4,7 +4,7 @@
 
 ### 兼容性
 
-- `compat.inventoryExpansion.enabled` 是默认关闭的启动期库存容量开关：控制窄范围 IInventory getter transformer 与可选 capacity Mixin 配置；不关闭 ItemStack 规则、ordinary/baseline 配置或专用 `InventoryWriteLimitMixin` 写入安全路径。
+- `compat.inventoryExpansion.enabled` 是默认启用的启动期库存容量开关（新/缺失配置采用 broad-default；已有配置中的显式 `false` 保持关闭，作为重启时的紧急回退）：控制窄范围 IInventory getter transformer 与可选 capacity Mixin 配置；不关闭 ItemStack 规则、ordinary/baseline 配置或专用 `InventoryWriteLimitMixin` 写入安全路径。
 - `compat.inventoryStackLimitBlacklist.modIds` 仅按可归属的 Forge owned-package 接收端/受支持 owner 选择性绕过容量扩展，并跳过对应 Mod 的 capacity late 配置；不关闭其 ordinary/safety 配置，也不证明共享 ownerless 或私有 delegate 路径安全。
 - 普通与 capacity Mixin 配置分开登记：IC2 Classic 的原生 64 槽位保护留在 ordinary 配置，Farmer's Delight 的容量 getter 补丁仅为可选 capacity 配置目标；注册范围不是运行时兼容性验证。
 

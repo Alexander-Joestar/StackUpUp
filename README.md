@@ -101,7 +101,7 @@ tab = buildingBlocks -> 256
 - `general.maxStackSize`：全局兼容最大堆叠上限，默认 `64`；规则结果和兼容入口都不会超过这个值。
 - `compat.vanilla.craftingSlotLimit`：工作台网格与合成结果槽上限，默认 `64`。`0` 保持原版/默认行为，大于 `0` 使用指定上限。这主要是性能（Performance）设置：按住 Shift 批量合成极大堆叠可能造成严重卡顿，不是平衡开关。实际上限还会受 `general.maxStackSize` 与物品/配方限制收紧。
 - `compat.nuclearcraft.speedUpgradeLimit` 与 `compat.nuclearcraft.energyUpgradeLimit`：NuclearCraft 速度/能量升级的堆叠上限，默认 `0`（保持 NuclearCraft 默认行为）；大于 `0` 时使用自定义上限。NuclearCraft 未加载时，这些设置不生效。
-- `compat.inventoryExpansion.enabled`：启动期库存容量扩展开关，默认 `false`。开启时注册窄范围 `IInventory#getInventoryStackLimit()` getter transformer 并加入可选 capacity Mixin 配置；关闭时跳过这些可选容量扩展。它不会关闭 ItemStack 规则、常驻 early/baseline 配置、普通 late 配置，或 `mixins.stackupup.baseline.early.json` 中调用 `resolveInventoryWriteLimit` 的专用 `InventoryWriteLimitMixin` 写入安全路径；`modIds` 也不会停用该 Mixin。
+- `compat.inventoryExpansion.enabled`：启动期库存容量扩展开关，默认 `true`（新/缺失配置采用 broad-default；已有配置中的显式 `false` 保持关闭）；显式 `false` 仅作为重启时的紧急回退。开启时注册窄范围 `IInventory#getInventoryStackLimit()` getter transformer 并加入可选 capacity Mixin 配置；关闭时跳过这些可选容量扩展。它不会关闭 ItemStack 规则、常驻 early/baseline 配置、普通 late 配置，或 `mixins.stackupup.baseline.early.json` 中调用 `resolveInventoryWriteLimit` 的专用 `InventoryWriteLimitMixin` 写入安全路径；`modIds` 也不会停用该 Mixin。
 - `compat.inventoryStackLimitBlacklist.modIds`：仅对列出的 Mod 做选择性容量屏蔽，并跳过它的 capacity late 配置；空列表是 no-op。可用 `/stackupup inspect` 输出的候选作复核起点，但不是安全证明。
 
 黑名单只依据 Forge `ownedPackages` 的精确包边界匹配实际接收端或受支持的公开 owner；仅继承被列入的父类或实现其接口，不会自动排除未列出的 addon。共享实例无公开 owner、私有 delegate 与 receiverless 构造路径仍可能是 UNKNOWN。已加载但没有可归属包的 Mod 会使启动检查失败；未加载的 Mod ID 记录无效果。不要把它当作整 Mod 关闭开关。MixinBooter 的 `general.blacklistedConfigs` 则会停用整个所列配置（其中可能含安全 Mixin），不是 capacity-only 黑名单。

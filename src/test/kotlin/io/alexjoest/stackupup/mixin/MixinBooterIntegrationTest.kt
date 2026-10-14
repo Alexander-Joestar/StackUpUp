@@ -51,8 +51,11 @@ class MixinBooterIntegrationTest {
     }
 
     @Test
-    fun lateConfigFiles_shouldReferenceExistingMixinSources() {
-        for (config in StackUpUpMixinConnector().modules.map { it.config }) {
+    fun lateAndCapacityConfigFiles_shouldReferenceExistingMixinSources() {
+        val connector = StackUpUpMixinConnector()
+        val registeredConfigs = (connector.modules + connector.classicModules + connector.capacityModules + connector.classicCapacityModules)
+            .map { it.config }
+        for (config in registeredConfigs) {
             val configPath = Paths.get("src", "main", "resources", config)
             assertTrue(Files.isRegularFile(configPath), "Missing mixin config: $config")
 
@@ -67,6 +70,49 @@ class MixinBooterIntegrationTest {
                 assertTrue(Files.isRegularFile(sourcePath), "Missing mixin source for $config: $mixin")
             }
         }
+    }
+
+    @Test
+    fun knownProfiles_shouldKeepSafetyMixinsOutOfOptionalCapacityProfiles() {
+        assertEquals(
+            setOf("AppEngAdaptorItemHandlerMixin", "AppEngInternalAEInventoryWriterMixin"),
+            configMixins("mixins.stackupup.late.ae2.json"),
+        )
+        assertEquals(
+            setOf("AppEngInternalAEInventoryMixin", "AppEngInternalInventoryMixin"),
+            configMixins("mixins.stackupup.capacity.late.ae2.json"),
+        )
+
+        assertEquals(
+            setOf("EnderIOInventoryNoDropMixin"),
+            configMixins("mixins.stackupup.late.enderio.json"),
+        )
+        assertEquals(
+            setOf(
+                "EnderIOMachineInventoryLimitMixin",
+                "EnderIOSlottedInventoryLimitMixin",
+                "EnderIOInventorySlotLimitMixin",
+            ),
+            configMixins("mixins.stackupup.capacity.late.enderio.json"),
+        )
+
+        assertEquals(
+            setOf("NuclearCraftDistributorNoDropMixin", "NuclearCraftUpgradeStackLimitMixin"),
+            configMixins("mixins.stackupup.late.nuclearcraft.json"),
+        )
+        assertEquals(
+            setOf("NuclearCraftTileInventoryLimitMixin"),
+            configMixins("mixins.stackupup.capacity.late.nuclearcraft.json"),
+        )
+
+        assertEquals(
+            setOf("SlotBaseMixin"),
+            configMixins("mixins.stackupup.late.ic2classic.json"),
+        )
+        assertEquals(
+            emptySet<String>(),
+            configMixins("mixins.stackupup.capacity.late.ic2classic.json"),
+        )
     }
 
     @Test
@@ -133,6 +179,14 @@ class MixinBooterIntegrationTest {
         assertTrue(source.contains("ensureConflictState"), "connect 必须先做冲突检测")
         assertTrue(source.contains("ModDiscoverer.isModPresent"), "late 装载必须按 mod 在场条件 add")
         assertTrue(source.contains("Mixins.addConfiguration"), "必须通过 Mixins.addConfiguration 入队")
+    }
+
+    private fun configMixins(config: String): Set<String> {
+        val json = String(
+            Files.readAllBytes(Paths.get("src", "main", "resources", config)),
+            Charsets.UTF_8,
+        )
+        return extractJsonStringArray(json, "mixins").toSet()
     }
 
     private fun extractJsonString(json: String, key: String): String? {

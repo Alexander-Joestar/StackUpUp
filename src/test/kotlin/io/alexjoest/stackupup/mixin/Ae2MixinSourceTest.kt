@@ -47,22 +47,22 @@ class Ae2MixinSourceTest {
     }
 
     @Test
-    fun ae2Mixin_shouldExpandBlankPatternInputSlot() {
-        val config = String(Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.capacity.late.ae2.json")), Charsets.UTF_8)
-        assertTrue(config.contains("AppEngPatternTermMixin"), "AE2 late config 应加载样板终端空白样板槽补丁")
-
-        val source = String(
-            Files.readAllBytes(Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/ae2/AppEngPatternTermMixin.java")),
+    fun ae2CapacityMixin_shouldKeepOnlyTypedInternalInventoryPaths() {
+        val config = String(
+            Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.capacity.late.ae2.json")),
             Charsets.UTF_8,
         )
-        assertTrue(source.contains("@Pseudo"), "AE2 PatternEncoder mixin 应允许目标类不在编译类路径")
-        assertTrue(source.contains("ContainerPatternTerm"), "应覆盖普通样板终端容器")
-        assertTrue(source.contains("ContainerExpandedProcessingPatternTerm"), "应覆盖扩展处理样板终端容器")
-        assertTrue(source.contains("ContainerWirelessPatternTerminal"), "应覆盖无线样板终端容器")
-        assertTrue(source.contains("patternSlotIN"), "应只触达空白样板输入槽")
-        assertTrue(source.contains("<init>*"), "应在构造结束后修正 AE 创建好的槽")
-        assertTrue(source.contains("stackupup" + "$" + "setStackLimit"), "空白样板槽应调用 AE slot 的 setStackLimit")
-        assertTrue(source.contains("StackLimitHooks.getInventoryCompatibilityStackSize(this, 64)"), "空白样板槽应使用兼容堆叠上限")
+
+        assertTrue(config.contains("AppEngInternalAEInventoryMixin"), "AE2 capacity config 应保留 typed AE inventory getter")
+        assertTrue(config.contains("AppEngInternalInventoryMixin"), "AE2 capacity config 应保留 typed internal inventory getter")
+        assertFalse(
+            config.contains("AppEngPatternTermMixin"),
+            "未经 pinned typed API 证据的 PatternTerm capacity path 不得 active",
+        )
+        assertFalse(
+            Files.exists(Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/ae2/AppEngPatternTermMixin.java")),
+            "未经 pinned typed API 证据的反射 PatternTerm mixin 应移除",
+        )
     }
 
     private fun assertCoversSlotLimitPath(path: String) {

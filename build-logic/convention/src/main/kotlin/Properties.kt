@@ -40,6 +40,8 @@ val Project.autoTestWorldFolder: String? by compatible("stackupupDevAutoTestWorl
 val Project.autoTestWorldName: String? by compatible("stackupupDevAutoTestWorldName")
 val Project.autoTestServerPort: String? by compatible("stackupupDevAutoTestServerPort")
 val Project.autoTestMatrix: String? by compatible("stackupupDevAutoTestMatrix")
+val Project.autoTestFocus: String? by compatible("stackupupDevAutoTestFocus")
+val Project.autoTestCandidate: String? by compatible("stackupupDevAutoTestCandidate")
 val Project.autoTestEnabled: Boolean by compatibleFlag("stackupupDevAutoTest")
 
 // ── E2：常用运行任务名集中，避免字符串散落（自根脚本迁移，字符串逐字保留） ─────────────────
@@ -67,6 +69,8 @@ val autoTestPropertyLegacyNames: Map<String, String> =
         "stackupupDevAutoTestWorldName" to "stackupDevAutoTestWorldName",
         "stackupupDevAutoTestServerPort" to "stackupDevAutoTestServerPort",
         "stackupupDevAutoTestMatrix" to "stackupDevAutoTestMatrix",
+        "stackupupDevAutoTestFocus" to "stackupDevAutoTestFocus",
+        "stackupupDevAutoTestCandidate" to "stackupDevAutoTestCandidate",
     )
 
 // ── 访问器工厂（仅本文件使用，其余脚本只消费上方扩展属性） ─────────────────────────────────

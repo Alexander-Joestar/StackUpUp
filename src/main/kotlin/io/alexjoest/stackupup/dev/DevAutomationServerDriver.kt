@@ -26,7 +26,9 @@ object DevAutomationServerDriver {
     fun run(server: MinecraftServer) {
         val report = AutomationReport()
         try {
-            if (DevAutomationConfig.runServerMatrix) {
+            if (DevAutomationConfig.focus.isNotEmpty()) {
+                runFocused(server, report)
+            } else if (DevAutomationConfig.runServerMatrix) {
                 runMatrix(server, report)
             } else {
                 runSingle(server, report)
@@ -38,6 +40,18 @@ object DevAutomationServerDriver {
         } finally {
             report.writeToDisk()
         }
+    }
+
+    private fun runFocused(server: MinecraftServer, report: AutomationReport) {
+        validateFocusedRequest(DevAutomationConfig.focus, DevAutomationConfig.runServerMatrix, DevAutomationConfig.compatProbeIds)
+        val scope = "focused=${DevAutomationConfig.focus}; single/matrix/third-party probes not requested; JVM=${System.getProperty("java.version")}; " +
+            "candidate=${System.getProperty("stackupup.dev.autoTest.candidate", "UNKNOWN")}; config=config/stackupup.cfg"
+        report.line(scope)
+        StackUpUp.logger?.info("开发自动验收[服务端]：{}", scope)
+        val result = focusedProbe(DevAutomationConfig.focus).run(server)
+        report.line(result.summary)
+        check(result.passed) { "Focused regression failed: ${result.summary}" }
+        shutdownIfRequested(server)
     }
 
     private fun runSingle(server: MinecraftServer, report: AutomationReport) {

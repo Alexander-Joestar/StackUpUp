@@ -56,6 +56,43 @@ class EarlyMixinConfigTest {
     }
 
     @Test
+    fun slotLimit_shouldFailClosedForCoFHNullInventoryUpgradeSlots() {
+        val source = readMixinSource("SlotLimitMixin.java")
+        val nullGuard = "        if (self.inventory == null) {\n" +
+            "            return original;\n" +
+            "        }"
+        val nullGuardIndex = source.indexOf(nullGuard)
+        val specialInventoryHelperIndex = source.indexOf("StackLimitHooks.isSpecialContainerInventory")
+        val placementHelperIndex = source.indexOf("StackLimitHooks.resolvePlacementSlotLimit")
+
+        assertTrue(nullGuardIndex >= 0, "SlotLimitMixin must return the original limit for null-inventory slots")
+        assertTrue(
+            specialInventoryHelperIndex > nullGuardIndex,
+            "null-inventory upgrade slots must return before entering the Kotlin helper",
+        )
+        assertTrue(
+            placementHelperIndex > nullGuardIndex,
+            "null-inventory upgrade slots must return before resolving placement limits",
+        )
+    }
+
+    @Test
+    fun slotLimit_shouldKeepNormalInventoryAsPlacementLimitTarget() {
+        val source = readMixinSource("SlotLimitMixin.java")
+        val normalInventoryCall = "        return StackLimitHooks.resolvePlacementSlotLimit(\n" +
+            "            stack,\n" +
+            "            self.inventory,\n" +
+            "            original,\n" +
+            "            self.inventory.getInventoryStackLimit()\n" +
+            "        )"
+
+        assertTrue(
+            source.contains(normalInventoryCall),
+            "normal inventory slots must retain the receiver-aware placement limit call",
+        )
+    }
+
+    @Test
     fun earlyConfig_shouldSeparateClientFromServerMixins() {
         val content = readSource("src/main/resources/mixins.stackupup.early.json")
         val mixins = content.substringAfter("\"mixins\": [").substringBefore("],")

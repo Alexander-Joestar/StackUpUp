@@ -15,6 +15,9 @@ public abstract class SlotLimitMixin {
     )
     private int stackupup$applyDynamicSlotLimit(int original, ItemStack stack) {
         Slot self = (Slot) (Object) this;
+        if (self.inventory == null) {
+            return original;
+        }
         if (StackLimitHooks.isSpecialContainerInventory(self.inventory)) {
             return original;
         }

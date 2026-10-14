@@ -64,7 +64,7 @@ val runtimeLocalDevModSourceFiles =
         sourceFile.name.endsWith(".jar") && sourceFile.parentFile?.name == "local-dev-mods"
     }
 val scanOnlyLocalDevModSourceFiles = runtimeLocalDevModSourceFiles.filter(::requiresFmlDirectoryScan)
-val runtimeClasspathLocalDevModSourceFiles = runtimeLocalDevModSourceFiles - scanOnlyLocalDevModSourceFiles.toSet()
+val runtimeClasspathLocalDevModSourceFiles = runtimeLocalDevModSourceFiles - scanOnlyLocalDevModSourceFiles
 val copiedRuntimeLocalDevModFiles =
     runtimeClasspathLocalDevModSourceFiles.map { sourceFile ->
         preparedLocalDevModDirectory.get().file(localDevModRuntimeName(sourceFile)).asFile

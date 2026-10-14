@@ -11,6 +11,6 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
 abstract class CommonTileInventoryMixin {
     @ModifyConstant(method = "<init>(I)V", constant = @Constant(intValue = 64), require = 0)
     private static int stackupup$unlimitInventorySlots(int original) {
-        return StackLimitHooks.getInventoryCompatibilityStackSize(original);
+        return StackLimitHooks.getCompatibilityStackSize();
     }
 }

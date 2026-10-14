@@ -1,8 +1,0 @@
-{
-  "required": false,
-  "package": "io.alexjoest.stackupup.mixin.late.colossalchests",
-  "refmap": "${refmap}",
-  "target": "@env(DEFAULT)",
-  "compatibilityLevel": "JAVA_8",
-  "mixins": ["ColossalChestsTileMixin"]
-}

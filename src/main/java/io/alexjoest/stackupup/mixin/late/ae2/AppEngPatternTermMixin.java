@@ -23,13 +23,9 @@ import java.lang.reflect.Method;
 abstract class AppEngPatternTermMixin {
     @Inject(method = "<init>*", at = @At("RETURN"), require = 0)
     private void stackupup$expandBlankPatternSlotLimit(CallbackInfo ci) {
-        if (StackLimitHooks.shouldBypassInventoryStackLimit(this)
-            || !io.alexjoest.stackupup.core.InventoryStackLimitHook.isPrepared()) {
-            return;
-        }
         Object patternSlotIN = stackupup$getBlankPatternSlot();
-        if (patternSlotIN != null && !StackLimitHooks.shouldBypassInventoryStackLimit(patternSlotIN)) {
-            stackupup$setStackLimit(patternSlotIN, StackLimitHooks.getInventoryCompatibilityStackSize(this, 64));
+        if (patternSlotIN != null) {
+            stackupup$setStackLimit(patternSlotIN, StackLimitHooks.getCompatibilityStackSize());
         }
     }
 

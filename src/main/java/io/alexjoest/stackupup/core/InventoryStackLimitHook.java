@@ -15,25 +15,16 @@ import java.util.Set;
 public final class InventoryStackLimitHook {
     private static final int VANILLA_STACK_LIMIT = 64;
     private static volatile State state = State.unprepared();
-    private static volatile boolean expansionEnabled;
-    private static volatile boolean expansionDecisionFrozen;
 
     private InventoryStackLimitHook() {
     }
 
-    /** Publishes the startup-only compatibility expansion decision. */
-    public static synchronized void configureExpansionEnabled(boolean enabled) {
-        if (expansionDecisionFrozen && enabled) {
-            return;
-        }
-        expansionEnabled = enabled;
-        expansionDecisionFrozen = true;
-    }
-
-    public static boolean isExpansionEnabled() {
-        return expansionEnabled;
-    }
-
+    /**
+     * Publishes the runtime snapshot used by transformed inventory methods.
+     *
+     * @param compatibilityLimit the configured StackUpUp compatibility upper bound
+     * @param blacklistedPackages package prefixes whose inventory methods must remain unchanged
+     */
     public static void prepare(int compatibilityLimit, String[] blacklistedPackages) {
         if (compatibilityLimit <= 0) {
             throw new IllegalArgumentException("compatibilityLimit must be positive");
@@ -49,52 +40,35 @@ public final class InventoryStackLimitHook {
         state = new State(true, compatibilityLimit, previous.blacklistedPackages);
     }
 
+    public static void setBlacklistedPackages(String[] blacklistedPackages) {
+        State previous = state;
+        state = State.prepared(previous.compatibilityLimit, blacklistedPackages);
+    }
+
     public static boolean isPrepared() {
         return state.prepared;
     }
 
+    /**
+     * Called from transformed bytecode. The class name is passed as a string deliberately so
+     * resolving a transformed inventory never loads the target class or consults Forge.
+     */
     public static int resolveInventoryStackLimit(String className, int original) {
         State current = state;
-        if (!expansionEnabled || !current.prepared || original != VANILLA_STACK_LIMIT
-            || className == null || current.matches(className)) {
+        if (!current.prepared || className == null || current.matches(className)) {
             return original;
         }
         return current.compatibilityLimit;
     }
 
-    public static int resolveInventoryStackLimit(Class<?> receiverClass, int original) {
-        State current = state;
-        if (!expansionEnabled || !current.prepared || original != VANILLA_STACK_LIMIT
-            || receiverClass == null || current.bypasses(receiverClass)) {
-            return original;
-        }
-        return current.compatibilityLimit;
-    }
-
-    public static boolean isBlacklisted(Class<?> receiverClass) {
-        return state.bypasses(receiverClass);
-    }
-
-    static synchronized void resetForTesting() {
+    static void resetForTesting() {
         state = State.unprepared();
-        expansionEnabled = false;
-        expansionDecisionFrozen = false;
     }
 
     private static final class State {
         private final boolean prepared;
         private final int compatibilityLimit;
         private final Set<String> blacklistedPackages;
-        private final ClassValue<Boolean> classResults = new ClassValue<Boolean>() {
-            @Override
-            protected Boolean computeValue(Class<?> receiverClass) {
-                return matches(receiverClass.getName());
-            }
-        };
-
-        private boolean bypasses(Class<?> receiverClass) {
-            return receiverClass != null && classResults.get(receiverClass);
-        }
 
         private State(boolean prepared, int compatibilityLimit, Set<String> blacklistedPackages) {
             this.prepared = prepared;
@@ -107,28 +81,19 @@ public final class InventoryStackLimitHook {
         }
 
         private static State prepared(int compatibilityLimit, String[] packageNames) {
-            Set<String> normalizedPackages = normalize(packageNames);
-            return new State(
-                true,
-                compatibilityLimit,
-                Collections.unmodifiableSet(normalizedPackages)
-            );
-        }
-
-        private static Set<String> normalize(String[] names) {
             Set<String> normalized = new HashSet<>();
-            if (names != null) {
-                for (String name : names) {
-                    if (name == null) {
+            if (packageNames != null) {
+                for (String packageName : packageNames) {
+                    if (packageName == null) {
                         continue;
                     }
-                    String value = name.trim().toLowerCase(Locale.ROOT).replace('/', '.');
+                    String value = packageName.trim().toLowerCase(Locale.ROOT);
                     if (!value.isEmpty()) {
-                        normalized.add(value);
+                        normalized.add(value.replace('/', '.'));
                     }
                 }
             }
-            return normalized;
+            return new State(true, compatibilityLimit, Collections.unmodifiableSet(normalized));
         }
 
         private boolean matches(String className) {

@@ -50,8 +50,7 @@ final class InventoryClassHierarchyRepository {
                 return null;
             }
             if (metadata.getterName != null) {
-                if ((metadata.getterAccess
-                    & (Opcodes.ACC_ABSTRACT | Opcodes.ACC_FINAL | Opcodes.ACC_NATIVE | Opcodes.ACC_STATIC)) != 0
+                if ((metadata.getterAccess & (Opcodes.ACC_ABSTRACT | Opcodes.ACC_NATIVE | Opcodes.ACC_STATIC)) != 0
                     || (metadata.access & Opcodes.ACC_INTERFACE) != 0) {
                     return null;
                 }

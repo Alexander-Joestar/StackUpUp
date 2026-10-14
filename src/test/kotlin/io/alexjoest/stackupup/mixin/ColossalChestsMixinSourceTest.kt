@@ -11,7 +11,7 @@ import java.nio.file.Paths
 class ColossalChestsMixinSourceTest {
     @Test
     fun colossalChestsTileMixin_shouldPatchInventoryConstructionStackLimit() {
-        val config = String(Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.capacity.late.colossalchests.json")), Charsets.UTF_8)
+        val config = String(Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.late.colossalchests.json")), Charsets.UTF_8)
         val mixin = String(
             Files.readAllBytes(Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/colossalchests/ColossalChestsTileMixin.java")),
             Charsets.UTF_8,
@@ -25,7 +25,7 @@ class ColossalChestsMixinSourceTest {
         assertTrue(mixin.contains("constructInventoryDebug"), "应覆盖 constructInventoryDebug")
         assertTrue(mixin.contains("intValue = 64"), "源码声明了 intValue = 64（结构断言，不证明运行时命中范围）")
         assertFalse(mixin.contains("intValue = 0"), "源码未声明 intValue = 0（结构断言）")
-        assertTrue(mixin.contains("StackLimitHooks.getInventoryCompatibilityStackSize("), "64 应替换为兼容堆叠上限")
+        assertTrue(mixin.contains("StackLimitHooks.getCompatibilityStackSize()"), "64 应替换为兼容堆叠上限")
         assertTrue(mixin.contains("org.cyclops.colossalchests.tileentity.TileColossalChest"), "目标为 TileColossalChest")
         assertTrue(mixin.contains("@Pseudo"), "mod 未加载时目标类不在编译类路径，必须 Pseudo 跳过")
         assertTrue(mixin.contains("remap = false"), "mod 类成员不做映射重写")

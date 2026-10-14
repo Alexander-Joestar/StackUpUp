@@ -36,7 +36,6 @@ data class AutoTestRequest(
     val worldName: String,
     val serverPort: String,
     val matrix: String,
-    val focus: String,
 )
 
 val autoTestRequestedTasks = setOf(taskRunClientAutoTest, taskRunServerAutoTest)
@@ -59,35 +58,16 @@ fun Project.deriveAutoTestRequest(): AutoTestRequest {
         item = autoTestItem ?: AutoTestDefaults.ITEM,
         meta = autoTestMeta ?: AutoTestDefaults.META,
         count = autoTestCount ?: AutoTestDefaults.COUNT,
-        worldFolder = autoTestWorldFolder ?: if (autoTestFocus.isNullOrEmpty()) AutoTestDefaults.WORLD_FOLDER else "stackupup_dev_$autoTestFocus",
+        worldFolder = autoTestWorldFolder ?: AutoTestDefaults.WORLD_FOLDER,
         worldName = autoTestWorldName ?: AutoTestDefaults.WORLD_NAME,
         serverPort = autoTestServerPort ?: AutoTestDefaults.SERVER_PORT,
         matrix = autoTestMatrix ?: AutoTestDefaults.MATRIX,
-        focus = autoTestFocus ?: "",
     )
 }
 
 val autoTestRequest: AutoTestRequest = deriveAutoTestRequest()
-if (autoTestRequest.focus.isNotEmpty()) {
-    require(autoTestRequest.enabled && autoTestRequest.mode == "server") { "AutoTestFocus requires enabled server automation" }
-    require(
-        autoTestRequest.focus in
-            setOf(
-                "core_inventory_off",
-                "equipment_inventory_off",
-                "equipment_inventory_off_blacklist",
-                "equipment_inventory_on",
-                "equipment_inventory_blacklist",
-                "ae2_owner_off",
-                "ae2_owner_blacklist",
-            ),
-    ) {
-        "Unknown AutoTestFocus: ${autoTestRequest.focus}"
-    }
-    require(autoTestRequest.matrix == "false") { "AutoTestFocus cannot be combined with Matrix" }
-}
 
-// ── -D 参数注入（enabled/autoShutdown/failFast/clearInventoryBeforeGive 恒为 true） ──
+// ── 13 个 -D 键注入（键名与顺序与重构前一致；enabled/autoShutdown/failFast/clearInventoryBeforeGive 恒为 true） ──
 
 val autoTestJvmArgs: List<String> =
     buildList {
@@ -101,10 +81,6 @@ val autoTestJvmArgs: List<String> =
         add("-Dstackupup.dev.autoTest.worldFolder=${autoTestRequest.worldFolder}")
         add("-Dstackupup.dev.autoTest.worldName=${autoTestRequest.worldName}")
         add("-Dstackupup.dev.autoTest.matrix=${autoTestRequest.matrix}")
-        if (autoTestRequest.focus.isNotEmpty()) {
-            add("-Dstackupup.dev.autoTest.focus=${autoTestRequest.focus}")
-            add("-Dstackupup.dev.autoTest.candidate=${autoTestCandidate ?: "UNKNOWN"}")
-        }
         add("-Dstackupup.dev.autoTest.autoShutdown=true")
         add("-Dstackupup.dev.autoTest.failFast=true")
         add("-Dstackupup.dev.autoTest.clearInventoryBeforeGive=true")
@@ -128,18 +104,6 @@ tasks.register(taskRunServerAutoTest) {
     group = "modded minecraft"
     description = "以开发自动验收模式运行服务端。"
     dependsOn(taskRunServer)
-    doLast {
-        if (autoTestRequest.focus.isNotEmpty()) {
-            val marker = file("run/logs/autotest-failed.marker")
-            check(!marker.exists()) { "Focused automation failed: ${marker.readText(Charsets.UTF_8)}" }
-            val report = file("run/logs/autotest-report.txt")
-            check(report.exists()) { "Focused automation did not produce a report" }
-            val text = report.readText(Charsets.UTF_8)
-            check(text.startsWith("focused=${autoTestRequest.focus};") && text.endsWith("最终状态: PASS\n")) {
-                "Focused automation did not finish successfully: $text"
-            }
-        }
-    }
 }
 
 // E3：自动验收服务端文件模板集中。输出必须与集中前逐字节一致
@@ -162,101 +126,6 @@ fun autoTestServerPropertiesHeaderLines(
         "level-name=$levelName",
     )
 
-fun focusedAutoTestConfigText(focus: String): String =
-    buildString {
-        val blacklistEnabled = focus.endsWith("_blacklist")
-        val expansionEnabled =
-            focus != "equipment_inventory_off_blacklist" &&
-                (blacklistEnabled || focus == "equipment_inventory_on")
-        append("general {\n")
-        append("    I:maxStackSize=256\n")
-        append("}\n")
-        append("compat {\n")
-        append("    inventoryexpansion {\n")
-        append("        B:enabled=$expansionEnabled\n")
-        append("    }\n")
-        append("    vanilla {\n")
-        append("        I:craftingSlotLimit=64\n")
-        append("    }\n")
-        append("    inventorystacklimitblacklist {\n")
-        append("        S:modIds <\n")
-        if (blacklistEnabled) {
-            append("            $modId\n")
-        }
-        append("        >\n")
-        append("    }\n")
-        append("}\n")
-    }
-
-fun writeFocusedAutoTestConfigIfAbsent(
-    config: File,
-    focus: String,
-): Boolean {
-    if (config.exists()) {
-        return false
-    }
-    config.parentFile.mkdirs()
-    config.writeText(focusedAutoTestConfigText(focus), Charsets.UTF_8)
-    return true
-}
-
-fun renderedBlacklistPayload(lines: List<String>): List<String> {
-    val start = lines.indexOfFirst { it.trim() == "S:modIds <" }
-    val end = lines.indexOfFirst { it.trim() == ">" }
-    check(start in 0..<end) { "Focused config has malformed blacklist list: $lines" }
-    return lines.subList(start + 1, end).map(String::trim)
-}
-
-val verifyFocusedAutoTestConfigRendering =
-    tasks.register("verifyFocusedAutoTestConfigRendering") {
-        group = "verification"
-        description = "验证 focused 服务端配置渲染的零项、self blacklist 与既有配置保护。"
-        doLast {
-            val verificationDirectory = temporaryDir
-            verificationDirectory.deleteRecursively()
-            verificationDirectory.mkdirs()
-            val offConfig = verificationDirectory.resolve("off/config/stackupup.cfg")
-            val onConfig = verificationDirectory.resolve("on/config/stackupup.cfg")
-            check(writeFocusedAutoTestConfigIfAbsent(offConfig, "equipment_inventory_off"))
-            check(writeFocusedAutoTestConfigIfAbsent(onConfig, "equipment_inventory_blacklist"))
-            val offLines = offConfig.readLines(Charsets.UTF_8)
-            val onLines = onConfig.readLines(Charsets.UTF_8)
-            val offPayload = renderedBlacklistPayload(offLines)
-            val onPayload = renderedBlacklistPayload(onLines)
-            check(offPayload.isEmpty()) { "OFF focused config emitted a blacklist payload: $offPayload" }
-            check(onPayload == listOf(modId)) { "ON focused config did not emit exactly one self blacklist payload: $onPayload expected=${listOf(modId)}" }
-            for (focus in listOf(
-                "core_inventory_off",
-                "equipment_inventory_off",
-                "equipment_inventory_off_blacklist",
-                "equipment_inventory_on",
-                "equipment_inventory_blacklist",
-                "ae2_owner_off",
-                "ae2_owner_blacklist",
-            )) {
-                val rendered = verificationDirectory.resolve("$focus/config/stackupup.cfg")
-                check(writeFocusedAutoTestConfigIfAbsent(rendered, focus))
-                val lines = rendered.readLines(Charsets.UTF_8)
-                val blacklisted = focus.endsWith("_blacklist")
-                val enabled =
-                    focus != "equipment_inventory_off_blacklist" &&
-                        (blacklisted || focus == "equipment_inventory_on")
-                check(renderedBlacklistPayload(lines) == if (blacklisted) listOf(modId) else emptyList<String>()) { "$focus blacklist payload mismatch" }
-                check("        B:enabled=$enabled" in lines) { "$focus expansion mismatch" }
-                val existing = verificationDirectory.resolve("$focus/existing/stackupup.cfg")
-                existing.parentFile.mkdirs()
-                val original = "existing-config\r\nutf8-既有配置\n".toByteArray(Charsets.UTF_8)
-                existing.writeBytes(original)
-                check(!writeFocusedAutoTestConfigIfAbsent(existing, focus))
-                check(existing.readBytes().contentEquals(original)) { "$focus overwrote an existing config" }
-            }
-        }
-    }
-
-tasks.named("check").configure {
-    dependsOn(verifyFocusedAutoTestConfigRendering)
-}
-
 val prepareAutoTestServerFiles =
     tasks.register("prepareAutoTestServerFiles") {
         group = "build setup"
@@ -265,16 +134,6 @@ val prepareAutoTestServerFiles =
             val runDirectory = file("run")
             if (!runDirectory.exists()) {
                 runDirectory.mkdirs()
-            }
-
-            if (autoTestRequest.focus.isNotEmpty()) {
-                listOf("autotest-failed.marker", "autotest-report.txt").forEach { name ->
-                    val output = runDirectory.resolve("logs/$name")
-                    check(!output.exists() || output.delete()) { "Cannot clear previous focused output: $output" }
-                }
-                val config = runDirectory.resolve("config/stackupup.cfg")
-                writeFocusedAutoTestConfigIfAbsent(config, autoTestRequest.focus)
-                logger.lifecycle("Focused automation config (existing files preserved): ${config.readText(Charsets.UTF_8)}")
             }
 
             val eulaFile = runDirectory.resolve("eula.txt")
@@ -295,7 +154,7 @@ val prepareAutoTestServerFiles =
                     addAll(
                         autoTestServerPropertiesHeaderLines(
                             autoTestServerPort ?: AutoTestDefaults.SERVER_PORT,
-                            autoTestRequest.worldFolder,
+                            autoTestWorldFolder ?: AutoTestDefaults.WORLD_FOLDER,
                         ),
                     )
                     addAll(filteredLines)

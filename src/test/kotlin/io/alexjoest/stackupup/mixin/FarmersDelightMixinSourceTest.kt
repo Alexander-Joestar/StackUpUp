@@ -18,7 +18,7 @@ class FarmersDelightMixinSourceTest {
             Charsets.UTF_8,
         )
         val config = String(
-            Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.capacity.late.farmersdelight.json")),
+            Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.late.farmersdelight.json")),
             Charsets.UTF_8,
         )
 
@@ -31,7 +31,8 @@ class FarmersDelightMixinSourceTest {
         assertTrue(source.contains("TileEntitySkillet"))
         assertTrue(source.contains("private int stackupup${'$'}expandDefaultInventoryLimit"))
         assertTrue(source.contains("StackLimitHooks.shouldBypassInventoryStackLimit(this)"))
-        assertTrue(source.contains("StackLimitHooks.getInventoryCompatibilityStackSize(original)"))
+        assertTrue(source.contains("original == VANILLA_STACK_LIMIT"))
+        assertTrue(source.contains("StackLimitHooks.getCompatibilityStackSize()"))
         assertTrue(source.contains("require = 0"))
         assertFalse(source.contains("TileEntityCuttingBoard"))
         assertFalse(source.contains("TileEntityStove"))

@@ -4,5 +4,7 @@
   "refmap": "${refmap}",
   "target": "@env(DEFAULT)",
   "compatibilityLevel": "JAVA_8",
-  "mixins": []
+  "mixins": [
+    "ColossalChestsTileMixin"
+  ]
 }

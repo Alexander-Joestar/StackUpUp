@@ -118,6 +118,14 @@ class CommandStackUpUp internal constructor(
         if (modIds.isNotEmpty()) {
             sender.reply(RuleMessageKey.COMMAND_INSPECT_CONFIG.translationKey, "compat.inventoryStackLimitBlacklist.modIds", configList("modIds", modIds))
         }
+        val classes = targets.map { it.className }.distinct().sorted()
+        if (classes.isNotEmpty()) {
+            sender.reply(
+                RuleMessageKey.COMMAND_INSPECT_CONFIG.translationKey,
+                "compat.inventoryStackLimitBlacklist.classNames",
+                configList("classNames", classes),
+            )
+        }
         sender.reply(RuleMessageKey.COMMAND_INSPECT_WARNING.translationKey)
     }
 

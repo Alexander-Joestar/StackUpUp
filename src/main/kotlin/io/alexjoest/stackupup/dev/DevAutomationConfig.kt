@@ -16,7 +16,6 @@ object DevAutomationConfig {
     val clientEnabled: Boolean = enabled && (mode == "client" || mode == "both")
     val serverEnabled: Boolean = enabled && (mode == "server" || mode == "both")
     val runServerMatrix: Boolean = settings.runServerMatrix
-    val focus: String = settings.focus
     val autoShutdown: Boolean = settings.autoShutdown
     val failFast: Boolean = settings.failFast
     val clearInventoryBeforeGive: Boolean = settings.clearInventoryBeforeGive
@@ -70,7 +69,6 @@ internal data class DevAutomationSettings(
     val itemCount: Int,
     val compatProbeIds: Set<String>,
     val resourceReload: Boolean,
-    val focus: String = "",
 )
 
 internal fun readSettings(getProperty: (String) -> String?): DevAutomationSettings {
@@ -109,7 +107,6 @@ internal fun readSettings(getProperty: (String) -> String?): DevAutomationSettin
         itemCount = readSetting("count", "128").toIntOrNull() ?: 128,
         compatProbeIds = parseRequestedProbeIds(readSetting("compat", "")),
         resourceReload = readSetting("resourceReload", "false").toBoolean(),
-        focus = readSetting("focus", ""),
     )
 }
 

@@ -16,6 +16,6 @@ abstract class CommandReplaceItemMixin {
         )
     )
     private int stackupup$expandReplaceItemUpperBound(int original) {
-        return StackLimitHooks.getInventoryCompatibilityStackSize(original);
+        return StackLimitHooks.getCompatibilityStackSize();
     }
 }

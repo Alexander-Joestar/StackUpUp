@@ -25,11 +25,8 @@ private const val BOUNDARY_PROBE_RULE = "item = minecraft:stick -> 1024"
 object DevAutomationServerDriver {
     fun run(server: MinecraftServer) {
         val report = AutomationReport()
-        var deferred = false
         try {
-            if (DevAutomationConfig.focus.isNotEmpty()) {
-                deferred = runFocused(server, report)
-            } else if (DevAutomationConfig.runServerMatrix) {
+            if (DevAutomationConfig.runServerMatrix) {
                 runMatrix(server, report)
             } else {
                 runSingle(server, report)
@@ -39,43 +36,7 @@ object DevAutomationServerDriver {
             report.recordFailure("异常终止：${throwable.message ?: throwable.javaClass.simpleName}")
             throw throwable
         } finally {
-            if (!deferred) report.writeToDisk()
-        }
-    }
-
-    private fun runFocused(server: MinecraftServer, report: AutomationReport): Boolean {
-        validateFocusedRequest(DevAutomationConfig.focus, DevAutomationConfig.runServerMatrix, DevAutomationConfig.compatProbeIds)
-        val scope =
-            "focused=${DevAutomationConfig.focus}; single/default-matrix/unrelated compat probes not requested; JVM=${System.getProperty("java.version")}; " +
-                "candidate=${System.getProperty("stackupup.dev.autoTest.candidate", "UNKNOWN")}; config=config/stackupup.cfg"
-        report.line(scope)
-        StackUpUp.logger?.info("开发自动验收[服务端]：{}", scope)
-        val probe = focusedProbe(DevAutomationConfig.focus)
-        if (probe is DevDeferredFocusedProbe) {
-            probe.start(server) { result -> completeDeferredFocus(server, report, result) }
-            return true
-        }
-        val result = probe.run(server)
-        report.line(result.summary)
-        check(result.passed) { "Focused regression failed: ${result.summary}" }
-        shutdownIfRequested(server)
-        return false
-    }
-
-    private fun completeDeferredFocus(server: MinecraftServer, report: AutomationReport, result: DevCompatProbeResult) {
-        try {
-            report.line(result.summary)
-            if (!result.passed) {
-                val message = "Focused regression failed: ${result.summary}"
-                report.recordFailure(message)
-                val marker = File(AUTOMATION_LOG_DIRECTORY, "autotest-failed.marker")
-                marker.parentFile?.mkdirs()
-                marker.writeText(message, Charsets.UTF_8)
-                StackUpUp.logger?.error("开发自动验收[服务端]：{}", message)
-            }
-        } finally {
             report.writeToDisk()
-            shutdownIfRequested(server)
         }
     }
 

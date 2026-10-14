@@ -28,12 +28,10 @@ spotless {
     }
 
     kotlinGradle {
-        target(
-            fileTree(projectDir) {
-                include("*.gradle.kts", "build-logic/**/*.gradle.kts")
-                exclude("**/build/**", "**/.gradle/**", "**/.kotlin/**")
-            },
-        )
+        target("*.gradle.kts", "build-logic/**/*.gradle.kts")
+        // 排除构建生成物（kotlin-dsl 每次构建重新生成的 extracted 脚本）与本地缓存目录，
+        // 避免 ktlint 对生成物报格式违规；生成物每次构建重写，无法也不应格式化。
+        targetExclude("**/build/**", "**/.gradle/**", "**/.kotlin/**")
         ktlint()
     }
 

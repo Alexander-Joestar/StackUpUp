@@ -110,7 +110,7 @@ class StackUpUpConfigTest {
     }
 
     @Test
-    fun inventoryStackLimitBlacklist_shouldDefaultEmptyAndAcceptModIdsOnly() {
+    fun inventoryStackLimitBlacklist_shouldDefaultEmptyAndAcceptExactEntries() {
         val blacklist = StackUpUpConfig.compat.inventoryStackLimitBlacklist
         val previousModIds = blacklist.modIds
         try {

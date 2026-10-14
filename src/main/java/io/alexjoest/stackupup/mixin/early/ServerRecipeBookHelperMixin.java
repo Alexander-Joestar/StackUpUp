@@ -13,6 +13,6 @@ abstract class ServerRecipeBookHelperMixin {
         constant = @Constant(intValue = 64)
     )
     private int replaceRecipeBookLimit(int original) {
-        return StackLimitHooks.getInventoryCompatibilityStackSize(original);
+        return StackLimitHooks.getCompatibilityStackSize();
     }
 }

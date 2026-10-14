@@ -6,7 +6,9 @@
   "compatibilityLevel": "JAVA_8",
   "mixins": [
     "AppEngAdaptorItemHandlerMixin",
-    "AppEngInternalAEInventoryWriterMixin"
+    "AppEngInternalAEInventoryMixin",
+    "AppEngInternalInventoryMixin",
+    "AppEngPatternTermMixin"
   ],
   "client": [],
   "server": []

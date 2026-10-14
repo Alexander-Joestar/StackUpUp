@@ -31,6 +31,6 @@ abstract class EnderIOInventorySlotLimitMixin {
 
     @ModifyReturnValue(method = "getMaxStackSize()I", at = @At("RETURN"), require = 0)
     private int stackupup$expandInventorySlotLimit(int original) {
-        return StackLimitHooks.getInventoryCompatibilityStackSize(this, original);
+        return original == VANILLA_STACK_LIMIT ? StackLimitHooks.getCompatibilityStackSize() : original;
     }
 }

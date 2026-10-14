@@ -1,3 +1,5 @@
+// 依赖仓库：与重构前根脚本 repositories{} 块一致。
+
 repositories {
     mavenCentral()
     maven {
@@ -13,13 +15,6 @@ repositories {
         url = uri("https://cursemaven.com")
         content {
             includeGroup("curse.maven")
-        }
-    }
-    maven {
-        name = "GTCEu AE2 API Maven"
-        url = uri("https://maven.gtceu.com")
-        content {
-            includeModule("appeng", "ae2-uel")
         }
     }
     mavenLocal() // Must be last for caching to work

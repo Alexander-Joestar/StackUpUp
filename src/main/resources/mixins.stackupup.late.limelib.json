@@ -4,5 +4,7 @@
   "refmap": "${refmap}",
   "target": "@env(DEFAULT)",
   "minVersion": "0.8",
-  "mixins": []
+  "mixins": [
+    "CommonTileInventoryMixin"
+  ]
 }

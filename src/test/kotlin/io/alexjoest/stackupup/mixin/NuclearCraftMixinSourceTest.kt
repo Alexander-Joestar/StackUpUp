@@ -11,7 +11,7 @@ import java.nio.file.Paths
 class NuclearCraftMixinSourceTest {
     @Test
     fun nuclearCraftMixin_shouldPatchRealCapacitySourceNotSplitOnlyExpansion() {
-        val config = String(Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.capacity.late.nuclearcraft.json")), Charsets.UTF_8)
+        val config = String(Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.late.nuclearcraft.json")), Charsets.UTF_8)
         val mixin = String(
             Files.readAllBytes(Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/nuclearcraft/NuclearCraftTileInventoryLimitMixin.java")),
             Charsets.UTF_8,
@@ -28,7 +28,7 @@ class NuclearCraftMixinSourceTest {
         assertTrue(mixin.contains("nc.tile.processor.TileNuclearFurnace"), "应覆盖 TileNuclearFurnace 基类")
         assertTrue(mixin.contains("public int getInventoryStackLimit()"), "基类必须获得与接口 default 同签名的具体覆写")
         assertTrue(mixin.contains("public int func_70297_j_()"), "混淆环境下必须覆写 SRG 方法 func_70297_j_")
-        assertTrue(mixin.contains("StackLimitHooks.getInventoryCompatibilityStackSize(original)"), "默认 64 应替换为兼容堆叠上限")
+        assertTrue(mixin.contains("StackLimitHooks.getCompatibilityStackSize()"), "默认 64 应替换为兼容堆叠上限")
         assertTrue(mixin.contains("@Pseudo"), "基类 mixin 应允许目标类不在编译类路径")
         assertFalse(mixin.contains("getStackSplitSize"), "不得只做 split 尺寸扩张（insertItem 会返回空余量而 ITileInventory 截断）")
         assertFalse(mixin.contains("ModifyReturnValue"), "基类合并方案不需要注入器")
@@ -46,20 +46,6 @@ class NuclearCraftMixinSourceTest {
             StackUpUpIds.LATE_NUCLEARCRAFT_MIXIN_CONFIG == "mixins.stackupup.late.nuclearcraft.json",
             "NC 配置名常量必须与资源一致",
         )
-    }
-
-    @Test
-    fun nuclearCraftUpgradeConfigMixin_shouldRemainIndependentOfCapacitySwitch() {
-        val normalConfig = String(
-            Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.late.nuclearcraft.json")),
-            Charsets.UTF_8,
-        )
-        val capacityConfig = String(
-            Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.capacity.late.nuclearcraft.json")),
-            Charsets.UTF_8,
-        )
-        assertTrue(normalConfig.contains("NuclearCraftUpgradeStackLimitMixin"))
-        assertFalse(capacityConfig.contains("NuclearCraftUpgradeStackLimitMixin"))
     }
 
     @Test

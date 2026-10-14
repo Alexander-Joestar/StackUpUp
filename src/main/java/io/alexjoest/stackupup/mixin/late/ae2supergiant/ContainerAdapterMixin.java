@@ -14,6 +14,6 @@ abstract class ContainerAdapterMixin {
         if (StackLimitHooks.shouldBypassInventoryStackLimit(this)) {
             return original;
         }
-        return StackLimitHooks.getInventoryCompatibilityStackSize(original);
+        return StackLimitHooks.getCompatibilityStackSize();
     }
 }

@@ -1,8 +1,0 @@
-{
-  "required": false,
-  "package": "io.alexjoest.stackupup.mixin.late.cyclopscore",
-  "refmap": "${refmap}",
-  "target": "@env(DEFAULT)",
-  "minVersion": "0.8",
-  "mixins": ["SimpleInventoryMixin"]
-}

@@ -197,69 +197,6 @@ class WrapperCapacityDiagnosticTest {
         assertEquals(StackLimitHooks.getCompatibilityStackSize(), stored)
     }
 
-    @Test
-    fun invWrapper_simulateThenRealInsert_preservesRealRemainderAndDoesNotWriteDuringSimulation() {
-        val inventory = LimitedInventory(64)
-        val wrapper = InvWrapper(inventory)
-
-        val simulatedRemainder = wrapper.insertItem(0, stack(150), true)
-        assertEquals(86, simulatedRemainder.count)
-        assertTrue(inventory.getStackInSlot(0).isEmpty, "simulate=true 不得写入 IInventory")
-
-        val remainder = wrapper.insertItem(0, stack(150), false)
-        val stored = inventory.getStackInSlot(0).count
-        val remainderCount = if (remainder.isEmpty) 0 else remainder.count
-        assertEquals(150, stored + remainderCount, "真实 InvWrapper 写入必须守恒")
-        assertEquals(64, stored)
-        assertEquals(86, remainderCount)
-    }
-
-    @Test
-    fun invWrapper_inheritedInventoryLimit_conservesRealInsert() {
-        val inventory = ChildLimitedInventory()
-        val wrapper = InvWrapper(inventory)
-        assertEquals(128, wrapper.getSlotLimit(0))
-
-        val remainder = wrapper.insertItem(0, stack(200), false)
-        val stored = inventory.getStackInSlot(0).count
-        val remainderCount = if (remainder.isEmpty) 0 else remainder.count
-        assertEquals(200, stored + remainderCount)
-        assertEquals(128, stored)
-        assertEquals(72, remainderCount)
-    }
-
-    @Test
-    fun invWrapper_zeroAndOneInventoryLimits_conserveRealRemainder() {
-        for (limit in listOf(0, 1)) {
-            val inventory = LimitedInventory(limit)
-            val wrapper = InvWrapper(inventory)
-            val remainder = wrapper.insertItem(0, stack(5), false)
-            val stored = inventory.getStackInSlot(0).count
-            val remainderCount = if (remainder.isEmpty) 0 else remainder.count
-
-            assertEquals(limit, wrapper.getSlotLimit(0))
-            assertEquals(5, stored + remainderCount)
-            assertEquals(limit, stored)
-        }
-    }
-
-    @Test
-    fun itemStackHandler_simulateAndRealInsert_respectSlotLimit256() {
-        val handler = RaisedLimitItemStackHandler(256)
-        assertEquals(256, handler.getSlotLimit(0))
-
-        val simulatedRemainder = handler.insertItem(0, stack(300), true)
-        assertEquals(44, simulatedRemainder.count)
-        assertTrue(handler.getStackInSlot(0).isEmpty, "simulate=true 不得写入 ItemStackHandler")
-
-        val remainder = handler.insertItem(0, stack(300), false)
-        val stored = handler.getStackInSlot(0).count
-        val remainderCount = if (remainder.isEmpty) 0 else remainder.count
-        assertEquals(300, stored + remainderCount, "真实 ItemStackHandler 写入必须守恒")
-        assertEquals(256, stored)
-        assertEquals(44, remainderCount)
-    }
-
     /**
      * EntityEquipment 保留动作护栏（手部）：手部槽被抬到兼容上限（模拟 mixin 64→compat）后，
      * Forge insertItem 的上限计算与 remainder 闭合（EntityEquipmentInvWrapper.java:86-122），
@@ -297,10 +234,9 @@ class WrapperCapacityDiagnosticTest {
     fun forgeItemHandlerLimitMixin_shouldNotTargetForwardingWrappers() {
         val bytes = mixinClassBytes("io.alexjoest.stackupup.mixin.early.ForgeItemHandlerLimitMixin")
 
-        assertTrue(bytes.containsAscii("ItemStackHandler"), "ItemStackHandler 应保留在 opt-in mixin 中")
-        val equipmentBytes = mixinClassBytes("io.alexjoest.stackupup.mixin.early.EntityEquipmentInventoryLimitMixin")
-        assertTrue(equipmentBytes.containsAscii("EntityEquipmentInvWrapper"), "设备 wrapper 必须按真实实体判定")
-        assertTrue(equipmentBytes.containsAscii("entity"), "设备 wrapper 必须使用实体 shadow")
+        for (kept in listOf("ItemStackHandler", "EntityEquipmentInvWrapper")) {
+            assertTrue(bytes.containsAscii(kept), "自洽目标 $kept 应保留在 mixin 目标中")
+        }
         for (removed in listOf(
             "wrapper/InvWrapper",
             "wrapper/SidedInvWrapper",
@@ -361,11 +297,9 @@ class WrapperCapacityDiagnosticTest {
         return true
     }
 
-    private open class LimitedInventory(private val stackLimit: Int) : InventoryBasic("stackupup-diagnostic", false, 1) {
+    private class LimitedInventory(private val stackLimit: Int) : InventoryBasic("stackupup-diagnostic", false, 1) {
         override fun getInventoryStackLimit(): Int = stackLimit
     }
-
-    private class ChildLimitedInventory : LimitedInventory(128)
 
     private class LimitedSidedInventory(private val stackLimit: Int) :
         InventoryBasic("stackupup-diagnostic-sided", false, 1),

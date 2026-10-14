@@ -13,11 +13,9 @@
 
 ## 项目基线
 
-Minecraft 1.12.2、Forge 14.23.5.2847；Kotlin 业务代码与 Java Mixin handler 分工；`StackUpUpCore` 是 Forge coremod 入口，并注册窄范围 `InventoryStackLimitTransformer`，只处理 IInventory getter；JUnit 5 测试在 `src/test/kotlin`。
+Minecraft 1.12.2、Forge 14.23.5.2847；Kotlin 业务代码与 Java Mixin handler 分工，`StackUpUpCore` 仅作为 Forge coremod 入口，不提供兼容性 ASM transformer；JUnit 5 测试在 `src/test/kotlin`。
 构建需 **JDK 25**：RFG **2.0.2** 插件类为 class file 69，且自身要求 Gradle >= 9.2（wrapper 为 9.4.0）；JDK 21 在配置阶段即以 `UnsupportedClassVersionError` 失败。这只约束构建所用的 Gradle JVM，项目 Java toolchain 仍固定为 8（`build-logic/convention/src/main/kotlin/jvm.gradle.kts:9`），客户端运行期要求未因此改动。
-当前 Mixin 基线 MixinBooter **11.17** + CleanMix **0.7.2** 编译期 annotation processor，入口 Sponge Mixin `IMixinConnector`（`StackUpUpMixinConnector`）；兼容性注入通过显式 early/late Mixin 与窄范围 `InventoryStackLimitTransformer` 完成。10.7 与 `IEarlyMixinLoader`/`ILateMixinLoader` 只是历史资料，不得写成当前实现。
-
-库存容量扩展策略：配置文件为 `config/stackupup.cfg`，`compat.inventoryExpansion.enabled` 默认 `false`，仅控制通用第三方 getter、独立 Forge handler 和可选 late 容量兼容；原版 player/chest/container 大堆叠与设备 wrapper 的原版实体支持由常驻 baseline early 保留。`compat.inventoryStackLimitBlacklist.modIds` 是唯一黑名单输入：空列表是 no-op；非空时仅按 Forge owned packages 选择性排除命中的 receiver，并跳过所列 Mod 的 late 容量配置；不会全局关闭其他 Mod，也不引入 `classNames` 配置。启动读取 Mod ID 列表并冻结，首次 preInit 发布包归属，之后仅更新兼容上限；改变开关/黑名单必须重启。已加载 Mod 无归属包须失败，未加载 ID 记录无效果。receiver 或受支持公开 owner 的真实 class 按精确包边界命中才可归属；仅继承黑名单父类或实现黑名单接口不排除未列入的 addon，其实际写入安全性仍需独立验证。共享实例无公开 owner 时无法推断创建者 Mod（例如 plain ItemStackHandler），receiverless optional constructor/private delegate 路径仍 UNKNOWN，不声称完整第三方排除/守恒已证明。设备 wrapper 同时判断实际 wrapper 及实体，关闭兼容扩容时仅保留原生 Forge hands/armor wrapper 与原版实体。AE2 UEL v0.56.7 的 typed API 为标准 compile-only 依赖，不随游戏强制安装；其两个内部库存保留原生 maxStack 元数据，仅 getter 按 receiver 与当前公开 TE owner/typed final te 决定扩容，public setTileEntity 换 owner 不缓存初始归属、不修改已有物品。ItemStack DSL、NBT、网络和 NoDrop 不受该开关压制。
+当前 Mixin 基线 MixinBooter **11.17** + CleanMix **0.7.2** 编译期 annotation processor，入口 Sponge Mixin `IMixinConnector`（`StackUpUpMixinConnector`）；兼容性注入当前只通过显式 early/late Mixin 完成。10.7 与 `IEarlyMixinLoader`/`ILateMixinLoader` 只是历史资料，不得写成当前实现。
 
 ## DSL 规则链
 

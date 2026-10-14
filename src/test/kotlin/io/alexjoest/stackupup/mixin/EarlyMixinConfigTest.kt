@@ -24,72 +24,13 @@ class EarlyMixinConfigTest {
     @Test
     fun earlyConfig_shouldIncludeMigratedFixedTargets() {
         val content = readSource("src/main/resources/mixins.stackupup.early.json")
-        val capacityContent = readSource("src/main/resources/mixins.stackupup.capacity.early.json")
 
-        listOf("ItemStackNbtMixin", "EntityItemMergeMixin", "RenderItemMixin").forEach {
-            assertTrue(content.contains(it), "$it missing from early config")
-        }
-        val baseline = readSource("src/main/resources/mixins.stackupup.baseline.early.json")
         listOf(
-            "ContainerMixin",
-            "SlotLimitMixin",
-            "InventoryPlayerAddResourceMixin",
-            "InventoryWriteLimitMixin",
-            "SlotItemHandlerMixin",
-            "VanillaInventoryLimitMixin",
-            "EntityEquipmentInventoryLimitMixin",
-        ).forEach {
-            assertTrue(baseline.contains(it), "$it missing from baseline early config")
-            assertFalse(capacityContent.contains("\"$it\""), "$it must not depend on compatibility expansion")
-        }
-        assertTrue(capacityContent.contains("ForgeItemHandlerLimitMixin"))
-    }
-
-    @Test
-    fun inventoryWriteLimit_shouldStayOnBaselineAndUseItemAwareWriteLimit() {
-        val source = readMixinSource("InventoryWriteLimitMixin.java")
-
-        assertTrue(source.contains("TileEntityLockableLoot.class"))
-        assertTrue(source.contains("setInventorySlotContents(ILnet/minecraft/item/ItemStack;)V"))
-        assertTrue(source.contains("resolveInventoryWriteLimit"))
-        assertFalse(source.contains("isExpansionEnabled"))
-    }
-
-    @Test
-    fun slotLimit_shouldFailClosedForCoFHNullInventoryUpgradeSlots() {
-        val source = readMixinSource("SlotLimitMixin.java")
-        val nullGuard = "        if (self.inventory == null) {\n" +
-            "            return original;\n" +
-            "        }"
-        val nullGuardIndex = source.indexOf(nullGuard)
-        val specialInventoryHelperIndex = source.indexOf("StackLimitHooks.isSpecialContainerInventory")
-        val placementHelperIndex = source.indexOf("StackLimitHooks.resolvePlacementSlotLimit")
-
-        assertTrue(nullGuardIndex >= 0, "SlotLimitMixin must return the original limit for null-inventory slots")
-        assertTrue(
-            specialInventoryHelperIndex > nullGuardIndex,
-            "null-inventory upgrade slots must return before entering the Kotlin helper",
-        )
-        assertTrue(
-            placementHelperIndex > nullGuardIndex,
-            "null-inventory upgrade slots must return before resolving placement limits",
-        )
-    }
-
-    @Test
-    fun slotLimit_shouldKeepNormalInventoryAsPlacementLimitTarget() {
-        val source = readMixinSource("SlotLimitMixin.java")
-        val normalInventoryCall = "        return StackLimitHooks.resolvePlacementSlotLimit(\n" +
-            "            stack,\n" +
-            "            self.inventory,\n" +
-            "            original,\n" +
-            "            self.inventory.getInventoryStackLimit()\n" +
-            "        )"
-
-        assertTrue(
-            source.contains(normalInventoryCall),
-            "normal inventory slots must retain the receiver-aware placement limit call",
-        )
+            "ContainerMixin", "ItemStackNbtMixin", "SlotLimitMixin",
+            "VanillaInventoryLimitMixin", "EntityItemMergeMixin",
+            "InventoryPlayerAddResourceMixin", "ForgeItemHandlerLimitMixin",
+            "SlotItemHandlerMixin", "RenderItemMixin",
+        ).forEach { assertTrue(content.contains(it), "$it missing from early config") }
     }
 
     @Test
@@ -125,7 +66,6 @@ class EarlyMixinConfigTest {
         assertTrue(source.contains("getMaxStackSize()I"))
         assertTrue(source.contains("getInventoryStackLimit()I"))
         assertTrue(source.contains("resolveInventoryClampLimit"))
-        assertTrue(source.contains("(InventoryPlayer) (Object) this"))
     }
 
     @Test
@@ -143,7 +83,6 @@ class EarlyMixinConfigTest {
         val source = readMixinSource("InventoryPlayerAddResourceMixin.java")
 
         assertEquals(2, source.split("resolveInventoryClampLimit").size - 1, "resolveInventoryClampLimit 调用次数应保持 2")
-        assertEquals(2, source.split("(InventoryPlayer) (Object) this").size - 1, "两个生产 clamp 调用都必须传入 InventoryPlayer receiver")
     }
 
     @Test

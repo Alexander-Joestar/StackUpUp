@@ -24,6 +24,6 @@ abstract class EnderIOMachineInventoryLimitMixin {
         if (StackLimitHooks.shouldBypassInventoryStackLimit(this)) {
             return original;
         }
-        return StackLimitHooks.getInventoryCompatibilityStackSize(original);
+        return original == VANILLA_STACK_LIMIT ? StackLimitHooks.getCompatibilityStackSize() : original;
     }
 }

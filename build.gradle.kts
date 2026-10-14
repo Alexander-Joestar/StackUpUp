@@ -44,13 +44,6 @@ configurations {
 }
 
 dependencies {
-    compileOnly(libs.ae2Uel) {
-        isTransitive = false
-    }
-    testImplementation(libs.ae2Uel) {
-        isTransitive = false
-    }
-
     implementation("io.github.chaosunity.forgelin:Forgelin-Continuous:$forgelinContinuousVersion") {
         exclude("net.minecraftforge")
     }

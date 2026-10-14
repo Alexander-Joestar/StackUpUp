@@ -53,11 +53,11 @@ English documentation: [README.en.md](README.en.md)
 
 ## 命令
 
-命令：`/stackupup reload`、`/stackupup edit`、`/stackupup state get <name>`、`/stackupup state set <name> <value>`、`/stackupup inspect [slot N]`、`/stackupup inspect block <x> <y> <z> <none|down|up|north|south|west|east> [slot N]`。
+命令：`/stackupup reload`、`/stackupup edit`、`/stackupup state get <name>`、`/stackupup state set <name> <value>`、`/stackupup inspect [slot N]`、`/stackupup inspect block <x> <y> <z> <none|side> [slot N]`。
 
 - `inspect` 只读检查服务端玩家当前打开的容器；`inspect slot N` 仅检查指定的容器槽位。控制台/命令方块可使用已加载区块中的 `inspect block x y z none|down|up|north|south|west|east [slot N]`，对该位置询问普通库存或指定朝向的 item-handler capability。
-- 默认最多列出 8 个槽位；报告显示 Container、Slot、库存/handler 对象的完整类名和本次报告内的对象编号，并尽可能展示由 Forge `ownedPackages` 推导的 modId 候选。对象编号只在该报告中有效；多个候选标为歧义，未知归属显示 UNKNOWN。类名仅为诊断证据，当前不能用类名配置黑名单。`InvWrapper.getInv()` 是受支持的公开 delegate 访问器；其他 handler 的不可见 delegate 不反射读取，明确标为 UNKNOWN。
-- 输出可复制的 `compat.inventoryStackLimitBlacklist.modIds` 配置片段（只有唯一、可证明的 modId 候选才建议）；命令不修改配置。物品注册 mod 不等于库存所属 mod，因此不会从槽内物品推断库存 modId。检查不调用插入/提取、不做模拟写入，也不证明真实容量或守恒。modId 黑名单可能作用于该 mod 的其他库存类/继承类；只加入复核后的必要条目。
+- 默认最多列出 8 个槽位；报告显示 Container、Slot、库存/handler 对象的完整类名和本次报告内的对象编号，并尽可能展示由 Forge `ownedPackages` 推导的 modId 候选。对象编号只在该报告中有效；多个候选标为歧义，未知归属显示 UNKNOWN。`InvWrapper.getInv()` 是受支持的公开 delegate 访问器；其他 handler 的不可见 delegate 不反射读取，明确标为 UNKNOWN。
+- 输出可复制的 `compat.inventoryStackLimitBlacklist.modIds`（只有唯一、可证明的 modId 候选才建议）或精确 `classNames` 配置片段；命令不修改配置。物品注册 mod 不等于库存所属 mod，因此不会从槽内物品推断库存 modId。检查不调用插入/提取、不做模拟写入，也不证明真实容量或守恒。黑名单可能作用于该类的其他实例或继承类；只加入复核后的必要条目。
 
 - `reload`：重新加载规则。
 - `edit`：打开主规则文件，仅客户端可用。
@@ -101,9 +101,9 @@ tab = buildingBlocks -> 256
 - `general.maxStackSize`：全局兼容最大堆叠上限，默认 `64`；规则结果和兼容入口都不会超过这个值。
 - `compat.vanilla.craftingSlotLimit`：工作台网格与合成结果槽上限，默认 `64`。`0` 保持原版/默认行为，大于 `0` 使用指定上限。这主要是性能（Performance）设置：按住 Shift 批量合成极大堆叠可能造成严重卡顿，不是平衡开关。实际上限还会受 `general.maxStackSize` 与物品/配方限制收紧。
 - `compat.nuclearcraft.speedUpgradeLimit` 与 `compat.nuclearcraft.energyUpgradeLimit`：NuclearCraft 速度/能量升级的堆叠上限，默认 `0`（保持 NuclearCraft 默认值 `64`）；大于 `0` 时使用自定义上限。NuclearCraft 未加载时，这些设置不生效。
+- `compat.inventoryExpansion.enabled`：默认 `false` 的启动期/coremod 开关，修改后必须重启，`/stackupup reload` 不会应用；它与 ItemStack 规则无关。此开关只覆盖已接入该 gate 的基础库存容量入口；部分模组专用 late Mixin 容量入口仍可能生效，因此关闭不等于禁用所有扩容。未知接收端可能截断、丢物或发生兼容冲突；开启不是对所有未知模组无损的保证。
 - `compat.inventoryStackLimitBlacklist.modIds`：按 Mod ID 配置的库存黑名单；可用 `/stackupup inspect` 输出作为审阅起点。黑名单会影响该 mod 所有被其 `ownedPackages` 识别的类。
-
-库存容量修改来自多个集成路径；关闭某个容量来源不能证明其他路径也已关闭，部分模组专用 late Mixin 仍可能改变库存上限。`/stackupup reload` 不会关闭这些启动期 Mixin。未知接收端可能截断、丢物或发生兼容冲突；inspect 仅提供证据与配置建议，不保证所有未知模组无损。
+- `compat.inventoryStackLimitBlacklist.classNames`：精确类名黑名单，高级窄化入口；它不是按注册物品所属 mod 自动判断。检查输出仅给建议，不会写配置。评估父/子类关系及其他库存实例的影响后再手工保存，并重启使启动期策略生效。
 
 ## 兼容性
 

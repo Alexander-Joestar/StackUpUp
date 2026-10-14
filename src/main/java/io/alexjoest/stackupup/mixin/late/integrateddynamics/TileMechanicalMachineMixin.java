@@ -11,6 +11,6 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
 abstract class TileMechanicalMachineMixin {
     @ModifyConstant(method = "<init>", constant = @Constant(intValue = 64), require = 0)
     private static int stackupup$unlimitMachineSlots(int original) {
-        return StackLimitHooks.getInventoryCompatibilityStackSize(original);
+        return StackLimitHooks.getCompatibilityStackSize();
     }
 }

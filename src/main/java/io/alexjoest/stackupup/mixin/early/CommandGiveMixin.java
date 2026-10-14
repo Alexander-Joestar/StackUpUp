@@ -16,6 +16,6 @@ abstract class CommandGiveMixin {
         )
     )
     private int stackupup$expandGiveUpperBound(int original) {
-        return StackLimitHooks.getInventoryCompatibilityStackSize(original);
+        return StackLimitHooks.getCompatibilityStackSize();
     }
 }

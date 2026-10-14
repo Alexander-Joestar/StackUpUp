@@ -61,55 +61,6 @@ class VanillaInventoryTargetsGuardTest {
     }
 
     @Test
-    fun runtimeCoreGetterTargets_shouldMatchTableWithoutLoadingMixinPackage() {
-        val source = readSource("src/main/kotlin/io/alexjoest/stackupup/StackLimitHooks.kt")
-        val targetBlock = source.substringAfter("internal fun isCoreInventoryGetterTarget(").substringBefore("else -> false")
-        val runtimeTargets = Regex("(net\\.minecraft\\.[A-Za-z0-9_.]+)::class\\.java")
-            .findAll(targetBlock)
-            .map { it.groupValues[1] }
-            .toSet()
-        assertEquals(tableTargets, runtimeTargets)
-        assertFalse(source.contains("io.alexjoest.stackupup.mixin."))
-        VanillaInventoryTargets.TARGETS.forEach { target ->
-            assertTrue(io.alexjoest.stackupup.StackLimitHooks.isCoreInventoryGetterTarget(target))
-        }
-        assertFalse(io.alexjoest.stackupup.StackLimitHooks.isCoreInventoryGetterTarget(InventoryLargeChest::class.java))
-        assertFalse(io.alexjoest.stackupup.StackLimitHooks.isCoreInventoryGetterTarget(TileEntityBeacon::class.java))
-        val unknown = object : net.minecraft.inventory.InventoryBasic("unknown", false, 1) {}
-        assertFalse(io.alexjoest.stackupup.StackLimitHooks.isCoreInventoryGetterTarget(unknown.javaClass))
-    }
-
-    @Test
-    fun native64WriterCapabilities_shouldBeIndependentFromGetterTargets() {
-        val writerTargets = setOf(
-            net.minecraft.entity.player.InventoryPlayer::class.java,
-            net.minecraft.tileentity.TileEntityChest::class.java,
-            net.minecraft.tileentity.TileEntityDispenser::class.java,
-            net.minecraft.tileentity.TileEntityShulkerBox::class.java,
-            net.minecraft.tileentity.TileEntityBrewingStand::class.java,
-        )
-        assertEquals(
-            writerTargets,
-            io.alexjoest.stackupup.StackLimitHooks.NATIVE64_WRITER_CAPABILITY_TARGETS,
-            "native-64 writer capability set must be exact",
-        )
-        writerTargets.forEach { target ->
-            assertTrue(io.alexjoest.stackupup.StackLimitHooks.isNative64WriterCapabilityTarget(target), target.name)
-        }
-
-        val getterOnlyTargets = setOf(
-            net.minecraft.inventory.InventoryBasic::class.java,
-            net.minecraft.tileentity.TileEntityFurnace::class.java,
-            net.minecraft.tileentity.TileEntityHopper::class.java,
-            net.minecraft.inventory.InventoryMerchant::class.java,
-        )
-        getterOnlyTargets.forEach { target ->
-            assertTrue(io.alexjoest.stackupup.StackLimitHooks.isCoreInventoryGetterTarget(target), target.name)
-            assertFalse(io.alexjoest.stackupup.StackLimitHooks.isNative64WriterCapabilityTarget(target), target.name)
-        }
-    }
-
-    @Test
     fun targetTable_shouldMatchT2bDocumentTableExactly() {
         // 文档契约（t2b §5）：§2 目标表每行以 "| net.minecraft.<全限定类名> |" 开头，全文档仅该表如此。
         val doc = readSource("docs/agent/t2b-原版目标表.md")

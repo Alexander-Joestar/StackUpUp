@@ -11,6 +11,6 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
 abstract class InvSlotMixin {
     @ModifyConstant(method = "<init>*", constant = @Constant(intValue = 64), require = 0)
     private static int replaceCompatibilityLimit(int original) {
-        return StackLimitHooks.getInventoryCompatibilityStackSize(original);
+        return StackLimitHooks.getCompatibilityStackSize();
     }
 }

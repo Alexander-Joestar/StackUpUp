@@ -69,7 +69,7 @@ public final class InventoryStackLimitTransformer implements IClassTransformer {
             }
             return writer.toByteArray();
         } catch (RuntimeException ignored) {
-            // A third-party class must never prevent LaunchClassLoader from starting.
+            // Leave the original bytes unchanged when ASM or hierarchy processing cannot handle a class.
             return basicClass;
         }
     }
@@ -177,7 +177,7 @@ public final class InventoryStackLimitTransformer implements IClassTransformer {
                 @Override
                 public void visitMethodInsn(int opcode, String owner, String methodName,
                                             String methodDescriptor, boolean isInterface) {
-                    if (findHook && opcode == Opcodes.INVOKESTATIC
+                    if (opcode == Opcodes.INVOKESTATIC
                         && HOOK_OWNER.equals(owner)
                         && HOOK_NAME.equals(methodName)
                         && HOOK_DESCRIPTOR.equals(methodDescriptor)) {

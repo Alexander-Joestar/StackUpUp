@@ -14,25 +14,13 @@ import java.io.File
 import java.util.jar.JarFile
 
 /**
- * Mixin 装载入口（MixinBooter 11 官方路径，替代已弃用的 [zone.rong.mixinbooter.IEarlyMixinLoader] 与
- * [zone.rong.mixinbooter.ILateMixinLoader]）。
+ * MixinBooter 11.17 的 `IMixinConnector` 装载入口。
  *
- * 注册方式：jar manifest 的 `MixinConnector` 属性指向本类（MixinBooter 11.13 的
- * `MixinPlatformAgentDefault.prepare()` 读取，属性名取自 CleanMix `ManifestAttributes.MIXINCONNECTOR`）；
- * `MixinConnectorManager.loadConnectors()` 经无参构造器实例化后，在 `MixinBooterPlugin.injectData` 的
- * `platform.inject()` 内调用 [connect]——时序在 early loader 收集之后、late CONSTRUCTING 之前。11.13
- * CleanMix 模型中 DEFAULT 配置统一在 DEFAULT 阶段（EnvironmentStateTweaker → gotoPhase(DEFAULT)）装载，
- * 与入队时刻无关，因此 connect() 里 add 的早/晚配置无行为差异（全部配置 target 均为 `@env(DEFAULT)`）。
+ * `connect()` 通过 `Mixins.addConfiguration` 按当前冲突状态、模块表和 mod 在场探针注册
+ * early/late 配置。容量配置额外受扩容开关、冲突状态和启动黑名单约束；Supergiant `ae2` 的
+ * fallback 只检查已知 marker resource，不能证明一般的 mod 在场或归属。
  *
- * 必须声明为 class 而非 Kotlin object：`MixinConnectorManager` 用 `getDeclaredConstructor().newInstance()`
- * 且不调用 setAccessible，Kotlin object 编译为私有构造器会导致 IllegalAccessException、connector 永不装载；
- * 与旧 `ILateMixinLoader`（class + 公共无参构造）同一约束。
- *
- * 装载语义与旧 loader 完全一致：
- * - early：冲突检测（[StackUpUpCore.ensureConflictState]）非空 → ERROR + 不 add（冲突禁用设计）；通过 → add；
- * - late：按模块表逐配置判断 mod 在场（[ModDiscoverer.isModPresent]；Supergiant `ae2` 的结果为 false
- *   或不可用时回退到 Cleanroom marker probe）→ 条件 add；
- *   不在模块表的配置不装载。
+ * 早期配置按顺序入队；某个入队操作失败时，之前成功入队的配置不会回滚，late 配置仍会继续处理。
  */
 class StackUpUpMixinConnector : IMixinConnector {
     private val logger: Logger = LogManager.getLogger("stackupup.mixin.connector")
@@ -65,7 +53,10 @@ class StackUpUpMixinConnector : IMixinConnector {
                 queueConfiguration("mixins.stackupup.capacity.early.json")
             }
         } catch (e: Exception) {
-            logger.error("Early mixin loading failed; early mixins are disabled (late mixins continue)", e)
+            logger.error(
+                "Early mixin configuration enqueue failed; previously queued early configs remain registered and late mixins continue",
+                e,
+            )
         }
     }
 
@@ -107,20 +98,11 @@ class StackUpUpMixinConnector : IMixinConnector {
         queueConfiguration: (String) -> Unit,
     ) {
         val normalModules = if (includeClassic) modules + classicModules else modules
-        if (!includeClassic) {
-            for ((config) in modules) {
-                if (!shouldQueue(config, isModPresent)) {
-                    continue
-                }
-                queueConfiguration(config)
+        for ((config) in normalModules) {
+            if (!shouldQueue(config, isModPresent, normalModules)) {
+                continue
             }
-        } else {
-            for ((config) in normalModules) {
-                if (!shouldQueue(config, isModPresent, normalModules)) {
-                    continue
-                }
-                queueConfiguration(config)
-            }
+            queueConfiguration(config)
         }
         if (!shouldQueueCapacity(conflicts)) {
             if (conflicts.isNotEmpty()) {
@@ -162,18 +144,18 @@ class StackUpUpMixinConnector : IMixinConnector {
             )
             null
         }
-        if (forgePresence == true) {
-            return true
-        }
-        return try {
-            cleanroomProbe()
-        } catch (e: Throwable) {
-            logger.warn(
-                "Cleanroom marker probe for '{}' failed; treating mod as absent",
-                modId,
-                e,
-            )
-            false
+        return when (forgePresence) {
+            true -> true
+            false, null -> try {
+                cleanroomProbe()
+            } catch (e: Throwable) {
+                logger.warn(
+                    "Cleanroom marker probe for '{}' failed; treating mod as absent",
+                    modId,
+                    e,
+                )
+                false
+            }
         }
     }
 
@@ -246,8 +228,7 @@ class StackUpUpMixinConnector : IMixinConnector {
     }
 
     /**
-     * early 装载决策（原 getMixinConfigs 的冲突分支语义）：冲突非空 → ERROR 说明原因并拒绝装载；
-     * 无冲突 → 允许装载。冲突禁用是既有设计，但必须 ERROR 说明原因，不再静默返回空表（T14.5 停止条件 1/5）。
+     * early 配置入队决策：冲突状态非空时拒绝所有 early 配置并记录原因；无冲突时允许入队。
      */
     internal fun shouldQueueEarly(conflicts: List<String>): Boolean {
         if (conflicts.isEmpty()) {
@@ -265,8 +246,7 @@ class StackUpUpMixinConnector : IMixinConnector {
     internal fun shouldQueueCapacity(conflicts: List<String>): Boolean = InventoryStackLimitHook.isExpansionEnabled() && conflicts.isEmpty()
 
     /**
-     * 单配置装载决策（原 shouldMixinConfigQueue(Context) 语义；connect() 无 Context 参数，mod 在场判断改为
-     * 注入式谓词，生产路径由 [connectLate] 传入按 modId 分派的在场判断）。
+     * 单配置装载决策：只允许模块表中登记的配置，并通过注入式谓词判断所需 mod 是否在场。
      */
     internal fun shouldQueue(config: String, isModPresent: (String) -> Boolean): Boolean = shouldQueue(config, isModPresent, modules)
 

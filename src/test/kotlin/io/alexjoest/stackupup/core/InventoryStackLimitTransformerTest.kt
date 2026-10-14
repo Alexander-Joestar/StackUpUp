@@ -202,7 +202,7 @@ class InventoryStackLimitTransformerTest {
             InventoryClassHierarchyRepository(MapMetadataSource(metadata)),
         )
 
-        val transformedMiddle = customTransformer.transform(middleName, middleName, metadata[middleName.replace('.', '/')]!!)
+        val transformedMiddle = customTransformer.transform(middleName, middleName, metadata.getValue(middleName.replace('.', '/')))
         assertEquals(1, hookInvocationCount(transformedMiddle))
         assertArrayEquals(child, customTransformer.transform(childName, childName, child))
     }
@@ -423,6 +423,4 @@ class InventoryStackLimitTransformerTest {
     private class MapMetadataSource(private val metadata: Map<String, ByteArray>) : InventoryClassHierarchyRepository.MetadataSource {
         override fun read(internalName: String): ByteArray? = metadata[internalName]
     }
-
-    private class Inner
 }

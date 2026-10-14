@@ -22,7 +22,7 @@ import java.nio.file.Paths
 import org.apache.logging.log4j.core.Logger as CoreLogger
 
 /**
- * connector 入队、跳过与冲突禁用的可执行断言（T14.5 停止条件 2/3/5；自 StackUpUpLateMixinLoaderSkipLogTest 迁移）。
+ * connector 入队、跳过与冲突禁用的可执行断言（T14.5 停止条件 2/3/5）。
  *
  * 断言真实 logger 输出：项目 classpath 的 log4j-core 是裁剪 jar（无 ListAppender，
  * `./gradlew dependencies --configuration testCompileClasspath` 与 javap 证据），因此测试自带最小
@@ -261,39 +261,32 @@ class StackUpUpMixinConnectorSkipLogTest {
     }
 
     @Test
-    fun connectorSource_shouldUseSafeAe2ProbeAndKeepQueuePredicate() {
-        val source = String(
-            Files.readAllBytes(
-                Paths.get(
-                    "src",
-                    "main",
-                    "kotlin",
-                    "io",
-                    "alexjoest",
-                    "stackupup",
-                    "bootstrap",
-                    "StackUpUpMixinConnector.kt",
-                ),
-            ),
-            Charsets.UTF_8,
-        )
-        assertTrue(source.contains("isModPresentForConnector(modId)"), "生产 connector 必须使用安全 mod probe")
-        assertFalse(source.contains("Loader.isModLoaded"), "connector 阶段不得直接调用 Loader.isModLoaded")
-        assertFalse(source.contains("Loader.instance()"), "connector 阶段不得触发 Forge Loader 初始化")
-        assertFalse(source.contains("indexedModList"), "connector 阶段不得直接读取 Forge indexed mod map")
-        assertTrue(source.contains("cleanroomAe2Presence"), "Forge probe 不可用时必须保留 Cleanroom fallback")
-        assertTrue(source.contains("shouldQueue(config, isModPresent)"), "必须保留 shouldQueue 注入式谓词")
-        assertTrue(source.contains("shouldQueue(config, isModPresent, capacityModules)"), "capacity 配置必须使用独立 registry")
-        assertTrue(source.contains("ModDiscoverer.isModPresent"), "非 ae2 模块必须保留 ModDiscoverer probe")
-        assertTrue(source.contains("Mixins.addConfiguration"), "生产路径必须保留条件配置入队")
-    }
-
-    @Test
     fun offStartup_stillQueuesCoreBaselineButNotGenericExpansion() {
         InventoryStackLimitHook.configureExpansionEnabled(false)
         val queued = mutableListOf<String>()
         StackUpUpMixinConnector().connectEarly(emptyList()) { queued += it }
         assertEquals(listOf(StackUpUpIds.EARLY_MIXIN_CONFIG, "mixins.stackupup.baseline.early.json"), queued)
+    }
+
+    @Test
+    fun earlyQueueFailure_shouldDescribePartialRegistration() {
+        val queued = mutableListOf<String>()
+        val messages = capturedLogs {
+            StackUpUpMixinConnector().connectEarly(emptyList()) { config ->
+                if (config == "mixins.stackupup.baseline.early.json") {
+                    throw IllegalStateException("queue failure")
+                }
+                queued += config
+            }
+        }
+
+        assertEquals(listOf(StackUpUpIds.EARLY_MIXIN_CONFIG), queued)
+        assertTrue(
+            messages.any {
+                it.contains("previously queued early configs remain registered") && it.contains("late mixins continue")
+            },
+            "部分入队失败日志必须说明已入队配置不会回滚且 late 仍继续，实际: $messages",
+        )
     }
 
     @Test

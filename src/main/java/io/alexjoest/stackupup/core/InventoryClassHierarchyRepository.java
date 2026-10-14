@@ -34,8 +34,8 @@ final class InventoryClassHierarchyRepository {
 
     /**
      * Returns the inherited concrete inventory getter that a concrete class must expose itself.
-     * Concrete inventory ancestors are deliberately ignored because the transformer handles them
-     * before their subclasses and the inherited method already sees the runtime receiver.
+     * When hierarchy metadata identifies a concrete inventory ancestor, no override is generated
+     * here: transforming the inherited method is sufficient because it sees the runtime receiver.
      */
     String inheritedGetterForConcreteClass(ClassMetadata root) {
         if (root.superName == null || hasConcreteInventoryAncestor(root.superName, new HashSet<>())) {
@@ -174,7 +174,6 @@ final class InventoryClassHierarchyRepository {
     static final class MetadataVisitor extends ClassVisitor {
         ClassMetadata metadata;
         private String getterName;
-        private int getterAccess;
 
         MetadataVisitor() {
             super(Opcodes.ASM5);
@@ -193,14 +192,13 @@ final class InventoryClassHierarchyRepository {
                 && ("getInventoryStackLimit".equals(name) || "func_70297_j_".equals(name))
                 && getterName == null) {
                 getterName = name;
-                getterAccess = access;
                 metadata = new ClassMetadata(
                     metadata.name,
                     metadata.access,
                     metadata.superName,
                     metadata.interfaces,
                     getterName,
-                    getterAccess
+                    access
                 );
             }
             return null;

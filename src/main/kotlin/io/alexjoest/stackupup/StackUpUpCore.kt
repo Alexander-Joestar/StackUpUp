@@ -7,7 +7,7 @@ import org.apache.logging.log4j.Logger
 @IFMLLoadingPlugin.Name("StackUpUpCore")
 @IFMLLoadingPlugin.MCVersion("1.12.2")
 @IFMLLoadingPlugin.SortingIndex(1001)
-// 只排除 core 包，避免把 mixin 包一起挡在 LaunchClassLoader 的变换链外。
+// 排除 core 实现包和配置入口类，避免把 mixin 包一起挡在 LaunchClassLoader 的变换链外。
 @IFMLLoadingPlugin.TransformerExclusions(StackUpUpIds.CORE_PACKAGE_NAME, StackUpUpIds.CONFIG_CLASS_NAME)
 class StackUpUpCore : IFMLLoadingPlugin {
     companion object {

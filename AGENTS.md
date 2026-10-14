@@ -37,5 +37,10 @@ Minecraft 1.12.2、Forge 14.23.5.2847；Kotlin 业务代码与 Java Mixin handle
 输入、规则、目标签名、依赖状态或 selector 不合约束时尽早失败并留可定位信息；不得静默回退、吞错、空 `catch`、占位实现。明确缺失依赖才可 skip，链接错误与未知 probe ID 必须是 failure。
 行为测试必须调用真实代码；配置、Mixin 注册与字节码护栏属结构检查，须单独标明。生命周期测试、自动化矩阵与客户端 F3+T 只在实际执行后记录通过。Kotlin/Java 用项目 Spotless/ktlint（UTF-8、LF、末尾换行），修改后检查最终内容、`jj diff` 与租约外变更。
 
+## 容量/Mixin Skill 索引与触发顺序
+
+- 审计：[mod-capacity-audit](docs/agent/skills/mod-capacity-audit/SKILL.md)（只读）；修复：[mod-capacity-fix](docs/agent/skills/mod-capacity-fix/SKILL.md)（仅在审计明确 `UNSAFE` 后使用）。
+- 顺序：先按审计 Skill 取证；`SAFE` 停止，`UNKNOWN` 先补证据，只有 `UNSAFE` 才进入最小修复；修复后先做静态验证，再单独记录用户实际运行测试。
+
 ## 文档索引
 入口 [START_HERE](docs/agent/START_HERE.md)，硬约束 [hard-rules](docs/agent/2026-04-18-hard-rules.md)，决策 [CDR](docs/agent/compatibility-decision-record.md)，任务 [清单](docs/agent/%E9%87%8D%E6%9E%84%E4%BB%BB%E5%8A%A1%E6%B8%85%E5%8D%95.md)，子代理 [库](docs/agent/%E5%AD%90%E4%BB%A3%E7%90%86%E5%BA%93.md)，实现 [说明](docs/StackUpUp-%E5%AE%9E%E7%8E%B0%E4%B8%8E%E5%85%BC%E5%AE%B9%E6%80%A7%E8%AF%B4%E6%98%8E.md)，回归 [runServer](docs/runServer-%E8%87%AA%E5%8A%A8%E5%8C%96%E5%9B%9E%E5%BD%92.md)，DSL [示例](docs/DSL-v2-%E8%A7%84%E5%88%99%E7%A4%BA%E4%BE%8B.md)。

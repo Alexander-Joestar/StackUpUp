@@ -74,7 +74,11 @@ class StackUpUpCore : IFMLLoadingPlugin {
         }
     }
 
-    override fun getASMTransformerClass(): Array<String> = emptyArray()
+    override fun getASMTransformerClass(): Array<String> = if (ensureConflictState().isEmpty()) {
+        arrayOf("io.alexjoest.stackupup.core.InventoryStackLimitTransformer")
+    } else {
+        emptyArray()
+    }
 
     override fun getModContainerClass(): String? = null
 

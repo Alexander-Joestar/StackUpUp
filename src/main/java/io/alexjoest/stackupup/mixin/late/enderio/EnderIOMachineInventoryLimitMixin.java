@@ -21,6 +21,9 @@ abstract class EnderIOMachineInventoryLimitMixin {
 
     @ModifyReturnValue(method = "getInventoryStackLimit()I", at = @At("RETURN"), require = 0)
     private int stackupup$expandDefaultMachineLimit(int original) {
+        if (StackLimitHooks.shouldBypassInventoryStackLimit(this)) {
+            return original;
+        }
         return original == VANILLA_STACK_LIMIT ? StackLimitHooks.getCompatibilityStackSize() : original;
     }
 }

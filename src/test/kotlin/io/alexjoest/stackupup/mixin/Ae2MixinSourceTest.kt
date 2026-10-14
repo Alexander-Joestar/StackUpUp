@@ -8,9 +8,9 @@ import java.nio.file.Paths
 
 class Ae2MixinSourceTest {
     @Test
-    fun ae2Mixin_shouldCoverConstructorConstantAndNotDeadInjectMissingMethod() {
-        assertCoversConstructorOnly("src/main/java/io/alexjoest/stackupup/mixin/late/ae2/AppEngInternalInventoryMixin.java")
-        assertCoversConstructorOnly("src/main/java/io/alexjoest/stackupup/mixin/late/ae2/AppEngInternalAEInventoryMixin.java")
+    fun ae2Mixin_shouldCoverSlotLimitPathAndNotDeadInventoryGetterInject() {
+        assertCoversSlotLimitPath("src/main/java/io/alexjoest/stackupup/mixin/late/ae2/AppEngInternalInventoryMixin.java")
+        assertCoversSlotLimitPath("src/main/java/io/alexjoest/stackupup/mixin/late/ae2/AppEngInternalAEInventoryMixin.java")
     }
 
     @Test
@@ -49,19 +49,23 @@ class Ae2MixinSourceTest {
     }
 
     /**
-     * 仅断言构造期常量补丁：AE2 两个内部库存类的真实容量源是 getSlotLimit(int)（热路径零逻辑原则下
-     * 不注入），getInventoryStackLimit 在目标类中不存在，旧 ModifyReturnValue 属死注入，必须不再出现。
+     * AE2's internal handlers use getSlotLimit(int) as the real insert capacity. The constructor
+     * patch keeps default state in sync, while the return patch also covers explicit construction
+     * paths without touching setters, network events, or remainder handling.
      */
-    private fun assertCoversConstructorOnly(path: String) {
+    private fun assertCoversSlotLimitPath(path: String) {
         val source = String(Files.readAllBytes(Paths.get(path)), Charsets.UTF_8)
         assertTrue(source.contains("@ModifyConstant"), "应继续覆盖构造期常量: $path")
         assertTrue(source.contains("<init>*"), "应继续覆盖构造器: $path")
         assertTrue(source.contains("private static int replaceCompatibilityLimit"), "构造器常量补丁必须使用 static handler: $path")
         assertTrue(source.contains("StackLimitHooks.getCompatibilityStackSize()"), "构造器常量应替换为兼容堆叠上限: $path")
+        assertTrue(source.contains("@ModifyReturnValue"), "应覆盖真实 getSlotLimit 返回路径: $path")
+        assertTrue(source.contains("getSlotLimit(I)I"), "应使用明确的 getSlotLimit(int) descriptor: $path")
+        assertTrue(source.contains("VANILLA_STACK_LIMIT"), "显式 slot 上限必须保留非默认值: $path")
+        assertTrue(source.contains("getClass().getName()"), "继承 Oversized inventory 的直接写入路径不得被误扩容: $path")
         assertFalse(
             source.contains("getInventoryStackLimit"),
-            "AE2 AppEngInternal( AE)Inventory 无 getInventoryStackLimit（真实容量源为 getSlotLimit(int)），不得保留死注入: $path",
+            "AE2 AppEngInternal( AE)Inventory 无 getInventoryStackLimit（真实容量源为 getSlotLimit(int)）: $path",
         )
-        assertFalse(source.contains("ModifyReturnValue"), "热路径零逻辑：不得对不存在的方法做 ModifyReturnValue 死注入: $path")
     }
 }

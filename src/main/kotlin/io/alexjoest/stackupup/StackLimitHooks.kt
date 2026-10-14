@@ -1,16 +1,19 @@
 package io.alexjoest.stackupup
 
+import io.alexjoest.stackupup.core.InventoryStackLimitHook
 import io.alexjoest.stackupup.limit.RuleRuntime
 import io.alexjoest.stackupup.limit.StackContext
 import io.alexjoest.stackupup.limit.StackContextResolver
 import io.alexjoest.stackupup.limit.StackLimitService
 import net.minecraft.item.ItemStack
 import net.minecraft.nbt.NBTTagCompound
+import net.minecraftforge.fml.common.Loader
+import java.util.Locale
 import java.util.Random
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
-/** 用途：Mixin/ASM 注入求取堆叠上限的唯一调用面。 */
+/** 用途：Mixin 注入求取堆叠上限的唯一调用面。 */
 object StackLimitHooks {
     private const val VANILLA_STACK_LIMIT: Int = Constants.VANILLA_STACK_LIMIT
 
@@ -39,6 +42,36 @@ object StackLimitHooks {
 
     @JvmStatic
     fun getCompatibilityStackSize(): Int = StackUpUpConfig.maxStackSize
+
+    private val inventoryStackLimitBlacklistCache = AtomicReference(InventoryStackLimitBlacklistCache.empty())
+
+    @JvmStatic
+    fun refreshInventoryStackLimitBlacklist() {
+        val configuredModIds = StackUpUpConfig.compat.inventoryStackLimitBlacklist.modIds
+            .asSequence()
+            .map { it.trim().lowercase(Locale.ROOT) }
+            .filter { it.isNotEmpty() }
+            .toSet()
+        val ownedPackages = if (configuredModIds.isEmpty()) {
+            emptyList()
+        } else {
+            Loader.instance().modList.asSequence()
+                .filter { configuredModIds.contains(it.modId.lowercase(Locale.ROOT)) }
+                .flatMap { it.ownedPackages.asSequence() }
+                .toList()
+        }
+        inventoryStackLimitBlacklistCache.set(InventoryStackLimitBlacklistCache.from(ownedPackages))
+        InventoryStackLimitHook.prepare(getCompatibilityStackSize(), ownedPackages.toTypedArray())
+    }
+
+    @JvmStatic
+    internal fun installInventoryStackLimitBlacklistForTesting(packageNames: Array<String>) {
+        inventoryStackLimitBlacklistCache.set(InventoryStackLimitBlacklistCache.from(packageNames.asList()))
+        InventoryStackLimitHook.prepare(getCompatibilityStackSize(), packageNames)
+    }
+
+    @JvmStatic
+    fun shouldBypassInventoryStackLimit(target: Any): Boolean = inventoryStackLimitBlacklistCache.get().matches(target.javaClass)
 
     @JvmStatic
     @Deprecated("Internal stack limit resolution has moved to ItemStack/StackContext; this overload is kept only for legacy callers.")
@@ -209,6 +242,52 @@ object StackLimitHooks {
         } else {
             minOf(requestedSize, maxItemSize)
         }
+}
+
+private class InventoryStackLimitBlacklistCache private constructor(private val root: PackageNode) {
+    private val classResults = ConcurrentHashMap<Class<*>, Boolean>()
+
+    fun matches(targetClass: Class<*>): Boolean = classResults.computeIfAbsent(targetClass) { matchesPackage(it.name) }
+
+    private fun matchesPackage(className: String): Boolean {
+        var node = root
+        for (character in className) {
+            if (character == '.') {
+                if (node.terminal) {
+                    return true
+                }
+                node = node.children[character] ?: return false
+                continue
+            }
+            node = node.children[Character.toLowerCase(character)] ?: return false
+        }
+        return node.terminal
+    }
+
+    companion object {
+        fun empty(): InventoryStackLimitBlacklistCache = from(emptyList())
+
+        fun from(packageNames: Iterable<String>): InventoryStackLimitBlacklistCache {
+            val root = PackageNode()
+            for (rawPackageName in packageNames) {
+                val packageName = rawPackageName.trim().lowercase(Locale.ROOT)
+                if (packageName.isEmpty()) {
+                    continue
+                }
+                var node = root
+                for (character in packageName) {
+                    node = node.children.getOrPut(character) { PackageNode() }
+                }
+                node.terminal = true
+            }
+            return InventoryStackLimitBlacklistCache(root)
+        }
+    }
+
+    private class PackageNode {
+        val children: HashMap<Char, PackageNode> = HashMap()
+        var terminal: Boolean = false
+    }
 }
 
 /**

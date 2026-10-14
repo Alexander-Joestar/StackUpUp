@@ -44,6 +44,7 @@ class MixinBooterIntegrationTest {
                 "mixins.stackupup.late.colossalchests.json",
                 "mixins.stackupup.late.gregtech.json",
                 "mixins.stackupup.late.techreborn.json",
+                "mixins.stackupup.late.farmersdelight.json",
             ),
             StackUpUpMixinConnector().modules.map { it.config },
         )

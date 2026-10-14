@@ -108,4 +108,19 @@ class StackUpUpConfigTest {
             StackUpUpConfig.compat.vanilla.craftingSlotLimit = previousCraftingSlotLimit
         }
     }
+
+    @Test
+    fun inventoryStackLimitBlacklist_shouldDefaultEmptyAndAcceptExactEntries() {
+        val blacklist = StackUpUpConfig.compat.inventoryStackLimitBlacklist
+        val previousModIds = blacklist.modIds
+        try {
+            assertEquals(0, blacklist.modIds.size)
+
+            blacklist.modIds = arrayOf("farmersdelight", "thermalexpansion")
+
+            assertEquals(listOf("farmersdelight", "thermalexpansion"), blacklist.modIds.toList())
+        } finally {
+            blacklist.modIds = previousModIds
+        }
+    }
 }

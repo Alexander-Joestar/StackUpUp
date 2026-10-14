@@ -65,6 +65,18 @@ object StackUpUpConfig {
         @Config.Name("nuclearcraft")
         @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compat.nuclearcraft.name")
         val nuclearcraft: NuclearCraft = NuclearCraft()
+
+        @JvmField
+        @Config.Name("inventoryStackLimitBlacklist")
+        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compat.inventoryStackLimitBlacklist.name")
+        val inventoryStackLimitBlacklist: InventoryStackLimitBlacklist = InventoryStackLimitBlacklist()
+    }
+
+    class InventoryStackLimitBlacklist {
+        @JvmField
+        @Config.Comment("Exact lower-case Forge mod IDs whose getInventoryStackLimit compatibility patch should stay disabled.")
+        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compat.inventoryStackLimitBlacklist.modIds.name")
+        var modIds: Array<String> = emptyArray()
     }
 
     class Vanilla {

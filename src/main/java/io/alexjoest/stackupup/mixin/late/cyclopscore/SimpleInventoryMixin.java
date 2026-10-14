@@ -15,6 +15,9 @@ abstract class SimpleInventoryMixin {
 
     @ModifyReturnValue(method = "getInventoryStackLimit", at = @At("RETURN"))
     private int stackupup$expandDefaultInventoryLimit(int original) {
+        if (StackLimitHooks.shouldBypassInventoryStackLimit(this)) {
+            return original;
+        }
         return original == VANILLA_STACK_LIMIT ? StackLimitHooks.getCompatibilityStackSize() : original;
     }
 }

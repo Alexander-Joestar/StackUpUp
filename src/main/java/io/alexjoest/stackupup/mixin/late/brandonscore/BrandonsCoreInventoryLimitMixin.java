@@ -29,11 +29,17 @@ abstract class BrandonsCoreInventoryLimitMixin {
      */
     @Inject(method = "<init>", at = @At("RETURN"), require = 0)
     private void stackupup$expandStackLimitOnInit(CallbackInfo ci) {
+        if (StackLimitHooks.shouldBypassInventoryStackLimit(this)) {
+            return;
+        }
         this.stackLimit = StackLimitHooks.getCompatibilityStackSize();
     }
 
     @ModifyReturnValue(method = "getInventoryStackLimit", at = @At("RETURN"), require = 0)
     private int stackupup$expandDefaultInventoryLimit(int original) {
+        if (StackLimitHooks.shouldBypassInventoryStackLimit(this)) {
+            return original;
+        }
         return original == VANILLA_STACK_LIMIT ? StackLimitHooks.getCompatibilityStackSize() : original;
     }
 }

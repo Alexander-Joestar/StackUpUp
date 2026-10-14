@@ -24,12 +24,15 @@ config.stackupup.compat.nuclearcraft.name=NuclearCraft
 config.stackupup.compat.vanilla.craftingSlotLimit.name=Crafting Slot Limit
 config.stackupup.compat.nuclearcraft.speedUpgradeLimit.name=Speed Upgrade Limit
 config.stackupup.compat.nuclearcraft.energyUpgradeLimit.name=Energy Upgrade Limit
+config.stackupup.compat.inventoryStackLimitBlacklist.name=Inventory Stack Limit Blacklist
+config.stackupup.compat.inventoryStackLimitBlacklist.modIds.name=Mod IDs
 config.stackupup.general.enableDslRules.tooltip=Load DSL v2 rules from config/stackupup/*.su, with world and user overrides layered on top.
 config.stackupup.client.tooltipStackDisplayMode.tooltip=Choose when to show current stack size and max stack size in tooltips.
 config.stackupup.general.ruleComplexityWarnings.tooltip=Warn when the ruleset becomes unusually large or long.
 config.stackupup.compat.vanilla.craftingSlotLimit.tooltip=Crafting container slot limit. Mainly a Performance setting rather than a balance setting: holding Shift to batch-craft very large stacks can cause severe lag. Values above 0 set a custom limit; 0 keeps vanilla behavior.
 config.stackupup.compat.nuclearcraft.speedUpgradeLimit.tooltip=Speed upgrade stack limit. Values above 0 set a custom limit; 0 keeps NuclearCraft's native behavior.
 config.stackupup.compat.nuclearcraft.energyUpgradeLimit.tooltip=Energy upgrade stack limit. Values above 0 set a custom limit; 0 keeps NuclearCraft's native behavior.
+config.stackupup.compat.inventoryStackLimitBlacklist.modIds.tooltip=Exact lower-case Forge mod IDs. Empty by default; matching mod-owned inventory classes keep their native getInventoryStackLimit().
 
 commands.stackupup.usage=/stackupup <reload|edit|state>
 commands.stackupup.reload.success=Reloaded StackUpUp rules.

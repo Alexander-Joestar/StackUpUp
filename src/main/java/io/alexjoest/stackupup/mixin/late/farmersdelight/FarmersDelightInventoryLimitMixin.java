@@ -21,8 +21,11 @@ abstract class FarmersDelightInventoryLimitMixin {
     @Unique
     private static final int VANILLA_STACK_LIMIT = 64;
 
-    @ModifyReturnValue(method = "getInventoryStackLimit()I", at = @At("RETURN"), require = 0)
-    private static int stackupup$expandDefaultInventoryLimit(int original) {
+    @ModifyReturnValue(method = {"getInventoryStackLimit()I", "func_70297_j_()I"}, at = @At("RETURN"), require = 0)
+    private int stackupup$expandDefaultInventoryLimit(int original) {
+        if (StackLimitHooks.shouldBypassInventoryStackLimit(this)) {
+            return original;
+        }
         return original == VANILLA_STACK_LIMIT ? StackLimitHooks.getCompatibilityStackSize() : original;
     }
 }

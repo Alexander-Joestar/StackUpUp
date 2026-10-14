@@ -46,6 +46,7 @@ class StackUpUp {
 
     private fun handleConfigChanged() {
         ConfigManager.sync(CONFIG_ID, Config.Type.INSTANCE)
+        StackLimitHooks.refreshInventoryStackLimitBlacklist()
         StackUpUpConfig.applyReloadControlledValues()
     }
 

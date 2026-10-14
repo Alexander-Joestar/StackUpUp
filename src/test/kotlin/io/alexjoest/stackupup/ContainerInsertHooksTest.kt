@@ -1,16 +1,27 @@
 package io.alexjoest.stackupup
 
+import net.minecraft.entity.player.EntityPlayer
 import net.minecraft.init.Bootstrap
+import net.minecraft.inventory.Container
 import net.minecraft.inventory.InventoryBasic
 import net.minecraft.inventory.Slot
 import net.minecraft.item.Item
 import net.minecraft.item.ItemStack
 import net.minecraft.util.ResourceLocation
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 
 class ContainerInsertHooksTest {
+    private class MergeContainer : Container() {
+        override fun canInteractWith(player: EntityPlayer): Boolean = true
+
+        fun add(slot: Slot): Slot = addSlotToContainer(slot)
+
+        fun merge(stack: ItemStack): Boolean = mergeItemStack(stack, 0, 1, false)
+    }
+
     companion object {
         @BeforeAll
         @JvmStatic
@@ -78,7 +89,33 @@ class ContainerInsertHooksTest {
     }
 
     @Test
-    fun nonPositiveInventoryLimit_shouldReturnDynamicLimitWhenZero() {
+    fun nonPositiveInventoryLimit_shouldRefuseMergeWithoutConsumingSource() {
+        assertMergeRefused(0, "zero_inv_merge_item")
+        assertMergeRefused(-1, "negative_inv_merge_item")
+    }
+
+    private fun assertMergeRefused(inventoryLimit: Int, itemId: String) {
+        val item = createItem(10000, itemId)
+        val inventory = createInventory(inventoryLimit)
+        val offeredCount = 32
+        val offered = ItemStack(item, offeredCount, 0)
+        val slot = object : Slot(inventory, 0, 0, 0) {
+            override fun getSlotStackLimit(): Int =
+                ContainerInsertHooks.resolveMergeSlotLimit(this, offered, super.getSlotStackLimit())
+        }
+        val container = MergeContainer()
+        container.add(slot)
+
+        assertEquals(0, slot.slotStackLimit)
+        container.merge(offered)
+
+        assertTrue(slot.stack.isEmpty)
+        assertEquals(offeredCount, offered.count)
+        assertEquals(offeredCount, offered.count + slot.stack.count)
+    }
+
+    @Test
+    fun nonPositiveInventoryLimit_shouldReturnZeroWhenZero() {
         val item = createItem(10000, "zero_inv_item")
         val inventory = createInventory(0)
         val slot = Slot(inventory, 0, 0, 0)
@@ -86,11 +123,11 @@ class ContainerInsertHooksTest {
 
         val result = ContainerInsertHooks.resolveMergeSlotLimit(slot, stack, 64)
 
-        assertEquals(10000, result)
+        assertEquals(0, result)
     }
 
     @Test
-    fun nonPositiveInventoryLimit_shouldReturnDynamicLimitWhenNegative() {
+    fun nonPositiveInventoryLimit_shouldReturnZeroWhenNegative() {
         val item = createItem(10000, "negative_inv_item")
         val inventory = createInventory(-1)
         val slot = Slot(inventory, 0, 0, 0)
@@ -98,7 +135,7 @@ class ContainerInsertHooksTest {
 
         val result = ContainerInsertHooks.resolveMergeSlotLimit(slot, stack, 64)
 
-        assertEquals(10000, result)
+        assertEquals(0, result)
     }
 
     @Test

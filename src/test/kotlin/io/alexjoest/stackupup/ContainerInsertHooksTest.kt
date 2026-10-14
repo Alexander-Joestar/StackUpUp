@@ -155,6 +155,43 @@ class ContainerInsertHooksTest {
     }
 
     @Test
+    fun mergeSlotLimit_shouldReadNonEmptyItemLimitOnce() {
+        var reads = 0
+        val item = object : Item() {
+            override fun getItemStackLimit(stack: ItemStack): Int {
+                reads++
+                return 128
+            }
+        }.setRegistryName(ResourceLocation("stackupup_test", "single_item_limit_read"))
+        val stack = ItemStack(item, 1, 0)
+        val inventory = createInventory(128)
+        val slot = Slot(inventory, 0, 0, 0)
+
+        val result = ContainerInsertHooks.resolveMergeSlotLimit(slot, stack, 64)
+
+        assertEquals(128, result)
+        assertEquals(1, reads)
+    }
+
+    @Test
+    fun placementLimit_shouldReadNonEmptyItemLimitOnce() {
+        var reads = 0
+        val item = object : Item() {
+            override fun getItemStackLimit(stack: ItemStack): Int {
+                reads++
+                return 128
+            }
+        }.setRegistryName(ResourceLocation("stackupup_test", "single_placement_item_limit_read"))
+        val stack = ItemStack(item, 1, 0)
+        val inventory = createInventory(128)
+
+        val result = StackLimitHooks.resolvePlacementSlotLimit(stack, inventory, 64, 128)
+
+        assertEquals(128, result)
+        assertEquals(1, reads)
+    }
+
+    @Test
     fun realContainerSlotMerge_shouldConserveWhenInventoryLimitIs128() {
         val item = createItem(256, "real_container_merge_item")
         val inventory = createInventory(128)
@@ -277,6 +314,27 @@ class ContainerInsertHooksTest {
         val result = ContainerInsertHooks.resolveMergeSlotLimit(slot, stack, 64)
 
         assertEquals(0, result)
+    }
+
+    @Test
+    fun nonPositiveInventoryLimit_shouldNotReadItemLimit() {
+        assertItemLimitNotRead(0, "zero_inv_read_item")
+        assertItemLimitNotRead(-1, "negative_inv_read_item")
+    }
+
+    private fun assertItemLimitNotRead(inventoryLimit: Int, itemId: String) {
+        var reads = 0
+        val item = object : Item() {
+            override fun getItemStackLimit(stack: ItemStack): Int {
+                reads++
+                return 10000
+            }
+        }.setRegistryName(ResourceLocation("stackupup_test", itemId))
+        val inventory = createInventory(inventoryLimit)
+        val slot = Slot(inventory, 0, 0, 0)
+
+        assertEquals(0, ContainerInsertHooks.resolveMergeSlotLimit(slot, ItemStack(item, 1, 0), 64))
+        assertEquals(0, reads)
     }
 
     @Test

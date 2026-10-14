@@ -309,7 +309,14 @@ object StackLimitHooks {
         if (stack.isEmpty || inventoryLimit <= 0) {
             return inventoryLimit
         }
-        val itemLimit = stack.maxStackSize
+        return resolveInventoryWriteLimit(stack, inventoryLimit, stack.maxStackSize)
+    }
+
+    @JvmStatic
+    fun resolveInventoryWriteLimit(stack: ItemStack, inventoryLimit: Int, itemLimit: Int): Int {
+        if (stack.isEmpty || inventoryLimit <= 0) {
+            return inventoryLimit
+        }
         return if (inventoryLimit == VANILLA_STACK_LIMIT) itemLimit else minOf(inventoryLimit, itemLimit)
     }
 
@@ -318,8 +325,15 @@ object StackLimitHooks {
         if (stack.isEmpty || inventoryLimit <= 0) {
             return inventoryLimit
         }
+        return resolveInventoryWriteLimit(stack, target, inventoryLimit, stack.maxStackSize)
+    }
 
-        val itemLimit = stack.maxStackSize
+    @JvmStatic
+    fun resolveInventoryWriteLimit(stack: ItemStack, target: Any, inventoryLimit: Int, itemLimit: Int): Int {
+        if (stack.isEmpty || inventoryLimit <= 0) {
+            return inventoryLimit
+        }
+
         if (shouldBypassInventoryStackLimit(target)) {
             return minOf(inventoryLimit, itemLimit)
         }
@@ -340,12 +354,13 @@ object StackLimitHooks {
 
     @JvmStatic
     fun resolvePlacementSlotLimit(stack: ItemStack, target: Any?, slotLimit: Int, inventoryLimit: Int): Int {
-        val dynamic = resolveDynamicSlotLimit(stack, slotLimit)
-        val itemAware = if (stack.isEmpty) dynamic else minOf(dynamic, stack.maxStackSize)
+        val itemLimit = if (stack.isEmpty) 0 else stack.maxStackSize
+        val dynamic = resolveDynamicSlotLimit(stack, slotLimit, itemLimit)
+        val itemAware = if (stack.isEmpty) dynamic else minOf(dynamic, itemLimit)
         val effectiveInventoryLimit = if (target == null) {
-            resolveInventoryWriteLimit(stack, inventoryLimit)
+            resolveInventoryWriteLimit(stack, inventoryLimit, itemLimit)
         } else {
-            resolveInventoryWriteLimit(stack, target, inventoryLimit)
+            resolveInventoryWriteLimit(stack, target, inventoryLimit, itemLimit)
         }
         return if (effectiveInventoryLimit > 0) minOf(itemAware, effectiveInventoryLimit) else itemAware
     }
@@ -359,13 +374,20 @@ object StackLimitHooks {
         if (stack.isEmpty) {
             return slotLimit
         }
+        return resolveDynamicSlotLimit(stack, slotLimit, stack.maxStackSize)
+    }
 
-        val resolvedItemLimit = stack.maxStackSize
-        if (slotLimit >= resolvedItemLimit || slotLimit != VANILLA_STACK_LIMIT) {
+    @JvmStatic
+    fun resolveDynamicSlotLimit(stack: ItemStack, slotLimit: Int, itemLimit: Int): Int {
+        if (stack.isEmpty) {
             return slotLimit
         }
 
-        return resolvedItemLimit
+        if (slotLimit >= itemLimit || slotLimit != VANILLA_STACK_LIMIT) {
+            return slotLimit
+        }
+
+        return itemLimit
     }
 
     @JvmStatic

@@ -29,7 +29,7 @@ abstract class InventoryPlayerAddResourceMixin {
             )
     )
     private static int stackupup$usePickedItemLimit(int original, int slot, ItemStack source) {
-        return source.getMaxStackSize();
+        return original;
     }
 
     @ModifyExpressionValue(

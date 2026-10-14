@@ -1,7 +1,7 @@
 # T2a 容量站点登记表
 
 > 任务：T2a「容量补丁准入规则」（docs/agent/重构任务清单.md 当前状态表）；编译期三分类与 patch 目标登记表，只登记事实与准入规则，不修改生产目标。
-> 状态：PARTIAL（登记表已产出并复核；部分项 UNKNOWN 见正文，独立复核待指派，未完成前不得宣称 PASS）。证据基线：当前工作副本（T4a 已应用：inventory-write 通道已移除，`VanillaInventoryWriteMixin` 已删除、`StackLimitHooks.resolveInventoryWriteLimit` 已不存在，`rg` 复核无命中）+ `build/rfg/minecraft-src/java/` 为 Forge/vanilla 反编译源码；第三方模组 jar 缺失，写入路径一律 **无源码不可判定**（缺失 jar 见 §5）；生产代码路径一律使用 repo-relative 形式（`src/main/java/...`、`src/main/kotlin/...`）；所有行号与工作副本一致（2026-08-08 `rg`/`sed` 复核）。
+> 状态：PARTIAL（登记表已产出并复核；部分项 UNKNOWN 见正文，独立复核待指派，未完成前不得宣称 PASS）。本表逐站点清单及历史证据以 2026-09 复核快照为基线；2026-10 的容量配置拆分与当前可选开关语义见 §9.5。旧 `VanillaInventoryWriteMixin` 已删除，但当前另有常驻 baseline 的 `InventoryWriteLimitMixin`，并保留 `StackLimitHooks.resolveInventoryWriteLimit`（源码：`InventoryWriteLimitMixin.java:14-30`、`StackLimitHooks.kt:307-335`）；因此本表中写 helper 不存在的旧说法仅为 T4a 中间状态，不能作当前事实。`build/rfg/minecraft-src/java/` 为 Forge/vanilla 反编译源码；第三方写入路径仍须逐目标证据，缺失 jar 项见 §5；生产代码路径一律使用 repo-relative 形式。
 
 ## 1. 三分类定义（判定共同准则见 AGENTS.md「容量与 remainder 不变量」）
 
@@ -45,7 +45,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | SlotLimitMixin | net.minecraft.inventory.Slot | `getItemStackLimit(Lnet/minecraft/item/ItemStack;)I` | `Slot.putStack` → `inventory.setInventorySlotContents`（:97；多数 vanilla 库存落盘前重读同一上限夹取）；广告值再取 `min(dynamic, inventory.getInventoryStackLimit())`（`invLimit > 0` 时；非正值路径安全性当前未被保证，AGENTS.md） | 自洽（广告被库存真实上限夹取；写入面同源） | src/main/java/.../mixin/early/SlotLimitMixin.java:12-28；`.../net/minecraft/inventory/Slot.java:97`（putStack）、`:113-120`（getSlotStackLimit/getItemStackLimit）；src/main/kotlin/io/alexjoest/stackupup/StackLimitHooks.kt:161-172（resolveDynamicSlotLimit） | — |
 | SlotItemHandlerMixin.getSlotStackLimit | net.minecraftforge.items.SlotItemHandler | `getSlotStackLimit()I` | `putStack` → `handler.setStackInSlot`（Forge SlotItemHandler.java:89）；insert 路径由 handler 自算 limit（ItemStackHandler.java:88,164） | 转发（广告转发自 `itemHandler.getSlotLimit(index)`，Forge SlotItemHandler.java:109）。**T3 §3.5：已移除独立动态上限注入（原 `Math.max(original, compat)` 会把广告抬到 handler 真实上限之上），仅保留 @Shadow 读取；槽位广告自然跟随 handler 侧真实来源** | src/main/java/.../mixin/early/SlotItemHandlerMixin.java:28-29（仅 @Shadow）；`.../net/minecraftforge/items/SlotItemHandler.java:89`、`:109` | — |
-| SlotItemHandlerMixin.getItemStackLimit | net.minecraftforge.items.SlotItemHandler | `getItemStackLimit(Lnet/minecraft/item/ItemStack;)I` | 广告值经 handler 侧 `insertItem(..., true)` simulate 求得（:118-134），再由 `resolveItemHandlerSlotLimit` 按 `min(slotLimit, itemLimit)` 收敛 | 自洽（基于真实 simulate 结果，与写入面同源）。**T3 §3.5：保留**；旧 `Math.max(original, dynamic)` 分支已不存在，当前实现只经 `resolveItemHandlerSlotLimit` 按 `min(slotLimit, itemLimit)` 收敛（决策记录 §2） | src/main/java/.../mixin/early/SlotItemHandlerMixin.java:26-39；`.../net/minecraftforge/items/SlotItemHandler.java:118-134`；src/main/kotlin/io/alexjoest/stackupup/StackLimitHooks.kt:175-189 | — |
+| SlotItemHandlerMixin.getItemStackLimit | net.minecraftforge.items.SlotItemHandler | `getItemStackLimit(Lnet/minecraft/item/ItemStack;)I` | 广告值经 handler 侧 `insertItem(..., true)` simulate 求得（:118-134），再由 `resolveItemHandlerSlotLimit` 按 `min(slotLimit, itemLimit)` 收敛 | 自洽（基于真实 simulate 结果，与写入面同源）。**T3 §3.5：保留**；旧 `Math.max(original, dynamic)` 分支已不存在，当前实现只经 `resolveItemHandlerSlotLimit` 按 `min(slotLimit, itemLimit)` 收敛（决策记录 §2） | src/main/java/.../mixin/early/SlotItemHandlerMixin.java:26-39；`.../net/minecraftforge/items/SlotItemHandler.java:118-134`；src/main/kotlin/io/alexjoest/stackupup/StackLimitHooks.kt:372-387 | — |
 | ContainerMixin | net.minecraft.inventory.Container | `mergeItemStack(Lnet/minecraft/item/ItemStack;IIZ)Z` 内 `Slot.getSlotStackLimit()I` 调用 | 合并写入前置：wrap 取 `min(declaredSlotLimit, inventory.getInventoryStackLimit())` 后经 `resolveDynamicSlotLimit` 收紧；merge 写入上界 `maxSize = min(slot.getSlotStackLimit(), stack.getMaxStackSize())`，随后 `setCount`/`shrink` 落库 | 自洽（merge 写入上界与广告同源，夹取后 ≤ 真实库存上限） | src/main/java/.../mixin/early/ContainerMixin.java:14-26；src/main/kotlin/io/alexjoest/stackupup/ContainerInsertHooks.kt:8-13；`.../net/minecraft/inventory/Container.java:610`（mergeItemStack）、`:644-655`（maxSize 与 setCount/shrink）、`:700-706`（空槽 putStack 路径） | — |
 
 ### 2.3 `ForgeItemHandlerLimitMixin`（`getSlotLimit(I)I`，T3 收敛后 2 个 Forge 类，原 6 类）
@@ -84,7 +84,7 @@
 
 序列化/发包/渲染/掉落支撑链，非容量广告或写入站点：PacketBufferMixin、PacketUtilMixin（StackCountCodec 序列化）、NetHandlerPlayServerMixin（创造发包校验 `isValidCreativeStackPacket`，StackLimitHooks.kt:153-159）、NetHandlerPlayClientMixin（客户端槽同步）、RenderEntityItemMixin / RenderItemMixin（渲染）、ItemStackNbtMixin（NBT 大数量读写）、InventoryHelperMixin（掉落拆分，`spawnItemStack` HEAD 取消后自拆）。
 
-## 3. late mixin 容量站点（src/main/java/io/alexjoest/stackupup/mixin/late/，**当前 25 个 .java 文件**，审计当时 18）
+## 3. late mixin 容量站点（src/main/java/io/alexjoest/stackupup/mixin/late/；站点行表与文件计数为 2026-09 审计快照）
 
 全部为 `@Pseudo` 第三方目标，经 `StackUpUpMixinConnector` 按 `ModDiscoverer.isModPresent(module.modId)` 条件排队装载（src/main/kotlin/io/alexjoest/stackupup/bootstrap/StackUpUpMixinConnector.kt:58-70、:220-239；旧 `StackUpUpLateMixinLoader` 已删除）；单个已登记配置的禁用入口是 MixinBooter `config/mixinbooter.cfg` 的 `general.blacklistedConfigs`，修改后需重启。对应模组 jar 缺失（§5），写入路径一律 **无源码不可判定**；「证据」列只给出我方 mixin 的可观察注入点，不得冒充第三方写入路径证据。方法 descriptor 仅为我方注解声明，未核实第三方实际签名（重载区分以我方注解写法为准）。
 
@@ -119,7 +119,7 @@
 
 ## 4. 动态兼容层（历史中间层，已删除；旧 core/ 配置面）
 
-> 本节保留删除提交 `9cff8e7` 前的动态 ASM 审计证据，不描述当前运行时。当前 `StackUpUpCore.getASMTransformerClass()` 在 `src/main/kotlin/io/alexjoest/stackupup/StackUpUpCore.kt:77` 返回 `emptyArray()`；`DynamicCompatTargetProfile`、`DynamicCompatMethodProbe`、`DynamicCompatTargetClassifier`、`CompatibilityLimitPatch`、`DynamicCompatTransformer` 与 `FixedCompatTargets` 均已删除，当前不存在动态 ASM 注册、profile、probe 或 skip 表。
+> 本节仅保留删除提交 `9cff8e7` 前的广泛 `DynamicCompatTransformer` replacement layer 及其 profile/probe/skip 表历史审计证据，这些历史类均已删除。现行 coremod 并非「不注册 ASM」：`StackUpUpCore.getASMTransformerClass()` 在扩展开启且无冲突时条件注册窄范围 `InventoryStackLimitTransformer`（仅非 Minecraft concrete `IInventory` getter）；见 `StackUpUpCore.kt:77-89`、`InventoryStackLimitTransformer.java:35-74,102-105`。新 transformer 不属于本节描述的历史通用 replacement chain。
 
 - **历史中间状态（已删除）** `DynamicCompatTargetProfile`（历史路径 `src/main/java/io/alexjoest/stackupup/core/DynamicCompatTargetProfile.java:12-18`）：INVENTORY = `net.minecraft.inventory.IInventory`，候选方法名 `{getInventoryStackLimit, func_70297_j_}`；ITEM_HANDLER = `net.minecraftforge.items.IItemHandler`，候选方法名 `{getSlotLimit}`；SLOT = `net.minecraft.inventory.Slot`，候选方法名 `{getItemStackLimit, func_178170_b, getSlotStackLimit, func_75219_a}`。该 profile 是目标类型 + 候选方法名配置，**不是完整单一事实源**（AGENTS.md「Mixin、ASM 与 core/early 约束」第 3 条）；descriptor 未在配置面区分（`getItemStackLimit` 存在 `(Lnet/minecraft/item/ItemStack;)I` 与旧无参两种）。
 - **历史中间状态（已删除）** `DynamicCompatMethodProbe`（历史路径 `DynamicCompatMethodProbe.java:33-46`）：只按方法名扫描当前类直接声明的方法，**不按 descriptor 确认签名**。
@@ -143,7 +143,7 @@ late 目标 **当前 16 个模组** jar 均缺失（文件名/版本未登记，
 2. **登记表与实现双向一致**：表内目标必须有对应实现证据（file:line）；实现中存在但表内缺失 = 未登记目标 = 失败。
 3. **descriptor 必须完整**：重载方法必须写完整 descriptor（如 `getInventoryStackLimit()I` vs `getInventoryStackLimit(I)I`、`getItemStackLimit()I` vs `getItemStackLimit(Lnet/minecraft/item/ItemStack;)I`），缺失 descriptor 的目标不得进入构建。
 4. **三分类判定更新**：目标分类变更必须附写入路径源码证据；`无源码不可判定` 条目只能因补齐对应 jar/源码或运行时证据（T12.5 报告）升级，不得按类名/注释补结论。
-5. **历史动态层边界（已删除）**：历史 `DynamicCompatMethodProbe` 只按方法名探测，无法按 descriptor 区分重载；该缺口保留作删除前审计证据。当前没有动态 ASM，重载目标必须走显式 mixin 与完整 descriptor 登记；不得恢复隐式 probe/skip 机制。
+5. **历史动态层边界（已删除）**：历史 `DynamicCompatMethodProbe` 只按方法名探测，无法按 descriptor 区分重载；该缺口保留作删除前审计证据。当前不保留广泛动态 replacement profile/probe/skip 机制；coremod 另有开关控制的窄 `InventoryStackLimitTransformer`，其目标仅为 IInventory getter（§9.5）。新增兼容目标仍必须显式登记完整 descriptor；不得恢复隐式 probe/skip 机制。
 6. **守恒底线**：自洽站点在模拟抬高状态下必须满足 `storedDelta + remainderCount == inserted`（只读审计公式，不是写入后补偿算法）；真实写入后禁止重算余量、回填、重试、补偿。
 7. **`== 64` 哨兵待替换**：§2.1/§2.2/§2.3 及 8 个 late mixin 中现存的 `original == 64` 判据（VanillaInventoryLimitMixin.java:47、ForgeItemHandlerLimitMixin.java:31、SlotItemHandlerMixin.java:26；late 侧 AppEngInternalInventory/AppEngInternalAEInventory/BrandonsCoreInventoryLimit/EnderIOMachineInventoryLimit/EnderIOSlottedInventoryLimit/IEInventoryHandler/IEMachineSlotLimit/SimpleInventory 八个 mixin）是本表要取代的准入判据；本表登记完成即不得再以哨兵作为「该目标是否可 patch」的依据。
 8. **例外**：非容量站点（§2.4 的 usePickedItemLimit、§3 的 AppEngAdaptorItemHandlerMixin〔方案 A 后已无注入，仅保留类入口〕、§2.6）不受规则 1 约束，但须在表中注明性质。
@@ -164,7 +164,7 @@ late 目标 **当前 16 个模组** jar 均缺失（文件名/版本未登记，
 
 ## 8. 特别标注（P0 事实，只引用）
 
-- **P0 事实 c**：`resolveInventoryClampLimit`（src/main/kotlin/io/alexjoest/stackupup/StackLimitHooks.kt:192-203）的两个库存注入回调——`InventoryPlayerAddResourceMixin.stackupup$useMergeLimit`（src/main/java/.../mixin/early/InventoryPlayerAddResourceMixin.java:21）与 `stackupup$usePickedStackLimit`（同文件 :43）——**必须保留**（删除或改动前必须逐一定位，AGENTS.md；本表 §2.4 两行即这两个调用方）。P0 台账中记录的内部委派 `resolveInventoryWriteLimit`（旧 StackLimitHooks.kt:174-191）在当前工作副本中已被 T4a 移除（`rg -n "resolveInventoryWriteLimit" src/main` 无命中；`VanillaInventoryWriteMixin` 已删除），因此当前调用面只有上述两个直接 clamp 注入点。
+- **P0 事实 c**：`resolveInventoryClampLimit`（`src/main/kotlin/io/alexjoest/stackupup/StackLimitHooks.kt:390-400`）的两个库存注入回调——`InventoryPlayerAddResourceMixin.stackupup$useMergeLimit`（src/main/java/.../mixin/early/InventoryPlayerAddResourceMixin.java:19-21）与 `stackupup$usePickedStackLimit`（同文件 :42-44）——**必须保留**（删除或改动前必须逐一定位，AGENTS.md；本表 §2.4 两行即这两个调用方）。T4a 移除的是旧 `VanillaInventoryWriteMixin` 状态通道，不是所有 writer helper：当前 `StackLimitHooks.resolveInventoryWriteLimit`（:307-335）仍由常驻 baseline `InventoryWriteLimitMixin`（`src/main/java/io/alexjoest/stackupup/mixin/early/InventoryWriteLimitMixin.java:14-30`）调用；该 hook 仅有明确 receiver-capability 的窄范围。
 - **P0 事实 a**：`EntityEquipmentInvWrapper` 不是无余量必吞——上限计算（`EntityEquipmentInvWrapper.java:86-105`、`:168-171`）、真实写入（`:108-120`）、remainder 返回（`:122`）均可由源码确认；本表 §2.3 该行判定基于此。vanilla 实体 setter 路径（`EntityLivingBase#setItemStackToSlot` 抽象声明，`EntityLivingBase.java:1852-1856`）已由 T3 闭合（决策记录 §3.5：`EntityLiving.java:1012-1022`、`EntityPlayer.java:2432-2449`、`EntityArmorStand.java:155-167` 为无截断列表直写）。
 
 ## 9. T13 回填：证据来源标注与收缩刷新（2026-08-08 追加）
@@ -201,8 +201,8 @@ late 目标 **当前 16 个模组** jar 均缺失（文件名/版本未登记，
 | §2.4 InventoryPlayerAddResourceMixin 两调用点 | 源码 | 行号已关联（P0 事实 c，必须保留）；无运行时事件 |
 | §2.5 CommandGive / CommandReplaceItem / EntityItemMerge / ServerRecipeBookHelper | 源码 | 行号已关联；无运行时事件 |
 | §2.6 非容量站点 | 不标注 | 非容量广告/写入站点，不进入证据标注范围（§6 规则 8） |
-| §3 late mixin（**当前 25 个 .java**，审计当时 18） | UNKNOWN（无源码） | 缺失 jar（§5）；JSONL 无事件对应任一登记目标类（#2 类名非任何登记目标，不得据其升级）；审计后新增 7 个（CDR §3.10/§3.11）同属无源码面 |
-| §4 动态兼容层（profile/probe/patch/FixedCompatTargets，历史中间层，已删除） | 历史源码证据 | 删除前行号已关联（§4）；当前无运行时事件、无动态 ASM 注册，`StackUpUpCore.getASMTransformerClass()` 返回空数组 |
+| §3 late mixin 站点表（2026-09 文件清单快照；当时为 25 个 `.java`，审计当时 18） | UNKNOWN（无源码） | 对应历史 JSONL 中无事件覆盖该登记目标类（#2 类名非任何登记目标，不得据其升级）；审计后新增项目按 CDR §3.10/§3.11 记录；当前 profile count 见 §9.5 |
+| §4 历史动态兼容层（profile/probe/patch/FixedCompatTargets 已删除） | 历史源码证据 | 删除前行号已关联（§4）；当前没有对应历史 replacement-chain 事件，但 coremod 会在开关启用时条件注册窄范围 `InventoryStackLimitTransformer`（§9.5）；不据此给第三方写入路径升级证据 |
 
 ### 9.3 T3/T10 收缩后的判定引用刷新（2026-08-08）
 
@@ -215,8 +215,16 @@ late 目标 **当前 16 个模组** jar 均缺失（文件名/版本未登记，
 ### 9.4 2026-09 计数 lane 复核（配置/文件/模组数刷新）
 
 - §3 标题文件数与 §5 缺失 jar 台账按当前工作副本刷新：late **26 个 .java 文件**（审计当时 18）、缺失模组 **16 个**（审计当时 12；新增 nuclearcraft、colossalchests、gregtech、techreborn）。§3 表补登审计后新增的 late mixin 行（ColossalChestsTile / EnderIOInventorySlotLimit / EnderIOInventoryNoDrop / GregTechMetaItem ×2 / NuclearCraftTileInventoryLimit / NuclearCraftDistributorNoDrop / RebornCoreInventory），来源 CDR §3.10/§3.11 与当前 Tech Reborn 兼容配置。
-- §3 表内 early/late 计数不与 t14.1 §1 冲突：当前 17 个 `mixins.stackupup*.json`（early 1 + late 16），47 注册项 / 45 个 @Mixin 类；本表 §3 只登记容量/非容量站点，不重复配置数口径。
+- **2026-09 快照** §3 表内 early/late 计数：当时 17 个 `mixins.stackupup*.json`（early 1 + late 16），47 注册项 / 45 个 @Mixin 类；该统计是本登记表截点，不等于 2026-10 的拆分 profile 数。当前 profile registry 见 §9.5。
 - 未改变任何分类判定：审计后新增 7 项中 5 项为容量站点、2 项（EnderIONoDrop、NCDistributorNoDrop）已在表中标注「非容量站点」；全部第三方条目维持 **无源码不可判定**（§5）。
+
+### 9.5 2026-10-14 当前 profile / writer / IC2 Classic addendum
+
+当前容量设置及装载边界以 `StackUpUpConfig.kt:80-98`、`StackUpUpCore.kt:77-89`、`StackUpUpMixinConnector.kt:57-65,109-145,293-339` 为准：`compat.inventoryExpansion.enabled` 默认 false；开启且无冲突时注册窄范围 `InventoryStackLimitTransformer`，并排队 `capacity.early` 与 capacity-late profiles。当前资源 registry 为 39 个 JSON：3 个 early（ordinary、baseline、capacity）、19 个 ordinary late（18 modules + IC2 Classic）和 17 个 capacity-late（16 modules + IC2 Classic）。关闭开关只关闭可选容量 profiles/通用 getter expansion，不移除常驻 baseline writer/safety lanes；普通 late profiles 仍按 Mod 在场独立排队。
+
+`compat.inventoryStackLimitBlacklist.modIds` 在 transformer/getter hook 按实际 receiver 或受支持 owner 的 Forge owned-package 边界选择性 bypass，并让 connector 跳过所列 Mod 对应的 capacity-late profile；它不关闭整个 capacity early lane 或普通 safety late profile，也不影响未列出的 Mod。精确 owner 的可推断范围之外（如无 owner 的共享实例、receiverless constructor/private delegate）仍 UNKNOWN；不得推成所有 handler 或 addon 已安全排除。
+
+IC2 Classic ordinary late profile (`mixins.stackupup.late.ic2classic.json`) 注册 `SlotBaseMixin`；该 mixin 只将 `SlotBase` 的 slot getter 限到最多 native 64、保留更低原值，不改写 writer。分离的 capacity profile 当前为空；OFF 或 `ic2` blacklist 不会跳过 ordinary safety profile。`Ic2ClassicMixinSourceTest.kt:31-112` 仅核对配置/注册与 clamp/helper+ItemStack fixture arithmetic；未在真实 IC2 Classic 运行环境验证注入命中或 writer 行为，运行态仍 UNKNOWN。
 
 ## 10. 复核记录
 

@@ -43,35 +43,149 @@ object StackLimitHooks {
     @JvmStatic
     fun getCompatibilityStackSize(): Int = StackUpUpConfig.maxStackSize
 
-    private val inventoryStackLimitBlacklistCache = AtomicReference(InventoryStackLimitBlacklistCache.empty())
+    @JvmStatic
+    fun getInventoryCompatibilityStackSize(): Int = getInventoryCompatibilityStackSize(VANILLA_STACK_LIMIT)
+
+    @JvmStatic
+    fun getCoreInventoryStackSize(target: Any, original: Int): Int {
+        if (original != VANILLA_STACK_LIMIT || !canExpandCoreInventory(target)) return original
+        return StackUpUpConfig.maxStackSize
+    }
+
+    @JvmStatic
+    fun canExpandCoreInventory(target: Any): Boolean {
+        if (!InventoryStackLimitHook.isPrepared() || shouldBypassInventoryStackLimit(target)) return false
+        if (target is net.minecraft.entity.EntityLivingBase) {
+            return target.javaClass.name.startsWith("net.minecraft.")
+        }
+        if (!isCoreInventoryGetterTarget(target.javaClass)) return false
+        val owner = (target as? net.minecraft.entity.player.InventoryPlayer)?.player
+        return owner == null || owner.javaClass.name.startsWith("net.minecraft.")
+    }
+
+    internal fun isCoreInventoryGetterTarget(targetClass: Class<*>): Boolean = when (targetClass) {
+        net.minecraft.tileentity.TileEntityDispenser::class.java,
+        net.minecraft.tileentity.TileEntityChest::class.java,
+        net.minecraft.tileentity.TileEntityFurnace::class.java,
+        net.minecraft.tileentity.TileEntityBrewingStand::class.java,
+        net.minecraft.tileentity.TileEntityHopper::class.java,
+        net.minecraft.tileentity.TileEntityShulkerBox::class.java,
+        net.minecraft.entity.item.EntityMinecartContainer::class.java,
+        net.minecraft.entity.player.InventoryPlayer::class.java,
+        net.minecraft.inventory.InventoryBasic::class.java,
+        net.minecraft.inventory.InventoryMerchant::class.java,
+        net.minecraft.inventory.InventoryCrafting::class.java,
+        net.minecraft.inventory.InventoryCraftResult::class.java,
+        -> true
+        else -> false
+    }
+
+    internal val NATIVE64_WRITER_CAPABILITY_TARGETS: Set<Class<*>> = setOf(
+        net.minecraft.entity.player.InventoryPlayer::class.java,
+        net.minecraft.tileentity.TileEntityChest::class.java,
+        net.minecraft.tileentity.TileEntityDispenser::class.java,
+        net.minecraft.tileentity.TileEntityShulkerBox::class.java,
+        net.minecraft.tileentity.TileEntityBrewingStand::class.java,
+    )
+
+    internal fun isNative64WriterCapabilityTarget(targetClass: Class<*>): Boolean = targetClass in NATIVE64_WRITER_CAPABILITY_TARGETS
+
+    @JvmStatic
+    fun getEquipmentInventoryStackSize(
+        wrapper: net.minecraftforge.items.wrapper.EntityEquipmentInvWrapper,
+        entity: net.minecraft.entity.EntityLivingBase,
+        original: Int,
+    ): Int {
+        if (original != VANILLA_STACK_LIMIT ||
+            !InventoryStackLimitHook.isPrepared() ||
+            shouldBypassInventoryStackLimit(wrapper) ||
+            shouldBypassInventoryStackLimit(entity)
+        ) {
+            return original
+        }
+        if (!InventoryStackLimitHook.isExpansionEnabled()) {
+            val wrapperType = wrapper.javaClass
+            if (wrapperType != net.minecraftforge.items.wrapper.EntityHandsInvWrapper::class.java &&
+                wrapperType != net.minecraftforge.items.wrapper.EntityArmorInvWrapper::class.java
+            ) {
+                return original
+            }
+            if (!canExpandCoreInventory(entity)) return original
+        }
+        return StackUpUpConfig.maxStackSize
+    }
+
+    @JvmStatic
+    fun getInventoryCompatibilityStackSize(target: Any, owner: Any?, original: Int): Int {
+        if (owner != null && shouldBypassInventoryStackLimit(owner)) return original
+        return getInventoryCompatibilityStackSize(target, original)
+    }
+
+    @JvmStatic
+    fun getInventoryCompatibilityStackSize(target: Any, original: Int): Int {
+        if (shouldBypassInventoryStackLimit(target)) return original
+        return InventoryStackLimitHook.resolveInventoryStackLimit(target.javaClass, original)
+    }
+
+    @JvmStatic
+    fun getInventoryCompatibilityStackSize(original: Int): Int {
+        if (original != VANILLA_STACK_LIMIT ||
+            !InventoryStackLimitHook.isExpansionEnabled() ||
+            !InventoryStackLimitHook.isPrepared()
+        ) {
+            return original
+        }
+        return StackUpUpConfig.maxStackSize
+    }
 
     @JvmStatic
     fun refreshInventoryStackLimitBlacklist() {
-        val configuredModIds = StackUpUpConfig.compat.inventoryStackLimitBlacklist.modIds
-            .asSequence()
-            .map { it.trim().lowercase(Locale.ROOT) }
-            .filter { it.isNotEmpty() }
-            .toSet()
-        val ownedPackages = if (configuredModIds.isEmpty()) {
-            emptyList()
-        } else {
-            Loader.instance().modList.asSequence()
-                .filter { configuredModIds.contains(it.modId.lowercase(Locale.ROOT)) }
-                .flatMap { it.ownedPackages.asSequence() }
-                .toList()
+        if (InventoryStackLimitHook.isPrepared()) {
+            InventoryStackLimitHook.setCompatibilityStackSize(StackUpUpConfig.maxStackSize)
+            return
         }
-        inventoryStackLimitBlacklistCache.set(InventoryStackLimitBlacklistCache.from(ownedPackages))
-        InventoryStackLimitHook.prepare(getCompatibilityStackSize(), ownedPackages.toTypedArray())
+        val modIds = io.alexjoest.stackupup.core.InventoryExpansionStartupConfig.load().modIds
+        val ownedPackagesByMod = if (modIds.isEmpty()) {
+            emptyMap()
+        } else {
+            Loader.instance().modList.associate { it.modId to it.ownedPackages }
+        }
+        refreshInventoryStackLimitBlacklist(modIds, ownedPackagesByMod)
+    }
+
+    internal fun refreshInventoryStackLimitBlacklist(modIds: List<String>, ownedPackagesByMod: Map<String, Collection<String>>) {
+        val configuredModIds = modIds.map { it.trim().lowercase(Locale.ROOT) }.toSet()
+        require(configuredModIds.all { it.matches(Regex("[a-z0-9_.-]+")) }) { "Invalid inventory capacity blacklist mod ID: $modIds" }
+        val loadedMods = ownedPackagesByMod.mapKeys { it.key.lowercase(Locale.ROOT) }
+        val ownedPackages = configuredModIds.flatMap { modId ->
+            val packages = loadedMods[modId]
+            if (packages == null) {
+                org.apache.logging.log4j.LogManager.getLogger("stackupup.capacity").warn(
+                    "Inventory capacity blacklist mod '{}' is not loaded; entry has no effect",
+                    modId,
+                )
+                emptyList()
+            } else {
+                check(packages.any { it.isNotBlank() }) { "Inventory capacity blacklist mod '$modId' has no attributable owned packages" }
+                packages.filter { it.isNotBlank() }
+            }
+        }
+        InventoryStackLimitHook.prepare(StackUpUpConfig.maxStackSize, ownedPackages.toTypedArray())
     }
 
     @JvmStatic
     internal fun installInventoryStackLimitBlacklistForTesting(packageNames: Array<String>) {
-        inventoryStackLimitBlacklistCache.set(InventoryStackLimitBlacklistCache.from(packageNames.asList()))
-        InventoryStackLimitHook.prepare(getCompatibilityStackSize(), packageNames)
+        InventoryStackLimitHook.prepare(StackUpUpConfig.maxStackSize, packageNames)
     }
 
     @JvmStatic
-    fun shouldBypassInventoryStackLimit(target: Any): Boolean = inventoryStackLimitBlacklistCache.get().matches(target.javaClass)
+    fun shouldBypassInventoryStackLimit(target: Any): Boolean {
+        if (InventoryStackLimitHook.isBlacklisted(target.javaClass)) return true
+        val owner = (target as? net.minecraft.entity.player.InventoryPlayer)?.player
+        if (owner != null && InventoryStackLimitHook.isBlacklisted(owner.javaClass)) return true
+        val delegate = (target as? net.minecraftforge.items.wrapper.InvWrapper)?.inv
+        return delegate != null && shouldBypassInventoryStackLimit(delegate)
+    }
 
     @JvmStatic
     @Deprecated("Internal stack limit resolution has moved to ItemStack/StackContext; this overload is kept only for legacy callers.")
@@ -191,6 +305,56 @@ object StackLimitHooks {
     }
 
     @JvmStatic
+    fun resolveInventoryWriteLimit(stack: ItemStack, inventoryLimit: Int): Int {
+        if (stack.isEmpty || inventoryLimit <= 0) {
+            return inventoryLimit
+        }
+        val itemLimit = stack.maxStackSize
+        return if (inventoryLimit == VANILLA_STACK_LIMIT) itemLimit else minOf(inventoryLimit, itemLimit)
+    }
+
+    @JvmStatic
+    fun resolveInventoryWriteLimit(stack: ItemStack, target: Any, inventoryLimit: Int): Int {
+        if (stack.isEmpty || inventoryLimit <= 0) {
+            return inventoryLimit
+        }
+
+        val itemLimit = stack.maxStackSize
+        if (shouldBypassInventoryStackLimit(target)) {
+            return minOf(inventoryLimit, itemLimit)
+        }
+
+        if (inventoryLimit == VANILLA_STACK_LIMIT &&
+            InventoryStackLimitHook.isPrepared() &&
+            isNative64WriterCapabilityTarget(target.javaClass)
+        ) {
+            return minOf(StackUpUpConfig.maxStackSize, itemLimit)
+        }
+
+        return minOf(inventoryLimit, itemLimit)
+    }
+
+    @JvmStatic
+    fun resolvePlacementSlotLimit(stack: ItemStack, slotLimit: Int, inventoryLimit: Int): Int =
+        resolvePlacementSlotLimit(stack, null, slotLimit, inventoryLimit)
+
+    @JvmStatic
+    fun resolvePlacementSlotLimit(stack: ItemStack, target: Any?, slotLimit: Int, inventoryLimit: Int): Int {
+        val dynamic = resolveDynamicSlotLimit(stack, slotLimit)
+        val itemAware = if (stack.isEmpty) dynamic else minOf(dynamic, stack.maxStackSize)
+        val effectiveInventoryLimit = if (target == null) {
+            resolveInventoryWriteLimit(stack, inventoryLimit)
+        } else {
+            resolveInventoryWriteLimit(stack, target, inventoryLimit)
+        }
+        return if (effectiveInventoryLimit > 0) minOf(itemAware, effectiveInventoryLimit) else itemAware
+    }
+
+    @JvmStatic
+    fun isSpecialContainerInventory(target: Any): Boolean =
+        target is net.minecraft.inventory.InventoryCrafting || target is net.minecraft.inventory.InventoryCraftResult
+
+    @JvmStatic
     fun resolveDynamicSlotLimit(stack: ItemStack, slotLimit: Int): Int {
         if (stack.isEmpty) {
             return slotLimit
@@ -214,25 +378,26 @@ object StackLimitHooks {
         }
 
         val currentItemLimit = stack.maxStackSize
-        return when {
+        val totalLimit = when {
             slotLimit < currentItemLimit -> slotLimit
             currentItemLimit < slotLimit && currentItemLimit != VANILLA_STACK_LIMIT -> currentItemLimit
             else -> slotLimit
         }
+        return minOf(simulatedLimit, totalLimit)
     }
 
     @JvmStatic
-    fun resolveInventoryClampLimit(stack: ItemStack, inventoryLimit: Int): Int {
-        if (stack.isEmpty) {
-            return inventoryLimit
-        }
+    fun resolveInventoryClampLimit(stack: ItemStack, inventoryLimit: Int): Int = resolveInventoryClampLimit(stack, null, inventoryLimit)
 
-        val itemLimit = stack.maxStackSize
-        return if (inventoryLimit == VANILLA_STACK_LIMIT) {
-            itemLimit
-        } else {
-            minOf(inventoryLimit, itemLimit)
+    @JvmStatic
+    fun resolveInventoryClampLimit(stack: ItemStack, target: Any?, inventoryLimit: Int): Int {
+        if (target != null && shouldBypassInventoryStackLimit(target)) {
+            return if (stack.isEmpty) inventoryLimit else minOf(inventoryLimit, stack.maxStackSize)
         }
+        if (InventoryStackLimitHook.isExpansionEnabled() || inventoryLimit != VANILLA_STACK_LIMIT) {
+            return if (stack.isEmpty) inventoryLimit else minOf(inventoryLimit, stack.maxStackSize)
+        }
+        return resolveInventoryWriteLimit(stack, inventoryLimit)
     }
 
     @JvmStatic
@@ -242,52 +407,6 @@ object StackLimitHooks {
         } else {
             minOf(requestedSize, maxItemSize)
         }
-}
-
-private class InventoryStackLimitBlacklistCache private constructor(private val root: PackageNode) {
-    private val classResults = ConcurrentHashMap<Class<*>, Boolean>()
-
-    fun matches(targetClass: Class<*>): Boolean = classResults.computeIfAbsent(targetClass) { matchesPackage(it.name) }
-
-    private fun matchesPackage(className: String): Boolean {
-        var node = root
-        for (character in className) {
-            if (character == '.') {
-                if (node.terminal) {
-                    return true
-                }
-                node = node.children[character] ?: return false
-                continue
-            }
-            node = node.children[Character.toLowerCase(character)] ?: return false
-        }
-        return node.terminal
-    }
-
-    companion object {
-        fun empty(): InventoryStackLimitBlacklistCache = from(emptyList())
-
-        fun from(packageNames: Iterable<String>): InventoryStackLimitBlacklistCache {
-            val root = PackageNode()
-            for (rawPackageName in packageNames) {
-                val packageName = rawPackageName.trim().lowercase(Locale.ROOT)
-                if (packageName.isEmpty()) {
-                    continue
-                }
-                var node = root
-                for (character in packageName) {
-                    node = node.children.getOrPut(character) { PackageNode() }
-                }
-                node.terminal = true
-            }
-            return InventoryStackLimitBlacklistCache(root)
-        }
-    }
-
-    private class PackageNode {
-        val children: HashMap<Char, PackageNode> = HashMap()
-        var terminal: Boolean = false
-    }
 }
 
 /**

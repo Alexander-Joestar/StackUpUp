@@ -5,7 +5,6 @@ import io.alexjoest.stackupup.StackLimitHooks;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -13,8 +12,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Pseudo
 @Mixin(targets = "com.brandon3055.brandonscore.blocks.TileInventoryBase", remap = false)
 abstract class BrandonsCoreInventoryLimitMixin {
-    @Unique
-    private static final int VANILLA_STACK_LIMIT = 64;
 
     // TileInventoryBase 字段：protected int stackLimit = 64;
     @Shadow(remap = false)
@@ -32,7 +29,7 @@ abstract class BrandonsCoreInventoryLimitMixin {
         if (StackLimitHooks.shouldBypassInventoryStackLimit(this)) {
             return;
         }
-        this.stackLimit = StackLimitHooks.getCompatibilityStackSize();
+        this.stackLimit = StackLimitHooks.getInventoryCompatibilityStackSize(this, this.stackLimit);
     }
 
     @ModifyReturnValue(method = "getInventoryStackLimit", at = @At("RETURN"), require = 0)
@@ -40,6 +37,6 @@ abstract class BrandonsCoreInventoryLimitMixin {
         if (StackLimitHooks.shouldBypassInventoryStackLimit(this)) {
             return original;
         }
-        return original == VANILLA_STACK_LIMIT ? StackLimitHooks.getCompatibilityStackSize() : original;
+        return StackLimitHooks.getInventoryCompatibilityStackSize(original);
     }
 }

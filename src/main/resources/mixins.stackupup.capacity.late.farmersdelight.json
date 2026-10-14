@@ -1,0 +1,8 @@
+{
+  "required": false,
+  "package": "io.alexjoest.stackupup.mixin.late.farmersdelight",
+  "refmap": "${refmap}",
+  "target": "@env(DEFAULT)",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": ["FarmersDelightInventoryLimitMixin"]
+}

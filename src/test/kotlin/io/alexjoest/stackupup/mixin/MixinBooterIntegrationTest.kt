@@ -70,6 +70,11 @@ class MixinBooterIntegrationTest {
     }
 
     @Test
+    fun capacityLateConfigs_shouldBeSkippedWhenConflictIsDetected() {
+        assertFalse(StackUpUpMixinConnector().shouldQueueCapacity(listOf("StackUp")))
+    }
+
+    @Test
     fun lateConfig_shouldQueueByModPresence() {
         fun present(vararg modIds: String): (String) -> Boolean = { modId -> modId in modIds }
 

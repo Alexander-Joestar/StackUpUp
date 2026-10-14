@@ -21,10 +21,9 @@ import org.spongepowered.asm.mixin.injection.At;
 /**
  * 原版 {@code getInventoryStackLimit()I} 安全目标：目标集合是编译期显式表
  * （{@code @Mixin} 列表 = {@link VanillaInventoryTargets#TARGETS}，登记表 docs/agent/t2b-原版目标表.md §2），
- * 不再在运行时按原值是否为 64 判断目标是否可 patch（哨兵判断已删除，见 t2b §6.3）。
- * 表内目标全部原生返回 64 且写入面自洽（setter 落盘前重读同一上限夹取，或无夹取不截断），
- * 因此替换返回值不需要再检查原值。表外目标（条件断链的转发箱、主动收紧类等）不在此列表，
- * 排除原因见 t2b §3。
+ * 表内目标全部原生返回 64 且写入面自洽（setter 落盘前重读同一上限夹取，或无夹取不截断）。
+ * 接收对象策略按实际 receiver 及受支持公开 owner 排除黑名单，兼容开关关闭时不修改 getter。
+ * 表外目标（条件断链的转发箱、主动收紧类等）不在此列表，排除原因见 t2b §3。
  *
  * <p>例外（条件上限）：{@link InventoryCrafting} 与 {@link InventoryCraftResult} 是合成容器
  * （工作台网格 + 合成结果槽），大堆叠下 shift 合成会一次搬运极大量物品，导致卡顿与误操作。
@@ -57,11 +56,13 @@ abstract class VanillaInventoryLimitMixin {
         at = @At("RETURN"),
         require = 0
     )
-    private int stackupup$replaceCompatibilityLimit(int original) {
-        if (StackLimitHooks.shouldBypassInventoryStackLimit(this)) {
+    private int stackup$replaceCompatibilityLimit(int original) {
+        if (!io.alexjoest.stackupup.core.InventoryStackLimitHook.isExpansionEnabled() ||
+            !io.alexjoest.stackupup.core.InventoryStackLimitHook.isPrepared() ||
+            StackLimitHooks.shouldBypassInventoryStackLimit(this)) {
             return original;
         }
-        int compatibilityLimit = StackLimitHooks.getCompatibilityStackSize();
+        int compatibilityLimit = StackLimitHooks.getCoreInventoryStackSize(this, original);
         if ((Object) this instanceof InventoryCrafting || (Object) this instanceof InventoryCraftResult) {
             int limit = StackUpUpConfig.compat.vanilla.craftingSlotLimit;
             if (limit <= 0) {

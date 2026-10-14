@@ -57,6 +57,11 @@ object StackUpUpConfig {
 
     class Compat {
         @JvmField
+        @Config.Name("inventoryExpansion")
+        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compat.inventoryExpansion.name")
+        val inventoryExpansion: InventoryExpansion = InventoryExpansion()
+
+        @JvmField
         @Config.Name("vanilla")
         @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compat.vanilla.name")
         val vanilla: Vanilla = Vanilla()
@@ -72,10 +77,23 @@ object StackUpUpConfig {
         val inventoryStackLimitBlacklist: InventoryStackLimitBlacklist = InventoryStackLimitBlacklist()
     }
 
+    class InventoryExpansion {
+        @JvmField
+        @Config.Comment(
+            "Enable generic third-party inventory and optional capacity compatibility expansion. Vanilla player/container stack-rule support remains enabled. Changes require a game restart.",
+        )
+        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compat.inventoryExpansion.enabled.name")
+        @Config.RequiresMcRestart
+        var enabled: Boolean = false
+    }
+
     class InventoryStackLimitBlacklist {
         @JvmField
-        @Config.Comment("Exact lower-case Forge mod IDs whose getInventoryStackLimit compatibility patch should stay disabled.")
+        @Config.Comment(
+            "Forge mod IDs whose actual owned-package receivers or supported public owners bypass capacity expansion. Empty is a no-op; unlisted mods remain eligible. Superclass/interface ownership alone does not exclude addons. Shared creator, private delegate and receiverless constructor ownership remain UNKNOWN. Changes require a restart.",
+        )
         @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compat.inventoryStackLimitBlacklist.modIds.name")
+        @Config.RequiresMcRestart
         var modIds: Array<String> = emptyArray()
     }
 

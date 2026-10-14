@@ -15,7 +15,7 @@ Chinese README: [README.md](README.md) (Chinese)
 - Target: Minecraft **1.12.2** + Forge **14.23.5.2847**
 - Current version: **0.2.4**
 - Rule system: DSL v2, using `.su` files or Markdown `.su.md` containers with `state` and `gate`
-- Compatibility layer: [MixinBooter](https://github.com/CleanroomMC/MixinBooter) **11.17** ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/mixin-booter)) + [CleanMix](https://github.com/CleanroomMC/CleanMix) **0.7.2**, with the current compatibility layer implemented through Mixin configs registered by `IMixinConnector`; `StackUpUpCore` returns no ASM transformers. MixinBooter 10.7 and the old loaders are historical baselines only
+- Compatibility layer: [MixinBooter](https://github.com/CleanroomMC/MixinBooter) **11.17** ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/mixin-booter)) + [CleanMix](https://github.com/CleanroomMC/CleanMix) **0.7.2**; `IMixinConnector` registers always-on early/baseline and mod-presence-selected ordinary late Mixin configs, then adds separate capacity configs when inventory expansion is enabled. `StackUpUpCore` conditionally registers the narrow `InventoryStackLimitTransformer` only when the startup switch is enabled and there is no conflict; it targets getters on non-Minecraft `IInventory` classes. MixinBooter 10.7 and the old loaders are historical baselines only
 
 ## Download
 
@@ -57,11 +57,11 @@ See [docs/DSL-v2-规则示例.md](docs/DSL-v2-%E8%A7%84%E5%88%99%E7%A4%BA%E4%BE%
 
 ## Commands
 
-Commands: `/stackupup reload`, `/stackupup edit`, `/stackupup state get <name>`, `/stackupup state set <name> <value>`, `/stackupup inspect [slot N]`, and `/stackupup inspect block <x> <y> <z> <none|side> [slot N]`.
+Commands: `/stackupup reload`, `/stackupup edit`, `/stackup state get <name>`, `/stackupup state set <name> <value>`, `/stackupup inspect [slot N]`, and `/stackupup inspect block <x> <y> <z> <none|down|up|north|south|west|east> [slot N]`.
 
 - `inspect` read-only inspects the server player's currently open container; `inspect slot N` focuses on one container slot. Console/command-block senders can use `inspect block x y z none|down|up|north|south|west|east [slot N]` in a loaded chunk to query an ordinary inventory or an item-handler capability on the selected side.
-- By default, at most 8 slots are listed. The report shows Container, Slot, inventory/handler class names and object IDs local to that report, plus Forge `ownedPackages`-based modId candidates where possible. Multiple candidates are marked ambiguous; unknown ownership is UNKNOWN. `InvWrapper.getInv()` is a supported public delegate accessor; other inaccessible handler delegates are explicitly UNKNOWN rather than reflectively inspected.
-- Output includes copyable candidate snippets for `compat.inventoryStackLimitBlacklist.modIds` (only when there is one supported modId candidate) or exact `classNames` values; the command does not edit configuration. An item's registered mod is not necessarily the inventory owner, so it is never used to infer inventory modId. Inspection does not insert/extract, simulate writes, or prove real capacity or conservation. A blacklist may affect other instances of a class or inherited classes; add only reviewed entries.
+- By default, at most 8 slots are listed. The report shows Container, Slot, inventory/handler class names and object IDs local to that report, plus Forge `ownedPackages`-based modId candidates where possible. Multiple candidates are marked ambiguous; unknown ownership is UNKNOWN. Class names are diagnostic evidence only and cannot currently be used as blacklist settings. `InvWrapper.getInv()` is a supported public delegate accessor; other inaccessible handler delegates are explicitly UNKNOWN rather than reflectively inspected.
+- Output includes a copyable candidate snippet for `compat.inventoryStackLimitBlacklist.modIds` only when there is one supported modId candidate; the command does not edit configuration. An item's registered mod is not necessarily the inventory owner, so it is never used to infer inventory modId. Inspection does not insert/extract, simulate writes, or prove real capacity or conservation. A modId blacklist may affect other inventory classes recognized by that mod's `ownedPackages`; add only reviewed entries.
 
 - `reload`: reload rule files.
 - `edit`: open the main rule file on the client.
@@ -111,14 +111,16 @@ max stack limit as `count/limit`.
 ## Configuration
 
 After the first game or server launch, the configuration file is `config/stackupup.cfg`; its groups match the in-game
-configuration screen. Save the configuration and restart, or run `/stackupup reload` to reapply values that are reloadable:
+configuration screen. `/stackupup reload` does not re-read the startup inventory-capacity switch or blacklist; restart
+after changing either setting.
 
 - `general.maxStackSize`: global compatibility stack limit, default `64`; rule results and compatibility entry points are clamped to this value.
 - `compat.vanilla.craftingSlotLimit`: workbench grid and crafting-result slot limit, default `64`. `0` keeps vanilla/default behavior; values above `0` use the custom limit. This is mainly a Performance setting: holding Shift to batch-craft very large stacks can cause severe lag, not a balance switch. The effective limit can still be reduced by `general.maxStackSize` and item/recipe limits.
-- `compat.nuclearcraft.speedUpgradeLimit` and `compat.nuclearcraft.energyUpgradeLimit`: NuclearCraft speed/energy upgrade stack limits, default `0` (keep NuclearCraft's default `64`); values above `0` use a custom limit. These settings have no effect when NuclearCraft is not loaded.
-- `compat.inventoryExpansion.enabled`: startup/coremod switch, default `false`, requiring a full restart; `/stackupup reload` does not apply it. It is independent from ItemStack rules and gates only the base inventory-capacity entry points wired to it. Some mod-specific late Mixin capacity hooks may still apply while this is off, so off does not disable every expansion path. Unknown receivers may truncate, lose items, or conflict; enabling the switch does not guarantee lossless behavior for every unknown mod.
-- `compat.inventoryStackLimitBlacklist.modIds`: inventory blacklist by mod ID; `/stackupup inspect` output can provide a review starting point. A mod ID blacklist applies to classes recognized by that mod's `ownedPackages`.
-- `compat.inventoryStackLimitBlacklist.classNames`: advanced exact class-name blacklist. It does not infer ownership from registered item mod IDs. Inspection output is a suggestion only and does not edit configuration. Review superclass/subclass and other-inventory effects, save manually, then restart to apply startup policy.
+- `compat.nuclearcraft.speedUpgradeLimit` and `compat.nuclearcraft.energyUpgradeLimit`: NuclearCraft speed/energy upgrade stack limits, default `0` (keep NuclearCraft's native behavior); values above `0` use a custom limit. These settings have no effect when NuclearCraft is not loaded.
+- `compat.inventoryExpansion.enabled`: startup inventory-capacity expansion switch, default `false`. When enabled it registers the narrow `IInventory#getInventoryStackLimit()` getter transformer and queues optional capacity Mixin configs. When off, those optional capacity hooks are skipped; ItemStack rules, always-loaded early/baseline configs, and ordinary late configs remain. The dedicated `InventoryWriteLimitMixin` in `mixins.stackupup.baseline.early.json` still calls `resolveInventoryWriteLimit`; neither this switch nor `modIds` disables that writer-safety path.
+- `compat.inventoryStackLimitBlacklist.modIds`: selectively bypass capacity expansion for listed mods and skip their capacity-late configs; an empty list is a no-op. `/stackupup inspect` can suggest a candidate, but is not a safety proof.
+
+The blacklist uses Forge `ownedPackages` and exact package boundaries for the actual receiver or supported public owner. Merely extending a listed superclass or implementing its interface does not automatically exclude an unlisted addon. Shared objects without a public owner, private delegates, and receiverless constructor paths can remain UNKNOWN. Startup fails if a loaded mod has no attributable packages; an ID for a mod that is not loaded has no effect. This is not a whole-mod disable switch. MixinBooter's `general.blacklistedConfigs`, by contrast, suppresses an entire named config (which may contain safety Mixins) and is not a capacity-only blacklist.
 
 ## Compatibility
 
@@ -131,15 +133,15 @@ that is not proof that the real write capacity can be raised. Advertising a high
 too many items into storage that cannot actually accept them, which can cause truncation, item loss, or conflicts with the
 mod's own overflow handling.
 
-Current compatibility patches are Mixin-only: `StackUpUpMixinConnector` registers Mixin configs through
-`IMixinConnector`, and `StackUpUpCore` returns no ASM transformers. For registered targets currently attempted for
-loading, these configs target real `getInventoryStackLimit()` / `getSlotLimit()` style entry points so slot limits follow.
-When third-party source is unavailable, the real write path is "无源码不可判定" (cannot be determined without source),
-and class names or registration alone do not establish write capacity. AE2 Plan A is archived: its hot path passes
-`insertItem` through without a project wrapper, relying on the vanilla/Forge remainder contract and a boundary probe; no
-JSONL conservation report or write-after-the-fact remainder refill is used.
+The current architecture combines a narrow coremod getter transformer with separated Mixin profiles. `StackUpUpCore`
+registers `InventoryStackLimitTransformer` only when `compat.inventoryExpansion.enabled=true` and there is no detected
+conflict; it targets `getInventoryStackLimit()I` (including the 1.12 SRG name) on concrete non-Minecraft `IInventory`
+classes. It is not the removed broad dynamic ASM replacement layer. Through `IMixinConnector`,
+`StackUpUpMixinConnector` always queues ordinary early and baseline early configs, and queues ordinary late configs when
+the target mod is present. It adds `mixins.stackupup.capacity.early.json` and `mixins.stackupup.capacity.late.*.json` only
+when expansion is enabled; `modIds` skips only capacity-late configs for listed mods.
 
-Current late mixin targets registered for attempted loading (the `StackUpUpMixinConnector` module table, 17 configs):
+Some ordinary late modules in the connector are listed below; configs are queued only when the target mod is present, and registration does not verify its real write path:
 
 - [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/applied-energistics-2))
 - [Applied Energistics 2 Supergiant](https://github.com/CleanroomMC/Applied-Energistics-2)
@@ -158,13 +160,16 @@ Current late mixin targets registered for attempted loading (the `StackUpUpMixin
 - [Integrated Dynamics](https://github.com/CyclopsMC/IntegratedDynamics) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/integrated-dynamics))
 - [LimeLib](https://www.curseforge.com/minecraft/mc-mods/limelib)
 - [Immersive Engineering](https://github.com/BluSunrize/ImmersiveEngineering) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/immersive-engineering))
+- IC2 Classic: `mixins.stackupup.late.ic2classic.json` is an ordinary config queued when the mod is present. Its `SlotBaseMixin` caps the reported slot limit at native 64 and is not affected by the capacity switch or an `ic2` entry in `modIds`; only its separate `mixins.stackupup.capacity.late.ic2classic.json` config is subject to those controls.
+- Farmer's Delight Legacy: the separate optional `mixins.stackupup.capacity.late.farmersdelight.json` Mixin currently names only Basket, Cabinet, Cooking Pot, and Skillet inventory targets. This does not cover every inventory or prove real write capacity.
 
-### Disabling a single mod's compatibility patch
+These are source registration/target details, not third-party runtime validation or blanket compatibility promises.
 
-StackUpUp does not ship a per-mod toggle, and does not need one: use MixinBooter's own blacklist to turn off any
-single patch.
+### MixinBooter config-level blacklist
 
-Edit `config/mixinbooter.cfg` and add the config file name to `blacklistedConfigs` in the `general` section:
+`compat.inventoryStackLimitBlacklist.modIds` selectively bypasses capacity expansion. MixinBooter's blacklist instead
+suppresses a whole Mixin config and may disable safety behavior in that config. Use it only when the entire config should
+be disabled; edit `config/mixinbooter.cfg` and add its file name to `blacklistedConfigs` in the `general` section:
 
 ```
 general {
@@ -179,12 +184,12 @@ general {
   exactly, so `enderio` or `EnderIO` will not match.
 - Restart the game or server afterwards: MixinBooter reads this config and applies the blacklist during the coremod
   phase, so a runtime reload such as `/stackupup reload` will neither apply nor undo it.
-- A blacklisted config is simply not loaded, so that mod's compatibility patch has no effect at all. Listing a config
-  that would not have been loaded anyway is harmless. Do not blacklist the core config
-  `mixins.stackupup.early.json`, as that also disables the base paths such as vanilla inventories.
+- Only the named config is suppressed; ordinary and capacity configs for the same mod are separate, so blacklisting
+  one does not automatically suppress the other. Restart after changing it. Do not blacklist
+  `mixins.stackupup.early.json` or `mixins.stackupup.baseline.early.json`, as that disables base or dedicated writer-safety paths.
 
-The 17 config file names currently available (taken from the `mixins.stackupup.late.*.json` files actually present in
-the jar):
+The source currently registers 19 ordinary late configs; separate capacity configs are registered and queued only
+when inventory expansion is enabled:
 
 ```
 mixins.stackupup.late.actuallyadditions.json
@@ -194,16 +199,18 @@ mixins.stackupup.late.brandonscore.json
 mixins.stackupup.late.colossalchests.json
 mixins.stackupup.late.cyclopscore.json
 mixins.stackupup.late.enderio.json
+mixins.stackupup.late.farmersdelight.json
 mixins.stackupup.late.gregtech.json
 mixins.stackupup.late.ic2.json
+mixins.stackupup.late.ic2classic.json
 mixins.stackupup.late.immersiveengineering.json
 mixins.stackupup.late.integrateddynamics.json
 mixins.stackupup.late.limelib.json
 mixins.stackupup.late.mantle.json
 mixins.stackupup.late.nuclearcraft.json
 mixins.stackupup.late.refinedstorage.json
-mixins.stackupup.late.techreborn.json
 mixins.stackupup.late.storagenetwork.json
+mixins.stackupup.late.techreborn.json
 ```
 
 For implementation notes, see [docs/StackUpUp-实现与兼容性说明.md](docs/StackUpUp-%E5%AE%9E%E7%8E%B0%E4%B8%8E%E5%85%BC%E5%AE%B9%E6%80%A7%E8%AF%B4%E6%98%8E.md) (Chinese).

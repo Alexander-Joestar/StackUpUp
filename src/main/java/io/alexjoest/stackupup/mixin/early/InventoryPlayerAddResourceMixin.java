@@ -16,9 +16,9 @@ abstract class InventoryPlayerAddResourceMixin {
             target = "Lnet/minecraft/entity/player/InventoryPlayer;getInventoryStackLimit()I"
         )
     )
-    private static int stackupup$useMergeLimit(int original, ItemStack existing, ItemStack incoming) {
-        // 静态 handler：(original, 目标方法参数...) 是 @ModifyExpressionValue 的参数序（MixinExtras 0.5.0）。
-        return StackLimitHooks.resolveInventoryClampLimit(incoming, original);
+    private int stackupup$useMergeLimit(int original, ItemStack existing, ItemStack incoming) {
+        // 非静态 handler 的 this 是真实 InventoryPlayer receiver，用于 owner 黑名单归属判断。
+        return StackLimitHooks.resolveInventoryClampLimit(incoming, (InventoryPlayer) (Object) this, original);
     }
 
     @ModifyExpressionValue(
@@ -39,7 +39,7 @@ abstract class InventoryPlayerAddResourceMixin {
                     target = "Lnet/minecraft/entity/player/InventoryPlayer;getInventoryStackLimit()I"
             )
     )
-    private static int stackupup$usePickedStackLimit(int original, int slot, ItemStack source) {
-        return StackLimitHooks.resolveInventoryClampLimit(source, original);
+    private int stackupup$usePickedStackLimit(int original, int slot, ItemStack source) {
+        return StackLimitHooks.resolveInventoryClampLimit(source, (InventoryPlayer) (Object) this, original);
     }
 }

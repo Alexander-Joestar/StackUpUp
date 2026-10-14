@@ -1,22 +1,19 @@
 package io.alexjoest.stackupup.mixin.late.ae2;
 
+import appeng.util.inv.IAEAppEngInventory;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import io.alexjoest.stackupup.StackLimitHooks;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Constant;
-import org.spongepowered.asm.mixin.injection.ModifyConstant;
 
 @Pseudo
 @Mixin(targets = "appeng.tile.inventory.AppEngInternalAEInventory", remap = false)
 abstract class AppEngInternalAEInventoryMixin {
     private static final int VANILLA_STACK_LIMIT = 64;
-
-    @ModifyConstant(method = "<init>*", constant = @Constant(intValue = 64), require = 0)
-    private static int replaceCompatibilityLimit(int original) {
-        return StackLimitHooks.getCompatibilityStackSize();
-    }
+    @Shadow @Final private IAEAppEngInventory te;
 
     @ModifyReturnValue(method = "getSlotLimit(I)I", at = @At("RETURN"), require = 0)
     private int replaceDefaultSlotLimit(int original) {
@@ -24,6 +21,6 @@ abstract class AppEngInternalAEInventoryMixin {
             || !getClass().getName().equals("appeng.tile.inventory.AppEngInternalAEInventory")) {
             return original;
         }
-        return StackLimitHooks.getCompatibilityStackSize();
+        return StackLimitHooks.getInventoryCompatibilityStackSize(this, this.te, original);
     }
 }

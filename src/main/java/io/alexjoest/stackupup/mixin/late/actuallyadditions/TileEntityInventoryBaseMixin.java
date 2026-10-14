@@ -11,6 +11,6 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
 abstract class TileEntityInventoryBaseMixin {
     @ModifyConstant(method = "getMaxStackSize", constant = @Constant(intValue = 64), require = 0)
     private int replaceCompatibilityLimit(int original) {
-        return StackLimitHooks.getCompatibilityStackSize();
+        return StackLimitHooks.getInventoryCompatibilityStackSize(this, original);
     }
 }

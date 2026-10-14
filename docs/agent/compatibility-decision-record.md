@@ -93,7 +93,7 @@ chunk 的 remainder 只能决定该 chunk 的返回值和进度，不能重新�
 - `VanillaInventoryLimitMixin.java:39-74` 属于常驻 baseline profile 中的 vanilla getter lane，目标表为 12 个 vanilla 类；仅在扩展开启、receiver 未命中黑名单且核心目标允许时修改 getter，OFF 时返回原值。表外目标不由该 Mixin 扩容；其源存在不代表所有 vanilla inventory 均支持大堆叠。
 - `src/main/java/io/alexjoest/stackupup/mixin/late/AppEngAdaptorItemHandlerMixin.java`（方案 A，2026-08-08）不再包含任何注入：类保留为 AE2 late config 入口保险丝，`AdaptorItemHandler#addItems` 的 `insertItem` 调用原样执行——热路径零分支、零分配（不用 `@WrapOperation` + `operation.call`：`Operation.call(Object...)` 是 varargs，javac 产物含 Object[] 与装箱分配，字节码证据见 §3.8）。项目不在该 AE2 调用点执行限流、回填或补偿；Forge remainder 契约仍是 API 边界，但 AE2 caller 是否正确处理 remainder 仍为 **无源码不可判定**，不能由通用 handler 探针替代。
 - `src/main/java/io/alexjoest/stackupup/core/Ae2ItemHandlerInsertLimiter.java`（方案 A 后）保留为纯工具类：只被 `Ae2ItemHandlerInsertLimiterTest` / `WrapperCapacityDiagnosticTest` 等测试护栏直接使用，已不在任何热路径上；对不在白名单的 handler 的 `min(64, getSlotLimit(slot))` 分片投喂逻辑原样保留（预先限幅而非写入后回填，§3.6 判定不变），原 ConservationAuditor 审计分支已随审计器整体移除（§3.8）。
-- `src/main/java/io/alexjoest/stackupup/mixin/late/AppEngPatternTermMixin.java:24-56` 只在 AE2 三类 pattern terminal 构造结束后经反射提升空白 pattern 输入槽 `patternSlotIN`；该项目代码不证明 AE2 其他槽或第三方内部写入容量，相关目标仍须按源码和运行证据审查。
+- AE2 PatternTerm 容量路径（原 `AppEngPatternTermMixin`）已移除并冻结，当前不支持；原路径只在 AE2 三类 pattern terminal 构造结束后经反射尝试提升空白 pattern 输入槽 `patternSlotIN`；该项目代码不证明 AE2 其他槽或第三方内部写入容量，相关目标仍须按源码和运行证据审查。
 - `StackLimitHooks.resolveInventoryClampLimit` 当前定义于 `src/main/kotlin/io/alexjoest/stackupup/StackLimitHooks.kt:390-400`；`InventoryPlayerAddResourceMixin.java:19-21,42-44` 的两个 `InventoryPlayer` clamp 调用点仍以 `@ModifyExpressionValue` 接入。T4a 删除的是旧 `VanillaInventoryWriteMixin` 通道；当前 `resolveInventoryWriteLimit` 仍定义于 `StackLimitHooks.kt:307-335`，并由常驻 baseline `InventoryWriteLimitMixin.java:14-30` 在 `TileEntityLockableLoot#setInventorySlotContents` 写入前调用。它受 native-64 writer capability receiver 集约束，不是通用未知库存扩容器。
 
 ## 3. Forge 与 vanilla 写入事实
@@ -344,7 +344,7 @@ Forge 自身 wrapper 和 vanilla 反编译源码不属于上述缺失项；它�
 
 `src/main/java/io/alexjoest/stackupup/core/Ae2ItemHandlerInsertLimiter.java` 保留为纯工具类（仅测试护栏直接使用，不在热路径上）：对超出 cap 的 `simulate=false` 输入把输入预先拆成多个独立 chunk，每个 chunk 都是一次不超过 cap 的真实 `insertItem`，只有该 chunk 的 remainder 或零进度会停止后续 chunk。这是预先限幅而非写入后回填（§3.6 判定不变）；该循环已不处于任何热路径。
 
-AE2 `AdaptorItemHandler`、三个 pattern terminal 目标及其包裹 handler 的第三方内部实现，在本记录中均为 **无源码不可判定**。项目自己的 `AppEngPatternTermMixin.java:15-29` 只证明它尝试提升空白 pattern 输入槽 `patternSlotIN`，不证明其他槽或 AE2 内部写入容量。`DevAutomationServerDriver#probeBoundaryLimit`（源码：`DevAutomationServerDriver.kt:248-274`）仅构造一个单槽 Forge `ItemStackHandler` 做通用边界探针，不调用 AE2 `AdaptorItemHandler`，因此不能证明 AE2 caller 正确处理 remainder；AE2 内部 remainder 行为仍 UNKNOWN。
+AE2 `AdaptorItemHandler`、三个 pattern terminal 目标及其包裹 handler 的第三方内部实现，在本记录中均为 **无源码不可判定**。项目自己的 PatternTerm 容量路径（原 `AppEngPatternTermMixin.java:15-29`）已移除并冻结，当前不支持；原路径只证明它尝试提升空白 pattern 输入槽 `patternSlotIN`，不证明其他槽或 AE2 内部写入容量。`DevAutomationServerDriver#probeBoundaryLimit`（源码：`DevAutomationServerDriver.kt:248-274`）仅构造一个单槽 Forge `ItemStackHandler` 做通用边界探针，不调用 AE2 `AdaptorItemHandler`，因此不能证明 AE2 caller 正确处理 remainder；AE2 内部 remainder 行为仍 UNKNOWN。
 ## 6. 拟议任务与准入边界
 
 ### T3：Forge handler 目标收敛

@@ -11,7 +11,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Narrow compatibility transformer for concrete classes that implement IInventory.
+ * Narrow compatibility transformer for third-party concrete classes that implement IInventory.
  *
  * <p>Only getInventoryStackLimit()I (and its 1.12 SRG name) is wrapped. Hierarchy metadata is read as
  * bytes; no target class is resolved or initialized, and no Forge or configuration class is touched
@@ -20,7 +20,7 @@ import java.util.Set;
 public final class InventoryStackLimitTransformer implements IClassTransformer {
     private static final String HOOK_OWNER = "io/alexjoest/stackupup/core/InventoryStackLimitHook";
     private static final String HOOK_NAME = "resolveInventoryStackLimit";
-    private static final String HOOK_DESCRIPTOR = "(Ljava/lang/String;I)I";
+    private static final String HOOK_DESCRIPTOR = "(Ljava/lang/Class;I)I";
     private static final String INVENTORY_METHOD_DESCRIPTOR = "()I";
     private final InventoryClassHierarchyRepository hierarchyRepository;
 
@@ -45,6 +45,7 @@ public final class InventoryStackLimitTransformer implements IClassTransformer {
             ClassReader reader = new ClassReader(basicClass);
             InventoryClassHierarchyRepository.ClassMetadata metadata = readMetadata(reader);
             if (metadata == null
+                || metadata.name.startsWith("net/minecraft/")
                 || (metadata.access & (Opcodes.ACC_INTERFACE | Opcodes.ACC_ABSTRACT)) != 0
                 || !hierarchyRepository.implementsInventory(metadata)) {
                 return basicClass;
@@ -137,13 +138,6 @@ public final class InventoryStackLimitTransformer implements IClassTransformer {
             "java/lang/Object",
             "getClass",
             "()Ljava/lang/Class;",
-            false
-        );
-        visitor.visitMethodInsn(
-            Opcodes.INVOKEVIRTUAL,
-            "java/lang/Class",
-            "getName",
-            "()Ljava/lang/String;",
             false
         );
         visitor.visitInsn(Opcodes.SWAP);

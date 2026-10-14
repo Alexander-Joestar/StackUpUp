@@ -9,8 +9,19 @@ import org.junit.jupiter.api.Test
 class DevEquipmentProbeRoutingTest {
     @Test
     fun `equipment focuses are explicit and excluded from default compat matrix`() {
-        assertEquals(setOf(CORE_INVENTORY_FOCUS, EQUIPMENT_OFF_FOCUS, EQUIPMENT_BLACKLIST_FOCUS), focusedProbeIds)
-        for (focus in listOf(EQUIPMENT_OFF_FOCUS, EQUIPMENT_BLACKLIST_FOCUS)) {
+        assertEquals(
+            setOf(
+                CORE_INVENTORY_FOCUS,
+                EQUIPMENT_OFF_FOCUS,
+                EQUIPMENT_OFF_BLACKLIST_FOCUS,
+                EQUIPMENT_ON_FOCUS,
+                EQUIPMENT_BLACKLIST_FOCUS,
+                AE2_OWNER_OFF_FOCUS,
+                AE2_OWNER_BLACKLIST_FOCUS,
+            ),
+            focusedProbeIds,
+        )
+        for (focus in listOf(EQUIPMENT_OFF_FOCUS, EQUIPMENT_OFF_BLACKLIST_FOCUS, EQUIPMENT_ON_FOCUS, EQUIPMENT_BLACKLIST_FOCUS)) {
             validateFocusedRequest(focus, false, emptySet())
             assertEquals(focus, focusedProbe(focus).id)
             assertFalse(focus in DevCompatProbeRunner.probeIds())

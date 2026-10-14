@@ -49,7 +49,8 @@ class CapacityGetterGateAuditTest {
                 Charsets.UTF_8,
             )
             assertTrue(
-                source.contains("StackLimitHooks.getInventoryCompatibilityStackSize("),
+                source.contains("StackLimitHooks.getInventoryCompatibilityStackSize(") ||
+                    source.contains("StackLimitHooks.getCoreInventoryStackSize("),
                 "$relativePath must use the fail-closed capacity gate",
             )
             assertFalse(

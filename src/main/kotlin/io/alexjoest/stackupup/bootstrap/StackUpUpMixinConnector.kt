@@ -39,27 +39,27 @@ class StackUpUpMixinConnector : IMixinConnector {
 
     override fun connect() {
         val policy = InventoryExpansionStartupConfig.load()
-        InventoryStackLimitHook.configureExpansionEnabled(policy.capacityAllowed)
+        InventoryStackLimitHook.configureExpansionEnabled(policy.enabled)
         if (policy.enabled && policy.modIds.isNotEmpty()) {
-            logger.warn(
-                "Inventory capacity expansion is disabled at startup because blacklist modIds cannot be " +
-                    "resolved to a complete, reliable class ownership snapshot before mixin registration: {}",
+            logger.info(
+                "Inventory capacity expansion enabled; blacklist modIds bypass matching owned-package inventories only: {}",
                 policy.modIds.joinToString(", "),
             )
         }
         val conflicts = StackUpUpCore.ensureConflictState()
         connectEarly(conflicts)
-        connectLate(conflicts)
+        connectLate(conflicts, blacklistedModIds = policy.modIds.toSet())
     }
 
-    private fun connectEarly(conflicts: List<String>) {
+    internal fun connectEarly(conflicts: List<String>, queueConfiguration: (String) -> Unit = { config -> Mixins.addConfiguration(config) }) {
         if (!shouldQueueEarly(conflicts)) {
             return
         }
         try {
-            Mixins.addConfiguration(StackUpUpIds.EARLY_MIXIN_CONFIG)
+            queueConfiguration(StackUpUpIds.EARLY_MIXIN_CONFIG)
+            queueConfiguration("mixins.stackupup.baseline.early.json")
             if (InventoryStackLimitHook.isExpansionEnabled()) {
-                Mixins.addConfiguration("mixins.stackupup.capacity.early.json")
+                queueConfiguration("mixins.stackupup.capacity.early.json")
             }
         } catch (e: Exception) {
             logger.error("Early mixin loading failed; early mixins are disabled (late mixins continue)", e)
@@ -69,6 +69,7 @@ class StackUpUpMixinConnector : IMixinConnector {
     internal fun connectLate(
         conflicts: List<String>,
         isModPresent: (String) -> Boolean = { modId -> isModPresentForConnector(modId) },
+        blacklistedModIds: Set<String> = emptySet(),
         queueConfiguration: (String) -> Unit = { config -> Mixins.addConfiguration(config) },
     ) {
         for ((config) in modules) {
@@ -86,7 +87,11 @@ class StackUpUpMixinConnector : IMixinConnector {
             }
             return
         }
-        for ((config) in capacityModules) {
+        for ((config, modId) in capacityModules) {
+            if (modId in blacklistedModIds) {
+                logger.info("Skipping capacity mixin config '{}': mod '{}' is blacklisted", config, modId)
+                continue
+            }
             if (!shouldQueue(config, isModPresent, capacityModules)) {
                 continue
             }

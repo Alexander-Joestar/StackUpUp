@@ -49,6 +49,14 @@ class InventoryStackLimitTransformerTest {
     }
 
     @Test
+    fun nativeInventories_useOnlyExplicitCoreMixinPolicy() {
+        for (name in listOf("net.minecraft.entity.player.InventoryPlayer", "net.minecraft.inventory.InventoryLargeChest")) {
+            val original = inventoryClassBytes(name, withGetter = true, interfaces = arrayOf("net/minecraft/inventory/IInventory"))
+            assertArrayEquals(original, transformer.transform(name, name, original))
+        }
+    }
+
+    @Test
     fun directConcreteInventory_shouldWrapOnlyInventoryGetter() {
         val original = inventoryClassBytes(
             className = "example.DirectInventory",
@@ -244,16 +252,12 @@ class InventoryStackLimitTransformerTest {
     }
 
     @Test
-    fun runtimeBlacklistDisable_shouldNotBeReenabledBySetter() {
-        InventoryStackLimitHook.resetForTesting()
-        InventoryStackLimitHook.configureExpansionEnabled(true)
-        InventoryStackLimitHook.prepare(256, null)
-        InventoryStackLimitHook.disableExpansionForRuntimeBlacklist()
+    fun selectedBlacklist_shouldNotDisableOtherInventories() {
+        InventoryStackLimitHook.prepare(256, arrayOf("bad.mod"))
 
-        InventoryStackLimitHook.configureExpansionEnabled(true)
-
-        assertEquals(64, InventoryStackLimitHook.resolveInventoryStackLimit("example.Inventory", 64))
-        assertFalse(InventoryStackLimitHook.isExpansionEnabled())
+        assertEquals(64, InventoryStackLimitHook.resolveInventoryStackLimit("bad.mod.Inventory", 64))
+        assertEquals(256, InventoryStackLimitHook.resolveInventoryStackLimit("example.Inventory", 64))
+        assertTrue(InventoryStackLimitHook.isExpansionEnabled())
     }
 
     @Test
@@ -383,7 +387,7 @@ class InventoryStackLimitTransformerTest {
                             if (opcode == Opcodes.INVOKESTATIC &&
                                 owner == "io/alexjoest/stackupup/core/InventoryStackLimitHook" &&
                                 methodName == "resolveInventoryStackLimit" &&
-                                methodDescriptor == "(Ljava/lang/String;I)I"
+                                methodDescriptor == "(Ljava/lang/Class;I)I"
                             ) {
                                 count++
                             }

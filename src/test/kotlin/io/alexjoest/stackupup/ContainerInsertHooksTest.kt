@@ -1,5 +1,7 @@
 package io.alexjoest.stackupup
 
+import io.alexjoest.stackupup.core.InventoryStackLimitHook
+import io.alexjoest.stackupup.core.resetInventoryExpansionForTesting
 import net.minecraft.entity.player.EntityPlayer
 import net.minecraft.init.Bootstrap
 import net.minecraft.inventory.Container
@@ -8,18 +10,82 @@ import net.minecraft.inventory.Slot
 import net.minecraft.item.Item
 import net.minecraft.item.ItemStack
 import net.minecraft.util.ResourceLocation
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
+/** Hook-adapted tests use real Container.mergeItemStack and inventory setters; Mixin launch coverage lives in dev probes. */
 class ContainerInsertHooksTest {
+    private var previousMaxStackSize = 64
+
+    @BeforeEach
+    fun enableGenericCapacityForHookTests() {
+        previousMaxStackSize = StackUpUpConfig.maxStackSize
+        resetInventoryExpansionForTesting()
+        InventoryStackLimitHook.configureExpansionEnabled(true)
+    }
+
+    @AfterEach
+    fun resetCapacityPolicy() {
+        StackUpUpConfig.maxStackSize = previousMaxStackSize
+        resetInventoryExpansionForTesting()
+    }
+
     private class MergeContainer : Container() {
         override fun canInteractWith(player: EntityPlayer): Boolean = true
 
         fun add(slot: Slot): Slot = addSlotToContainer(slot)
 
         fun merge(stack: ItemStack): Boolean = mergeItemStack(stack, 0, 1, false)
+    }
+
+    private class TestMerchant : net.minecraft.entity.IMerchant {
+        override fun setCustomer(player: EntityPlayer?) = Unit
+
+        override fun getCustomer(): EntityPlayer? = null
+
+        override fun getRecipes(player: EntityPlayer?): net.minecraft.village.MerchantRecipeList? = null
+
+        override fun setRecipes(recipeList: net.minecraft.village.MerchantRecipeList?) = Unit
+
+        override fun useRecipe(recipe: net.minecraft.village.MerchantRecipe) = Unit
+
+        override fun verifySellingItem(stack: ItemStack) = Unit
+
+        override fun getDisplayName(): net.minecraft.util.text.ITextComponent = net.minecraft.util.text.TextComponentString("test merchant")
+
+        override fun getWorld(): net.minecraft.world.World? = null
+
+        override fun getPos(): net.minecraft.util.math.BlockPos = net.minecraft.util.math.BlockPos.ORIGIN
+    }
+
+    private fun prepareInventoryPolicy(maxStackSize: Int, expansionEnabled: Boolean, blacklist: Array<String>) {
+        StackUpUpConfig.maxStackSize = maxStackSize
+        resetInventoryExpansionForTesting()
+        InventoryStackLimitHook.configureExpansionEnabled(expansionEnabled)
+        InventoryStackLimitHook.prepare(maxStackSize, blacklist)
+    }
+
+    private fun assertEmptySlotMergeConserves(inventory: net.minecraft.inventory.IInventory, slotIndex: Int, itemId: String, expectedStored: Int) {
+        val offeredCount = 129
+        val offered = ItemStack(createItem(128, itemId), offeredCount, 0)
+        val slot = object : Slot(inventory, slotIndex, 0, 0) {
+            override fun getSlotStackLimit(): Int = ContainerInsertHooks.resolveMergeSlotLimit(this, offered, super.getSlotStackLimit())
+        }
+        val container = MergeContainer()
+        container.add(slot)
+
+        assertTrue(inventory.getStackInSlot(slotIndex).isEmpty)
+        assertEquals(expectedStored, slot.slotStackLimit)
+        assertTrue(container.merge(offered))
+
+        val stored = inventory.getStackInSlot(slotIndex).count
+        assertEquals(expectedStored, stored)
+        assertEquals(offeredCount - expectedStored, offered.count)
+        assertEquals(offeredCount, stored + offered.count, "real empty-slot merge must conserve the offered stack")
     }
 
     companion object {
@@ -39,7 +105,7 @@ class ContainerInsertHooksTest {
     }
 
     @Test
-    fun unadaptedInventory_shouldClampLimitTo64WhenEmpty() {
+    fun unknownNative64Inventory_shouldStayCappedWhenEmpty() {
         val item = createItem(10000, "unadapted_empty_item")
         val inventory = createInventory(64)
         val slot = Slot(inventory, 0, 0, 0)
@@ -51,7 +117,7 @@ class ContainerInsertHooksTest {
     }
 
     @Test
-    fun unadaptedInventory_shouldClampLimitTo64WhenNonEmpty() {
+    fun unknownNative64Inventory_shouldStayCappedWhenNonEmpty() {
         val item = createItem(10000, "unadapted_non_empty_item")
         val inventory = createInventory(64)
         val slot = Slot(inventory, 0, 0, 0)
@@ -107,6 +173,61 @@ class ContainerInsertHooksTest {
         assertEquals(128, stored, "真实 Container/Slot 写入应受 inventory 上限约束")
         assertEquals(offeredCount, stored + remainder, "真实 Container/Slot 写入必须守恒")
         assertEquals(72, remainder)
+    }
+
+    @Test
+    fun preparedExactInventoryBasic_offDefault64_shouldConserveEmptySlotMerge() {
+        prepareInventoryPolicy(64, expansionEnabled = false, blacklist = emptyArray())
+        val inventory = InventoryBasic("prepared-off", false, 1)
+
+        assertEquals(InventoryBasic::class.java, inventory.javaClass)
+        assertEquals(64, inventory.inventoryStackLimit)
+        assertEmptySlotMergeConserves(inventory, 0, "prepared_basic_off", expectedStored = 64)
+    }
+
+    @Test
+    fun preparedExactInventoryBasic_onDefault64_shouldConserveEmptySlotMerge() {
+        prepareInventoryPolicy(64, expansionEnabled = true, blacklist = emptyArray())
+        val inventory = InventoryBasic("prepared-on-64", false, 1)
+
+        assertEquals(InventoryBasic::class.java, inventory.javaClass)
+        assertEquals(64, inventory.inventoryStackLimit)
+        assertEmptySlotMergeConserves(inventory, 0, "prepared_basic_on_64", expectedStored = 64)
+    }
+
+    @Test
+    fun preparedExactInventoryBasic_onUnrelatedBlacklist_shouldConserveEmptySlotMerge() {
+        prepareInventoryPolicy(64, expansionEnabled = true, blacklist = arrayOf("io.alexjoest.stackupup.dev"))
+        val inventory = InventoryBasic("prepared-unlisted", false, 1)
+
+        assertEquals(InventoryBasic::class.java, inventory.javaClass)
+        assertEquals(64, inventory.inventoryStackLimit)
+        assertEquals(false, StackLimitHooks.shouldBypassInventoryStackLimit(inventory))
+        assertEmptySlotMergeConserves(inventory, 0, "prepared_basic_unlisted", expectedStored = 64)
+    }
+
+    @Test
+    fun preparedInventoryBasic_actualGetterAbove64_shouldConserveEmptySlotMerge() {
+        prepareInventoryPolicy(256, expansionEnabled = true, blacklist = emptyArray())
+        val inventory = object : InventoryBasic("prepared-raised-getter", false, 1) {
+            override fun getInventoryStackLimit(): Int = 128
+        }
+
+        assertEquals(128, inventory.inventoryStackLimit)
+        assertEmptySlotMergeConserves(inventory, 0, "prepared_basic_getter_128", expectedStored = 128)
+    }
+
+    @Test
+    fun preparedNative64FurnaceHopperAndMerchant_shouldConserveEmptySlotMerges() {
+        prepareInventoryPolicy(256, expansionEnabled = true, blacklist = emptyArray())
+        assertEmptySlotMergeConserves(net.minecraft.tileentity.TileEntityFurnace(), 0, "prepared_furnace_64", expectedStored = 64)
+        assertEmptySlotMergeConserves(net.minecraft.tileentity.TileEntityHopper(), 0, "prepared_hopper_64", expectedStored = 64)
+        assertEmptySlotMergeConserves(
+            net.minecraft.inventory.InventoryMerchant(null, TestMerchant()),
+            0,
+            "prepared_merchant_64",
+            expectedStored = 64,
+        )
     }
 
     @Test

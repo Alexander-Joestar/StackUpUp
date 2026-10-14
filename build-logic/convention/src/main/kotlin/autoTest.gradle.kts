@@ -70,7 +70,18 @@ fun Project.deriveAutoTestRequest(): AutoTestRequest {
 val autoTestRequest: AutoTestRequest = deriveAutoTestRequest()
 if (autoTestRequest.focus.isNotEmpty()) {
     require(autoTestRequest.enabled && autoTestRequest.mode == "server") { "AutoTestFocus requires enabled server automation" }
-    require(autoTestRequest.focus in setOf("core_inventory_off", "equipment_inventory_off", "equipment_inventory_blacklist")) {
+    require(
+        autoTestRequest.focus in
+            setOf(
+                "core_inventory_off",
+                "equipment_inventory_off",
+                "equipment_inventory_off_blacklist",
+                "equipment_inventory_on",
+                "equipment_inventory_blacklist",
+                "ae2_owner_off",
+                "ae2_owner_blacklist",
+            ),
+    ) {
         "Unknown AutoTestFocus: ${autoTestRequest.focus}"
     }
     require(autoTestRequest.matrix == "false") { "AutoTestFocus cannot be combined with Matrix" }
@@ -153,7 +164,10 @@ fun autoTestServerPropertiesHeaderLines(
 
 fun focusedAutoTestConfigText(focus: String): String =
     buildString {
-        val expansionEnabled = focus == "equipment_inventory_blacklist"
+        val blacklistEnabled = focus.endsWith("_blacklist")
+        val expansionEnabled =
+            focus != "equipment_inventory_off_blacklist" &&
+                (blacklistEnabled || focus == "equipment_inventory_on")
         append("general {\n")
         append("    I:maxStackSize=256\n")
         append("}\n")
@@ -166,7 +180,7 @@ fun focusedAutoTestConfigText(focus: String): String =
         append("    }\n")
         append("    inventorystacklimitblacklist {\n")
         append("        S:modIds <\n")
-        if (expansionEnabled) {
+        if (blacklistEnabled) {
             append("            $modId\n")
         }
         append("        >\n")
@@ -211,11 +225,31 @@ val verifyFocusedAutoTestConfigRendering =
             val onPayload = renderedBlacklistPayload(onLines)
             check(offPayload.isEmpty()) { "OFF focused config emitted a blacklist payload: $offPayload" }
             check(onPayload == listOf(modId)) { "ON focused config did not emit exactly one self blacklist payload: $onPayload expected=${listOf(modId)}" }
-            val existing = verificationDirectory.resolve("existing/config/stackupup.cfg")
-            existing.parentFile.mkdirs()
-            existing.writeText("existing-config\n", Charsets.UTF_8)
-            check(!writeFocusedAutoTestConfigIfAbsent(existing, "equipment_inventory_off"))
-            check(existing.readText(Charsets.UTF_8) == "existing-config\n")
+            for (focus in listOf(
+                "core_inventory_off",
+                "equipment_inventory_off",
+                "equipment_inventory_off_blacklist",
+                "equipment_inventory_on",
+                "equipment_inventory_blacklist",
+                "ae2_owner_off",
+                "ae2_owner_blacklist",
+            )) {
+                val rendered = verificationDirectory.resolve("$focus/config/stackupup.cfg")
+                check(writeFocusedAutoTestConfigIfAbsent(rendered, focus))
+                val lines = rendered.readLines(Charsets.UTF_8)
+                val blacklisted = focus.endsWith("_blacklist")
+                val enabled =
+                    focus != "equipment_inventory_off_blacklist" &&
+                        (blacklisted || focus == "equipment_inventory_on")
+                check(renderedBlacklistPayload(lines) == if (blacklisted) listOf(modId) else emptyList<String>()) { "$focus blacklist payload mismatch" }
+                check("        B:enabled=$enabled" in lines) { "$focus expansion mismatch" }
+                val existing = verificationDirectory.resolve("$focus/existing/stackupup.cfg")
+                existing.parentFile.mkdirs()
+                val original = "existing-config\r\nutf8-既有配置\n".toByteArray(Charsets.UTF_8)
+                existing.writeBytes(original)
+                check(!writeFocusedAutoTestConfigIfAbsent(existing, focus))
+                check(existing.readBytes().contentEquals(original)) { "$focus overwrote an existing config" }
+            }
         }
     }
 

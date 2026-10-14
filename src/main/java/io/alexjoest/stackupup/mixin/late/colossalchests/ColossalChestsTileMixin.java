@@ -36,6 +36,6 @@ abstract class ColossalChestsTileMixin {
     )
     private int stackupup$expandInventoryStackLimit(int original) {
         // 两方法内 64 字面量全部是栈上限第三参（源码逐行核对），无条件替换为兼容堆叠上限。
-        return StackLimitHooks.getInventoryCompatibilityStackSize(original);
+        return StackLimitHooks.getInventoryCompatibilityStackSize(this, original);
     }
 }

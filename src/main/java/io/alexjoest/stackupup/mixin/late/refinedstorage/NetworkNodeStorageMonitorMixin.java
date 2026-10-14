@@ -11,6 +11,6 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
 abstract class NetworkNodeStorageMonitorMixin {
     @ModifyConstant(method = "extract", constant = @Constant(intValue = 64), require = 0)
     private int stackupupReplaceExtractLimit(int original) {
-        return StackLimitHooks.getInventoryCompatibilityStackSize(original);
+        return StackLimitHooks.getInventoryCompatibilityStackSize(this, original);
     }
 }

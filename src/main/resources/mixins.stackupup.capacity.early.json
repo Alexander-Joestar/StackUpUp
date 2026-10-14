@@ -8,12 +8,7 @@
   "mixins": [
     "CommandGiveMixin",
     "CommandReplaceItemMixin",
-    "ContainerMixin",
     "ForgeItemHandlerLimitMixin",
-    "InventoryPlayerAddResourceMixin",
-    "ServerRecipeBookHelperMixin",
-    "SlotItemHandlerMixin",
-    "SlotLimitMixin",
-    "VanillaInventoryLimitMixin"
+    "ServerRecipeBookHelperMixin"
   ]
 }

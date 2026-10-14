@@ -79,7 +79,9 @@ object StackUpUpConfig {
 
     class InventoryExpansion {
         @JvmField
-        @Config.Comment("Enable compatibility expansion of inventory capacities. Changes require a game restart.")
+        @Config.Comment(
+            "Enable generic third-party inventory and optional capacity compatibility expansion. Vanilla player/container stack-rule support remains enabled. Changes require a game restart.",
+        )
         @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compat.inventoryExpansion.enabled.name")
         @Config.RequiresMcRestart
         var enabled: Boolean = false
@@ -88,9 +90,10 @@ object StackUpUpConfig {
     class InventoryStackLimitBlacklist {
         @JvmField
         @Config.Comment(
-            "Any non-empty list of Forge mod IDs disables all inventory capacity compatibility expansion. Changes take effect fail-closed and require a restart to re-enable expansion.",
+            "Forge mod IDs whose actual owned-package receivers or supported public owners bypass capacity expansion. Empty is a no-op; unlisted mods remain eligible. Superclass/interface ownership alone does not exclude addons. Shared creator, private delegate and receiverless constructor ownership remain UNKNOWN. Changes require a restart.",
         )
         @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compat.inventoryStackLimitBlacklist.modIds.name")
+        @Config.RequiresMcRestart
         var modIds: Array<String> = emptyArray()
     }
 

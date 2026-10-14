@@ -297,9 +297,10 @@ class WrapperCapacityDiagnosticTest {
     fun forgeItemHandlerLimitMixin_shouldNotTargetForwardingWrappers() {
         val bytes = mixinClassBytes("io.alexjoest.stackupup.mixin.early.ForgeItemHandlerLimitMixin")
 
-        for (kept in listOf("ItemStackHandler", "EntityEquipmentInvWrapper")) {
-            assertTrue(bytes.containsAscii(kept), "自洽目标 $kept 应保留在 mixin 目标中")
-        }
+        assertTrue(bytes.containsAscii("ItemStackHandler"), "ItemStackHandler 应保留在 opt-in mixin 中")
+        val equipmentBytes = mixinClassBytes("io.alexjoest.stackupup.mixin.early.EntityEquipmentInventoryLimitMixin")
+        assertTrue(equipmentBytes.containsAscii("EntityEquipmentInvWrapper"), "设备 wrapper 必须按真实实体判定")
+        assertTrue(equipmentBytes.containsAscii("entity"), "设备 wrapper 必须使用实体 shadow")
         for (removed in listOf(
             "wrapper/InvWrapper",
             "wrapper/SidedInvWrapper",

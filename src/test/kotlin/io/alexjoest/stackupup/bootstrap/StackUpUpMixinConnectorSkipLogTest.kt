@@ -186,6 +186,25 @@ class StackUpUpMixinConnectorSkipLogTest {
     }
 
     @Test
+    fun connectLate_shouldSkipOnlyListedCapacityModulesAndKeepNonCapacityModules() {
+        val connector = StackUpUpMixinConnector()
+        InventoryStackLimitHook.configureExpansionEnabled(true)
+        connector.capacityModules.forEach { listedModule ->
+            val queued = mutableListOf<String>()
+            val messages = capturedLogs {
+                connector.connectLate(emptyList(), { true }, setOf(listedModule.modId)) { queued += it }
+            }
+
+            assertEquals(
+                connector.modules.map { it.config } +
+                    connector.capacityModules.filter { it.modId != listedModule.modId }.map { it.config },
+                queued,
+            )
+            assertTrue(messages.any { it.contains(listedModule.config) && it.contains("blacklisted") })
+        }
+    }
+
+    @Test
     fun connectLate_shouldNotQueueCapacityWhenExpansionIsDisabled() {
         val connector = StackUpUpMixinConnector()
         val queued = mutableListOf<String>()
@@ -267,6 +286,14 @@ class StackUpUpMixinConnectorSkipLogTest {
         assertTrue(source.contains("shouldQueue(config, isModPresent, capacityModules)"), "capacity 配置必须使用独立 registry")
         assertTrue(source.contains("ModDiscoverer.isModPresent"), "非 ae2 模块必须保留 ModDiscoverer probe")
         assertTrue(source.contains("Mixins.addConfiguration"), "生产路径必须保留条件配置入队")
+    }
+
+    @Test
+    fun offStartup_stillQueuesCoreBaselineButNotGenericExpansion() {
+        InventoryStackLimitHook.configureExpansionEnabled(false)
+        val queued = mutableListOf<String>()
+        StackUpUpMixinConnector().connectEarly(emptyList()) { queued += it }
+        assertEquals(listOf(StackUpUpIds.EARLY_MIXIN_CONFIG, "mixins.stackupup.baseline.early.json"), queued)
     }
 
     @Test

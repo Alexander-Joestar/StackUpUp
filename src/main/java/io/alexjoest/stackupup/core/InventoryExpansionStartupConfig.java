@@ -113,7 +113,7 @@ public final class InventoryExpansionStartupConfig {
         private StartupPolicy(boolean enabled, List<String> modIds) {
             this.enabled = enabled;
             this.modIds = Collections.unmodifiableList(new ArrayList<>(modIds));
-            this.capacityAllowed = enabled && modIds.isEmpty();
+            this.capacityAllowed = enabled;
         }
     }
 }

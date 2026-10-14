@@ -35,6 +35,6 @@ abstract class IEMachineSlotLimitMixin {
 
     @ModifyReturnValue(method = "getSlotLimit", at = @At("RETURN"), require = 0)
     private int stackupup$expandSlotLimit(int original) {
-        return StackLimitHooks.getInventoryCompatibilityStackSize(original);
+        return StackLimitHooks.getInventoryCompatibilityStackSize(this, original);
     }
 }

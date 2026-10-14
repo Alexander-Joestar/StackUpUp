@@ -21,10 +21,7 @@ public final class InventoryStackLimitHook {
     private InventoryStackLimitHook() {
     }
 
-    /**
-     * Publishes the startup expansion decision. The first decision is frozen so a default-off
-     * startup or a runtime blacklist disable cannot be reopened by a later caller.
-     */
+    /** Publishes the startup-only compatibility expansion decision. */
     public static synchronized void configureExpansionEnabled(boolean enabled) {
         if (expansionDecisionFrozen && enabled) {
             return;
@@ -35,11 +32,6 @@ public final class InventoryStackLimitHook {
 
     public static boolean isExpansionEnabled() {
         return expansionEnabled;
-    }
-
-    public static synchronized void disableExpansionForRuntimeBlacklist() {
-        expansionEnabled = false;
-        expansionDecisionFrozen = true;
     }
 
     public static void prepare(int compatibilityLimit, String[] blacklistedPackages) {
@@ -57,19 +49,10 @@ public final class InventoryStackLimitHook {
         state = new State(true, compatibilityLimit, previous.blacklistedPackages);
     }
 
-    public static void setBlacklistedPackages(String[] blacklistedPackages) {
-        State previous = state;
-        state = State.prepared(previous.compatibilityLimit, blacklistedPackages);
-    }
-
     public static boolean isPrepared() {
         return state.prepared;
     }
 
-    /**
-     * Called from transformed bytecode. The class name is passed as a string deliberately so
-     * resolving a transformed inventory never loads the target class or consults Forge.
-     */
     public static int resolveInventoryStackLimit(String className, int original) {
         State current = state;
         if (!expansionEnabled || !current.prepared || original != VANILLA_STACK_LIMIT
@@ -77,6 +60,19 @@ public final class InventoryStackLimitHook {
             return original;
         }
         return current.compatibilityLimit;
+    }
+
+    public static int resolveInventoryStackLimit(Class<?> receiverClass, int original) {
+        State current = state;
+        if (!expansionEnabled || !current.prepared || original != VANILLA_STACK_LIMIT
+            || receiverClass == null || current.bypasses(receiverClass)) {
+            return original;
+        }
+        return current.compatibilityLimit;
+    }
+
+    public static boolean isBlacklisted(Class<?> receiverClass) {
+        return state.bypasses(receiverClass);
     }
 
     static synchronized void resetForTesting() {
@@ -89,6 +85,16 @@ public final class InventoryStackLimitHook {
         private final boolean prepared;
         private final int compatibilityLimit;
         private final Set<String> blacklistedPackages;
+        private final ClassValue<Boolean> classResults = new ClassValue<Boolean>() {
+            @Override
+            protected Boolean computeValue(Class<?> receiverClass) {
+                return matches(receiverClass.getName());
+            }
+        };
+
+        private boolean bypasses(Class<?> receiverClass) {
+            return receiverClass != null && classResults.get(receiverClass);
+        }
 
         private State(boolean prepared, int compatibilityLimit, Set<String> blacklistedPackages) {
             this.prepared = prepared;

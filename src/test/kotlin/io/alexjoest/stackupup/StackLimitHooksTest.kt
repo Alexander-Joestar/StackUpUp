@@ -1,5 +1,7 @@
 package io.alexjoest.stackupup
 
+import io.alexjoest.stackupup.core.InventoryStackLimitHook
+import io.alexjoest.stackupup.core.resetInventoryExpansionForTesting
 import io.alexjoest.stackupup.limit.GregTechMaterialResolver
 import io.alexjoest.stackupup.limit.OreDictIndex
 import io.alexjoest.stackupup.limit.RuleRuntime
@@ -28,6 +30,8 @@ class StackLimitHooksTest {
     fun setUpMaxStackSize() {
         previousMaxStackSize = StackUpUpConfig.maxStackSize
         StackUpUpConfig.maxStackSize = 10240
+        resetInventoryExpansionForTesting()
+        InventoryStackLimitHook.configureExpansionEnabled(false)
     }
 
     @AfterEach
@@ -36,6 +40,7 @@ class StackLimitHooksTest {
         RuleRuntime.replaceSnapshot(RuleSnapshot(version = 0L, rules = emptyList()))
         RuleRuntime.replaceOreDictIndex(OreDictIndex.fromStackLoader { emptySet() })
         GregTechMaterialResolver.resetResolverForTesting()
+        resetInventoryExpansionForTesting()
     }
 
     @Test
@@ -295,19 +300,31 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun emptyContainerMergeSlot_shouldClampDeclaredLimitToInventoryCapacity() {
+    fun emptyUnknownInventoryMergeSlot_shouldKeepNativeLimitWhenExpansionIsOff() {
         Bootstrap.register()
         val item = object : Item() {
             override fun getItemStackLimit(stack: ItemStack): Int = 10240
         }.setRegistryName(ResourceLocation("stackupup_test", "dummy_item"))
-        val inventory = object : InventoryBasic("test", false, 1) {
-            override fun getInventoryStackLimit(): Int = 64
-        }
+        val inventory = InventoryBasic("test", false, 1)
         val slot = Slot(inventory, 0, 0, 0)
 
-        val result = ContainerInsertHooks.resolveMergeSlotLimit(slot, ItemStack(item, 1, 0), 128)
+        val result = ContainerInsertHooks.resolveMergeSlotLimit(slot, ItemStack(item, 1, 0), 64)
 
         assertEquals(64, result)
+    }
+
+    @Test
+    fun inventoryWriteLimit_shouldPreserveNativeAndSpecialLimits() {
+        Bootstrap.register()
+        val item = object : Item() {
+            override fun getItemStackLimit(stack: ItemStack): Int = 10240
+        }.setRegistryName(ResourceLocation("stackupup_test", "write_limit_item"))
+        val stack = ItemStack(item, 1, 0)
+
+        assertEquals(10240, StackLimitHooks.resolveInventoryWriteLimit(stack, 64))
+        assertEquals(10240, StackLimitHooks.resolveInventoryWriteLimit(stack, 10240))
+        assertEquals(16, StackLimitHooks.resolveInventoryWriteLimit(stack, 16))
+        assertEquals(1, StackLimitHooks.resolveInventoryWriteLimit(stack, 1))
     }
 
     @Test

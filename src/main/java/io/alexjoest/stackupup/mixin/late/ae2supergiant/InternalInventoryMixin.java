@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
 @Mixin(targets = "ae2.core.inventory.BaseInternalInventory", remap = false)
 abstract class InternalInventoryMixin {
     @ModifyConstant(method = "getSlotLimit", constant = @Constant(intValue = 64), require = 0)
-    private static int replaceCompatibilityLimit(int original) {
-        return StackLimitHooks.getInventoryCompatibilityStackSize(original);
+    private int replaceCompatibilityLimit(int original) {
+        return StackLimitHooks.getInventoryCompatibilityStackSize(this, original);
     }
 }

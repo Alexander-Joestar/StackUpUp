@@ -79,8 +79,8 @@ class StackUpUpCore : IFMLLoadingPlugin {
             return emptyArray()
         }
         val policy = io.alexjoest.stackupup.core.InventoryExpansionStartupConfig.load()
-        io.alexjoest.stackupup.core.InventoryStackLimitHook.configureExpansionEnabled(policy.capacityAllowed)
-        return if (policy.capacityAllowed) {
+        io.alexjoest.stackupup.core.InventoryStackLimitHook.configureExpansionEnabled(policy.enabled)
+        return if (policy.enabled) {
             arrayOf("io.alexjoest.stackupup.core.InventoryStackLimitTransformer")
         } else {
             logger.info("Inventory capacity expansion is disabled at startup; inventory getter transformer will not be registered")

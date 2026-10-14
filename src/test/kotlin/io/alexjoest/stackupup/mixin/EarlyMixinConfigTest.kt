@@ -29,16 +29,30 @@ class EarlyMixinConfigTest {
         listOf("ItemStackNbtMixin", "EntityItemMergeMixin", "RenderItemMixin").forEach {
             assertTrue(content.contains(it), "$it missing from early config")
         }
+        val baseline = readSource("src/main/resources/mixins.stackupup.baseline.early.json")
         listOf(
             "ContainerMixin",
             "SlotLimitMixin",
             "InventoryPlayerAddResourceMixin",
+            "InventoryWriteLimitMixin",
             "SlotItemHandlerMixin",
             "VanillaInventoryLimitMixin",
-            "ForgeItemHandlerLimitMixin",
+            "EntityEquipmentInventoryLimitMixin",
         ).forEach {
-            assertTrue(capacityContent.contains(it), "$it missing from capacity early config")
+            assertTrue(baseline.contains(it), "$it missing from baseline early config")
+            assertFalse(capacityContent.contains("\"$it\""), "$it must not depend on compatibility expansion")
         }
+        assertTrue(capacityContent.contains("ForgeItemHandlerLimitMixin"))
+    }
+
+    @Test
+    fun inventoryWriteLimit_shouldStayOnBaselineAndUseItemAwareWriteLimit() {
+        val source = readMixinSource("InventoryWriteLimitMixin.java")
+
+        assertTrue(source.contains("TileEntityLockableLoot.class"))
+        assertTrue(source.contains("setInventorySlotContents(ILnet/minecraft/item/ItemStack;)V"))
+        assertTrue(source.contains("resolveInventoryWriteLimit"))
+        assertFalse(source.contains("isExpansionEnabled"))
     }
 
     @Test
@@ -74,6 +88,7 @@ class EarlyMixinConfigTest {
         assertTrue(source.contains("getMaxStackSize()I"))
         assertTrue(source.contains("getInventoryStackLimit()I"))
         assertTrue(source.contains("resolveInventoryClampLimit"))
+        assertTrue(source.contains("(InventoryPlayer) (Object) this"))
     }
 
     @Test
@@ -91,6 +106,7 @@ class EarlyMixinConfigTest {
         val source = readMixinSource("InventoryPlayerAddResourceMixin.java")
 
         assertEquals(2, source.split("resolveInventoryClampLimit").size - 1, "resolveInventoryClampLimit 调用次数应保持 2")
+        assertEquals(2, source.split("(InventoryPlayer) (Object) this").size - 1, "两个生产 clamp 调用都必须传入 InventoryPlayer receiver")
     }
 
     @Test

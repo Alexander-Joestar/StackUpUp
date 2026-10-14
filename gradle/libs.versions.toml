@@ -25,6 +25,7 @@ asmDebugAll = "5.2"
 guava = "24.1.1-jre"
 gson = "2.8.6"
 junitBom = "5.12.2"
+ae2Uel = "v0.56.7"
 
 [libraries]
 assetmover = { module = "com.cleanroommc:assetmover", version.ref = "assetmover" }
@@ -33,6 +34,7 @@ asmDebugAll = { module = "org.ow2.asm:asm-debug-all", version.ref = "asmDebugAll
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 junitBom = { module = "org.junit:junit-bom", version.ref = "junitBom" }
+ae2Uel = { module = "appeng:ae2-uel", version.ref = "ae2Uel" }
 
 [plugins]
 ideaExt = { id = "org.jetbrains.gradle.plugin.idea-ext", version.ref = "ideaExt" }

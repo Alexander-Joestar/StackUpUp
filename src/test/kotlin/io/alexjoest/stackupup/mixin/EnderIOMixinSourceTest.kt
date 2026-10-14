@@ -45,7 +45,7 @@ class EnderIOMixinSourceTest {
         assertTrue(source.contains("getMaxStackSize()I"), "应覆盖带 descriptor 的 getMaxStackSize（区分重载）")
         assertTrue(source.contains("ModifyReturnValue"), "应使用 ModifyReturnValue 收口返回值")
         assertTrue(source.contains("require = 0"), "目标缺失时必须静默跳过")
-        assertTrue(source.contains("StackLimitHooks.getInventoryCompatibilityStackSize(original)"), "只替换默认 64，显式 limit 保持")
+        assertTrue(source.contains("StackLimitHooks.getInventoryCompatibilityStackSize(this, original)"), "只替换默认 64，显式 limit 保持")
         assertFalse(source.contains("@Overwrite"), "不得使用 @Overwrite")
         assertFalse(source.contains("@Redirect"), "不得新增 @Redirect")
         assertFalse(source.contains("crazypants.enderio.machines.machine.crafter"), "不得把 TileCrafter 缓冲槽作为 mixin 目标（其匿名覆写 bufferStacks ? 64 : 1 语义保留）")

@@ -44,7 +44,7 @@ class InventoryExpansionStartupConfigTest {
     }
 
     @Test
-    fun configuredBlacklistDisablesCapacityBeforeRegistration() {
+    fun configuredBlacklistKeepsCapacityEnabledBeforeRegistration() {
         val configFile = File(temporaryDirectory.toFile(), "stackupup.cfg")
         configFile.writeText(
             "compat {\n" +
@@ -61,7 +61,8 @@ class InventoryExpansionStartupConfigTest {
 
         val policy = InventoryExpansionStartupConfig.load(configFile)
         assertEquals(listOf("farmersdelight"), policy.modIds)
-        assertFalse(policy.capacityAllowed)
+        assertTrue(policy.enabled)
+        assertTrue(policy.capacityAllowed)
     }
 
     @Test

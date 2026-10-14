@@ -21,7 +21,7 @@ internal sealed class InspectSelector {
             val side = if (args[5] == "none") {
                 null
             } else {
-                EnumFacing.values().firstOrNull { it.name.lowercase() == args[5] }
+                EnumFacing.entries.firstOrNull { it.name.lowercase() == args[5] }
                     ?: throw IllegalArgumentException("side")
             }
             val slot = if (args.size == 8) {

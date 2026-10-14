@@ -164,6 +164,25 @@ class InventoryStackLimitTransformerTest {
     }
 
     @Test
+    fun inheritedFinalGetter_fromAbstractInventoryParent_shouldRemainUnchanged() {
+        val parentName = "example.AbstractInventoryParent"
+        val childName = "example.InventoryChild"
+        val metadata = HashMap<String, ByteArray>()
+        metadata[parentName.replace('.', '/')] = inventoryClassBytes(
+            className = parentName,
+            interfaces = arrayOf("net/minecraft/inventory/IInventory"),
+            withGetter = true,
+            getterFinal = true,
+        ).let { makeAbstract(it) }
+        val child = inventoryClassBytes(childName, superName = parentName.replace('.', '/'))
+        val customTransformer = InventoryStackLimitTransformer(
+            InventoryClassHierarchyRepository(MapMetadataSource(metadata)),
+        )
+
+        assertArrayEquals(child, customTransformer.transform(childName, childName, child))
+    }
+
+    @Test
     fun inheritedGetter_shouldNotBeGeneratedAgainBelowConcreteInventoryAncestor() {
         val parentName = "example.AbstractInventoryParent"
         val middleName = "example.ConcreteInventoryMiddle"
@@ -292,6 +311,7 @@ class InventoryStackLimitTransformerTest {
         className: String,
         interfaceClass: Boolean = false,
         withGetter: Boolean = false,
+        getterFinal: Boolean = false,
         superName: String = "java/lang/Object",
         interfaces: Array<String> = emptyArray(),
     ): ByteArray {
@@ -306,7 +326,8 @@ class InventoryStackLimitTransformerTest {
             interfaces,
         )
         if (withGetter) {
-            val method = writer.visitMethod(Opcodes.ACC_PUBLIC, "getInventoryStackLimit", "()I", null, null)
+            val getterAccess = Opcodes.ACC_PUBLIC or if (getterFinal) Opcodes.ACC_FINAL else 0
+            val method = writer.visitMethod(getterAccess, "getInventoryStackLimit", "()I", null, null)
             method.visitCode()
             method.visitIntInsn(Opcodes.BIPUSH, 64)
             method.visitInsn(Opcodes.IRETURN)

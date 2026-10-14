@@ -203,7 +203,7 @@ fun writeFocusedAutoTestConfigIfAbsent(
 fun renderedBlacklistPayload(lines: List<String>): List<String> {
     val start = lines.indexOfFirst { it.trim() == "S:modIds <" }
     val end = lines.indexOfFirst { it.trim() == ">" }
-    check(start >= 0 && end > start) { "Focused config has malformed blacklist list: $lines" }
+    check(start in 0..<end) { "Focused config has malformed blacklist list: $lines" }
     return lines.subList(start + 1, end).map(String::trim)
 }
 

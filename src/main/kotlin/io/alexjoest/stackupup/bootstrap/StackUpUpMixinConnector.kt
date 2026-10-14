@@ -48,7 +48,10 @@ class StackUpUpMixinConnector : IMixinConnector {
         }
         val conflicts = StackUpUpCore.ensureConflictState()
         connectEarly(conflicts)
-        connectLate(conflicts, blacklistedModIds = policy.modIds.toSet())
+        connectLateWithClassicModules(
+            conflicts = conflicts,
+            blacklistedModIds = policy.modIds.toSet(),
+        )
     }
 
     internal fun connectEarly(conflicts: List<String>, queueConfiguration: (String) -> Unit = { config -> Mixins.addConfiguration(config) }) {
@@ -72,11 +75,52 @@ class StackUpUpMixinConnector : IMixinConnector {
         blacklistedModIds: Set<String> = emptySet(),
         queueConfiguration: (String) -> Unit = { config -> Mixins.addConfiguration(config) },
     ) {
-        for ((config) in modules) {
-            if (!shouldQueue(config, isModPresent)) {
-                continue
+        connectLateInternal(
+            conflicts = conflicts,
+            isModPresent = isModPresent,
+            blacklistedModIds = blacklistedModIds,
+            includeClassic = false,
+            queueConfiguration = queueConfiguration,
+        )
+    }
+
+    internal fun connectLateWithClassicModules(
+        conflicts: List<String>,
+        isModPresent: (String) -> Boolean = { modId -> isModPresentForConnector(modId) },
+        blacklistedModIds: Set<String> = emptySet(),
+        queueConfiguration: (String) -> Unit = { config -> Mixins.addConfiguration(config) },
+    ) {
+        connectLateInternal(
+            conflicts = conflicts,
+            isModPresent = isModPresent,
+            blacklistedModIds = blacklistedModIds,
+            includeClassic = true,
+            queueConfiguration = queueConfiguration,
+        )
+    }
+
+    private fun connectLateInternal(
+        conflicts: List<String>,
+        isModPresent: (String) -> Boolean,
+        blacklistedModIds: Set<String>,
+        includeClassic: Boolean,
+        queueConfiguration: (String) -> Unit,
+    ) {
+        val normalModules = if (includeClassic) modules + classicModules else modules
+        if (!includeClassic) {
+            for ((config) in modules) {
+                if (!shouldQueue(config, isModPresent)) {
+                    continue
+                }
+                queueConfiguration(config)
             }
-            queueConfiguration(config)
+        } else {
+            for ((config) in normalModules) {
+                if (!shouldQueue(config, isModPresent, normalModules)) {
+                    continue
+                }
+                queueConfiguration(config)
+            }
         }
         if (!shouldQueueCapacity(conflicts)) {
             if (conflicts.isNotEmpty()) {
@@ -87,6 +131,7 @@ class StackUpUpMixinConnector : IMixinConnector {
             }
             return
         }
+        val capacityModules = if (includeClassic) this.capacityModules + classicCapacityModules else this.capacityModules
         for ((config, modId) in capacityModules) {
             if (modId in blacklistedModIds) {
                 logger.info("Skipping capacity mixin config '{}': mod '{}' is blacklisted", config, modId)
@@ -252,7 +297,7 @@ class StackUpUpMixinConnector : IMixinConnector {
         LateMixinModule(StackUpUpIds.LATE_ACTUALLY_ADDITIONS_MIXIN_CONFIG, "actuallyadditions"),
         LateMixinModule(StackUpUpIds.LATE_CYCLOPSCORE_MIXIN_CONFIG, "cyclopscore"),
         LateMixinModule(StackUpUpIds.LATE_ENDERIO_MIXIN_CONFIG, "enderio"),
-        LateMixinModule(StackUpUpIds.LATE_IC2_MIXIN_CONFIG, "ic2"),
+        LateMixinModule(StackUpUpIds.LATE_IC2_MIXIN_CONFIG, StackUpUpIds.IC2_MOD_ID),
         LateMixinModule(StackUpUpIds.LATE_MANTLE_MIXIN_CONFIG, "mantle"),
         LateMixinModule(StackUpUpIds.LATE_REFINED_STORAGE_MIXIN_CONFIG, "refinedstorage"),
         LateMixinModule(StackUpUpIds.LATE_STORAGE_NETWORK_MIXIN_CONFIG, "storagenetwork"),
@@ -266,6 +311,10 @@ class StackUpUpMixinConnector : IMixinConnector {
         LateMixinModule(StackUpUpIds.LATE_FARMERS_DELIGHT_MIXIN_CONFIG, "farmersdelight"),
     )
 
+    internal val classicModules: List<LateMixinModule> = listOf(
+        LateMixinModule(StackUpUpIds.LATE_IC2_CLASSIC_MIXIN_CONFIG, StackUpUpIds.IC2_MOD_ID),
+    )
+
     internal val capacityModules: List<LateMixinModule> = listOf(
         LateMixinModule("mixins.stackupup.capacity.late.ae2.json", "appliedenergistics2"),
         LateMixinModule("mixins.stackupup.capacity.late.ae2supergiant.json", "ae2"),
@@ -273,7 +322,7 @@ class StackUpUpMixinConnector : IMixinConnector {
         LateMixinModule("mixins.stackupup.capacity.late.actuallyadditions.json", "actuallyadditions"),
         LateMixinModule("mixins.stackupup.capacity.late.cyclopscore.json", "cyclopscore"),
         LateMixinModule("mixins.stackupup.capacity.late.enderio.json", "enderio"),
-        LateMixinModule("mixins.stackupup.capacity.late.ic2.json", "ic2"),
+        LateMixinModule("mixins.stackupup.capacity.late.ic2.json", StackUpUpIds.IC2_MOD_ID),
         LateMixinModule("mixins.stackupup.capacity.late.mantle.json", "mantle"),
         LateMixinModule("mixins.stackupup.capacity.late.refinedstorage.json", "refinedstorage"),
         LateMixinModule("mixins.stackupup.capacity.late.integrateddynamics.json", "integrateddynamics"),
@@ -283,6 +332,10 @@ class StackUpUpMixinConnector : IMixinConnector {
         LateMixinModule("mixins.stackupup.capacity.late.colossalchests.json", "colossalchests"),
         LateMixinModule("mixins.stackupup.capacity.late.techreborn.json", "techreborn"),
         LateMixinModule("mixins.stackupup.capacity.late.farmersdelight.json", "farmersdelight"),
+    )
+
+    internal val classicCapacityModules: List<LateMixinModule> = listOf(
+        LateMixinModule(StackUpUpIds.CAPACITY_LATE_IC2_CLASSIC_MIXIN_CONFIG, StackUpUpIds.IC2_MOD_ID),
     )
 
     private companion object {

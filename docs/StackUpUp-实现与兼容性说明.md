@@ -36,7 +36,7 @@
 `0`，分别表示保留 NuclearCraft 的默认升级堆叠上限；正值才覆盖对应升级类型。配置重载由
 `StackUpUpConfig.applyReloadControlledValues()` 统一应用。
 
-启动容量策略由 `InventoryExpansionStartupConfig` 在 coremod 阶段从 `config/stackupup.cfg` 读取并缓存，修改后必须重启。`compat.inventoryExpansion.enabled` 默认 `false`，控制窄范围 IInventory getter transformer 与可选 capacity Mixin 配置；OFF 不会停用 ItemStack 规则、ordinary late 配置、常驻 early/baseline 配置或其中的专用写入安全 Mixin。`compat.inventoryStackLimitBlacklist.modIds` 是唯一容量黑名单输入：空列表为 no-op，所列 Mod 的可归属接收端/受支持公开 owner 按 Forge `ownedPackages` 精确包边界绕过容量扩展，并跳过该 Mod 的 capacity late 配置，不会禁用其 ordinary/safety 配置。继承黑名单父类或实现其接口本身不排除 addon；共享 ownerless 对象、私有 delegate、receiverless 构造路径仍可能 UNKNOWN。已加载但无归属包的 Mod 会导致启动检查失败，未加载 ID 记录无效果；当前没有 `classNames` 黑名单配置。
+启动容量策略由 `InventoryExpansionStartupConfig` 在 coremod 阶段从 `config/stackupup.cfg` 读取并缓存，修改后必须重启。`compat.inventoryExpansion.enabled` 默认 `true`（新/缺失配置采用 broad-default；显式 `false` 仅作为重启时的紧急回退），控制窄范围 IInventory getter transformer 与可选 capacity Mixin 配置；OFF 不会停用 ItemStack 规则、ordinary late 配置、常驻 early/baseline 配置或其中的专用写入安全 Mixin。`compat.inventoryStackLimitBlacklist.modIds` 是唯一容量黑名单输入：空列表为 no-op，所列 Mod 的可归属接收端/受支持公开 owner 按 Forge `ownedPackages` 精确包边界绕过容量扩展，并跳过该 Mod 的 capacity late 配置，不会禁用其 ordinary/safety 配置。继承黑名单父类或实现其接口本身不排除 addon；共享 ownerless 对象、私有 delegate、receiverless 构造路径仍可能 UNKNOWN。已加载但无归属包的 Mod 会导致启动检查失败，未加载 ID 记录无效果；当前没有 `classNames` 黑名单配置。
 
 ### 原版库存、槽位与网络路径
 

@@ -224,6 +224,7 @@ class StackUpUpMixinConnector : IMixinConnector {
         LateMixinModule(StackUpUpIds.LATE_COLOSSALCHESTS_MIXIN_CONFIG, "colossalchests"),
         LateMixinModule(StackUpUpIds.LATE_GREGTECH_MIXIN_CONFIG, "gregtech"),
         LateMixinModule(StackUpUpIds.LATE_TECHREBORN_MIXIN_CONFIG, "techreborn"),
+        LateMixinModule(StackUpUpIds.LATE_FARMERS_DELIGHT_MIXIN_CONFIG, "farmersdelight"),
     )
 
     private companion object {

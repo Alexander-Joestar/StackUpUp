@@ -3,8 +3,10 @@ package io.alexjoest.stackupup.core
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassVisitor
@@ -16,6 +18,13 @@ import java.util.HashMap
 class InventoryStackLimitTransformerTest {
     private val transformer = InventoryStackLimitTransformer()
 
+    @BeforeEach
+    fun enableExpansionForTest() {
+        InventoryStackLimitHook.resetForTesting()
+        InventoryStackLimitHook.configureExpansionEnabled(true)
+        InventoryStackLimitHook.prepare(256, null)
+    }
+
     @AfterEach
     fun resetHook() {
         InventoryStackLimitHook.resetForTesting()
@@ -24,6 +33,19 @@ class InventoryStackLimitTransformerTest {
     @Test
     fun nullBasicClass_shouldReturnNull() {
         assertNull(transformer.transform(null, "example.Inventory", null))
+    }
+
+    @Test
+    fun disabledExpansion_shouldLeaveClassBytesUnchanged() {
+        val original = inventoryClassBytes(
+            className = "example.DisabledInventory",
+            withGetter = true,
+            interfaces = arrayOf("net/minecraft/inventory/IInventory"),
+        )
+
+        InventoryStackLimitHook.configureExpansionEnabled(false)
+
+        assertArrayEquals(original, transformer.transform("example.DisabledInventory", null, original))
     }
 
     @Test
@@ -197,7 +219,9 @@ class InventoryStackLimitTransformerTest {
 
     @Test
     fun hookUsesPreparedCompatibilityLimitAndPackageBlacklist() {
-        assertEquals(64, InventoryStackLimitHook.resolveInventoryStackLimit("example.Inventory", 64))
+        InventoryStackLimitHook.configureExpansionEnabled(true)
+        InventoryStackLimitHook.prepare(256, null)
+        assertEquals(256, InventoryStackLimitHook.resolveInventoryStackLimit("example.Inventory", 64))
 
         InventoryStackLimitHook.prepare(256, arrayOf("bad.mod"))
 
@@ -209,7 +233,52 @@ class InventoryStackLimitTransformerTest {
     }
 
     @Test
+    fun hook_shouldPreserveNonVanillaOriginalValues() {
+        InventoryStackLimitHook.configureExpansionEnabled(true)
+        InventoryStackLimitHook.prepare(256, null)
+
+        for (original in intArrayOf(0, 1, 16, 64, 256)) {
+            val resolved = InventoryStackLimitHook.resolveInventoryStackLimit("example.Inventory", original)
+            assertEquals(if (original == 64) 256 else original, resolved)
+        }
+    }
+
+    @Test
+    fun runtimeBlacklistDisable_shouldNotBeReenabledBySetter() {
+        InventoryStackLimitHook.resetForTesting()
+        InventoryStackLimitHook.configureExpansionEnabled(true)
+        InventoryStackLimitHook.prepare(256, null)
+        InventoryStackLimitHook.disableExpansionForRuntimeBlacklist()
+
+        InventoryStackLimitHook.configureExpansionEnabled(true)
+
+        assertEquals(64, InventoryStackLimitHook.resolveInventoryStackLimit("example.Inventory", 64))
+        assertFalse(InventoryStackLimitHook.isExpansionEnabled())
+    }
+
+    @Test
+    fun defaultOffDecision_shouldNotBeEnabledBySetter() {
+        InventoryStackLimitHook.resetForTesting()
+        InventoryStackLimitHook.configureExpansionEnabled(false)
+        InventoryStackLimitHook.prepare(256, null)
+
+        InventoryStackLimitHook.configureExpansionEnabled(true)
+
+        assertEquals(64, InventoryStackLimitHook.resolveInventoryStackLimit("example.Inventory", 64))
+        assertFalse(InventoryStackLimitHook.isExpansionEnabled())
+    }
+
+    @Test
+    fun unpreparedHook_shouldKeepVanillaLimitEvenWhenExpansionFlagIsSet() {
+        InventoryStackLimitHook.resetForTesting()
+        InventoryStackLimitHook.configureExpansionEnabled(true)
+
+        assertEquals(64, InventoryStackLimitHook.resolveInventoryStackLimit("example.Inventory", 64))
+    }
+
+    @Test
     fun hookAcceptsSlashNamesAndNullBlacklist() {
+        InventoryStackLimitHook.configureExpansionEnabled(true)
         InventoryStackLimitHook.prepare(128, null)
         assertEquals(128, InventoryStackLimitHook.resolveInventoryStackLimit("example/Inventory", 64))
         assertTrue(InventoryStackLimitHook.isPrepared())
@@ -247,18 +316,14 @@ class InventoryStackLimitTransformerTest {
     private fun makeAbstract(bytes: ByteArray): ByteArray {
         val reader = ClassReader(bytes)
         val writer = ClassWriter(0)
-        reader.accept(object : ClassVisitor(Opcodes.ASM5, writer) {
-            override fun visit(
-                version: Int,
-                access: Int,
-                name: String,
-                signature: String?,
-                superName: String?,
-                interfaces: Array<out String>?,
-            ) {
-                super.visit(version, access or Opcodes.ACC_ABSTRACT, name, signature, superName, interfaces)
-            }
-        }, 0)
+        reader.accept(
+            object : ClassVisitor(Opcodes.ASM5, writer) {
+                override fun visit(version: Int, access: Int, name: String, signature: String?, superName: String?, interfaces: Array<out String>?) {
+                    super.visit(version, access or Opcodes.ACC_ABSTRACT, name, signature, superName, interfaces)
+                }
+            },
+            0,
+        )
         return writer.toByteArray()
     }
 
@@ -266,96 +331,71 @@ class InventoryStackLimitTransformerTest {
 
     private fun hasRuntimeReceiverLookup(bytes: ByteArray): Boolean {
         var found = false
-        ClassReader(bytes).accept(object : ClassVisitor(Opcodes.ASM5) {
-            override fun visitMethod(
-                access: Int,
-                name: String,
-                descriptor: String,
-                signature: String?,
-                exceptions: Array<out String>?,
-            ): MethodVisitor = object : MethodVisitor(Opcodes.ASM5) {
-                override fun visitMethodInsn(
-                    opcode: Int,
-                    owner: String,
-                    methodName: String,
-                    methodDescriptor: String,
-                    isInterface: Boolean,
-                ) {
-                    if (opcode == Opcodes.INVOKEVIRTUAL
-                        && owner == "java/lang/Object"
-                        && methodName == "getClass"
-                        && methodDescriptor == "()Ljava/lang/Class;"
-                    ) {
-                        found = true
+        ClassReader(bytes).accept(
+            object : ClassVisitor(Opcodes.ASM5) {
+                override fun visitMethod(access: Int, name: String, descriptor: String, signature: String?, exceptions: Array<out String>?): MethodVisitor =
+                    object : MethodVisitor(Opcodes.ASM5) {
+                        override fun visitMethodInsn(opcode: Int, owner: String, methodName: String, methodDescriptor: String, isInterface: Boolean) {
+                            if (opcode == Opcodes.INVOKEVIRTUAL &&
+                                owner == "java/lang/Object" &&
+                                methodName == "getClass" &&
+                                methodDescriptor == "()Ljava/lang/Class;"
+                            ) {
+                                found = true
+                            }
+                        }
                     }
-                }
-            }
-        }, 0)
+            },
+            0,
+        )
         return found
     }
 
     private fun hasSuperGetterCall(bytes: ByteArray, ownerName: String): Boolean {
         var found = false
-        ClassReader(bytes).accept(object : ClassVisitor(Opcodes.ASM5) {
-            override fun visitMethod(
-                access: Int,
-                name: String,
-                descriptor: String,
-                signature: String?,
-                exceptions: Array<out String>?,
-            ): MethodVisitor = object : MethodVisitor(Opcodes.ASM5) {
-                override fun visitMethodInsn(
-                    opcode: Int,
-                    owner: String,
-                    methodName: String,
-                    methodDescriptor: String,
-                    isInterface: Boolean,
-                ) {
-                    if (opcode == Opcodes.INVOKESPECIAL
-                        && owner == ownerName
-                        && methodName == "getInventoryStackLimit"
-                        && methodDescriptor == "()I"
-                    ) {
-                        found = true
+        ClassReader(bytes).accept(
+            object : ClassVisitor(Opcodes.ASM5) {
+                override fun visitMethod(access: Int, name: String, descriptor: String, signature: String?, exceptions: Array<out String>?): MethodVisitor =
+                    object : MethodVisitor(Opcodes.ASM5) {
+                        override fun visitMethodInsn(opcode: Int, owner: String, methodName: String, methodDescriptor: String, isInterface: Boolean) {
+                            if (opcode == Opcodes.INVOKESPECIAL &&
+                                owner == ownerName &&
+                                methodName == "getInventoryStackLimit" &&
+                                methodDescriptor == "()I"
+                            ) {
+                                found = true
+                            }
+                        }
                     }
-                }
-            }
-        }, 0)
+            },
+            0,
+        )
         return found
     }
 
     private fun hookInvocationCount(bytes: ByteArray): Int {
         var count = 0
-        ClassReader(bytes).accept(object : ClassVisitor(Opcodes.ASM5) {
-            override fun visitMethod(
-                access: Int,
-                name: String,
-                descriptor: String,
-                signature: String?,
-                exceptions: Array<out String>?,
-            ): MethodVisitor = object : MethodVisitor(Opcodes.ASM5) {
-                override fun visitMethodInsn(
-                    opcode: Int,
-                    owner: String,
-                    methodName: String,
-                    methodDescriptor: String,
-                    isInterface: Boolean,
-                ) {
-                    if (opcode == Opcodes.INVOKESTATIC
-                        && owner == "io/alexjoest/stackupup/core/InventoryStackLimitHook"
-                        && methodName == "resolveInventoryStackLimit"
-                        && methodDescriptor == "(Ljava/lang/String;I)I"
-                    ) {
-                        count++
+        ClassReader(bytes).accept(
+            object : ClassVisitor(Opcodes.ASM5) {
+                override fun visitMethod(access: Int, name: String, descriptor: String, signature: String?, exceptions: Array<out String>?): MethodVisitor =
+                    object : MethodVisitor(Opcodes.ASM5) {
+                        override fun visitMethodInsn(opcode: Int, owner: String, methodName: String, methodDescriptor: String, isInterface: Boolean) {
+                            if (opcode == Opcodes.INVOKESTATIC &&
+                                owner == "io/alexjoest/stackupup/core/InventoryStackLimitHook" &&
+                                methodName == "resolveInventoryStackLimit" &&
+                                methodDescriptor == "(Ljava/lang/String;I)I"
+                            ) {
+                                count++
+                            }
+                        }
                     }
-                }
-            }
-        }, 0)
+            },
+            0,
+        )
         return count
     }
 
-    private class MapMetadataSource(private val metadata: Map<String, ByteArray>) :
-        InventoryClassHierarchyRepository.MetadataSource {
+    private class MapMetadataSource(private val metadata: Map<String, ByteArray>) : InventoryClassHierarchyRepository.MetadataSource {
         override fun read(internalName: String): ByteArray? = metadata[internalName]
     }
 

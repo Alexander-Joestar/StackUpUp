@@ -33,7 +33,7 @@ class EnderIOMixinSourceTest {
 
     @Test
     fun enderIoInventorySlotMixin_shouldGuard64AndPreserveExplicitLimitsAndCrafterOverride() {
-        val config = String(Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.late.enderio.json")), Charsets.UTF_8)
+        val config = String(Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.capacity.late.enderio.json")), Charsets.UTF_8)
         val source = String(
             Files.readAllBytes(Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/enderio/EnderIOInventorySlotLimitMixin.java")),
             Charsets.UTF_8,
@@ -45,8 +45,7 @@ class EnderIOMixinSourceTest {
         assertTrue(source.contains("getMaxStackSize()I"), "应覆盖带 descriptor 的 getMaxStackSize（区分重载）")
         assertTrue(source.contains("ModifyReturnValue"), "应使用 ModifyReturnValue 收口返回值")
         assertTrue(source.contains("require = 0"), "目标缺失时必须静默跳过")
-        assertTrue(source.contains("original == VANILLA_STACK_LIMIT"), "只替换默认 64，显式 limit 保持")
-        assertTrue(source.contains("StackLimitHooks.getCompatibilityStackSize()"), "默认 64 应替换为兼容堆叠上限")
+        assertTrue(source.contains("StackLimitHooks.getInventoryCompatibilityStackSize(original)"), "只替换默认 64，显式 limit 保持")
         assertFalse(source.contains("@Overwrite"), "不得使用 @Overwrite")
         assertFalse(source.contains("@Redirect"), "不得新增 @Redirect")
         assertFalse(source.contains("crazypants.enderio.machines.machine.crafter"), "不得把 TileCrafter 缓冲槽作为 mixin 目标（其匿名覆写 bufferStacks ? 64 : 1 语义保留）")

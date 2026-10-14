@@ -15,7 +15,7 @@ abstract class AppEngInternalAEInventoryMixin {
 
     @ModifyConstant(method = "<init>*", constant = @Constant(intValue = 64), require = 0)
     private static int replaceCompatibilityLimit(int original) {
-        return StackLimitHooks.getCompatibilityStackSize();
+        return StackLimitHooks.getInventoryCompatibilityStackSize(original);
     }
 
     @ModifyReturnValue(method = "getSlotLimit(I)I", at = @At("RETURN"), require = 0)
@@ -24,6 +24,6 @@ abstract class AppEngInternalAEInventoryMixin {
             || !getClass().getName().equals("appeng.tile.inventory.AppEngInternalAEInventory")) {
             return original;
         }
-        return StackLimitHooks.getCompatibilityStackSize();
+        return StackLimitHooks.getInventoryCompatibilityStackSize(original);
     }
 }

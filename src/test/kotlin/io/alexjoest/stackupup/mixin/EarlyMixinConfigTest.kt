@@ -24,13 +24,21 @@ class EarlyMixinConfigTest {
     @Test
     fun earlyConfig_shouldIncludeMigratedFixedTargets() {
         val content = readSource("src/main/resources/mixins.stackupup.early.json")
+        val capacityContent = readSource("src/main/resources/mixins.stackupup.capacity.early.json")
 
+        listOf("ItemStackNbtMixin", "EntityItemMergeMixin", "RenderItemMixin").forEach {
+            assertTrue(content.contains(it), "$it missing from early config")
+        }
         listOf(
-            "ContainerMixin", "ItemStackNbtMixin", "SlotLimitMixin",
-            "VanillaInventoryLimitMixin", "EntityItemMergeMixin",
-            "InventoryPlayerAddResourceMixin", "ForgeItemHandlerLimitMixin",
-            "SlotItemHandlerMixin", "RenderItemMixin",
-        ).forEach { assertTrue(content.contains(it), "$it missing from early config") }
+            "ContainerMixin",
+            "SlotLimitMixin",
+            "InventoryPlayerAddResourceMixin",
+            "SlotItemHandlerMixin",
+            "VanillaInventoryLimitMixin",
+            "ForgeItemHandlerLimitMixin",
+        ).forEach {
+            assertTrue(capacityContent.contains(it), "$it missing from capacity early config")
+        }
     }
 
     @Test

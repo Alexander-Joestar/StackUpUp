@@ -42,6 +42,6 @@ public abstract class ForgeItemHandlerLimitMixin {
 
     @ModifyReturnValue(method = "getSlotLimit", at = @At("RETURN"))
     private int stackupup$replaceCompatibilityLimit(int original, int slot) {
-        return original == VANILLA_STACK_LIMIT ? StackLimitHooks.getCompatibilityStackSize() : original;
+        return StackLimitHooks.getInventoryCompatibilityStackSize(original);
     }
 }

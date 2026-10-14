@@ -5,10 +5,7 @@
   "minVersion": "0.8",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
-    "AppEngAdaptorItemHandlerMixin",
-    "AppEngInternalAEInventoryMixin",
-    "AppEngInternalInventoryMixin",
-    "AppEngPatternTermMixin"
+    "AppEngAdaptorItemHandlerMixin"
   ],
   "client": [],
   "server": []

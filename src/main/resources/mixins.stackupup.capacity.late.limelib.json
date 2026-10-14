@@ -1,0 +1,8 @@
+{
+  "required": false,
+  "package": "io.alexjoest.stackupup.mixin.late.limelib",
+  "refmap": "${refmap}",
+  "target": "@env(DEFAULT)",
+  "minVersion": "0.8",
+  "mixins": ["CommonTileInventoryMixin"]
+}

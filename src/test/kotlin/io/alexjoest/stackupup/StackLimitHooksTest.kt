@@ -447,7 +447,7 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun itemHandlerDefault_shouldAllowAtLeastDynamicLimit() {
+    fun itemHandlerDefault_shouldRespectSimulatedTotalLimit() {
         Bootstrap.register()
         val item = object : Item() {
             override fun getItemStackLimit(stack: ItemStack): Int = 10240
@@ -460,7 +460,7 @@ class StackLimitHooksTest {
             slotLimit = 10240,
         )
 
-        assertEquals(10240, result)
+        assertEquals(1024, result)
     }
 
     @Test

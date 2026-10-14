@@ -13,9 +13,11 @@
 
 ## 项目基线
 
-Minecraft 1.12.2、Forge 14.23.5.2847；Kotlin 业务代码与 Java Mixin handler 分工，`StackUpUpCore` 仅作为 Forge coremod 入口，不提供兼容性 ASM transformer；JUnit 5 测试在 `src/test/kotlin`。
+Minecraft 1.12.2、Forge 14.23.5.2847；Kotlin 业务代码与 Java Mixin handler 分工；`StackUpUpCore` 是 Forge coremod 入口，并注册窄范围 `InventoryStackLimitTransformer`，只处理 IInventory getter；JUnit 5 测试在 `src/test/kotlin`。
 构建需 **JDK 25**：RFG **2.0.2** 插件类为 class file 69，且自身要求 Gradle >= 9.2（wrapper 为 9.4.0）；JDK 21 在配置阶段即以 `UnsupportedClassVersionError` 失败。这只约束构建所用的 Gradle JVM，项目 Java toolchain 仍固定为 8（`build-logic/convention/src/main/kotlin/jvm.gradle.kts:9`），客户端运行期要求未因此改动。
-当前 Mixin 基线 MixinBooter **11.17** + CleanMix **0.7.2** 编译期 annotation processor，入口 Sponge Mixin `IMixinConnector`（`StackUpUpMixinConnector`）；兼容性注入当前只通过显式 early/late Mixin 完成。10.7 与 `IEarlyMixinLoader`/`ILateMixinLoader` 只是历史资料，不得写成当前实现。
+当前 Mixin 基线 MixinBooter **11.17** + CleanMix **0.7.2** 编译期 annotation processor，入口 Sponge Mixin `IMixinConnector`（`StackUpUpMixinConnector`）；兼容性注入通过显式 early/late Mixin 与窄范围 `InventoryStackLimitTransformer` 完成。10.7 与 `IEarlyMixinLoader`/`ILateMixinLoader` 只是历史资料，不得写成当前实现。
+
+库存容量扩展策略：配置文件为 `config/stackupup.cfg`，`compat.inventoryExpansion.enabled` 默认 `false`，`compat.inventoryStackLimitBlacklist.modIds` 是唯一黑名单输入。只要 `modIds` 非空，容量扩展全局 fail-closed；不按 Mod 选择性匹配，也不引入 `classNames` 配置。启动时读取策略并冻结，运行时 blacklist disable 不可通过后续 setter 重新开启；改变策略必须重启。ItemStack DSL、NBT、网络和 NoDrop 等非容量行为不受该开关压制。
 
 ## DSL 规则链
 

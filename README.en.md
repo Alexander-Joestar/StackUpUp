@@ -57,7 +57,11 @@ See [docs/DSL-v2-规则示例.md](docs/DSL-v2-%E8%A7%84%E5%88%99%E7%A4%BA%E4%BE%
 
 ## Commands
 
-Commands: `/stackupup reload`, `/stackupup edit`, `/stackupup state get <name>`, `/stackupup state set <name> <value>`.
+Commands: `/stackupup reload`, `/stackupup edit`, `/stackup state get <name>`, `/stackupup state set <name> <value>`, `/stackupup inspect [slot N]`, and `/stackupup inspect block <x> <y> <z> <none|down|up|north|south|west|east> [slot N]`.
+
+- `inspect` read-only inspects the server player's currently open container; `inspect slot N` focuses on one container slot. Console/command-block senders can use `inspect block x y z none|down|up|north|south|west|east [slot N]` in a loaded chunk to query an ordinary inventory or an item-handler capability on the selected side.
+- By default, at most 8 slots are listed. The report shows Container, Slot, inventory/handler class names and object IDs local to that report, plus Forge `ownedPackages`-based modId candidates where possible. Multiple candidates are marked ambiguous; unknown ownership is UNKNOWN. Class names are diagnostic evidence only and cannot currently be used as blacklist settings. `InvWrapper.getInv()` is a supported public delegate accessor; other inaccessible handler delegates are explicitly UNKNOWN rather than reflectively inspected.
+- Output includes a copyable candidate snippet for `compat.inventoryStackLimitBlacklist.modIds` only when there is one supported modId candidate; the command does not edit configuration. An item's registered mod is not necessarily the inventory owner, so it is never used to infer inventory modId. Inspection does not insert/extract, simulate writes, or prove real capacity or conservation. A modId blacklist may affect other inventory classes recognized by that mod's `ownedPackages`; add only reviewed entries.
 
 - `reload`: reload rule files.
 - `edit`: open the main rule file on the client.
@@ -112,6 +116,9 @@ configuration screen. Save the configuration and restart, or run `/stackupup rel
 - `general.maxStackSize`: global compatibility stack limit, default `64`; rule results and compatibility entry points are clamped to this value.
 - `compat.vanilla.craftingSlotLimit`: workbench grid and crafting-result slot limit, default `64`. `0` keeps vanilla/default behavior; values above `0` use the custom limit. This is mainly a Performance setting: holding Shift to batch-craft very large stacks can cause severe lag, not a balance switch. The effective limit can still be reduced by `general.maxStackSize` and item/recipe limits.
 - `compat.nuclearcraft.speedUpgradeLimit` and `compat.nuclearcraft.energyUpgradeLimit`: NuclearCraft speed/energy upgrade stack limits, default `0` (keep NuclearCraft's default `64`); values above `0` use a custom limit. These settings have no effect when NuclearCraft is not loaded.
+- `compat.inventoryStackLimitBlacklist.modIds`: inventory blacklist by mod ID; `/stackupup inspect` output can provide a review starting point. A mod ID blacklist applies to classes recognized by that mod's `ownedPackages`.
+
+Inventory capacity changes come from multiple integration paths; disabling one capacity source does not establish that every other path is disabled, and some mod-specific late Mixin hooks may still change inventory limits. `/stackupup reload` does not disable those startup Mixin hooks. Unknown receivers may truncate, lose items, or conflict. Inspection only provides evidence and configuration suggestions; it does not guarantee lossless behavior for every unknown mod.
 
 ## Compatibility
 

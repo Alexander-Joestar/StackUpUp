@@ -4,7 +4,5 @@
   "refmap": "${refmap}",
   "target": "@env(DEFAULT)",
   "minVersion": "0.8",
-  "mixins": [
-    "TileMechanicalMachineMixin"
-  ]
+  "mixins": []
 }

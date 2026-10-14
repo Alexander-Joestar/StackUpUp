@@ -31,7 +31,7 @@ class Ae2MixinSourceTest {
 
     @Test
     fun ae2Mixin_shouldExpandBlankPatternInputSlot() {
-        val config = String(Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.late.ae2.json")), Charsets.UTF_8)
+        val config = String(Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.capacity.late.ae2.json")), Charsets.UTF_8)
         assertTrue(config.contains("AppEngPatternTermMixin"), "AE2 late config 应加载样板终端空白样板槽补丁")
 
         val source = String(
@@ -45,7 +45,7 @@ class Ae2MixinSourceTest {
         assertTrue(source.contains("patternSlotIN"), "应只触达空白样板输入槽")
         assertTrue(source.contains("<init>*"), "应在构造结束后修正 AE 创建好的槽")
         assertTrue(source.contains("stackupup" + "$" + "setStackLimit"), "空白样板槽应调用 AE slot 的 setStackLimit")
-        assertTrue(source.contains("StackLimitHooks.getCompatibilityStackSize()"), "空白样板槽应使用兼容堆叠上限")
+        assertTrue(source.contains("StackLimitHooks.getInventoryCompatibilityStackSize()"), "空白样板槽应使用兼容堆叠上限")
     }
 
     /**
@@ -58,7 +58,7 @@ class Ae2MixinSourceTest {
         assertTrue(source.contains("@ModifyConstant"), "应继续覆盖构造期常量: $path")
         assertTrue(source.contains("<init>*"), "应继续覆盖构造器: $path")
         assertTrue(source.contains("private static int replaceCompatibilityLimit"), "构造器常量补丁必须使用 static handler: $path")
-        assertTrue(source.contains("StackLimitHooks.getCompatibilityStackSize()"), "构造器常量应替换为兼容堆叠上限: $path")
+        assertTrue(source.contains("StackLimitHooks.getInventoryCompatibilityStackSize("), "构造器常量应替换为兼容堆叠上限: $path")
         assertTrue(source.contains("@ModifyReturnValue"), "应覆盖真实 getSlotLimit 返回路径: $path")
         assertTrue(source.contains("getSlotLimit(I)I"), "应使用明确的 getSlotLimit(int) descriptor: $path")
         assertTrue(source.contains("VANILLA_STACK_LIMIT"), "显式 slot 上限必须保留非默认值: $path")

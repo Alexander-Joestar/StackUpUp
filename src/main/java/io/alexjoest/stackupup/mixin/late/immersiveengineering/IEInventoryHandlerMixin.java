@@ -16,7 +16,7 @@ abstract class IEInventoryHandlerMixin {
 
     @ModifyReturnValue(method = "getSlotLimit", at = @At("RETURN"), require = 0)
     private int stackupup$expandSlotLimit(int original) {
-        return original == VANILLA_STACK_LIMIT ? StackLimitHooks.getCompatibilityStackSize() : original;
+        return StackLimitHooks.getInventoryCompatibilityStackSize(original);
     }
 
     @ModifyExpressionValue(
@@ -28,6 +28,6 @@ abstract class IEInventoryHandlerMixin {
         require = 0
     )
     private int stackupup$expandInsertSlotLimit(int original) {
-        return original == VANILLA_STACK_LIMIT ? StackLimitHooks.getCompatibilityStackSize() : original;
+        return StackLimitHooks.getInventoryCompatibilityStackSize(original);
     }
 }

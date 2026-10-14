@@ -32,7 +32,7 @@ abstract class BrandonsCoreInventoryLimitMixin {
         if (StackLimitHooks.shouldBypassInventoryStackLimit(this)) {
             return;
         }
-        this.stackLimit = StackLimitHooks.getCompatibilityStackSize();
+        this.stackLimit = StackLimitHooks.getInventoryCompatibilityStackSize();
     }
 
     @ModifyReturnValue(method = "getInventoryStackLimit", at = @At("RETURN"), require = 0)
@@ -40,6 +40,6 @@ abstract class BrandonsCoreInventoryLimitMixin {
         if (StackLimitHooks.shouldBypassInventoryStackLimit(this)) {
             return original;
         }
-        return original == VANILLA_STACK_LIMIT ? StackLimitHooks.getCompatibilityStackSize() : original;
+        return StackLimitHooks.getInventoryCompatibilityStackSize(original);
     }
 }

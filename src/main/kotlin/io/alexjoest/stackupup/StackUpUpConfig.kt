@@ -57,6 +57,11 @@ object StackUpUpConfig {
 
     class Compat {
         @JvmField
+        @Config.Name("inventoryExpansion")
+        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compat.inventoryExpansion.name")
+        val inventoryExpansion: InventoryExpansion = InventoryExpansion()
+
+        @JvmField
         @Config.Name("vanilla")
         @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compat.vanilla.name")
         val vanilla: Vanilla = Vanilla()
@@ -72,9 +77,19 @@ object StackUpUpConfig {
         val inventoryStackLimitBlacklist: InventoryStackLimitBlacklist = InventoryStackLimitBlacklist()
     }
 
+    class InventoryExpansion {
+        @JvmField
+        @Config.Comment("Enable compatibility expansion of inventory capacities. Changes require a game restart.")
+        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compat.inventoryExpansion.enabled.name")
+        @Config.RequiresMcRestart
+        var enabled: Boolean = false
+    }
+
     class InventoryStackLimitBlacklist {
         @JvmField
-        @Config.Comment("Exact lower-case Forge mod IDs whose getInventoryStackLimit compatibility patch should stay disabled.")
+        @Config.Comment(
+            "Any non-empty list of Forge mod IDs disables all inventory capacity compatibility expansion. Changes take effect fail-closed and require a restart to re-enable expansion.",
+        )
         @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.compat.inventoryStackLimitBlacklist.modIds.name")
         var modIds: Array<String> = emptyArray()
     }

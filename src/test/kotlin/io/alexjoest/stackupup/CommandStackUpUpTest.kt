@@ -1,5 +1,7 @@
 package io.alexjoest.stackupup
 
+import io.alexjoest.stackupup.diagnostic.InspectSelector
+import io.alexjoest.stackupup.diagnostic.InventoryInspection
 import io.alexjoest.stackupup.rules.RuleMessageKey
 import io.alexjoest.stackupup.rules.io.RuleSourceLocator
 import io.alexjoest.stackupup.rules.io.RuleStateService
@@ -17,6 +19,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.io.File
@@ -58,6 +61,8 @@ class CommandStackUpUpTest {
         assertEquals(listOf("reload"), command.completeArguments(arrayOf("r")))
         assertEquals(listOf("get", "set"), command.completeArguments(arrayOf("state", "")))
         assertEquals(listOf("false"), command.completeArguments(arrayOf("state", "set", "f")))
+        assertEquals(listOf("slot", "block"), command.completeArguments(arrayOf("inspect", "")))
+        assertEquals(listOf("none", "north"), command.completeArguments(arrayOf("inspect", "block", "0", "64", "0", "n")))
         assertEquals(emptyList<String>(), command.completeArguments(arrayOf("reload", "")))
         assertEquals(emptyList<String>(), command.completeArguments(arrayOf("state", "set", "false", "extra")))
     }
@@ -73,6 +78,40 @@ class CommandStackUpUpTest {
         assertWrongUsage(command, sender, "state", "get")
         assertWrongUsage(command, sender, "state", "set", "flag")
         assertWrongUsage(command, sender, "state", "set", "flag", "maybe")
+        val inspectError = assertThrows(WrongUsageException::class.java) {
+            command.executeArguments(sender, arrayOf("inspect", "block", "x", "1", "2", "none"))
+        }
+        assertEquals(RuleMessageKey.COMMAND_INSPECT_USAGE.translationKey, inspectError.message)
+    }
+
+    @Test
+    fun inspectCommand_shouldUseRealInspectionAndRefuseInsufficientPermission() {
+        val inventory = net.minecraft.inventory.InventoryBasic("inspect-test", false, 1)
+        val container = object : net.minecraft.inventory.Container() {
+            init {
+                addSlotToContainer(net.minecraft.inventory.Slot(inventory, 0, 0, 0))
+            }
+
+            override fun canInteractWith(playerIn: net.minecraft.entity.player.EntityPlayer): Boolean = true
+        }
+        val report = InventoryInspection(emptyList()).inspectContainer(container, 0)
+        val sender = CapturingCommandSender()
+        val command = CommandStackUpUp(inspect = { _, selector ->
+            assertEquals(InspectSelector.OpenContainer(), selector)
+            report
+        })
+
+        command.executeArguments(sender, arrayOf("inspect"))
+
+        assertEquals(RuleMessageKey.COMMAND_INSPECT_OBJECT.translationKey, (sender.messages[1] as TextComponentTranslation).key)
+        assertTrue((sender.messages[1] as TextComponentTranslation).formatArgs[2].toString().startsWith(container.javaClass.name))
+        assertEquals(4, command.requiredPermissionLevel)
+        val denied = CapturingCommandSender(canUse = false)
+        val exception = assertThrows(net.minecraft.command.CommandException::class.java) {
+            command.executeArguments(denied, arrayOf("inspect"))
+        }
+        assertEquals(RuleMessageKey.COMMAND_INSPECT_PERMISSION.translationKey, exception.message)
+        assertEquals(0, denied.messages.size)
     }
 
     @Test
@@ -134,7 +173,7 @@ class CommandStackUpUpTest {
         kotlin.test.assertTrue(content.contains(text), "Expected world markdown to contain '$text' but was:\n$content")
     }
 
-    private class CapturingCommandSender : ICommandSender {
+    private class CapturingCommandSender(private val canUse: Boolean = true) : ICommandSender {
         val messages = mutableListOf<ITextComponent>()
 
         override fun getName(): String = "test"
@@ -145,7 +184,7 @@ class CommandStackUpUpTest {
             messages.add(component)
         }
 
-        override fun canUseCommand(permLevel: Int, commandName: String): Boolean = true
+        override fun canUseCommand(permLevel: Int, commandName: String): Boolean = canUse
 
         override fun getPosition(): BlockPos = BlockPos.ORIGIN
 

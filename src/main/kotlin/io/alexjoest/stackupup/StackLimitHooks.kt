@@ -43,6 +43,20 @@ object StackLimitHooks {
     @JvmStatic
     fun getCompatibilityStackSize(): Int = StackUpUpConfig.maxStackSize
 
+    @JvmStatic
+    fun getInventoryCompatibilityStackSize(): Int = getInventoryCompatibilityStackSize(VANILLA_STACK_LIMIT)
+
+    @JvmStatic
+    fun getInventoryCompatibilityStackSize(original: Int): Int {
+        if (original != VANILLA_STACK_LIMIT ||
+            !InventoryStackLimitHook.isExpansionEnabled() ||
+            !InventoryStackLimitHook.isPrepared()
+        ) {
+            return original
+        }
+        return if (inventoryStackLimitBlacklistCache.get().matchesAny()) VANILLA_STACK_LIMIT else StackUpUpConfig.maxStackSize
+    }
+
     private val inventoryStackLimitBlacklistCache = AtomicReference(InventoryStackLimitBlacklistCache.empty())
 
     @JvmStatic
@@ -52,6 +66,9 @@ object StackLimitHooks {
             .map { it.trim().lowercase(Locale.ROOT) }
             .filter { it.isNotEmpty() }
             .toSet()
+        if (configuredModIds.isNotEmpty()) {
+            InventoryStackLimitHook.disableExpansionForRuntimeBlacklist()
+        }
         val ownedPackages = if (configuredModIds.isEmpty()) {
             emptyList()
         } else {
@@ -61,13 +78,13 @@ object StackLimitHooks {
                 .toList()
         }
         inventoryStackLimitBlacklistCache.set(InventoryStackLimitBlacklistCache.from(ownedPackages))
-        InventoryStackLimitHook.prepare(getCompatibilityStackSize(), ownedPackages.toTypedArray())
+        InventoryStackLimitHook.prepare(StackUpUpConfig.maxStackSize, ownedPackages.toTypedArray())
     }
 
     @JvmStatic
     internal fun installInventoryStackLimitBlacklistForTesting(packageNames: Array<String>) {
         inventoryStackLimitBlacklistCache.set(InventoryStackLimitBlacklistCache.from(packageNames.asList()))
-        InventoryStackLimitHook.prepare(getCompatibilityStackSize(), packageNames)
+        InventoryStackLimitHook.prepare(StackUpUpConfig.maxStackSize, packageNames)
     }
 
     @JvmStatic
@@ -214,11 +231,12 @@ object StackLimitHooks {
         }
 
         val currentItemLimit = stack.maxStackSize
-        return when {
+        val totalLimit = when {
             slotLimit < currentItemLimit -> slotLimit
             currentItemLimit < slotLimit && currentItemLimit != VANILLA_STACK_LIMIT -> currentItemLimit
             else -> slotLimit
         }
+        return minOf(simulatedLimit, totalLimit)
     }
 
     @JvmStatic
@@ -248,6 +266,8 @@ private class InventoryStackLimitBlacklistCache private constructor(private val 
     private val classResults = ConcurrentHashMap<Class<*>, Boolean>()
 
     fun matches(targetClass: Class<*>): Boolean = classResults.computeIfAbsent(targetClass) { matchesPackage(it.name) }
+
+    fun matchesAny(): Boolean = root.children.isNotEmpty()
 
     private fun matchesPackage(className: String): Boolean {
         var node = root

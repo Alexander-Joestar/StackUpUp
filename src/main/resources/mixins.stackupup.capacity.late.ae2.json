@@ -1,0 +1,13 @@
+{
+  "required": false,
+  "package": "io.alexjoest.stackupup.mixin.late.ae2",
+  "refmap": "${refmap}",
+  "target": "@env(DEFAULT)",
+  "minVersion": "0.8",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "AppEngInternalAEInventoryMixin",
+    "AppEngInternalInventoryMixin",
+    "AppEngPatternTermMixin"
+  ]
+}

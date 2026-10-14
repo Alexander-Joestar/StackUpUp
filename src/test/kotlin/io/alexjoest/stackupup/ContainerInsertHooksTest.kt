@@ -89,6 +89,27 @@ class ContainerInsertHooksTest {
     }
 
     @Test
+    fun realContainerSlotMerge_shouldConserveWhenInventoryLimitIs128() {
+        val item = createItem(256, "real_container_merge_item")
+        val inventory = createInventory(128)
+        val offeredCount = 200
+        val offered = ItemStack(item, offeredCount, 0)
+        val slot = object : Slot(inventory, 0, 0, 0) {
+            override fun getSlotStackLimit(): Int = ContainerInsertHooks.resolveMergeSlotLimit(this, offered, super.getSlotStackLimit())
+        }
+        val container = MergeContainer()
+        container.add(slot)
+
+        assertTrue(container.merge(offered))
+
+        val stored = inventory.getStackInSlot(0).count
+        val remainder = offered.count
+        assertEquals(128, stored, "真实 Container/Slot 写入应受 inventory 上限约束")
+        assertEquals(offeredCount, stored + remainder, "真实 Container/Slot 写入必须守恒")
+        assertEquals(72, remainder)
+    }
+
+    @Test
     fun nonPositiveInventoryLimit_shouldRefuseMergeWithoutConsumingSource() {
         assertMergeRefused(0, "zero_inv_merge_item")
         assertMergeRefused(-1, "negative_inv_merge_item")
@@ -100,8 +121,7 @@ class ContainerInsertHooksTest {
         val offeredCount = 32
         val offered = ItemStack(item, offeredCount, 0)
         val slot = object : Slot(inventory, 0, 0, 0) {
-            override fun getSlotStackLimit(): Int =
-                ContainerInsertHooks.resolveMergeSlotLimit(this, offered, super.getSlotStackLimit())
+            override fun getSlotStackLimit(): Int = ContainerInsertHooks.resolveMergeSlotLimit(this, offered, super.getSlotStackLimit())
         }
         val container = MergeContainer()
         container.add(slot)

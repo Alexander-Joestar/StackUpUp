@@ -57,11 +57,13 @@ abstract class VanillaInventoryLimitMixin {
         at = @At("RETURN"),
         require = 0
     )
-    private int stackupup$replaceCompatibilityLimit(int original) {
-        if (StackLimitHooks.shouldBypassInventoryStackLimit(this)) {
+    private int stackup$replaceCompatibilityLimit(int original) {
+        if (!io.alexjoest.stackupup.core.InventoryStackLimitHook.isExpansionEnabled()
+            || !io.alexjoest.stackupup.core.InventoryStackLimitHook.isPrepared()
+            || StackLimitHooks.shouldBypassInventoryStackLimit(this)) {
             return original;
         }
-        int compatibilityLimit = StackLimitHooks.getCompatibilityStackSize();
+        int compatibilityLimit = StackLimitHooks.getInventoryCompatibilityStackSize();
         if ((Object) this instanceof InventoryCrafting || (Object) this instanceof InventoryCraftResult) {
             int limit = StackUpUpConfig.compat.vanilla.craftingSlotLimit;
             if (limit <= 0) {

@@ -74,10 +74,18 @@ class StackUpUpCore : IFMLLoadingPlugin {
         }
     }
 
-    override fun getASMTransformerClass(): Array<String> = if (ensureConflictState().isEmpty()) {
-        arrayOf("io.alexjoest.stackupup.core.InventoryStackLimitTransformer")
-    } else {
-        emptyArray()
+    override fun getASMTransformerClass(): Array<String> {
+        if (ensureConflictState().isNotEmpty()) {
+            return emptyArray()
+        }
+        val policy = io.alexjoest.stackupup.core.InventoryExpansionStartupConfig.load()
+        io.alexjoest.stackupup.core.InventoryStackLimitHook.configureExpansionEnabled(policy.capacityAllowed)
+        return if (policy.capacityAllowed) {
+            arrayOf("io.alexjoest.stackupup.core.InventoryStackLimitTransformer")
+        } else {
+            logger.info("Inventory capacity expansion is disabled at startup; inventory getter transformer will not be registered")
+            emptyArray()
+        }
     }
 
     override fun getModContainerClass(): String? = null

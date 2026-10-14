@@ -25,7 +25,7 @@ abstract class AppEngPatternTermMixin {
     private void stackupup$expandBlankPatternSlotLimit(CallbackInfo ci) {
         Object patternSlotIN = stackupup$getBlankPatternSlot();
         if (patternSlotIN != null) {
-            stackupup$setStackLimit(patternSlotIN, StackLimitHooks.getCompatibilityStackSize());
+            stackupup$setStackLimit(patternSlotIN, StackLimitHooks.getInventoryCompatibilityStackSize());
         }
     }
 

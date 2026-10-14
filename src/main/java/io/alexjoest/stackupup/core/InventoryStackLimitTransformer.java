@@ -37,6 +37,9 @@ public final class InventoryStackLimitTransformer implements IClassTransformer {
         if (basicClass == null) {
             return null;
         }
+        if (!InventoryStackLimitHook.isExpansionEnabled()) {
+            return basicClass;
+        }
 
         try {
             ClassReader reader = new ClassReader(basicClass);

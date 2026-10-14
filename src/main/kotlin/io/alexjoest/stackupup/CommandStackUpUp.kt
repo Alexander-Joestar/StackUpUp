@@ -1,5 +1,8 @@
 package io.alexjoest.stackupup
 
+import io.alexjoest.stackupup.diagnostic.InspectSelector
+import io.alexjoest.stackupup.diagnostic.InspectionReport
+import io.alexjoest.stackupup.diagnostic.InventoryInspection
 import io.alexjoest.stackupup.rules.RuleMessageKey
 import io.alexjoest.stackupup.rules.io.RuleFeedback
 import net.minecraft.command.CommandBase
@@ -21,14 +24,17 @@ import javax.annotation.Nullable
 class CommandStackUpUp internal constructor(
     private val getState: (String) -> Boolean = StackUpUp::getState,
     private val setState: (String, Boolean) -> Unit = StackUpUp::setState,
+    private val inspect: (ICommandSender, InspectSelector) -> InspectionReport = { sender, selector -> InventoryInspection.loaded().inspect(sender, selector) },
 ) : CommandBase() {
-    private val subcommands = arrayOf(SUBCOMMAND_RELOAD, SUBCOMMAND_EDIT, SUBCOMMAND_STATE)
+    private val subcommands = arrayOf(SUBCOMMAND_RELOAD, SUBCOMMAND_EDIT, SUBCOMMAND_STATE, "inspect")
 
     constructor() : this(StackUpUp::getState, StackUpUp::setState)
 
     override fun getName(): String = StackUpUpIds.MOD_ID
 
     override fun getAliases(): MutableList<String> = mutableListOf()
+
+    override fun getRequiredPermissionLevel(): Int = 4
 
     override fun getUsage(sender: ICommandSender): String = RuleMessageKey.COMMAND_USAGE.translationKey
 
@@ -46,6 +52,7 @@ class CommandStackUpUp internal constructor(
             SUBCOMMAND_RELOAD -> emitReloadFeedback(sender)
             SUBCOMMAND_EDIT -> openRulesFile(sender)
             SUBCOMMAND_STATE -> handleStateCommand(sender, args)
+            SUBCOMMAND_INSPECT -> handleInspectCommand(sender, args)
             else -> throw WrongUsageException(getUsage(sender))
         }
     }
@@ -62,14 +69,59 @@ class CommandStackUpUp internal constructor(
      */
     internal fun completeArguments(args: Array<out String>): MutableList<String> = when (args.size) {
         1 -> getListOfStringsMatchingLastWord(args, *subcommands)
-        2 -> if (args[0] == SUBCOMMAND_STATE) getListOfStringsMatchingLastWord(args, STATE_ACTION_GET, STATE_ACTION_SET) else mutableListOf()
-        3 -> if (args[0] == SUBCOMMAND_STATE && args[1] == STATE_ACTION_SET) {
-            getListOfStringsMatchingLastWord(args, STATE_VALUE_TRUE, STATE_VALUE_FALSE)
+        2 -> when (args[0]) {
+            SUBCOMMAND_STATE -> getListOfStringsMatchingLastWord(args, STATE_ACTION_GET, STATE_ACTION_SET)
+            SUBCOMMAND_INSPECT -> getListOfStringsMatchingLastWord(args, "slot", "block")
+            else -> mutableListOf()
+        }
+        3 -> when {
+            args[0] == SUBCOMMAND_STATE && args[1] == STATE_ACTION_SET -> getListOfStringsMatchingLastWord(args, STATE_VALUE_TRUE, STATE_VALUE_FALSE)
+            args[0] == SUBCOMMAND_INSPECT && args[1] == "slot" -> mutableListOf()
+            args[0] == SUBCOMMAND_INSPECT && args[1] == "block" -> mutableListOf()
+            else -> mutableListOf()
+        }
+        6 -> if (args[0] == SUBCOMMAND_INSPECT && args[1] == "block") {
+            getListOfStringsMatchingLastWord(args, "none", "down", "up", "north", "south", "west", "east")
         } else {
             mutableListOf()
         }
+        7 -> if (args[0] == SUBCOMMAND_INSPECT && args[1] == "block") getListOfStringsMatchingLastWord(args, "slot") else mutableListOf()
         else -> mutableListOf()
     }
+
+    private fun handleInspectCommand(sender: ICommandSender, args: Array<out String>) {
+        if (!sender.canUseCommand(4, getName())) throw CommandException(RuleMessageKey.COMMAND_INSPECT_PERMISSION.translationKey)
+        val selector = try {
+            InspectSelector.parse(args)
+        } catch (e: IllegalArgumentException) {
+            throw WrongUsageException(RuleMessageKey.COMMAND_INSPECT_USAGE.translationKey)
+        }
+        val report = inspect(sender, selector)
+        sender.reply(RuleMessageKey.COMMAND_INSPECT_HEADER.translationKey, report.slots.size)
+        report.objects.forEach { observed ->
+            val owner = observed.confirmedModId ?: "UNKNOWN [${observed.modCandidates.joinToString(",")}]"
+            sender.reply(RuleMessageKey.COMMAND_INSPECT_OBJECT.translationKey, observed.id, observed.role, observed.identity, owner)
+        }
+        report.slots.forEach { slot ->
+            sender.reply(
+                RuleMessageKey.COMMAND_INSPECT_SLOT.translationKey,
+                slot.index,
+                slot.backingIndex,
+                slot.slotObjectId ?: "UNKNOWN",
+                slot.receiverObjectId,
+            )
+        }
+        if (report.unknownDelegate) sender.reply(RuleMessageKey.COMMAND_INSPECT_DELEGATE_UNKNOWN.translationKey)
+        if (report.omittedSlots > 0) sender.reply(RuleMessageKey.COMMAND_INSPECT_TRUNCATED.translationKey, report.omittedSlots)
+        val targets = report.objects.filter { it.blacklistTarget }
+        val modIds = targets.mapNotNull { it.confirmedModId }.distinct().sorted()
+        if (modIds.isNotEmpty()) {
+            sender.reply(RuleMessageKey.COMMAND_INSPECT_CONFIG.translationKey, "compat.inventoryStackLimitBlacklist.modIds", configList("modIds", modIds))
+        }
+        sender.reply(RuleMessageKey.COMMAND_INSPECT_WARNING.translationKey)
+    }
+
+    private fun configList(key: String, values: List<String>): String = "S:$key <\n${values.joinToString("\n")}\n>"
 
     private fun handleStateCommand(sender: ICommandSender, args: Array<out String>) {
         when (args.getOrNull(1)) {
@@ -145,6 +197,7 @@ class CommandStackUpUp internal constructor(
         private const val SUBCOMMAND_RELOAD = "reload"
         private const val SUBCOMMAND_EDIT = "edit"
         private const val SUBCOMMAND_STATE = "state"
+        private const val SUBCOMMAND_INSPECT = "inspect"
         private const val STATE_ACTION_GET = "get"
         private const val STATE_ACTION_SET = "set"
         private const val STATE_VALUE_TRUE = "true"

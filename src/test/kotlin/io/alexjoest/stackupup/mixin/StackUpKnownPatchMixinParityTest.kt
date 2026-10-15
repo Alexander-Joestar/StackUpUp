@@ -110,6 +110,30 @@ class StackUpKnownPatchMixinParityTest {
             "Legacy StackUp selected a class-name prefix and method name without a descriptor; no pinned 1.12 target source is available to prove this overload is equivalent.",
         ),
         OptionalLegacyMapping(
+            "refinedstorage",
+            "com.raoulvdberge.refinedstorage.apiimpl.network.grid.handler.ItemGridHandler*",
+            "onExtract",
+            "src/main/java/io/alexjoest/stackupup/mixin/late/refinedstorage/ItemGridHandlerPortableMixin.java",
+            "ItemGridHandlerPortableMixin",
+            "onExtract(Lnet/minecraft/entity/player/EntityPlayerMP;Ljava/util/UUID;II)V",
+            "mixins.stackupup.late.refinedstorage.json",
+            "mixins.stackupup.capacity.late.refinedstorage.json",
+            LegacyParityStatus.UNKNOWN,
+            "Legacy StackUp wildcard covers ItemGridHandlerPortable by class-name prefix, but selected only the method name; no pinned 1.12 target source proves this overload is equivalent.",
+        ),
+        OptionalLegacyMapping(
+            "refinedstorage",
+            "com.raoulvdberge.refinedstorage.apiimpl.network.node.NetworkNodeStorageMonitor",
+            "not selected by legacy ItemGridHandler* wildcard",
+            "src/main/java/io/alexjoest/stackupup/mixin/late/refinedstorage/NetworkNodeStorageMonitorMixin.java",
+            "NetworkNodeStorageMonitorMixin",
+            null,
+            "mixins.stackupup.late.refinedstorage.json",
+            "mixins.stackupup.capacity.late.refinedstorage.json",
+            LegacyParityStatus.UNKNOWN,
+            "This is a current StackUpUp-only capacity target outside the legacy ItemGridHandler* wildcard; the old StackUp transformer provides no descriptor or parity evidence.",
+        ),
+        OptionalLegacyMapping(
             "mantle",
             "slimeknights.mantle.tileentity.TileInventory",
             "<init>",
@@ -232,6 +256,32 @@ class StackUpKnownPatchMixinParityTest {
             assertFalse(configMixins(mapping.ordinaryConfig).contains(mapping.currentMixinClass))
             assertFalse(baselineMixins.contains(mapping.currentMixinClass))
         }
+    }
+
+    @Test
+    fun refinedStorageWildcard_shouldCoverPortableAndAccountForCurrentOnlyMonitorTarget() {
+        val portable = optionalLegacyMappings.single { it.currentMixinClass == "ItemGridHandlerPortableMixin" }
+        val portableSource = read(portable.currentMixin)
+        assertEquals("com.raoulvdberge.refinedstorage.apiimpl.network.grid.handler.ItemGridHandler*", portable.legacyTarget)
+        assertTrue(portableSource.contains("@Pseudo"))
+        assertTrue(portableSource.contains("method = \"${portable.currentDescriptor}\""))
+        assertTrue(portableSource.contains("@WrapOperation"))
+        assertFalse(portableSource.contains("@Redirect"))
+        assertTrue(configMixins(portable.capacityConfig).contains(portable.currentMixinClass))
+        assertFalse(configMixins(portable.ordinaryConfig).contains(portable.currentMixinClass))
+        assertFalse(configMixins("mixins.stackupup.baseline.early.json").contains(portable.currentMixinClass))
+
+        val absentQueue = queueLateConfigurations(emptySet())
+        assertFalse(absentQueue.contains(portable.capacityConfig))
+        val presentQueue = queueLateConfigurations(setOf(portable.modId))
+        assertTrue(presentQueue.contains(portable.capacityConfig))
+        assertEquals(presentQueue.size, presentQueue.toSet().size)
+
+        val monitor = optionalLegacyMappings.single { it.currentMixinClass == "NetworkNodeStorageMonitorMixin" }
+        assertEquals("not selected by legacy ItemGridHandler* wildcard", monitor.legacyMethodSelector)
+        assertEquals(LegacyParityStatus.UNKNOWN, monitor.parity)
+        assertTrue(configMixins(monitor.capacityConfig).contains(monitor.currentMixinClass))
+        assertFalse(configMixins(monitor.ordinaryConfig).contains(monitor.currentMixinClass))
     }
 
     @Test

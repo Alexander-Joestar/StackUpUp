@@ -213,6 +213,32 @@ class ContainerInsertHooksTest {
     }
 
     @Test
+    fun realContainerMerge_shouldRespectTightestDeclaredInventoryAndItemLimit() {
+        assertRealContainerMergeLimit(40, 100, 90, 40, "merge_declared_limit")
+        assertRealContainerMergeLimit(100, 50, 90, 50, "merge_inventory_limit")
+        assertRealContainerMergeLimit(100, 100, 30, 30, "merge_item_limit")
+    }
+
+    private fun assertRealContainerMergeLimit(declaredSlotLimit: Int, inventoryLimit: Int, itemLimit: Int, expectedStored: Int, itemId: String) {
+        val offeredCount = 96
+        val offered = ItemStack(createItem(itemLimit, itemId), offeredCount, 0)
+        val inventory = createInventory(inventoryLimit)
+        val slot = object : Slot(inventory, 0, 0, 0) {
+            override fun getSlotStackLimit(): Int = ContainerInsertHooks.resolveMergeSlotLimit(this, offered, declaredSlotLimit)
+        }
+        val container = MergeContainer()
+        container.add(slot)
+
+        assertTrue(container.merge(offered))
+
+        val stored = inventory.getStackInSlot(0).count
+        val remainder = offered.count
+        assertEquals(expectedStored, stored)
+        assertEquals(offeredCount - expectedStored, remainder)
+        assertEquals(offeredCount, stored + remainder, "real Container/Slot merge must conserve the offered stack")
+    }
+
+    @Test
     fun preparedExactInventoryBasic_offDefault64_shouldConserveEmptySlotMerge() {
         prepareInventoryPolicy(64, expansionEnabled = false, blacklist = emptyArray())
         val inventory = InventoryBasic("prepared-off", false, 1)

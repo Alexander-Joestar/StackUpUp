@@ -783,7 +783,11 @@ internal object DevTargetedContainerProbe : DevCompatProbe {
             insertResult = "remainder_stack_count=${remainder.count};simulate=$simulate",
             remainderCount = remainder.count,
             remainderSource = "RETURNED_BY_INSERT",
-            conservationDelta = simulationEvidence?.conservationDelta ?: offeredCount - (after - before) - remainder.count,
+            conservationDelta = if (simulate) {
+                simulationEvidence?.conservationDelta
+            } else {
+                offeredCount - (after - before) - remainder.count
+            },
             detail = if (simulate) {
                 val evidence = requireNotNull(simulationEvidence)
                 "simulate=true actualStoredDelta=${evidence.actualStoredDelta} predictedAccepted=${evidence.predictedAcceptedCount}"
@@ -1016,7 +1020,7 @@ internal object DevTargetedContainerProbe : DevCompatProbe {
         )
     }
 
-    private fun insertionRecord(
+    internal fun insertionRecord(
         selector: DevTargetedContainerSelector,
         definition: DevTargetedContainerDefinition,
         operation: String,

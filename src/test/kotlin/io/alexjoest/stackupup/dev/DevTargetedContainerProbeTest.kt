@@ -78,6 +78,38 @@ class DevTargetedContainerProbeTest {
     }
 
     @Test
+    fun realRecordBuilder_shouldKeepSimulationConservationNotApplicable() {
+        val selector = DevTargetedContainerSelector.parse("class=$VANILLA_CHEST_CLASS")
+        val definition = targetedContainerDefinitions.single { it.id == "vanilla_chest" }
+        val record = DevTargetedContainerProbe.insertionRecord(
+            selector = selector,
+            definition = definition,
+            operation = "ordinary_insert_simulate",
+            slot = 0,
+            offeredCount = 129,
+            preCount = 0,
+            postCount = 0,
+            inventoryLimit = 64,
+            slotLimit = 64,
+            itemLimit = 64,
+            setterResult = null,
+            insertResult = "simulate=true",
+            remainderCount = 65,
+            remainderSource = "RETURNED_BY_INSERT",
+            conservationDelta = null,
+            detail = "simulation",
+            simulation = true,
+            actualStoredDelta = 0,
+            predictedAcceptedCount = 64,
+        )
+        assertEquals(0, record.actualStoredDelta)
+        assertEquals(64, record.predictedAcceptedCount)
+        assertEquals(null, record.conservationDelta)
+        assertEquals("SIMULATION_PREDICTION", record.classification)
+        assertEquals("PASS", record.status)
+    }
+
+    @Test
     fun recordFormat_shouldExposeLimitsResultsRemainderConservationAndEvidenceDimensions() {
         val record = DevTargetedContainerRecord(
             selector = "class=$VANILLA_CHEST_CLASS",

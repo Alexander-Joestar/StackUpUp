@@ -1,4 +1,4 @@
-package io.alexjoest.stackupup.mixin.late.ic2classic
+package io.alexjoest.stackupup.mixin
 
 import io.alexjoest.stackupup.StackUpUpIds
 import io.alexjoest.stackupup.bootstrap.StackUpUpMixinConnector
@@ -87,6 +87,31 @@ class Ic2ClassicMixinSourceTest {
         val absent = queueIc2(modPresent = false)
         assertFalse(absent.contains(StackUpUpIds.LATE_IC2_CLASSIC_MIXIN_CONFIG))
         assertFalse(absent.contains(StackUpUpIds.CAPACITY_LATE_IC2_CLASSIC_MIXIN_CONFIG))
+    }
+
+    @Test
+    fun classicConfigs_shouldRegisterOnlyTheirOwnMixinTargets() {
+        val classicConfig = read("src/main/resources/mixins.stackupup.late.ic2classic.json")
+        val classicCapacityConfig = read("src/main/resources/mixins.stackupup.capacity.late.ic2classic.json")
+        val experimentalConfig = read("src/main/resources/mixins.stackupup.late.ic2.json")
+        val experimentalCapacityConfig = read("src/main/resources/mixins.stackupup.capacity.late.ic2.json")
+        val classicMixin = read("src/main/java/io/alexjoest/stackupup/mixin/late/ic2classic/SlotBaseMixin.java")
+        val experimentalMixin = read("src/main/java/io/alexjoest/stackupup/mixin/late/ic2/InvSlotMixin.java")
+
+        assertEquals(listOf("SlotBaseMixin"), mixinNames(classicConfig))
+        assertEquals(emptyList<String>(), mixinNames(classicCapacityConfig))
+        assertEquals(emptyList<String>(), mixinNames(experimentalConfig))
+        assertEquals(listOf("InvSlotMixin"), mixinNames(experimentalCapacityConfig))
+        assertTrue(classicConfig.contains("\"package\": \"io.alexjoest.stackupup.mixin.late.ic2classic\""))
+        assertTrue(experimentalCapacityConfig.contains("\"package\": \"io.alexjoest.stackupup.mixin.late.ic2\""))
+        assertTrue(classicMixin.contains(StackUpUpIds.IC2_CLASSIC_TARGET_CLASS))
+        assertTrue(experimentalMixin.contains(StackUpUpIds.IC2_EXPERIMENTAL_TARGET_CLASS))
+        assertFalse(classicConfig.contains("InvSlotMixin"))
+        assertFalse(classicCapacityConfig.contains("SlotBaseMixin"))
+        assertFalse(experimentalConfig.contains("SlotBaseMixin"))
+        assertFalse(experimentalCapacityConfig.contains("SlotBaseMixin"))
+        assertFalse(classicMixin.contains(StackUpUpIds.IC2_EXPERIMENTAL_TARGET_CLASS))
+        assertFalse(experimentalMixin.contains(StackUpUpIds.IC2_CLASSIC_TARGET_CLASS))
     }
 
     @Test
@@ -305,6 +330,18 @@ class Ic2ClassicMixinSourceTest {
     }
 
     private data class Artifact(val label: String, val path: Path, val selectedGetter: String, val writerMethod: String, val setCountMethod: String)
+
+    private fun mixinNames(config: String): List<String> {
+        val body = Regex(""""mixins"\s*:\s*\[(.*?)]""", RegexOption.DOT_MATCHES_ALL)
+            .find(config)
+            ?.groupValues
+            ?.get(1)
+            ?: error("Missing mixins array")
+        return Regex("\"([^\"]+)\"")
+            .findAll(body)
+            .map { it.groupValues[1] }
+            .toList()
+    }
 
     private fun queueIc2(modPresent: Boolean = true): List<String> {
         val queued = mutableListOf<String>()

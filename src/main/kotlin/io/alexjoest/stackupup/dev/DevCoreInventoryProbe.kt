@@ -25,10 +25,13 @@ import java.util.UUID
 
 internal const val CORE_INVENTORY_FOCUS = "core_inventory_off"
 
-internal fun validateFocusedRequest(focus: String, matrix: Boolean, compatIds: Set<String>) {
+internal fun validateFocusedRequest(focus: String, matrix: Boolean, compatIds: Set<String>, targetedSelector: String = "") {
     require(focus in focusedProbeIds) { "unknown_focus: $focus" }
     require(!matrix) { "focus_matrix_conflict: $focus" }
     require(compatIds.isEmpty()) { "focus_compat_conflict: $focus" }
+    if (focus == TARGETED_CONTAINER_FOCUS) {
+        require(targetedSelector.isNotBlank()) { "targeted_container_selector_required" }
+    }
 }
 
 internal object DevCoreInventoryProbe : DevCompatProbe {

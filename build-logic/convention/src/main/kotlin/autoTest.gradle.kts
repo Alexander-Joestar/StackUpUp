@@ -80,11 +80,17 @@ if (autoTestRequest.focus.isNotEmpty()) {
                 "equipment_inventory_blacklist",
                 "ae2_owner_off",
                 "ae2_owner_blacklist",
+                "targeted_container_probe",
             ),
     ) {
         "Unknown AutoTestFocus: ${autoTestRequest.focus}"
     }
     require(autoTestRequest.matrix == "false") { "AutoTestFocus cannot be combined with Matrix" }
+    if (autoTestRequest.focus == "targeted_container_probe") {
+        require(!autoTestCandidate.isNullOrBlank()) {
+            "targeted_container_probe requires -PstackupupDevAutoTestCandidate=class=<fqcn>[;modid=<id>]"
+        }
+    }
 }
 
 // ── -D 参数注入（enabled/autoShutdown/failFast/clearInventoryBeforeGive 恒为 true） ──

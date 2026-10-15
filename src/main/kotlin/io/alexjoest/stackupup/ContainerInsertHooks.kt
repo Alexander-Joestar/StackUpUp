@@ -30,7 +30,10 @@ object ContainerInsertHooks {
         )
         if (inventoryLimit <= 0) return 0
 
-        val dynamic = StackLimitHooks.resolveDynamicSlotLimit(stack, declaredSlotLimit, itemLimit)
-        return minOf(dynamic, inventoryLimit, itemLimit)
+        return if (declaredSlotLimit == Constants.VANILLA_STACK_LIMIT) {
+            inventoryLimit
+        } else {
+            minOf(declaredSlotLimit, inventoryLimit)
+        }
     }
 }

@@ -37,15 +37,18 @@ internal const val VANILLA_CHEST_CLASS = "net.minecraft.tileentity.TileEntityChe
 internal const val VANILLA_LARGE_CHEST_CLASS = "net.minecraft.inventory.InventoryLargeChest"
 internal const val NUCLEARCRAFT_ALLOY_FURNACE_CLASS = "nc.tile.processor.TileProcessorImpl\$TileAlloyFurnace"
 
-internal const val TARGETED_CONTAINER_MACHINE_FILE = "targeted-container-probe.jsonl"
-internal const val TARGETED_CONTAINER_HUMAN_FILE = "targeted-container-probe.txt"
-
 private const val UNKNOWN = "UNKNOWN"
 private const val PASS = "PASS"
 private const val FAIL = "FAIL"
 private const val SERVER_STORAGE_LOSS = "SERVER_STORAGE_LOSS"
 private const val SERVER_STORAGE_OK = "SERVER_STORAGE_OK"
 private const val LEGITIMATE_REMAINDER = "LEGITIMATE_REMAINDER"
+
+private fun targetedEvidenceRunId(): String {
+    val world = DevAutomationConfig.worldFolder.ifBlank { "unknown_world" }
+    val safeWorld = world.replace(Regex("[^A-Za-z0-9_.-]"), "_")
+    return "$safeWorld-${System.currentTimeMillis()}"
+}
 
 internal data class DevTargetedContainerSelector(val className: String?, val modId: String?, val capacityMode: String? = null) {
     init {
@@ -602,18 +605,22 @@ internal object DevTargetedContainerProbe : DevCompatProbe {
         }
         val failures = records.count { it.status == FAIL }
         val unknown = records.count { it.status == UNKNOWN }
+        val (machinePath, humanPath) = writeEvidence(records)
         val summary = "selector=$selector target=${definition.id} records=${records.size} failures=$failures unknown=$unknown " +
-            "machine=logs/$TARGETED_CONTAINER_MACHINE_FILE human=logs/$TARGETED_CONTAINER_HUMAN_FILE " +
-            "clientSyncDisplay=UNKNOWN"
+            "machine=$machinePath human=$humanPath clientSyncDisplay=UNKNOWN"
         return DevCompatProbeResult(failures == 0, summary)
     }
 
-    private fun writeEvidence(records: List<DevTargetedContainerRecord>) {
-        val machine = File("logs", TARGETED_CONTAINER_MACHINE_FILE)
-        val human = File("logs", TARGETED_CONTAINER_HUMAN_FILE)
+    private fun writeEvidence(records: List<DevTargetedContainerRecord>): Pair<String, String> {
+        val runId = targetedEvidenceRunId()
+        val machineName = "targeted-container-probe-$runId.jsonl"
+        val humanName = "targeted-container-probe-$runId.txt"
+        val machine = File("logs", machineName)
+        val human = File("logs", humanName)
         machine.parentFile?.mkdirs()
         machine.writeText(renderTargetedContainerMachineEvidence(records), Charsets.UTF_8)
         human.writeText(renderTargetedContainerHumanEvidence(records), Charsets.UTF_8)
+        return "logs/$machineName" to "logs/$humanName"
     }
 
     private fun runOperation(

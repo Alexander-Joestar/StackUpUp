@@ -155,6 +155,8 @@ internal data class DevTargetedContainerRecord(
     val offeredCount: Int?,
     val preStackCount: Int?,
     val postStackCount: Int?,
+    val actualStoredDelta: Int? = null,
+    val predictedAcceptedCount: Int? = null,
     val inventoryLimit: Int?,
     val slotLimit: Int?,
     val itemLimit: Int?,
@@ -206,6 +208,10 @@ internal data class DevTargetedContainerRecord(
         appendJsonNumber("preStackCount", preStackCount)
         append(',')
         appendJsonNumber("postStackCount", postStackCount)
+        append(',')
+        appendJsonNumber("actualStoredDelta", actualStoredDelta)
+        append(',')
+        appendJsonNumber("predictedAcceptedCount", predictedAcceptedCount)
         append(',')
         appendJsonNumber("inventoryLimit", inventoryLimit)
         append(',')
@@ -270,6 +276,8 @@ internal fun renderTargetedContainerRecord(record: DevTargetedContainerRecord): 
     append(" offered=").append(record.offeredCount ?: UNKNOWN)
     append(" pre=").append(record.preStackCount ?: UNKNOWN)
     append(" post=").append(record.postStackCount ?: UNKNOWN)
+    append(" actualStoredDelta=").append(record.actualStoredDelta ?: UNKNOWN)
+    append(" predictedAccepted=").append(record.predictedAcceptedCount ?: UNKNOWN)
     append(" inventoryLimit=").append(record.inventoryLimit ?: UNKNOWN)
     append(" slotLimit=").append(record.slotLimit ?: UNKNOWN)
     append(" itemLimit=").append(record.itemLimit ?: UNKNOWN)
@@ -298,6 +306,18 @@ internal fun renderTargetedContainerRecord(record: DevTargetedContainerRecord): 
 }
 
 internal data class DevTargetedContainerMixinState(val requested: String, val status: String, val coverage: String)
+
+internal data class DevSimulationEvidence(val actualStoredDelta: Int, val predictedAcceptedCount: Int, val conservationDelta: Int?)
+
+internal fun evaluateSimulationEvidence(offeredCount: Int, remainderCount: Int, preStackCount: Int, postStackCount: Int): DevSimulationEvidence {
+    require(offeredCount >= 0) { "simulation offered count must be non-negative" }
+    require(remainderCount in 0..offeredCount) { "simulation remainder outside offered range" }
+    return DevSimulationEvidence(
+        actualStoredDelta = postStackCount - preStackCount,
+        predictedAcceptedCount = offeredCount - remainderCount,
+        conservationDelta = null,
+    )
+}
 
 internal fun renderTargetedContainerMachineEvidence(records: List<DevTargetedContainerRecord>): String = buildString {
     records.forEach { append(it.toMachineJson()).append('\n') }
@@ -693,6 +713,7 @@ internal object DevTargetedContainerProbe : DevCompatProbe {
             offeredCount = offeredCount,
             preStackCount = before,
             postStackCount = after,
+            actualStoredDelta = after - before,
             inventoryLimit = inventoryLimit,
             slotLimit = slotLimit,
             itemLimit = offered.maxStackSize,
@@ -711,7 +732,7 @@ internal object DevTargetedContainerProbe : DevCompatProbe {
             operationId = "${definition.id}/direct_setter/slot$slot",
             destinationSlot = slot,
             logicalSide = "SERVER_STORAGE",
-            detail = "direct setter has no returned remainder or conservation proof",
+            detail = "direct setter has no returned remainder or conservation proof; observedStoredDelta=${after - before}",
         )
     }
 
@@ -735,7 +756,11 @@ internal object DevTargetedContainerProbe : DevCompatProbe {
         val after = afterStack.count
         val inventoryLimit = inventory?.inventoryStackLimit
         val slotLimit = handler.getSlotLimit(slot)
-        val simulationMutation = simulate && after != before
+        val simulationEvidence = if (simulate) {
+            evaluateSimulationEvidence(offeredCount, remainder.count, before, after)
+        } else {
+            null
+        }
         return insertionRecord(
             selector = selector,
             definition = definition,
@@ -751,11 +776,16 @@ internal object DevTargetedContainerProbe : DevCompatProbe {
             insertResult = "remainder_stack_count=${remainder.count};simulate=$simulate",
             remainderCount = remainder.count,
             remainderSource = "RETURNED_BY_INSERT",
-            conservationDelta = offeredCount - (if (simulate) offeredCount - remainder.count else after - before) - remainder.count,
-            storageStatusOverride = if (simulationMutation) "LOSS" else null,
-            classificationOverride = if (simulationMutation) SERVER_STORAGE_LOSS else null,
-            statusOverride = if (simulationMutation) FAIL else null,
-            detail = if (simulate) "simulate=true stateChanged=${after != before}" else null,
+            conservationDelta = simulationEvidence?.conservationDelta ?: offeredCount - (after - before) - remainder.count,
+            detail = if (simulate) {
+                val evidence = requireNotNull(simulationEvidence)
+                "simulate=true actualStoredDelta=${evidence.actualStoredDelta} predictedAccepted=${evidence.predictedAcceptedCount}"
+            } else {
+                null
+            },
+            simulation = simulate,
+            actualStoredDelta = simulationEvidence?.actualStoredDelta ?: after - before,
+            predictedAcceptedCount = simulationEvidence?.predictedAcceptedCount,
             offeredIdentity = targetedStackIdentity(offered),
             preIdentity = targetedStackIdentity(beforeStack),
             postIdentity = targetedStackIdentity(afterStack),
@@ -994,8 +1024,11 @@ internal object DevTargetedContainerProbe : DevCompatProbe {
         insertResult: String?,
         remainderCount: Int?,
         remainderSource: String,
-        conservationDelta: Int,
+        conservationDelta: Int?,
         detail: String?,
+        simulation: Boolean = false,
+        actualStoredDelta: Int? = postCount - preCount,
+        predictedAcceptedCount: Int? = null,
         offeredIdentity: String? = null,
         preIdentity: String? = null,
         postIdentity: String? = null,
@@ -1008,7 +1041,8 @@ internal object DevTargetedContainerProbe : DevCompatProbe {
         destinationSlot: Int? = null,
         logicalSide: String = "SERVER_STORAGE",
     ): DevTargetedContainerRecord {
-        val hasLoss = conservationDelta != 0
+        val hasLoss = conservationDelta != null && conservationDelta != 0
+        val simulationMutation = simulation && actualStoredDelta != 0
         val hasRemainder = remainderCount != null && remainderCount > 0
         return DevTargetedContainerRecord(
             selector = selector.toString(),
@@ -1020,6 +1054,8 @@ internal object DevTargetedContainerProbe : DevCompatProbe {
             offeredCount = offeredCount,
             preStackCount = preCount,
             postStackCount = postCount,
+            actualStoredDelta = actualStoredDelta,
+            predictedAcceptedCount = predictedAcceptedCount,
             inventoryLimit = inventoryLimit,
             slotLimit = slotLimit,
             itemLimit = itemLimit,
@@ -1028,14 +1064,15 @@ internal object DevTargetedContainerProbe : DevCompatProbe {
             remainderCount = remainderCount,
             remainderSource = remainderSource,
             conservationDelta = conservationDelta,
-            serverStorageStatus = storageStatusOverride ?: if (hasLoss) "LOSS" else PASS,
+            serverStorageStatus = storageStatusOverride ?: if (simulationMutation || hasLoss) "LOSS" else PASS,
             clientSyncDisplayStatus = UNKNOWN,
             classification = classificationOverride ?: when {
+                simulation -> if (simulationMutation) SERVER_STORAGE_LOSS else "SIMULATION_PREDICTION"
                 hasLoss -> SERVER_STORAGE_LOSS
                 hasRemainder -> LEGITIMATE_REMAINDER
                 else -> SERVER_STORAGE_OK
             },
-            status = statusOverride ?: if (hasLoss) FAIL else PASS,
+            status = statusOverride ?: if (simulationMutation || hasLoss) FAIL else PASS,
             offeredIdentity = offeredIdentity,
             preIdentity = preIdentity,
             postIdentity = postIdentity,

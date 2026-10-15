@@ -62,6 +62,22 @@ class DevTargetedContainerProbeTest {
     }
 
     @Test
+    fun simulationEvidence_shouldKeepActualStorageSeparateFromPrediction() {
+        val evidence = evaluateSimulationEvidence(
+            offeredCount = 129,
+            remainderCount = 65,
+            preStackCount = 0,
+            postStackCount = 0,
+        )
+        assertEquals(0, evidence.actualStoredDelta)
+        assertEquals(64, evidence.predictedAcceptedCount)
+        assertEquals(null, evidence.conservationDelta)
+        assertThrows(IllegalArgumentException::class.java) {
+            evaluateSimulationEvidence(129, 130, 0, 0)
+        }
+    }
+
+    @Test
     fun recordFormat_shouldExposeLimitsResultsRemainderConservationAndEvidenceDimensions() {
         val record = DevTargetedContainerRecord(
             selector = "class=$VANILLA_CHEST_CLASS",

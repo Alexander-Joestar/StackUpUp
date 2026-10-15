@@ -174,7 +174,7 @@ Forge/FML + LaunchWrapper
 ### 5.3 当前项目 Shadow 风险样例
 
 - `early/NetHandlerPlayServerMixin.java:21-23` Shadow `player`、`itemDropThreshold` 用于创造模式包处理，字段访问合理；但 `:25-56` 的 `HEAD + cancellable` 已接管整个方法，风险在控制流、线程检查、槽位更新、丢弃和取消语义是否完整，不在 Shadow 数量。
-- `early/ItemStackNbtMixin.java:21-37` Shadow 多个 `ItemStack` 字段，`:52-71` 在 `writeToNBT` HEAD 取消并重建序列化；持久化高风险，必须逐项对照目标版本的 id/count/damage/tag/capability 和返回对象语义。
+- M86（5319a97）后的 `early/ItemStackNbtMixin.java` 仅 Shadow `stackSize`；NBT 构造器仍在 `itemDamage` 写入后读回整数 Count。写入端在 `writeToNBT` 的 RETURN 注入中只对 vanilla 返回的 compound 调用 `setInteger("Count", stackSize)`（TAG_Int），不取消或重建方法；id、Damage、tag、ForgeCaps 等仍由 vanilla writer 序列化。此前 HEAD cancellable 手工重建仅是 M86 前历史形态。`ItemStackNbtMixinTest` 的 NBTTagCompound 边界 fixture 与源码结构断言不是真实 Mixin/ItemStack 序列化或保存重载验证；运行行为仍 UNKNOWN。
 - `early/SlotItemHandlerMixin.java:16-17` Shadow `getSlotStackLimit`，`:24-39` 修改返回值；只能提供 handler 查询，不能证明未知 handler 的真实 insert/setter 能写入动态上限；`original == 64` 分支和其他原值分支的已知限制见 `docs/agent/2026-04-18-hard-rules.md:65-79`。
 - `late/BrandonsCoreInventoryLimitMixin.java:20-21` 字段 Shadow 要保留必须有对应版本第三方源码或字节码；缺 jar 统一写 `无源码不可判定`，不能用注释“protected int stackLimit”替代外部证据。
 
@@ -252,7 +252,7 @@ Forge/FML + LaunchWrapper
 | `early/EntityItemMergeMixin.java:11-23` | 已迁移为 `@ModifyExpressionValue`，修改合并流程中 `ItemStack#getMaxStackSize()I` 的表达式结果（保留原值参与 `Math.max` 计算），不再是 `@Redirect` | 记录调用点和合并双方真实上限；验证原值参与、合并容量和 remainder/实体数量结果。 |
 | `early/InventoryPlayerAddResourceMixin.java:12-44` | 三个调用点均为 `@ModifyExpressionValue`，分布在合并和资源加入路径 | 每个调用点单独建立语义；检查 `resolveInventoryClampLimit` 两个调用方；禁止用一次泛化替换掩盖不同的 source/target/limit 关系。 |
 | `early/NetHandlerPlayServerMixin.java:21-56` | Shadow 两个字段，HEAD cancellable 重建创造模式包处理 | 对照目标版本完整方法；覆盖线程切换、创造模式、非法槽位、空栈、BlockEntityTag 清洗、slot 更新、丢弃阈值和取消后逻辑；优先减少完整控制流接管。 |
-| `early/ItemStackNbtMixin.java:21-71` | 多 Shadow，`writeToNBT` HEAD cancellable 重建 NBT | 逐字段对照目标版本；覆盖空 item、tag alias、ForgeCaps、读写往返、未知字段保留和其他 Mixin 共存；不能只验证 Count 变大。 |
+| `early/ItemStackNbtMixin.java:15-44`（M86，5319a97） | 仅 Shadow `stackSize`；`writeToNBT` RETURN 注入只把 vanilla 返回 compound 的 Count 更新为 TAG_Int，id、Damage、tag、ForgeCaps 等仍由 vanilla writer 序列化；旧 HEAD cancellable 重建仅为历史形态 | `ItemStackNbtMixinTest` 检查 NBTTagCompound fixture 的整数边界/相邻字段和源码结构，不是实际 Mixin launch、ItemStack 序列化或保存/重载测试。仍需真实读写往返、未知字段保留与其他 Mixin 共存验证；当前运行行为 UNKNOWN。 |
 | `early/SlotItemHandlerMixin.java:26-38` | 只保留 `getItemStackLimit()` 的 `@ModifyReturnValue`（`resolveItemHandlerSlotLimit` 按 `min(slotLimit, itemLimit)` 收敛）+ `@Shadow getSlotStackLimit()`；T3 已移除 `getSlotStackLimit()` 的独立动态上限注入与 `original == 64` 分支 | 先确认 handler 的真实 insert/setter；未知 handler 不扩容；不能把已移除的 `original == 64` 分支当作现状描述。 |
 | `early/ForgeItemHandlerLimitMixin.java:33-46` | 目标只有 `ItemStackHandler` 与 `EntityEquipmentInvWrapper` 两个自洽类（`@Mixin` 列表 :33-39、handler :43-46）；四个转发 wrapper 已按 T3 移出 | 按目标拆分查询—写入链；wrapper 只作转发证据不能独立抬高；装备 armor/hand、`insertItem`、`setStackInSlot` 和 vanilla setter 分开验证。 |
 | `early/SlotLimitMixin.java:12-27` | 修改 slot item limit；正的 inventory limit 才 clamp | 覆盖非正 inventory limit；广告、实际 setter 和 handler insert 同源；不能用 GUI/slot 返回值掩盖服务端容量。 |
@@ -275,7 +275,7 @@ Forge/FML + LaunchWrapper
 - **[历史证据，已移除] dynamic ASM replacement layer**：`DynamicCompatMethodProbe.java:32-58` 曾只按方法名识别，`CompatibilityLimitPatch.java:56-85` 曾替换匹配方法内所有 `BIPUSH 64`；`DynamicCompatTransformer.java:21-49` 曾应用补丁，`FixedCompatTargets.java:29-64` 曾作为固定跳过表。该层已从当前源码移除，不能再写成当前限制或实现；当前兼容行为以 `StackUpUpMixinConnector` 注册的显式 early/late Mixin 为准，按目标 descriptor、配置和真实写入路径分别验证。
 - **[当前项目事实] 其他完整控制流/协议替换**：`InventoryHelperMixin.java:17-25`、`PacketBufferMixin.java:16-59`、`PacketUtilMixin.java:16-39` 都在 HEAD 取消原方法，分别涉及实体掉落拆分和 ItemStack 网络协议；必须按原版源码、异常、两端读写和数量守恒审查，不能套用普通返回值修改的低风险判断。
 - **[当前项目事实] coremod 异常分类缺口**：`StackUpUpCore.kt:35-49` 的冲突检测捕获 `Throwable` 后返回空列表，异常可能被误判为“没有冲突”。与 Fail Fast 冲突，迁移或重构时必须保留可定位诊断并单独测试，当前不能标为已闭合。
-- **[当前项目事实/UNKNOWN] 核心注入显式失败门尚未逐项收敛**：early JSON `:1-7` 未声明 `required: true`；`EntityItemMergeMixin.java:11-17`、`ContainerMixin.java:14-20`、`ItemStackNbtMixin.java:39-52`、`PacketBufferMixin.java:16-20,36-39` 未显式写最低 `require`。这些是代表性样例，不是完整枚举；完整清单须逐项扫描 early JSON 及全部 injection。当前框架默认行为及最终匹配结果未由本文件运行验证，只能记录为“规则要求与现状之间的审查项”，不能写成核心 fail-fast 已通过。
+- **[当前项目事实/UNKNOWN] 核心注入显式失败门尚未逐项收敛**：early JSON `:1-7` 未声明 `required: true`；`EntityItemMergeMixin.java:11-17`、`ContainerMixin.java:14-20`、M86 后的 `ItemStackNbtMixin.java:19-44`（含 RETURN Count 更新）及 `PacketBufferMixin.java:16-20,36-39` 未显式写最低 `require`。这些是代表性样例，不是完整枚举；完整清单须逐项扫描 early JSON 及全部 injection。当前框架默认行为及最终匹配结果未由本文件运行验证，只能记录为“规则要求与现状之间的审查项”，不能写成核心 fail-fast 已通过。
 
 ### 8.2 容量目标的逐项审计表
 

@@ -25,6 +25,9 @@ final class InventoryClassHierarchyRepository {
     }
 
     boolean implementsInventory(ClassMetadata root) {
+        if (root == null) {
+            return false;
+        }
         Set<String> visited = new HashSet<>();
         if (root.name != null) {
             visited.add(root.name);
@@ -38,7 +41,8 @@ final class InventoryClassHierarchyRepository {
      * here: transforming the inherited method is sufficient because it sees the runtime receiver.
      */
     String inheritedGetterForConcreteClass(ClassMetadata root) {
-        if (root.superName == null || hasConcreteInventoryAncestor(root.superName, new HashSet<>())) {
+        if (root == null || root.superName == null
+            || hasConcreteInventoryAncestor(root.superName, new HashSet<>())) {
             return null;
         }
 

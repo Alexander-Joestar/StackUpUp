@@ -85,7 +85,7 @@ class Ae2MixinSourceTest {
 
         assertTrue(hierarchy.contains("net/minecraft/inventory/IInventory"))
         assertTrue(transformer.contains("getInventoryStackLimit"))
-        assertFalse(transformer.contains("getSlotLimit"), "broad IInventory transformer must not duplicate AE2 getSlotLimit profile")
+        assertTrue(transformer.contains("getSlotLimit"), "broad transformer follows StackUp's IItemHandler getter coverage")
     }
 
     private fun read(path: String): String = String(Files.readAllBytes(Paths.get(path)), Charsets.UTF_8)

@@ -62,8 +62,13 @@ class InventoryStackLimitTransformerTest {
     }
 
     @Test
-    fun nativeInventories_shouldRemainUnchanged() {
-        for (name in listOf("net.minecraft.entity.player.InventoryPlayer", "net.minecraft.inventory.InventoryLargeChest")) {
+    fun nativeAndInternalInventoryClasses_shouldRemainUnchanged() {
+        val names = listOf(
+            "net.minecraft.entity.player.InventoryPlayer",
+            "net.minecraft.inventory.InventoryLargeChest",
+            "io.alexjoest.stackupup.core.InternalInventory",
+        )
+        for (name in names) {
             val original = inventoryClassBytes(
                 className = name,
                 methods = listOf(returningBipushMethod("getInventoryStackLimit", 64)),
@@ -72,14 +77,41 @@ class InventoryStackLimitTransformerTest {
 
             assertArrayEquals(original, transformer.transform(name, name, original))
         }
+
+        val abstractInventory = inventoryClassBytes(
+            className = "example.AbstractInventory",
+            access = Opcodes.ACC_ABSTRACT,
+            methods = listOf(returningBipushMethod("getInventoryStackLimit", 64)),
+            interfaces = arrayOf(INVENTORY_INTERFACE),
+        )
+        val inventoryInterface = inventoryClassBytes(
+            className = "example.InventoryInterface",
+            interfaceClass = true,
+            methods = listOf(
+                returningBipushMethod(
+                    "getInventoryStackLimit",
+                    64,
+                    access = Opcodes.ACC_PUBLIC or Opcodes.ACC_ABSTRACT,
+                ),
+            ),
+            interfaces = arrayOf(INVENTORY_INTERFACE),
+        )
+
+        assertArrayEquals(abstractInventory, transformer.transform(null, null, abstractInventory))
+        assertArrayEquals(inventoryInterface, transformer.transform(null, null, inventoryInterface))
     }
 
     @Test
-    fun directConcreteInventory_shouldReplaceOnlyExactCapacityLiterals() {
+    fun directConcreteInventory_shouldPatchOnlyExactCapacityDescriptorsAndEvery64Literal() {
         val original = inventoryClassBytes(
             className = "example.DirectInventory",
             methods = listOf(
-                returningBipushMethod("getInventoryStackLimit", 64),
+                methodSpec("getInventoryStackLimit") { method ->
+                    method.visitIntInsn(Opcodes.BIPUSH, 64)
+                    method.visitIntInsn(Opcodes.BIPUSH, 64)
+                    method.visitInsn(Opcodes.IADD)
+                    method.visitInsn(Opcodes.IRETURN)
+                },
                 returningBipushMethod("func_70297_j_", 64),
                 returningBipushMethod("getInventoryStackLimit", 64, descriptor = "(I)I"),
                 returningBipushMethod("unrelatedMethod", 64),
@@ -89,23 +121,25 @@ class InventoryStackLimitTransformerTest {
 
         val transformed = transformer.transform("example.DirectInventory", "example.DirectInventory", original)
 
-        assertEquals(listOf(256), methodLiterals(transformed, "getInventoryStackLimit", "()I").sipush)
+        assertEquals(listOf(64, 64), methodLiterals(transformed, "getInventoryStackLimit", "()I").sipush)
         assertEquals(emptyList<Int>(), methodLiterals(transformed, "getInventoryStackLimit", "()I").bipush)
-        assertEquals(listOf(256), methodLiterals(transformed, "func_70297_j_", "()I").sipush)
+        assertEquals(listOf(64), methodLiterals(transformed, "func_70297_j_", "()I").sipush)
         assertEquals(emptyList<Int>(), methodLiterals(transformed, "func_70297_j_", "()I").bipush)
         assertEquals(listOf(64), methodLiterals(transformed, "getInventoryStackLimit", "(I)I").bipush)
         assertEquals(listOf(64), methodLiterals(transformed, "unrelatedMethod", "()I").bipush)
-        assertEquals(0, hookInvocationCount(transformed))
+        assertEquals(3, hookInvocationCount(transformed))
     }
 
     @Test
-    fun nonBipushAndComputedCapacity_shouldUseNaturalFallback() {
+    fun non64ConstantsAndDynamicCapacityExpressions_shouldRemainUnchanged() {
         val original = inventoryClassBytes(
             className = "example.ComputedInventory",
             methods = listOf(
                 methodSpec("getInventoryStackLimit") { method ->
                     method.visitIntInsn(Opcodes.BIPUSH, 32)
                     method.visitIntInsn(Opcodes.BIPUSH, 32)
+                    method.visitInsn(Opcodes.IADD)
+                    method.visitLdcInsn(64)
                     method.visitInsn(Opcodes.IADD)
                     method.visitInsn(Opcodes.IRETURN)
                 },
@@ -134,7 +168,7 @@ class InventoryStackLimitTransformerTest {
     }
 
     @Test
-    fun applyingTransformerTwice_shouldNotDuplicateLiteralReplacement() {
+    fun applyingTransformerTwice_shouldNotDuplicateHelperCalls() {
         val original = inventoryClassBytes(
             className = "example.RepeatedInventory",
             methods = listOf(returningBipushMethod("getInventoryStackLimit", 64)),
@@ -145,12 +179,13 @@ class InventoryStackLimitTransformerTest {
         val repeated = transformer.transform(null, null, transformed)
 
         assertArrayEquals(transformed, repeated)
-        assertEquals(listOf(256), methodLiterals(repeated, "getInventoryStackLimit", "()I").sipush)
-        assertEquals(0, hookInvocationCount(repeated))
+        assertEquals(listOf(64), methodLiterals(repeated, "getInventoryStackLimit", "()I").sipush)
+        assertEquals(emptyList<Int>(), methodLiterals(repeated, "getInventoryStackLimit", "()I").bipush)
+        assertEquals(1, hookInvocationCount(repeated))
     }
 
     @Test
-    fun inheritedConcreteGetter_shouldUseNaturalParentBehavior() {
+    fun inheritedConcreteGetter_shouldUseDynamicReceiverHelper() {
         val parentName = "example.InventoryParent"
         val childName = "example.InventoryChild"
         val parent = inventoryClassBytes(
@@ -168,7 +203,8 @@ class InventoryStackLimitTransformerTest {
         val transformedParent = customTransformer.transform(parentName, parentName, parent)
         val transformedChild = customTransformer.transform(childName, childName, child)
 
-        assertEquals(listOf(256), methodLiterals(transformedParent, "getInventoryStackLimit", "()I").sipush)
+        assertEquals(listOf(64), methodLiterals(transformedParent, "getInventoryStackLimit", "()I").sipush)
+        assertEquals(1, hookInvocationCount(transformedParent))
         assertArrayEquals(child, transformedChild)
         assertFalse(hasDeclaredMethod(transformedChild, "getInventoryStackLimit", "()I"))
         assertEquals(0, hookInvocationCount(transformedChild))
@@ -217,39 +253,122 @@ class InventoryStackLimitTransformerTest {
 
         val transformed = customTransformer.transform(childName, childName, child)
 
-        assertEquals(listOf(256), methodLiterals(transformed, "getInventoryStackLimit", "()I").sipush)
+        assertEquals(listOf(64), methodLiterals(transformed, "getInventoryStackLimit", "()I").sipush)
+        assertEquals(1, hookInvocationCount(transformed))
     }
 
     @Test
-    fun missingHierarchyMetadata_shouldSkipSafely() {
+    fun itemHandlerGetter_shouldPatchOnlyGetSlotLimitWithTheIntDescriptor() {
+        val original = inventoryClassBytes(
+            className = "example.Handler",
+            methods = listOf(
+                returningBipushMethod("getSlotLimit", 64, descriptor = "(I)I"),
+                returningBipushMethod("getSlotLimit", 64),
+                returningBipushMethod("getSlotLimit", 64, descriptor = "(II)I"),
+                returningBipushMethod("unrelatedMethod", 64),
+            ),
+            interfaces = arrayOf(ITEM_HANDLER_INTERFACE),
+        )
+
+        val transformed = transformer.transform("example.Handler", "example.Handler", original)
+
+        assertEquals(listOf(64), methodLiterals(transformed, "getSlotLimit", "(I)I").sipush)
+        assertEquals(emptyList<Int>(), methodLiterals(transformed, "getSlotLimit", "(I)I").bipush)
+        assertEquals(listOf(64), methodLiterals(transformed, "getSlotLimit", "()I").bipush)
+        assertEquals(listOf(64), methodLiterals(transformed, "getSlotLimit", "(II)I").bipush)
+        assertEquals(listOf(64), methodLiterals(transformed, "unrelatedMethod", "()I").bipush)
+        assertEquals(1, hookInvocationCount(transformed))
+    }
+
+    @Test
+    fun inheritedItemHandlerSubinterface_shouldIdentifyConcreteGetter() {
+        val subinterfaceName = "example.ExtendedItemHandler"
+        val childName = "example.ChildHandler"
+        val metadata = HashMap<String, ByteArray>()
+        metadata[subinterfaceName.replace('.', '/')] = inventoryClassBytes(
+            className = subinterfaceName,
+            interfaceClass = true,
+            interfaces = arrayOf(ITEM_HANDLER_INTERFACE),
+        )
+        val child = inventoryClassBytes(
+            className = childName,
+            methods = listOf(returningBipushMethod("getSlotLimit", 64, descriptor = "(I)I")),
+            interfaces = arrayOf(subinterfaceName.replace('.', '/')),
+        )
+        val customTransformer = InventoryStackLimitTransformer(
+            InventoryClassHierarchyRepository(MapMetadataSource(metadata)),
+        )
+
+        val transformed = customTransformer.transform(childName, childName, child)
+
+        assertEquals(listOf(64), methodLiterals(transformed, "getSlotLimit", "(I)I").sipush)
+        assertEquals(1, hookInvocationCount(transformed))
+    }
+
+    @Test
+    fun slotSubclasses_shouldPatchBothMethodFamiliesAndSrgAliases() {
+        val parentName = "example.SlotBase"
+        val childName = "example.SlotChild"
+        val parent = inventoryClassBytes(parentName, superName = SLOT_CLASS)
+        val child = inventoryClassBytes(
+            className = childName,
+            superName = parentName.replace('.', '/'),
+            methods = listOf(
+                returningBipushMethod("getItemStackLimit", 64, descriptor = ITEM_STACK_DESCRIPTOR),
+                returningBipushMethod("func_178170_b", 64, descriptor = ITEM_STACK_DESCRIPTOR),
+                returningBipushMethod("getSlotStackLimit", 64),
+                returningBipushMethod("func_75219_a", 64),
+                returningBipushMethod("getItemStackLimit", 64, descriptor = "(I)I"),
+                returningBipushMethod("getSlotStackLimit", 64, descriptor = "(I)I"),
+                returningBipushMethod("unrelatedMethod", 64),
+            ),
+        )
+        val metadata = HashMap<String, ByteArray>()
+        metadata[parentName.replace('.', '/')] = parent
+        val customTransformer = InventoryStackLimitTransformer(
+            InventoryClassHierarchyRepository(MapMetadataSource(metadata)),
+        )
+
+        val transformed = customTransformer.transform(childName, childName, child)
+        val supportedMethods = listOf(
+            "getItemStackLimit" to ITEM_STACK_DESCRIPTOR,
+            "func_178170_b" to ITEM_STACK_DESCRIPTOR,
+            "getSlotStackLimit" to "()I",
+            "func_75219_a" to "()I",
+        )
+
+        supportedMethods.forEach { (name, descriptor) ->
+            assertEquals(listOf(64), methodLiterals(transformed, name, descriptor).sipush)
+            assertEquals(emptyList<Int>(), methodLiterals(transformed, name, descriptor).bipush)
+        }
+        assertEquals(listOf(64), methodLiterals(transformed, "getItemStackLimit", "(I)I").bipush)
+        assertEquals(listOf(64), methodLiterals(transformed, "getSlotStackLimit", "(I)I").bipush)
+        assertEquals(listOf(64), methodLiterals(transformed, "unrelatedMethod", "()I").bipush)
+        assertEquals(4, hookInvocationCount(transformed))
+    }
+
+    @Test
+    fun missingHierarchyMetadata_shouldSkipUnknownInventoryLikeClasses() {
         val child = inventoryClassBytes(
             className = "example.MissingParent",
             superName = "missing/Parent",
             methods = listOf(returningBipushMethod("getInventoryStackLimit", 64)),
+        )
+        val handler = inventoryClassBytes(
+            className = "example.UnknownHandler",
+            methods = listOf(returningBipushMethod("getSlotLimit", 64, descriptor = "(I)I")),
+            interfaces = arrayOf("example/UnknownHandlerInterface"),
+        )
+        val slot = inventoryClassBytes(
+            className = "example.UnknownSlotChild",
+            superName = "example/UnknownSlotParent",
+            methods = listOf(returningBipushMethod("getSlotStackLimit", 64)),
         )
         val customTransformer = InventoryStackLimitTransformer(
             InventoryClassHierarchyRepository(MapMetadataSource(emptyMap())),
         )
 
         assertArrayEquals(child, customTransformer.transform(null, null, child))
-    }
-
-    @Test
-    fun slotAndItemHandlerLikeClasses_shouldRemainOutsideNarrowInventoryTransformer() {
-        val handler = inventoryClassBytes(
-            className = "example.Handler",
-            methods = listOf(returningBipushMethod("getSlotLimit", 64, descriptor = "(I)I")),
-            interfaces = arrayOf("net/minecraftforge/items/IItemHandler"),
-        )
-        val slot = inventoryClassBytes(
-            className = "example.SlotLike",
-            superName = "example/Slot",
-            methods = listOf(returningBipushMethod("getItemStackLimit", 64)),
-        )
-        val customTransformer = InventoryStackLimitTransformer(
-            InventoryClassHierarchyRepository(MapMetadataSource(emptyMap())),
-        )
-
         assertArrayEquals(handler, customTransformer.transform(null, null, handler))
         assertArrayEquals(slot, customTransformer.transform(null, null, slot))
     }
@@ -262,7 +381,7 @@ class InventoryStackLimitTransformerTest {
     }
 
     @Test
-    fun largeCompatibilityLimit_shouldUseIntegerLiteralWithoutRuntimeHook() {
+    fun largeCompatibilityLimit_shouldUseReceiverHelperWithoutEmbeddingTheLimit() {
         InventoryStackLimitHook.prepare(40000, null)
         val original = inventoryClassBytes(
             className = "example.LargeInventory",
@@ -271,9 +390,11 @@ class InventoryStackLimitTransformerTest {
         )
 
         val transformed = transformer.transform(null, null, original)
+        val literals = methodLiterals(transformed, "getInventoryStackLimit", "()I")
 
-        assertEquals(listOf(40000), methodLiterals(transformed, "getInventoryStackLimit", "()I").ldc)
-        assertEquals(0, hookInvocationCount(transformed))
+        assertEquals(listOf(64), literals.sipush)
+        assertEquals(emptyList<Int>(), literals.ldc)
+        assertEquals(1, hookInvocationCount(transformed))
     }
 
     private fun inventoryClassBytes(
@@ -284,7 +405,7 @@ class InventoryStackLimitTransformerTest {
         interfaces: Array<String> = emptyArray(),
         methods: List<MethodSpec> = emptyList(),
     ): ByteArray {
-        val writer = ClassWriter(0)
+        val writer = ClassWriter(ClassWriter.COMPUTE_MAXS)
         val classAccess = Opcodes.ACC_PUBLIC or access or if (interfaceClass) Opcodes.ACC_INTERFACE else 0
         writer.visit(
             Opcodes.V1_8,
@@ -299,7 +420,7 @@ class InventoryStackLimitTransformerTest {
             if ((spec.access and (Opcodes.ACC_ABSTRACT or Opcodes.ACC_NATIVE)) == 0) {
                 method.visitCode()
                 spec.body.invoke(method)
-                method.visitMaxs(4, 1)
+                method.visitMaxs(0, 0)
             }
             method.visitEnd()
         }
@@ -421,5 +542,8 @@ class InventoryStackLimitTransformerTest {
 
     private companion object {
         const val INVENTORY_INTERFACE = "net/minecraft/inventory/IInventory"
+        const val ITEM_HANDLER_INTERFACE = "net/minecraftforge/items/IItemHandler"
+        const val SLOT_CLASS = "net/minecraft/inventory/Slot"
+        const val ITEM_STACK_DESCRIPTOR = "(Lnet/minecraft/item/ItemStack;)I"
     }
 }

@@ -1,5 +1,6 @@
 package io.alexjoest.stackupup.mixin
 
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -65,6 +66,30 @@ class Ae2MixinSourceTest {
         )
     }
 
+    @Test
+    fun ae2Profiles_shouldKeepOrdinarySafetySeparateFromTypedCapacityAndBroadTransformer() {
+        val ordinary = read("src/main/resources/mixins.stackupup.late.ae2.json")
+        val capacity = read("src/main/resources/mixins.stackupup.capacity.late.ae2.json")
+        val transformer = read("src/main/java/io/alexjoest/stackupup/core/InventoryStackLimitTransformer.java")
+        val hierarchy = read("src/main/java/io/alexjoest/stackupup/core/InventoryClassHierarchyRepository.java")
+
+        assertTrue(ordinary.contains("AppEngAdaptorItemHandlerMixin"))
+        assertTrue(ordinary.contains("AppEngInternalAEInventoryWriterMixin"))
+        assertFalse(ordinary.contains("AppEngInternalAEInventoryMixin"))
+        assertFalse(ordinary.contains("AppEngInternalInventoryMixin"))
+        assertTrue(capacity.contains("AppEngInternalAEInventoryMixin"))
+        assertTrue(capacity.contains("AppEngInternalInventoryMixin"))
+        assertFalse(capacity.contains("AppEngInternalAEInventoryWriterMixin"))
+        assertFalse(capacity.contains("AppEngAdaptorItemHandlerMixin"))
+        assertEquals(2, Regex("AppEng(?:InternalAEInventory|InternalInventory)Mixin").findAll(capacity).count())
+
+        assertTrue(hierarchy.contains("net/minecraft/inventory/IInventory"))
+        assertTrue(transformer.contains("getInventoryStackLimit"))
+        assertFalse(transformer.contains("getSlotLimit"), "broad IInventory transformer must not duplicate AE2 getSlotLimit profile")
+    }
+
+    private fun read(path: String): String = String(Files.readAllBytes(Paths.get(path)), Charsets.UTF_8)
+
     private fun assertCoversSlotLimitPath(path: String) {
         val source = String(Files.readAllBytes(Paths.get(path)), Charsets.UTF_8)
         assertFalse(source.contains("<init>"), "保留原生容量元数据，不永久改写构造器: $path")
@@ -72,9 +97,11 @@ class Ae2MixinSourceTest {
         assertFalse(source.contains("@Inject"))
         assertTrue(source.contains("import appeng.util.inv.IAEAppEngInventory;"))
         if (path.endsWith("/AppEngInternalInventoryMixin.java")) {
+            assertTrue(source.contains("@Mixin(targets = \"appeng.tile.inventory.AppEngInternalInventory\", remap = false)"))
             assertTrue(source.contains("public abstract IAEAppEngInventory getTileEntity();"))
             assertTrue(source.contains("getInventoryCompatibilityStackSize(this, this.getTileEntity(), original)"))
         } else {
+            assertTrue(source.contains("@Mixin(targets = \"appeng.tile.inventory.AppEngInternalAEInventory\", remap = false)"))
             assertTrue(source.contains("@Shadow @Final private IAEAppEngInventory te;"))
             assertTrue(source.contains("getInventoryCompatibilityStackSize(this, this.te, original)"))
         }

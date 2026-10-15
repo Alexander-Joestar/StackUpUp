@@ -11,6 +11,7 @@ import org.spongepowered.asm.mixin.Mixins
 import org.spongepowered.asm.mixin.connect.IMixinConnector
 import zone.rong.mixinbooter.service.ModDiscoverer
 import java.io.File
+import java.util.Locale
 import java.util.jar.JarFile
 
 /**
@@ -98,6 +99,14 @@ class StackUpUpMixinConnector : IMixinConnector {
         queueConfiguration: (String) -> Unit,
     ) {
         val normalModules = if (includeClassic) modules + classicModules else modules
+        val capacityBlacklist = blacklistedModIds
+            .asSequence()
+            .map { it.trim().lowercase(Locale.ROOT) }
+            .filter(String::isNotEmpty)
+            .toSet()
+
+        // Ordinary profiles carry safety and writer behavior. The capacity blacklist is deliberately
+        // evaluated only in the separate capacity loop below.
         for ((config) in normalModules) {
             if (!shouldQueue(config, isModPresent, normalModules)) {
                 continue
@@ -115,7 +124,7 @@ class StackUpUpMixinConnector : IMixinConnector {
         }
         val capacityModules = if (includeClassic) this.capacityModules + classicCapacityModules else this.capacityModules
         for ((config, modId) in capacityModules) {
-            if (modId in blacklistedModIds) {
+            if (modId in capacityBlacklist) {
                 logger.info("Skipping capacity mixin config '{}': mod '{}' is blacklisted", config, modId)
                 continue
             }
@@ -317,6 +326,13 @@ class StackUpUpMixinConnector : IMixinConnector {
     internal val classicCapacityModules: List<LateMixinModule> = listOf(
         LateMixinModule(StackUpUpIds.CAPACITY_LATE_IC2_CLASSIC_MIXIN_CONFIG, StackUpUpIds.IC2_MOD_ID),
     )
+
+    init {
+        val registeredConfigs = (modules + classicModules + capacityModules + classicCapacityModules).map { it.config }
+        check(registeredConfigs.size == registeredConfigs.toSet().size) {
+            "Late Mixin config registered more than once: ${registeredConfigs.groupingBy { it }.eachCount().filterValues { it > 1 }.keys}"
+        }
+    }
 
     private companion object {
         private const val AE2_MOD_ID = "ae2"

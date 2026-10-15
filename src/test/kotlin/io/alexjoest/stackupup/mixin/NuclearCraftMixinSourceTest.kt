@@ -2,13 +2,28 @@ package io.alexjoest.stackupup.mixin
 
 import io.alexjoest.stackupup.StackUpUpIds
 import io.alexjoest.stackupup.bootstrap.StackUpUpMixinConnector
+import io.alexjoest.stackupup.core.InventoryStackLimitHook
+import io.alexjoest.stackupup.core.resetInventoryExpansionForTesting
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.nio.file.Files
 import java.nio.file.Paths
 
 class NuclearCraftMixinSourceTest {
+    @BeforeEach
+    fun resetExpansionBeforeTest() {
+        resetInventoryExpansionForTesting()
+    }
+
+    @AfterEach
+    fun resetExpansionAfterTest() {
+        resetInventoryExpansionForTesting()
+    }
+
     @Test
     fun nuclearCraftMixin_shouldPatchRealCapacitySourceNotSplitOnlyExpansion() {
         val config = String(Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.capacity.late.nuclearcraft.json")), Charsets.UTF_8)
@@ -95,6 +110,63 @@ class NuclearCraftMixinSourceTest {
         assertTrue(classBytes.containsAscii("cullInventory()Z"), "编译产物应携带 cullInventory 目标")
         assertTrue(classBytes.containsAscii("dropOverflow(Ljava/util/List;)V"), "编译产物应携带 dropOverflow 目标")
     }
+
+    @Test
+    fun nuclearCraftProfiles_shouldKeepOverflowSafetyAndCapacityOwnershipSeparate() {
+        val ordinary = String(
+            Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.late.nuclearcraft.json")),
+            Charsets.UTF_8,
+        )
+        val capacity = String(
+            Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.capacity.late.nuclearcraft.json")),
+            Charsets.UTF_8,
+        )
+
+        assertEquals(
+            listOf("NuclearCraftDistributorNoDropMixin", "NuclearCraftUpgradeStackLimitMixin"),
+            mixinNames(ordinary),
+            "NuclearCraft no-cull/no-drop and upgrade safety must stay in the ordinary late profile",
+        )
+        assertEquals(
+            listOf("NuclearCraftTileInventoryLimitMixin"),
+            mixinNames(capacity),
+            "NuclearCraft inventory capacity ownership must stay in the optional capacity profile",
+        )
+        assertFalse(capacity.contains("NuclearCraftDistributorNoDropMixin"), "capacity profile must not duplicate no-cull/no-drop safety")
+        assertFalse(capacity.contains("NuclearCraftUpgradeStackLimitMixin"), "capacity profile must not own upgrade safety")
+        assertFalse(ordinary.contains("NuclearCraftTileInventoryLimitMixin"), "ordinary profile must not own capacity getters")
+    }
+
+    @Test
+    fun nuclearCraftSafetyRegistration_shouldSurviveCapacityOffAndBlacklist() {
+        val connector = StackUpUpMixinConnector()
+        val ordinaryConfig = StackUpUpIds.LATE_NUCLEARCRAFT_MIXIN_CONFIG
+        val capacityConfig = "mixins.stackupup.capacity.late.nuclearcraft.json"
+
+        InventoryStackLimitHook.configureExpansionEnabled(false)
+        val disabledQueued = mutableListOf<String>()
+        connector.connectLate(
+            conflicts = emptyList(),
+            isModPresent = { it == "nuclearcraft" },
+            queueConfiguration = { disabledQueued += it },
+        )
+        assertEquals(listOf(ordinaryConfig), disabledQueued, "capacity OFF must not disable NuclearCraft safety")
+        assertFalse(disabledQueued.contains(capacityConfig))
+
+        resetInventoryExpansionForTesting()
+        InventoryStackLimitHook.configureExpansionEnabled(true)
+        val blacklistedQueued = mutableListOf<String>()
+        connector.connectLate(
+            conflicts = emptyList(),
+            isModPresent = { it == "nuclearcraft" },
+            blacklistedModIds = setOf("nuclearcraft"),
+            queueConfiguration = { blacklistedQueued += it },
+        )
+        assertEquals(listOf(ordinaryConfig), blacklistedQueued, "capacity blacklist must not disable NuclearCraft safety")
+        assertFalse(blacklistedQueued.contains(capacityConfig))
+    }
+
+    private fun mixinNames(config: String): List<String> = Regex("\"([A-Z][A-Za-z0-9]+Mixin)\"").findAll(config).map { it.groupValues[1] }.toList()
 
     private fun ByteArray.containsAscii(value: String): Boolean {
         if (isEmpty()) {

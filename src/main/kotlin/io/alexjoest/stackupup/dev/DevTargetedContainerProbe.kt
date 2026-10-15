@@ -2,10 +2,12 @@ package io.alexjoest.stackupup.dev
 
 import com.mojang.authlib.GameProfile
 import io.alexjoest.stackupup.StackUpUp
+import io.alexjoest.stackupup.StackUpUpConfig
 import net.minecraft.entity.player.EntityPlayer
 import net.minecraft.entity.player.EntityPlayerMP
 import net.minecraft.init.Items
 import net.minecraft.inventory.Container
+import net.minecraft.inventory.ContainerChest
 import net.minecraft.inventory.IInventory
 import net.minecraft.inventory.InventoryBasic
 import net.minecraft.inventory.InventoryLargeChest
@@ -45,11 +47,14 @@ private const val SERVER_STORAGE_LOSS = "SERVER_STORAGE_LOSS"
 private const val SERVER_STORAGE_OK = "SERVER_STORAGE_OK"
 private const val LEGITIMATE_REMAINDER = "LEGITIMATE_REMAINDER"
 
-internal data class DevTargetedContainerSelector(val className: String?, val modId: String?) {
+internal data class DevTargetedContainerSelector(val className: String?, val modId: String?, val capacityMode: String? = null) {
     init {
         require(className != null || modId != null) { "targeted_selector_empty" }
         require(className == null || className.isNotBlank()) { "targeted_selector_class_empty" }
         require(modId == null || modId.matches(MOD_ID_PATTERN)) { "targeted_selector_modid_invalid: $modId" }
+        require(capacityMode == null || capacityMode in setOf("on", "off")) {
+            "targeted_selector_capacity_invalid: $capacityMode"
+        }
     }
 
     override fun toString(): String = buildString {
@@ -57,6 +62,10 @@ internal data class DevTargetedContainerSelector(val className: String?, val mod
         modId?.let {
             if (isNotEmpty()) append(';')
             append("modid=").append(it)
+        }
+        capacityMode?.let {
+            if (isNotEmpty()) append(';')
+            append("capacity=").append(it)
         }
     }
 
@@ -79,6 +88,7 @@ internal data class DevTargetedContainerSelector(val className: String?, val mod
 
             var className: String? = null
             var modId: String? = null
+            var capacityMode: String? = null
             for (part in value.split(';', ',')) {
                 val token = part.trim()
                 require(token.isNotEmpty()) { "targeted_selector_empty_token" }
@@ -98,10 +108,15 @@ internal data class DevTargetedContainerSelector(val className: String?, val mod
                         modId = content.lowercase()
                     }
 
+                    "capacity", "mixin" -> {
+                        require(capacityMode == null) { "targeted_selector_duplicate_capacity" }
+                        capacityMode = content.lowercase()
+                    }
+
                     else -> error("targeted_selector_key_unknown: $key")
                 }
             }
-            return DevTargetedContainerSelector(className, modId)
+            return DevTargetedContainerSelector(className, modId, capacityMode)
         }
     }
 }
@@ -161,8 +176,17 @@ internal data class DevTargetedContainerRecord(
     val sourceSlot: Int? = null,
     val destinationSlot: Int? = null,
     val logicalSide: String = "UNKNOWN",
+    val capacityMixinRequested: String = "UNKNOWN",
+    val capacityMixinStatus: String = "UNKNOWN",
+    val mixinCoverage: String = "UNKNOWN",
     val detail: String? = null,
 ) {
+    fun withMixinState(state: DevTargetedContainerMixinState): DevTargetedContainerRecord = copy(
+        capacityMixinRequested = state.requested,
+        capacityMixinStatus = state.status,
+        mixinCoverage = state.coverage,
+    )
+
     fun toMachineJson(): String = buildString {
         append('{')
         appendJsonField("selector", selector)
@@ -225,6 +249,12 @@ internal data class DevTargetedContainerRecord(
         append(',')
         appendJsonField("logicalSide", logicalSide)
         append(',')
+        appendJsonField("capacityMixinRequested", capacityMixinRequested)
+        append(',')
+        appendJsonField("capacityMixinStatus", capacityMixinStatus)
+        append(',')
+        appendJsonField("mixinCoverage", mixinCoverage)
+        append(',')
         appendJsonField("detail", detail)
         append('}')
     }
@@ -261,8 +291,13 @@ internal fun renderTargetedContainerRecord(record: DevTargetedContainerRecord): 
     append(" sourceSlot=").append(record.sourceSlot ?: UNKNOWN)
     append(" destinationSlot=").append(record.destinationSlot ?: UNKNOWN)
     append(" logicalSide=").append(record.logicalSide)
+    append(" capacityMixinRequested=").append(record.capacityMixinRequested)
+    append(" capacityMixinStatus=").append(record.capacityMixinStatus)
+    append(" mixinCoverage=").append(record.mixinCoverage)
     record.detail?.let { append(" detail=").append(it) }
 }
+
+internal data class DevTargetedContainerMixinState(val requested: String, val status: String, val coverage: String)
 
 internal fun renderTargetedContainerMachineEvidence(records: List<DevTargetedContainerRecord>): String = buildString {
     records.forEach { append(it.toMachineJson()).append('\n') }
@@ -280,16 +315,36 @@ internal fun targetedStackIdentity(stack: ItemStack?): String? {
     return "$itemId@${stack.metadata}#$tag"
 }
 
+internal fun capacityMixinState(selector: DevTargetedContainerSelector, definition: DevTargetedContainerDefinition): DevTargetedContainerMixinState {
+    val requested = selector.capacityMode ?: UNKNOWN
+    if (definition.modId != "nuclearcraft") {
+        return DevTargetedContainerMixinState(requested, UNKNOWN, "not_applicable_non_nuclearcraft")
+    }
+    val enabled = StackUpUpConfig.compat.inventoryExpansion.enabled
+    val status = when (selector.capacityMode) {
+        "on" -> if (enabled) "ENABLED_BY_CONFIG" else "CONFIG_MISMATCH_OFF"
+        "off" -> if (!enabled) "DISABLED_BY_CONFIG" else "CONFIG_MISMATCH_ON"
+        null -> "UNKNOWN_REQUEST"
+        else -> "UNKNOWN_REQUEST"
+    }
+    return DevTargetedContainerMixinState(
+        requested,
+        status,
+        "capacity-late.nuclearcraft.json:NuclearCraftTileInventoryLimitMixin;ordinary-late=separate",
+    )
+}
+
 internal object DevTargetedContainerProbe : DevCompatProbe {
     override val id: String = TARGETED_CONTAINER_FOCUS
 
     override fun run(server: MinecraftServer): DevCompatProbeResult {
         val selector = DevTargetedContainerSelector.parse(DevAutomationConfig.targetedContainerSelector)
         val definition = resolveTargetedContainerDefinition(selector)
+        val mixinState = capacityMixinState(selector, definition)
         val records = ArrayList<DevTargetedContainerRecord>()
         if (!targetAvailable(definition)) {
             records += unknownTargetRecord(selector, definition, "target class or required mod is unavailable")
-            return finish(selector, definition, records)
+            return finish(selector, definition, records.map { it.withMixinState(mixinState) })
         }
 
         records += runOperation(definition, selector, "setter", server) { target, inventory, handler, slot ->
@@ -313,7 +368,7 @@ internal object DevTargetedContainerProbe : DevCompatProbe {
         if (definition.id == "nuclearcraft_alloy_furnace") {
             records += runAlloyRecipePath(selector, definition, server)
         }
-        return finish(selector, definition, records)
+        return finish(selector, definition, records.map { it.withMixinState(mixinState) })
     }
 
     private fun runAlloyRecipePath(
@@ -565,12 +620,17 @@ internal object DevTargetedContainerProbe : DevCompatProbe {
         return (0 until size).map { slot ->
             runCatching { action(target, inventory, handler, slot) }
                 .getOrElse { throwable ->
+                    val prefix = if (operation == "shift_transfer" && definition.modId == "minecraft") {
+                        "real ContainerChest setup failed: "
+                    } else {
+                        ""
+                    }
                     unknownRecord(
                         selector,
                         definition,
                         operation,
                         slot,
-                        "$operation unavailable: ${formatProbeThrowable(throwable)}",
+                        "$operation unavailable: $prefix${formatProbeThrowable(throwable)}",
                     )
                 }
         }
@@ -757,6 +817,9 @@ internal object DevTargetedContainerProbe : DevCompatProbe {
         server: MinecraftServer,
     ): DevTargetedContainerRecord {
         if (inventory == null) return unknownRecord(selector, definition, "shift_transfer", slot, "target does not implement IInventory")
+        if (target is TileEntityChest || target is InventoryLargeChest) {
+            return vanillaChestShiftRecord(selector, definition, inventory, slot, server)
+        }
         val offeredCount = 129
         val source = InventoryBasic("StackUpUp targeted shift source", false, 1)
         source.setInventorySlotContents(0, stack(offeredCount))
@@ -794,6 +857,60 @@ internal object DevTargetedContainerProbe : DevCompatProbe {
             remainderIdentity = targetedStackIdentity(sourceAfterStack),
             resultIdentity = targetedStackIdentity(moved),
             sourceSlot = 0,
+            logicalSide = "SERVER_STORAGE",
+        )
+    }
+
+    private fun vanillaChestShiftRecord(
+        selector: DevTargetedContainerSelector,
+        definition: DevTargetedContainerDefinition,
+        inventory: IInventory,
+        slot: Int,
+        server: MinecraftServer,
+    ): DevTargetedContainerRecord {
+        val chestInventory: IInventory = inventory
+        val player = probePlayer(server)
+        for (index in 0 until player.inventory.sizeInventory) {
+            player.inventory.setInventorySlotContents(index, ItemStack.EMPTY)
+        }
+        for (index in 0 until chestInventory.sizeInventory) {
+            chestInventory.setInventorySlotContents(index, if (index == slot) ItemStack.EMPTY else ItemStack(net.minecraft.init.Blocks.STONE, 64))
+        }
+        val offered = stack(129)
+        player.inventory.setInventorySlotContents(0, offered.copy())
+        val container = ContainerChest(player.inventory, chestInventory, player)
+        val sourceIndex = container.inventorySlots.indexOfFirst { it.inventory === player.inventory && it.slotIndex == 0 }
+        check(sourceIndex >= 0) { "ContainerChest source player slot was not found" }
+        val targetBeforeStack = chestInventory.getStackInSlot(slot).copy()
+        val sourceBeforeStack = player.inventory.getStackInSlot(0).copy()
+        val moved = container.transferStackInSlot(player, sourceIndex).copy()
+        val targetAfterStack = chestInventory.getStackInSlot(slot).copy()
+        val sourceAfterStack = player.inventory.getStackInSlot(0).copy()
+        val storedDelta = targetAfterStack.count - targetBeforeStack.count
+        val remainder = sourceAfterStack.count
+        return insertionRecord(
+            selector = selector,
+            definition = definition,
+            operation = "container_chest_shift_transfer",
+            slot = slot,
+            offeredCount = offered.count,
+            preCount = targetBeforeStack.count,
+            postCount = targetAfterStack.count,
+            inventoryLimit = chestInventory.inventoryStackLimit,
+            slotLimit = container.getSlot(slot).slotStackLimit,
+            itemLimit = offered.maxStackSize,
+            setterResult = null,
+            insertResult = "ContainerChest.transferStackInSlot=$moved;source_container_slot=$sourceIndex",
+            remainderCount = remainder,
+            remainderSource = "PLAYER_INVENTORY_SLOT_0",
+            conservationDelta = offered.count - storedDelta - remainder,
+            detail = "real vanilla ContainerChest shift path; direct setter and generic merge are separate operations",
+            offeredIdentity = targetedStackIdentity(offered),
+            preIdentity = targetedStackIdentity(targetBeforeStack),
+            postIdentity = targetedStackIdentity(targetAfterStack),
+            remainderIdentity = targetedStackIdentity(sourceAfterStack),
+            resultIdentity = targetedStackIdentity(moved),
+            sourceSlot = sourceIndex,
             logicalSide = "SERVER_STORAGE",
         )
     }

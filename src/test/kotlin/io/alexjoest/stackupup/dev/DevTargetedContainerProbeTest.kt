@@ -13,8 +13,9 @@ class DevTargetedContainerProbeTest {
         assertEquals("class=$VANILLA_CHEST_CLASS", chest.toString())
         assertEquals("vanilla_chest", resolveTargetedContainerDefinition(chest).id)
 
-        val alloy = DevTargetedContainerSelector.parse("class=$NUCLEARCRAFT_ALLOY_FURNACE_CLASS;modid=NUCLEARCRAFT")
-        assertEquals("class=$NUCLEARCRAFT_ALLOY_FURNACE_CLASS;modid=nuclearcraft", alloy.toString())
+        val alloy = DevTargetedContainerSelector.parse("class=$NUCLEARCRAFT_ALLOY_FURNACE_CLASS;modid=NUCLEARCRAFT;capacity=off")
+        assertEquals("class=$NUCLEARCRAFT_ALLOY_FURNACE_CLASS;modid=nuclearcraft;capacity=off", alloy.toString())
+        assertEquals("off", alloy.capacityMode)
         assertEquals("nuclearcraft_alloy_furnace", resolveTargetedContainerDefinition(alloy).id)
         assertTrue(targetedSelectorMatches(alloy, targetedContainerDefinitions.single { it.id == "nuclearcraft_alloy_furnace" }))
     }
@@ -49,6 +50,15 @@ class DevTargetedContainerProbeTest {
         assertThrows(IllegalArgumentException::class.java) {
             DevTargetedContainerSelector.parse("class=$VANILLA_CHEST_CLASS;class=other.Type")
         }
+    }
+
+    @Test
+    fun selector_shouldExposeCapacityMixinComparisonState() {
+        val definition = targetedContainerDefinitions.single { it.id == "nuclearcraft_alloy_furnace" }
+        val off = capacityMixinState(DevTargetedContainerSelector.parse("modid=nuclearcraft;capacity=off"), definition)
+        assertEquals("off", off.requested)
+        assertTrue(off.status in setOf("DISABLED_BY_CONFIG", "CONFIG_MISMATCH_ON"))
+        assertTrue(off.coverage.contains("capacity-late.nuclearcraft.json"))
     }
 
     @Test

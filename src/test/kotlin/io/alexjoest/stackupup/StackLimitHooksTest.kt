@@ -19,6 +19,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.lang.ref.WeakReference
@@ -667,6 +668,62 @@ class StackLimitHooksTest {
 
         assertEquals(128, StackLimitHooks.lookupResolvedItemLimit(stack))
         assertNotEquals(256, StackLimitHooks.lookupResolvedItemLimit(stack))
+    }
+
+    @Test
+    fun itemStackSplit_shouldPreserveThresholdAndClampRequestedChunkBoundaries() {
+        Bootstrap.register()
+        val item = Item().setMaxStackSize(64).setRegistryName(ResourceLocation("stackupup_test", "split_boundary_item"))
+        val thresholdStack = ItemStack(item, 8, 0)
+        val itemMaxStackSize = thresholdStack.maxStackSize
+        val minStackSize = (itemMaxStackSize + 7) / 8
+        val maxStackSize = (itemMaxStackSize + 1) / 2
+
+        assertEquals(64, itemMaxStackSize)
+        assertEquals(8, minStackSize)
+        assertEquals(32, maxStackSize)
+        val thresholdSplit = thresholdStack.splitStack(thresholdStack.count)
+        assertEquals(8, thresholdSplit.count)
+        assertTrue(thresholdStack.isEmpty)
+
+        val aboveThresholdAtMinimum = ItemStack(item, 9, 0)
+        val minimumSplit = aboveThresholdAtMinimum.splitStack(minStackSize)
+        assertEquals(8, minimumSplit.count)
+        assertEquals(1, aboveThresholdAtMinimum.count)
+
+        val aboveThresholdAtMaximum = ItemStack(item, 9, 0)
+        val maximumSplit = aboveThresholdAtMaximum.splitStack(maxStackSize)
+        assertEquals(9, maximumSplit.count)
+        assertTrue(aboveThresholdAtMaximum.isEmpty)
+    }
+
+    @Test
+    fun itemSubclassBaselineChange_shouldInvalidateSafetyOfResolvedLimitPrecheck() {
+        Bootstrap.register()
+        RuleRuntime.replaceSnapshot(
+            RuleSnapshot(
+                version = 43L,
+                rules = listOf(
+                    RuleCompiler.compileLine("item = stackupup_test:mutable_baseline_item -> *2", 1),
+                ),
+            ),
+        )
+        RuleRuntime.replaceOreDictIndex(OreDictIndex.fromStackLoader { emptySet() })
+        var originalLimit = 64
+        val item = object : Item() {
+            override fun getItemStackLimit(stack: ItemStack): Int = originalLimit
+        }.setRegistryName(ResourceLocation("stackupup_test", "mutable_baseline_item"))
+        val stack = ItemStack(item, 1, 0)
+
+        val firstResolvedLimit = StackLimitHooks.applyDynamicStackLimit(stack, 64)
+        StackLimitHooks.cacheResolvedItemLimit(stack, firstResolvedLimit)
+        assertEquals(128, firstResolvedLimit)
+
+        originalLimit = 16
+
+        assertEquals(128, StackLimitHooks.lookupResolvedItemLimit(stack))
+        assertEquals(16, StackLimitHooks.resolveOriginalBaseline(stack))
+        assertEquals(32, StackLimitHooks.applyDynamicStackLimit(stack, 64))
     }
 
     @Test

@@ -11,6 +11,8 @@ import org.apache.logging.log4j.Logger
 @IFMLLoadingPlugin.TransformerExclusions(StackUpUpIds.CORE_PACKAGE_NAME, StackUpUpIds.CONFIG_CLASS_NAME)
 class StackUpUpCore : IFMLLoadingPlugin {
     companion object {
+        const val BUILD_LINE: String = "asie-was-right"
+
         private val logger: Logger = LogManager.getLogger("stackupup.coremod")
         private const val COREMOD_ACTIVE_PROPERTY: String = "${StackUpUpIds.MOD_ID}.coremod.active"
         private const val CONFLICT_DISABLED_PROPERTY: String = "${StackUpUpIds.MOD_ID}.conflict.disabled"
@@ -78,6 +80,7 @@ class StackUpUpCore : IFMLLoadingPlugin {
         if (ensureConflictState().isNotEmpty()) {
             return emptyArray()
         }
+        // Keep launch-time policy on the Java snapshot and hook; Kotlin ConfigManager and rule services belong to the mod lifecycle.
         val policy = io.alexjoest.stackupup.core.InventoryExpansionStartupConfig.load()
         io.alexjoest.stackupup.core.InventoryStackLimitHook.configureExpansionEnabled(policy.enabled)
         return if (policy.enabled) {

@@ -11,7 +11,14 @@ import java.util.Deque;
 import java.util.List;
 import java.util.ArrayList;
 
+/**
+ * Pre-launch reader for restart-scoped inventory capacity policy.
+ *
+ * <p>This class reads the launcher config file directly so coremod setup does not initialize Forge's
+ * later ConfigManager or any Kotlin rule/configuration services.</p>
+ */
 public final class InventoryExpansionStartupConfig {
+    static final String CONFIG_FILE_NAME = "stackupup.cfg";
     private static final boolean DEFAULT_ENABLED = true;
     private static volatile StartupPolicy startupPolicy;
 
@@ -25,7 +32,7 @@ public final class InventoryExpansionStartupConfig {
         }
         synchronized (InventoryExpansionStartupConfig.class) {
             if (startupPolicy == null) {
-                File configFile = new File(new File(Launch.minecraftHome, "config"), "stackupup.cfg");
+                File configFile = new File(new File(Launch.minecraftHome, "config"), CONFIG_FILE_NAME);
                 startupPolicy = load(configFile);
             }
             return startupPolicy;
@@ -40,7 +47,7 @@ public final class InventoryExpansionStartupConfig {
         return load(configFile).enabled;
     }
 
-    static StartupPolicy load(File configFile) {
+    public static StartupPolicy load(File configFile) {
         if (!configFile.isFile()) {
             return new StartupPolicy(DEFAULT_ENABLED, Collections.<String>emptyList());
         }

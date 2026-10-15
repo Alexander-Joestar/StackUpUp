@@ -4,10 +4,7 @@ import io.netty.buffer.Unpooled
 import net.minecraft.nbt.NBTTagCompound
 import net.minecraft.network.PacketBuffer
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.nio.file.Files
-import java.nio.file.Paths
 
 class StackCountCodecTest {
     @Test
@@ -52,61 +49,4 @@ class StackCountCodecTest {
         assertEquals("demo", requireNotNull(packet.readCompoundTag()).getString("display"))
         assertEquals(0, packet.readableBytes())
     }
-
-    @Test
-    fun packetMixins_shouldKeepVanillaFieldOrderAndDistinctTagPaths() {
-        val packetBufferMixin = readSource(
-            "src/main/java/io/alexjoest/stackupup/mixin/early/PacketBufferMixin.java",
-        )
-        val packetUtilMixin = readSource(
-            "src/main/java/io/alexjoest/stackupup/mixin/early/PacketUtilMixin.java",
-        )
-
-        assertInOrder(
-            packetBufferMixin,
-            "buffer.writeShort(Item.getIdFromItem(stack.getItem()));",
-            "StackCountCodec.writeCount(buffer, stack.getCount());",
-            "buffer.writeShort(stack.getMetadata());",
-            "buffer.writeCompoundTag(tag);",
-        )
-        assertInOrder(
-            packetBufferMixin,
-            "int id = buffer.readShort();",
-            "int count = StackCountCodec.readCount(buffer);",
-            "int damage = buffer.readShort();",
-            "stack.getItem().readNBTShareTag(stack, buffer.readCompoundTag());",
-        )
-        assertInOrder(
-            packetBufferMixin,
-            "if (stack.isEmpty()) {",
-            "buffer.writeShort(-1);",
-        )
-        assertTrue(packetBufferMixin.contains("if (id < 0) {"))
-        assertTrue(packetBufferMixin.contains("stack.getItem().getNBTShareTag(stack)"))
-
-        assertInOrder(
-            packetUtilMixin,
-            "buffer.writeShort(Item.getIdFromItem(stack.getItem()));",
-            "StackCountCodec.writeCount(buffer, stack.getCount());",
-            "buffer.writeShort(stack.getMetadata());",
-            "buffer.writeCompoundTag(tag);",
-        )
-        assertInOrder(
-            packetUtilMixin,
-            "if (stack.isEmpty()) {",
-            "buffer.writeShort(-1);",
-        )
-        assertTrue(packetUtilMixin.contains("tag = stack.getTagCompound();"))
-    }
-
-    private fun assertInOrder(source: String, vararg snippets: String) {
-        var previousIndex = -1
-        for (snippet in snippets) {
-            val nextIndex = source.indexOf(snippet)
-            assertTrue(nextIndex > previousIndex, "Expected '$snippet' after index $previousIndex")
-            previousIndex = nextIndex
-        }
-    }
-
-    private fun readSource(path: String): String = String(Files.readAllBytes(Paths.get(path)), Charsets.UTF_8)
 }

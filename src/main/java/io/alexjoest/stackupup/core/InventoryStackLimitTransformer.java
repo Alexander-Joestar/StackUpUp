@@ -1,6 +1,7 @@
 package io.alexjoest.stackupup.core;
 
 import net.minecraft.launchwrapper.IClassTransformer;
+import net.minecraftforge.fml.common.asm.transformers.deobf.FMLDeobfuscatingRemapper;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -8,14 +9,19 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 /**
- * Narrow class-load transformer for concrete third-party IInventory implementations.
+ * Narrow class-load transformer for concrete third-party inventory, item-handler, and slot classes.
  *
- * <p>Only a literal BIPUSH 64 in the exact inventory getter families is replaced. Hierarchy
- * metadata is read from bytes; no target class is resolved or initialized.</p>
+ * <p>Only BIPUSH 64 constants in the supported capacity methods are replaced. Hierarchy metadata is
+ * read from bytes; no target class is resolved or initialized.</p>
  */
 public final class InventoryStackLimitTransformer implements IClassTransformer {
     private static final int VANILLA_STACK_LIMIT = 64;
     private static final String INVENTORY_METHOD_DESCRIPTOR = "()I";
+    private static final String ITEM_HANDLER_METHOD_DESCRIPTOR = "(I)I";
+    private static final String SLOT_ITEM_STACK_METHOD_DESCRIPTOR = "(Lnet/minecraft/item/ItemStack;)I";
+    private static final String HELPER_OWNER = "io/alexjoest/stackupup/core/InventoryStackLimitHook";
+    private static final String HELPER_METHOD = "resolveInventoryStackLimit";
+    private static final String HELPER_DESCRIPTOR = "(Ljava/lang/Class;I)I";
     private final InventoryClassHierarchyRepository hierarchyRepository;
 
     public InventoryStackLimitTransformer() {
@@ -41,10 +47,12 @@ public final class InventoryStackLimitTransformer implements IClassTransformer {
             InventoryClassHierarchyRepository.ClassMetadata metadata = readMetadata(reader);
             if (metadata == null
                 || metadata.name == null
-                || metadata.name.startsWith("net/minecraft/")
+                || isExcludedClass(metadata.name)
+                || isExcludedClass(name)
+                || isExcludedClass(transformedName)
                 || (metadata.access & (Opcodes.ACC_INTERFACE | Opcodes.ACC_ABSTRACT)) != 0
                 || !policy.shouldPatch(metadata.name)
-                || !hierarchyRepository.implementsInventory(metadata)) {
+                || !hierarchyRepository.isStackLimitTarget(metadata)) {
                 return basicClass;
             }
 
@@ -65,19 +73,41 @@ public final class InventoryStackLimitTransformer implements IClassTransformer {
         return visitor.metadata;
     }
 
+    private static boolean isExcludedClass(String className) {
+        if (className == null) {
+            return false;
+        }
+        String internalName = className.replace('.', '/');
+        return internalName.startsWith("net/minecraft/")
+            || "net/minecraft".equals(internalName)
+            || internalName.startsWith("io/alexjoest/stackupup/")
+            || "io/alexjoest/stackupup".equals(internalName);
+    }
+
     private static boolean isInventoryMethod(String name, String descriptor) {
         return INVENTORY_METHOD_DESCRIPTOR.equals(descriptor)
             && ("getInventoryStackLimit".equals(name) || "func_70297_j_".equals(name));
     }
 
-    private static void emitInteger(MethodVisitor visitor, int value) {
-        if (value >= Byte.MIN_VALUE && value <= Byte.MAX_VALUE) {
-            visitor.visitIntInsn(Opcodes.BIPUSH, value);
-        } else if (value >= Short.MIN_VALUE && value <= Short.MAX_VALUE) {
-            visitor.visitIntInsn(Opcodes.SIPUSH, value);
-        } else {
-            visitor.visitLdcInsn(value);
+    private static boolean isItemHandlerMethod(String name, String descriptor) {
+        return "getSlotLimit".equals(name) && ITEM_HANDLER_METHOD_DESCRIPTOR.equals(descriptor);
+    }
+
+    private static boolean isSlotMethod(String name, String descriptor) {
+        if (("getSlotStackLimit".equals(name) || "func_75219_a".equals(name))
+            && INVENTORY_METHOD_DESCRIPTOR.equals(descriptor)) {
+            return true;
         }
+        if (!"getItemStackLimit".equals(name) && !"func_178170_b".equals(name)) {
+            return false;
+        }
+        return SLOT_ITEM_STACK_METHOD_DESCRIPTOR.equals(FMLDeobfuscatingRemapper.INSTANCE.mapDesc(descriptor));
+    }
+
+    private static boolean isCapacityMethod(String name, String descriptor) {
+        return isInventoryMethod(name, descriptor)
+            || isItemHandlerMethod(name, descriptor)
+            || isSlotMethod(name, descriptor);
     }
 
     private static final class LiteralPatchVisitor extends ClassVisitor {
@@ -93,7 +123,7 @@ public final class InventoryStackLimitTransformer implements IClassTransformer {
         public MethodVisitor visitMethod(int access, final String name, final String descriptor,
                                          String signature, String[] exceptions) {
             MethodVisitor delegate = super.visitMethod(access, name, descriptor, signature, exceptions);
-            if (!isInventoryMethod(name, descriptor)
+            if (!isCapacityMethod(name, descriptor)
                 || (access & (Opcodes.ACC_ABSTRACT | Opcodes.ACC_NATIVE | Opcodes.ACC_STATIC)) != 0) {
                 return delegate;
             }
@@ -103,7 +133,16 @@ public final class InventoryStackLimitTransformer implements IClassTransformer {
                     if (opcode == Opcodes.BIPUSH
                         && operand == VANILLA_STACK_LIMIT
                         && compatibilityLimit != VANILLA_STACK_LIMIT) {
-                        emitInteger(this, compatibilityLimit);
+                        visitVarInsn(Opcodes.ALOAD, 0);
+                        visitMethodInsn(
+                            Opcodes.INVOKEVIRTUAL,
+                            "java/lang/Object",
+                            "getClass",
+                            "()Ljava/lang/Class;",
+                            false
+                        );
+                        visitIntInsn(Opcodes.SIPUSH, VANILLA_STACK_LIMIT);
+                        visitMethodInsn(Opcodes.INVOKESTATIC, HELPER_OWNER, HELPER_METHOD, HELPER_DESCRIPTOR, false);
                         patched = true;
                     } else {
                         super.visitIntInsn(opcode, operand);

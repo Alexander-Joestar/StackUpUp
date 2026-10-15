@@ -44,7 +44,12 @@ object DevAutomationServerDriver {
     }
 
     private fun runFocused(server: MinecraftServer, report: AutomationReport): Boolean {
-        validateFocusedRequest(DevAutomationConfig.focus, DevAutomationConfig.runServerMatrix, DevAutomationConfig.compatProbeIds)
+        validateFocusedRequest(
+            focus = DevAutomationConfig.focus,
+            matrix = DevAutomationConfig.runServerMatrix,
+            compatIds = DevAutomationConfig.compatProbeIds,
+            targetedSelector = DevAutomationConfig.targetedContainerSelector,
+        )
         val scope =
             "focused=${DevAutomationConfig.focus}; single/default-matrix/unrelated compat probes not requested; JVM=${System.getProperty("java.version")}; " +
                 "candidate=${System.getProperty("stackupup.dev.autoTest.candidate", "UNKNOWN")}; config=config/stackupup.cfg"

@@ -23,6 +23,7 @@ internal val focusedProbeIds: Set<String> = setOf(
     EQUIPMENT_BLACKLIST_FOCUS,
     AE2_OWNER_OFF_FOCUS,
     AE2_OWNER_BLACKLIST_FOCUS,
+    TARGETED_CONTAINER_FOCUS,
 )
 
 internal fun focusedProbe(focus: String): DevCompatProbe = when (focus) {
@@ -33,5 +34,6 @@ internal fun focusedProbe(focus: String): DevCompatProbe = when (focus) {
     EQUIPMENT_BLACKLIST_FOCUS -> equipmentBlacklistProbe
     AE2_OWNER_OFF_FOCUS -> ae2OwnerOffProbe
     AE2_OWNER_BLACKLIST_FOCUS -> ae2OwnerBlacklistProbe
+    TARGETED_CONTAINER_FOCUS -> DevTargetedContainerProbe
     else -> error("unknown_focus: $focus")
 }

@@ -27,19 +27,42 @@ class StackUpUpMixinConnector : IMixinConnector {
     private val logger: Logger = LogManager.getLogger("stackupup.mixin.connector")
 
     override fun connect() {
-        val policy = InventoryExpansionStartupConfig.load()
-        InventoryStackLimitHook.configureExpansionEnabled(policy.enabled)
-        if (policy.enabled && policy.modIds.isNotEmpty()) {
-            logger.info(
-                "Inventory capacity expansion enabled; blacklist modIds bypass matching owned-package inventories only: {}",
-                policy.modIds.joinToString(", "),
+        connectWith(
+            conflicts = StackUpUpCore.ensureConflictState(),
+            loadPolicy = { InventoryExpansionStartupConfig.load() },
+        )
+    }
+
+    internal fun connectWith(
+        conflicts: List<String>,
+        loadPolicy: () -> InventoryExpansionStartupConfig.StartupPolicy,
+        isModPresent: (String) -> Boolean = { modId -> isModPresentForConnector(modId) },
+        queueConfiguration: (String) -> Unit = { config -> Mixins.addConfiguration(config) },
+    ) {
+        if (conflicts.isEmpty()) {
+            val policy = loadPolicy()
+            InventoryStackLimitHook.configureExpansionEnabled(policy.enabled)
+            if (policy.enabled && policy.modIds.isNotEmpty()) {
+                logger.info(
+                    "Inventory capacity expansion enabled; blacklist modIds bypass matching owned-package inventories only: {}",
+                    policy.modIds.joinToString(", "),
+                )
+            }
+            connectEarly(conflicts, queueConfiguration)
+            connectLateWithClassicModules(
+                conflicts = conflicts,
+                isModPresent = isModPresent,
+                blacklistedModIds = policy.modIds.toSet(),
+                queueConfiguration = queueConfiguration,
             )
+            return
         }
-        val conflicts = StackUpUpCore.ensureConflictState()
-        connectEarly(conflicts)
+
+        connectEarly(conflicts, queueConfiguration)
         connectLateWithClassicModules(
             conflicts = conflicts,
-            blacklistedModIds = policy.modIds.toSet(),
+            isModPresent = isModPresent,
+            queueConfiguration = queueConfiguration,
         )
     }
 

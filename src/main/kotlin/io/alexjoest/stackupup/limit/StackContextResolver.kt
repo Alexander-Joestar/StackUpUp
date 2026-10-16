@@ -23,7 +23,11 @@ object StackContextResolver {
         }
 
         val registryName = stack.item.registryName ?: return null
-        val type = if (stack.item is ItemBlock) "block" else "item"
+        val type = if (requirements.needsType) {
+            if (stack.item is ItemBlock) "block" else "item"
+        } else {
+            ""
+        }
         val fields = StackContextFields()
         requirements.providers.forEach { it.collect(stack, fields) }
         return StackContext(

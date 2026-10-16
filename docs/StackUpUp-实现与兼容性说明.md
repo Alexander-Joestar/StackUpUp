@@ -202,12 +202,25 @@ Markdown 规则，再合并 DSL 规则，即 `markdownRules + dslRules`。每个
 
 `StackContextResolver` 从 `ItemStack` 取得 registry id、namespace、metadata、物品类型和原版基线。昂贵或可选字段由
 `RuleField.contextProviders` 形成 provider plan，只采集当前快照需要的矿辞、material 或 creative tab；resolver 不按字段名另写分支。
-`RuleRuntime` 替换快照或矿辞索引时会新建 `StackLimitService`，从而刷新解析缓存。
+
+`StackContentKey` 是 ItemStack 到已解析上限的内容缓存键，固定只由 `(itemId, metadata)` 构成：`itemId` 使用 registry name，未注册物品
+（测试场景）回退到物品类名。它不持有 `ItemStack` 实例，也不把 `count` 或 `NBTTagCompound` 放进键；因此同一 item ID/metadata 的堆栈在
+count 或 NBT 变化时不会被重新分键或使这项内容缓存失效，而 metadata 变化会得到新键。快照/矿辞索引替换时，`RuleRuntime` 新建
+`StackLimitService`；服务 epoch 会清空内容缓存，服务引用校验也阻止旧快照值泄漏到新快照。
+
+规则 matcher 的 `readFields()` 机械推导字段覆盖，`RuleContextRequirements` 再按策略裁剪缓存键材料：item/mod/type/meta/size 由固定
+身份分量承载，material/tab 才把字段值加入键，ORE 由 item ID+metadata 的稳定身份决定但会让服务避开零分配快路径。缓存键材料至多一个
+且不读 ORE 的快照使用 `StackLimitService` 的开放寻址 `FastResolvedCache`，命中不创建中间键对象；多字段或含 ORE 的快照使用
+`ConcurrentHashMap` 慢路径。
+
+单个 item 比较的字面量不含 `*` 时编译为 `ExactItemMatcher`，比较 item ID 并按需比较 `@整数` metadata；字面量含 `*` 时使用
+`ItemPatternMatcher`，`@*` 虽然语义上不约束 metadata，仍属于通用 pattern 分支。若快照恰好只有一条正向 `item = *` 规则且动作恰为
+单个 `SET`，`StackLimitService` 直接检查 `baseLimit > 1`、应用 SET 并执行 `1..maxStackSize` 限制，绕过通用缓存/map 和 matcher
+遍历；`baseLimit <= 1` 不命中该规则并保留非堆叠基线。额外规则、`item != *`、动作链或非 SET 动作均回到通用路径。
 
 1.12.2 的 `ResourceLocation.splitObjectName` 只按第一个冒号分割 namespace 与 path，path 可以保留多个冒号。DSL
-不能按冒号数量拒绝资源路径，也不能未经 grammar 证据把第三段自动解释为 metadata。当前 `RuleLiteralMatcherCompiler` 已有整数
-`@meta` 和基础通配；它仍保留旧的末段数字解析和非法 meta 静默回退。T7.2 规划的是 literal AST、非法输入 fail-fast、`@*`
-以及多冒号语义的正式定型，不在本文宣称已完成。
+不能按冒号数量拒绝资源路径，也不能未经 grammar 证据把第三段自动解释为 metadata。当前 `RuleLiteralMatcherCompiler` 通过
+`ItemLiteralSyntax` 定型 `@整数`、`@*` 和多冒号 path 语义；非法 `@` 写法 fail-fast，不再使用旧的末段数字解析或静默回退。
 
 ## 已知限制
 
@@ -224,8 +237,8 @@ Markdown 规则，再合并 DSL 规则，即 `markdownRules + dslRules`。每个
 5. **非标准库存路径未闭合。** 完全绕过 vanilla `Slot`/`Container` 或 Forge 标准 handler 契约的自定义容器，需要独立取得真实写入证据；当前不因类名扩大容量。
 6. **运行时审计尚未落地。** 现有 wrapper 诊断测试若只运行未打 mixin 的 Forge 基线，不能证明 mixin 生效态的守恒，也不能替代
    T12 的真实投喂报告。审计必须排除 `simulate=true`，并且只观察、不补偿。
-7. **DSL 字面量仍有旧解析边界。** 多冒号 `ResourceLocation` path 的合法性不能由冒号数判断；在 T7.2
-   完成前，不把旧末段数字启发式扩展成新的语法承诺。
+7. **DSL 其余诊断仍有边界。** `ItemLiteralSyntax` 已定型 `@整数`、`@*` 和多冒号 `ResourceLocation` path 语义；非法 `@` 写法
+   fail-fast，不能再把旧末段数字启发式当作当前语法。其他 DSL 错误的列级定位和更广泛的 tokenizer/AST 工作仍按规则示例中的测试覆盖边界处理。
 8. **本地化重载缺少真实基线。** 当前 `ProxyClient` 只在语言代码变化时调用 `RuleMessages.syncLanguage`；标准 F3+T
    会重建语言资源，不能用某个局部 `LanguageMap` 调用或代码静态推断代替真实客户端 F3+T。T8.0 必须先记录同语言代码下资源重载前后的消息解析和注入结果。
 9. **重载错误的原子发布语义尚未闭合。** `RuleReloadPipeline` 可以返回带错误的报告，而当前协调器仍把返回快照交给发布路径；不能把“报告含错误时保留旧运行态”当作当前保证。
@@ -254,8 +267,8 @@ Markdown 规则，再合并 DSL 规则，即 `markdownRules + dslRules`。每个
   `offered`、`before`、`after`、`remainder`、handler、slot 和调用点的机器可读报告；不回填、不重试、不补偿。
 - **T13.1 / T13.2：覆盖面收缩与受控回扩。** 依赖 T3、T11 和 T12.5 的闭合证据，记录收缩后的功能缺口；任何回扩都必须同时接管真实写入面，不能只扩大
   GUI 或广告值。T13 未在当前实现中完成。
-- **T7.0–T7.3：DSL 解析收敛。** 先补真实 token 位置，再定型 literal grammar、fail-fast 错误和多冒号 path 语义；不得按冒号数量拒绝
-  1.12.2 合法 path。
+- **T7.0–T7.3：DSL 解析的剩余收敛。** item literal grammar、非法 `@` fail-fast 与多冒号 path 语义已由 `ItemLiteralSyntax` 落地；剩余
+  tokenizer/AST 及其他错误的列级定位仍按规则示例中的已知限制推进，不得按冒号数量拒绝 1.12.2 合法 path。
 - **T8.0–T8.3：本地化生命周期。** 先用真实客户端执行 F3+T 建立基线，再决定自有译表、重新注入和聊天路径；
   `LanguageMap.replaceWith` 或等价局部调用只能作为辅助验证。
 - **T9-R1–R3：MixinBooter 版本调研。** 只依据官方源码、构建元数据和可重放的编译/运行结果决定是否升级，不在调研阶段改依赖或

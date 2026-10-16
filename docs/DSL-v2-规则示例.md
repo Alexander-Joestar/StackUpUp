@@ -141,11 +141,21 @@ item in [minecraft:wool@14, minecraft:wool@15] -> 256
 item = minecraft:wool:14 -> 256   # item ID pattern 为 minecraft:wool:14，不约束 meta
 ```
 
+单个 item 比较会按完整字面量形状选择 matcher：字面量不含 `*`（包括 `namespace:path` 以及可选的 `@整数`）时编译为
+`ExactItemMatcher`，比较 item ID 并按需比较 metadata；字面量任意位置含 `*` 时保留 `ItemPatternMatcher`。
+`@*` 在语义上仍是精确 item ID、metadata 不约束，但按当前实现仍走通用 item pattern 分支。item 列表逐项复用普通编译：
+精确项也会使用精确 matcher，而列表中的 `*` 仍保留 `item = *` 的可堆叠语义。
+
 `item = *` 是特殊写法，只匹配原始 `baseLimit > 1` 的可堆叠物品；它不会把工具、装备或其他原始上限为 `1` 的物品变成可堆叠物品：
 
 ```su
 item = * -> 128
 ```
+
+当规则快照中只有这一条正向 `item = *` 规则，且动作恰为一个 `SET`（例如上例的 `-> 128`）时，`StackLimitService` 使用单规则极速短路：
+直接检查 `baseLimit > 1`、应用该 SET 并执行相同的 `1..maxStackSize` 最终限制，不查询通用解析缓存，也不遍历普通 matcher。`baseLimit <= 1`
+不命中该规则，保留非堆叠基线并沿用最终限制（正常原版基线为 `1`）。增加第二条规则、改为 `item != *`、使用动作链（如 `-> 128 -> *2`）
+或使用非 SET 动作，都会回到通用规则顺序求值；短路只优化求值，不改变规则语义。
 
 其他带有 `*` 的 item ID，以及 `mod`、`ore`、`material`、`tab` 等字符串字段，使用字符串通配：一个 `*` 匹配任意长度的字符序列。当前只有
 `*` 是通配符，没有 `?` 通配符：
@@ -159,6 +169,10 @@ mod = your_mod_id* -> 256
 
 `minecraft:wool:*` 是 path 含 `*` 通配的 item ID pattern（匹配 `minecraft:wool:...` 开头的 ID），
 不是 `minecraft:wool` 加任意 meta，也不会被编译成永不命中的整串精确匹配。
+
+规则求值的 `StackContentKey` 只依赖 `(itemId, metadata)`：`ItemStack.count` 与 `NBTTagCompound` 都不是缓存键字段。
+因此同一 item ID/metadata 的堆栈在数量或 NBT 改变时仍可复用内容缓存，不会因为这两类变化逐项失效；metadata 改变则使用新键。
+规则快照或矿辞索引替换时会整体换用新的解析服务并清空对应缓存。
 
 **引号**可以包住 item 字面量或字段值：引号只改变词法边界，不改变值。引号内的空白和运算符符号按
 字面量内容处理，引号本身不进入值：

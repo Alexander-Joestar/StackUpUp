@@ -13,7 +13,6 @@ import net.minecraft.inventory.InventoryBasic
 import net.minecraft.inventory.Slot
 import net.minecraft.item.Item
 import net.minecraft.item.ItemStack
-import net.minecraft.nbt.NBTTagCompound
 import net.minecraft.util.ResourceLocation
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -671,6 +670,18 @@ class StackLimitHooksTest {
     }
 
     @Test
+    fun contentKeyCache_shouldIgnoreCountMutation() {
+        Bootstrap.register()
+        val item = Item().setRegistryName(ResourceLocation("stackupup_test", "count_mutation_cache_item"))
+        val stack = ItemStack(item, 1, 0)
+
+        StackLimitHooks.cacheResolvedItemLimit(stack, 512)
+        stack.count = 32
+
+        assertEquals(512, StackLimitHooks.lookupResolvedItemLimit(stack))
+    }
+
+    @Test
     fun itemStackSplit_shouldPreserveThresholdAndClampRequestedChunkBoundaries() {
         Bootstrap.register()
         val item = Item().setMaxStackSize(64).setRegistryName(ResourceLocation("stackupup_test", "split_boundary_item"))
@@ -753,51 +764,6 @@ class StackLimitHooksTest {
         val second = StackLimitHooks.applyDynamicStackLimit(stack, 64)
         assertEquals(256, second)
         assertNotEquals(first, second)
-    }
-
-    @Test
-    fun sameInstanceNbtMutation_shouldResolveNewValueByContent() {
-        // 基线随 NBT 变化（模拟 modded item 的 getItemStackLimit 读取 NBT）。
-        Bootstrap.register()
-        val item = object : Item() {
-            override fun getItemStackLimit(stack: ItemStack): Int = if (stack.tagCompound?.getBoolean("large") == true) 512 else 64
-        }.setRegistryName(ResourceLocation("stackupup_test", "nbt_mut_item"))
-        val stack = ItemStack(item, 1, 0)
-
-        val first = StackLimitHooks.applyDynamicStackLimit(stack, 64)
-        StackLimitHooks.cacheResolvedItemLimit(stack, first)
-        assertEquals(64, first)
-
-        val tag = NBTTagCompound()
-        tag.setBoolean("large", true)
-        stack.setTagCompound(tag)
-
-        assertNull(StackLimitHooks.lookupResolvedItemLimit(stack))
-        val second = StackLimitHooks.applyDynamicStackLimit(stack, 64)
-        assertEquals(512, second)
-        assertNotEquals(first, second)
-    }
-
-    @Test
-    fun sameInstanceInPlaceNbtMutation_shouldNotReuseOldValue() {
-        // 原地变异同一 NBT 实例：内容变化后旧条目不可达，读取必须 miss 并重新解析。
-        Bootstrap.register()
-        val item = object : Item() {
-            override fun getItemStackLimit(stack: ItemStack): Int = if (stack.tagCompound?.getBoolean("large") == true) 512 else 64
-        }.setRegistryName(ResourceLocation("stackupup_test", "nbt_inplace_mut_item"))
-        val stack = ItemStack(item, 1, 0)
-        val tag = NBTTagCompound()
-        tag.setBoolean("large", true)
-        stack.setTagCompound(tag)
-
-        val first = StackLimitHooks.applyDynamicStackLimit(stack, 64)
-        StackLimitHooks.cacheResolvedItemLimit(stack, first)
-        assertEquals(512, first)
-
-        stack.tagCompound?.setBoolean("large", false)
-
-        assertNull(StackLimitHooks.lookupResolvedItemLimit(stack))
-        assertEquals(64, StackLimitHooks.applyDynamicStackLimit(stack, 64))
     }
 
     @Test

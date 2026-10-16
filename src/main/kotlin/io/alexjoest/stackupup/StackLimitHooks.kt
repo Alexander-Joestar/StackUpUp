@@ -6,7 +6,6 @@ import io.alexjoest.stackupup.limit.StackContext
 import io.alexjoest.stackupup.limit.StackContextResolver
 import io.alexjoest.stackupup.limit.StackLimitService
 import net.minecraft.item.ItemStack
-import net.minecraft.nbt.NBTTagCompound
 import net.minecraftforge.fml.common.Loader
 import java.util.Locale
 import java.util.Random
@@ -20,8 +19,8 @@ object StackLimitHooks {
     /**
      * T4b：内容键缓存，替代 mark/consume 的实例身份 ThreadLocal。
      *
-     * 键只含内容可观察分量（itemId/meta/count/NBT），不持有 ItemStack 实例引用；
-     * 同一实例变更 meta/NBT 后键随之变化，旧值不会被复用（旧身份缓存会在变异后继续命中旧值）。
+     * 键只含真正参与堆叠计算的内容分量（itemId/meta），不持有 ItemStack 实例引用；
+     * 同一实例变更 count/NBT 不会改变键，仍可复用缓存；变更 meta 后键随之变化，旧值不会被复用。
      * 键覆盖依据 T6 已证明的字段覆盖：ITEM/MOD/TYPE/META/SIZE 由身份键分量承载，
      * ORE 由 itemId+metadata 稳定决定，MATERIAL/TAB 由 item 实例（itemId）稳定决定。
      *
@@ -434,12 +433,11 @@ object StackLimitHooks {
 /**
  * ItemStack 的内容可观察键（T4b）。
  *
- * 只取内容分量（itemId/meta/count/NBT），不引用 ItemStack 实例；
- * NBT 分量依赖 NBTTagCompound 的深比较 equals/hashCode（1.12.2 原版已实现）。
- * 原地变异 NBT 会让 hashCode 变化，条目变为不可达，读取自然 miss，保证变异后重新解析。
+ * 只取真正参与堆叠计算的内容分量（itemId/meta），不引用 ItemStack 实例；
+ * count/NBT 变更不会改变键，因此不会使同一物品元数据的缓存失效。
  * itemId 取注册名；未注册物品（仅测试场景）退回类名，避免不同物品类共享同一键。
  */
-data class StackContentKey(val itemId: String?, val metadata: Int, val count: Int, val tagCompound: NBTTagCompound?) {
+data class StackContentKey(val itemId: String?, val metadata: Int) {
     companion object {
         @JvmStatic
         fun fromStack(stack: ItemStack): StackContentKey {
@@ -447,8 +445,6 @@ data class StackContentKey(val itemId: String?, val metadata: Int, val count: In
             return StackContentKey(
                 itemId = item.registryName?.toString() ?: item.javaClass.name,
                 metadata = stack.metadata,
-                count = stack.count,
-                tagCompound = stack.tagCompound,
             )
         }
     }

@@ -1,8 +1,10 @@
 package io.alexjoest.stackupup.limit
 
 import io.alexjoest.stackupup.StackUpUpConfig
+import io.alexjoest.stackupup.rules.RuleStepKind
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import io.alexjoest.stackupup.rules.compile.RuntimeContextRequirements
+import io.alexjoest.stackupup.rules.field.FieldScopedMatcher
 import java.util.concurrent.ConcurrentHashMap
 
 /** 用途：按规则快照求值物品堆叠上限的热路径服务，带缓存。 */
@@ -17,10 +19,30 @@ class StackLimitService internal constructor(private val snapshot: RuleSnapshot,
     private val useFastPath = !forceSlowPath && cacheKeyFields.size <= 1 && !snapshot.requirements.readsOre
     private val fastCache: FastResolvedCache? = if (useFastPath) FastResolvedCache() else null
     private val resolvedCache = ConcurrentHashMap<ResolvedLimitKey, Int>()
+    private val singleWildcardSetLimit: Int? = if (forceSlowPath) {
+        null
+    } else {
+        snapshot.rules.singleOrNull()
+            ?.takeIf { (it.matcher as? FieldScopedMatcher)?.isPositiveItemWildcard == true }
+            ?.action
+            ?.steps
+            ?.singleOrNull()
+            ?.takeIf { it.kind == RuleStepKind.SET }
+            ?.value
+    }
 
     fun resolve(context: StackContext): Int {
         if (!snapshot.hasRules) {
             return context.baseLimit.coerceIn(1, StackUpUpConfig.maxStackSize)
+        }
+
+        val wildcardSetLimit = singleWildcardSetLimit
+        if (wildcardSetLimit != null) {
+            return if (context.baseLimit > 1) {
+                wildcardSetLimit.coerceIn(1, StackUpUpConfig.maxStackSize)
+            } else {
+                context.baseLimit.coerceIn(1, StackUpUpConfig.maxStackSize)
+            }
         }
 
         val fast = fastCache

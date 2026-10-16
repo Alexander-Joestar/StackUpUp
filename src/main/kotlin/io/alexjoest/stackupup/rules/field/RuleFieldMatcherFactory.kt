@@ -56,11 +56,19 @@ internal object RuleFieldMatchers {
             ItemStackableMatcher(negate = operator == ComparisonOperator.NOT_EQUALS)
         } else {
             val pattern = RuleLiteralMatcherCompiler.parseItemPattern(literal)
-            ItemPatternMatcher(
-                itemIdMatcher = pattern.itemIdMatcher,
-                meta = pattern.meta,
-                negate = operator == ComparisonOperator.NOT_EQUALS,
-            )
+            if ('*' !in literal) {
+                ExactItemMatcher(
+                    exactId = literal.substringBefore('@'),
+                    meta = pattern.meta,
+                    negate = operator == ComparisonOperator.NOT_EQUALS,
+                )
+            } else {
+                ItemPatternMatcher(
+                    itemIdMatcher = pattern.itemIdMatcher,
+                    meta = pattern.meta,
+                    negate = operator == ComparisonOperator.NOT_EQUALS,
+                )
+            }
         }
     }
 

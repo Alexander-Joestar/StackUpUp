@@ -213,6 +213,72 @@ class StackLimitServiceTest {
         assertEquals(3, service.debugResolvedCacheSize())
     }
 
+    @Test
+    fun exactItemMatcher_shouldMatchOnlyExactIdAndMetadata() {
+        val snapshot = RuleSnapshot(
+            version = 11L,
+            rules = listOf(
+                RuleCompiler.compileLine("item = minecraft:foo.bar@7 -> 128", 1),
+            ),
+        )
+        val service = StackLimitService(snapshot)
+
+        assertEquals(128, service.resolve(context("minecraft:foo.bar", "minecraft", 7, "item")))
+        assertEquals(64, service.resolve(context("minecraft:foo.bar", "minecraft", 8, "item")))
+        assertEquals(64, service.resolve(context("minecraft:fooXbar", "minecraft", 7, "item")))
+    }
+
+    @Test
+    fun singleItemWildcardSet_shouldShortCircuitWithStackabilityParity() {
+        val previous = StackUpUpConfig.maxStackSize
+        StackUpUpConfig.maxStackSize = 256
+        try {
+            val snapshot = RuleSnapshot(
+                version = 12L,
+                rules = listOf(
+                    RuleCompiler.compileLine("item = * -> 999", 1),
+                ),
+            )
+            val shortcut = StackLimitService(snapshot)
+            val generic = StackLimitService(snapshot, forceSlowPath = true)
+            val cases = listOf(
+                context("minecraft:stick", "minecraft", 0, "item", baseLimit = 64),
+                context("minecraft:diamond_sword", "minecraft", 0, "item", baseLimit = 1),
+                context("minecraft:invalid", "minecraft", 0, "item", baseLimit = 0),
+            )
+
+            for (case in cases) {
+                assertEquals(generic.resolve(case), shortcut.resolve(case), "context=$case")
+            }
+            assertEquals(256, shortcut.resolve(cases[0]))
+            assertEquals(1, shortcut.resolve(cases[1]))
+            assertEquals(0, shortcut.debugResolvedCacheSize())
+        } finally {
+            StackUpUpConfig.maxStackSize = previous
+        }
+    }
+
+    @Test
+    fun wildcardShortcut_shouldRequirePositiveSingleSetAction() {
+        val chained = StackLimitService(
+            RuleSnapshot(
+                version = 13L,
+                rules = listOf(RuleCompiler.compileLine("item = * -> 512 -> +10", 1)),
+            ),
+        )
+        assertEquals(522, chained.resolve(context("minecraft:stick", "minecraft", 0, "item", baseLimit = 64)))
+        assertEquals(1, chained.resolve(context("minecraft:sword", "minecraft", 0, "item", baseLimit = 1)))
+
+        val negative = StackLimitService(
+            RuleSnapshot(
+                version = 14L,
+                rules = listOf(RuleCompiler.compileLine("item != * -> 512", 1)),
+            ),
+        )
+        assertEquals(64, negative.resolve(context("minecraft:stick", "minecraft", 0, "item", baseLimit = 64)))
+        assertEquals(512, negative.resolve(context("minecraft:sword", "minecraft", 0, "item", baseLimit = 1)))
+    }
+
     // ---- T6：缓存键机械推导与零分配快路径 ----
 
     @Test

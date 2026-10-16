@@ -36,14 +36,32 @@ internal class FieldScopedMatcher(val field: RuleField, private val inner: Field
     override fun matches(context: StackContext): Boolean = inner.matches(context)
 
     override fun readFields(): Set<RuleField> = fields
+
+    internal val isPositiveItemWildcard: Boolean
+        get() = this.field == RuleField.ITEM && inner is ItemStackableMatcher && inner.isPositive
 }
 
 /**
  * `item = *`：匹配所有可堆叠物品（原版 baseSize > 1）。
  */
 internal class ItemStackableMatcher(private val negate: Boolean) : FieldMatcher {
+    internal val isPositive: Boolean get() = !negate
+
     override fun matches(context: StackContext): Boolean {
         val matched = context.baseLimit > 1
+        return if (negate) !matched else matched
+    }
+
+    // 无字段绑定的裸叶子：生产路径恒由 FieldScopedMatcher 包裹，此实现仅供工厂直接构造（测试）使用。
+    override fun readFields(): Set<RuleField> = emptySet()
+}
+
+/**
+ * 无通配 item 字面量：直接比较 itemId 与可选精确 meta。
+ */
+internal class ExactItemMatcher(private val exactId: String, private val meta: Int?, private val negate: Boolean) : FieldMatcher {
+    override fun matches(context: StackContext): Boolean {
+        val matched = context.itemId == exactId && (meta == null || meta == context.metadata)
         return if (negate) !matched else matched
     }
 

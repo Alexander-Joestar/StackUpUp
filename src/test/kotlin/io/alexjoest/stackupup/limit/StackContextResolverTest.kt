@@ -3,6 +3,7 @@ package io.alexjoest.stackupup.limit
 import io.alexjoest.stackupup.rules.RuleField
 import io.alexjoest.stackupup.rules.compile.RuntimeContextRequirements
 import net.minecraft.creativetab.CreativeTabs
+import net.minecraft.init.Blocks
 import net.minecraft.init.Bootstrap
 import net.minecraft.item.Item
 import net.minecraft.item.ItemStack
@@ -23,7 +24,11 @@ class StackContextResolverTest {
         try {
             RuleRuntime.replaceOreDictIndex(index)
 
-            val context = StackContextResolver.fromStack(stack = stack, baseLimit = 64)
+            val context = StackContextResolver.fromStack(
+                stack = stack,
+                baseLimit = 64,
+                requirements = RuntimeContextRequirements.fromFields(setOf(RuleField.TYPE, RuleField.ORE)),
+            )
 
             assertNotNull(context)
             assertEquals("gregtech:meta_ingot", context?.itemId)
@@ -35,6 +40,25 @@ class StackContextResolverTest {
         } finally {
             RuleRuntime.replaceOreDictIndex(previousIndex)
         }
+    }
+
+    @Test
+    fun shouldResolveTypeOnlyWhenRequired() {
+        Bootstrap.register()
+        val stack = ItemStack(Blocks.STONE, 1, 0)
+        val withoutType = RuntimeContextRequirements.EMPTY
+        val withType = RuntimeContextRequirements.fromFields(setOf(RuleField.TYPE))
+
+        assertEquals(false, withoutType.needsType)
+        assertEquals(true, withType.needsType)
+        assertEquals(
+            "",
+            StackContextResolver.fromStack(stack = stack, baseLimit = 64, requirements = withoutType)?.type,
+        )
+        assertEquals(
+            "block",
+            StackContextResolver.fromStack(stack = stack, baseLimit = 64, requirements = withType)?.type,
+        )
     }
 
     @Test
@@ -80,6 +104,7 @@ class StackContextResolverTest {
 
             assertNotNull(context)
             assertEquals(setOf("ingotSteel"), context?.oreNames)
+            assertEquals("", context?.type)
             assertEquals(1, oreDictCalls)
         } finally {
             RuleRuntime.replaceOreDictIndex(previousIndex)

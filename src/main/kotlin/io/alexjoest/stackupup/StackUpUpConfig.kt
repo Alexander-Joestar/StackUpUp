@@ -31,6 +31,11 @@ object StackUpUpConfig {
     @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.client.name")
     val client: Client = Client()
 
+    @JvmField
+    @Config.Name("debug")
+    @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.debug.name")
+    val debug: Debug = Debug()
+
     @JvmStatic
     fun applyReloadControlledValues() {
         NuclearCraftCompat.applyConfiguredUpgradeStackLimits()
@@ -152,6 +157,15 @@ object StackUpUpConfig {
         @Config.Comment("Display stack counts using capped compact text (e.g. 1.5K, 0.1M, 2.1B) before fitting and any font scaling.")
         @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.client.alwaysCompactNumbers.name")
         var alwaysCompactNumbers: Boolean = false
+    }
+
+    class Debug {
+        @JvmField
+        @Config.Comment(
+            "Diagnostic only: log every container merge slot limit resolution with both sides' inputs and the resolved value. Leave off in normal play; it is only meant to trace a single reproduction.",
+        )
+        @Config.LangKey("${StackUpUpIds.CONFIG_LANG_ROOT}.debug.mergeLimitTrace.name")
+        var mergeLimitTrace: Boolean = false
     }
 }
 

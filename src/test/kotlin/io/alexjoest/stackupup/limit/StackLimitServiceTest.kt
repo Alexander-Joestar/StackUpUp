@@ -1,11 +1,13 @@
 package io.alexjoest.stackupup.limit
 
+import io.alexjoest.stackupup.StackLimitHooks
 import io.alexjoest.stackupup.StackUpUpConfig
 import io.alexjoest.stackupup.rules.ComparisonOperator
 import io.alexjoest.stackupup.rules.compile.RuleCompiler
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import io.alexjoest.stackupup.rules.field.RuleFieldMatchers
 import net.minecraft.creativetab.CreativeTabs
+import net.minecraft.init.Blocks
 import net.minecraft.init.Bootstrap
 import net.minecraft.item.Item
 import net.minecraft.item.ItemStack
@@ -322,6 +324,64 @@ class StackLimitServiceTest {
         )
         assertEquals(64, negative.resolve(context("minecraft:stick", 0, baseLimit = 64)))
         assertEquals(512, negative.resolve(context("minecraft:sword", 0, baseLimit = 1)))
+    }
+
+    @Test
+    fun userWildcardMultiplyRule_shouldResolveRealStoneToProductClampedByMaxStackSize() {
+        // 复现用户配置：general.maxStackSize=64000，规则文件只有一行 `item = * -> *100`，
+        // 期望物品上限 = min(64*100, 64000) = 6400。
+        val previousLimit = StackUpUpConfig.maxStackSize
+        val previousSnapshot = RuleRuntime.currentSnapshot()
+        StackUpUpConfig.maxStackSize = 64000
+        try {
+            RuleRuntime.replaceSnapshot(
+                RuleSnapshot(
+                    version = 100L,
+                    rules = listOf(RuleCompiler.compileLine("item = * -> *100", 1)),
+                ),
+            )
+            val stone = ItemStack(Blocks.STONE, 1, 0)
+            // 生产路径的 baseLimit 来自 resolveOriginalBaseline，不硬编码。
+            val baseline = StackLimitHooks.resolveOriginalBaseline(stone)
+            assertEquals(64, baseline, "minecraft:stone 的原版基线应为其真实 getItemStackLimit")
+            val context = StackContextResolver.fromStack(stone, baseline) ?: error("非空物品必须产出上下文")
+            val service = RuleRuntime.limitService()
+            assertTrue(service.hasRules(), "规则快照必须已安装")
+
+            assertEquals(6400, service.resolve(context), "min(64 * 100, general.maxStackSize=64000)")
+        } finally {
+            RuleRuntime.replaceSnapshot(previousSnapshot)
+            StackUpUpConfig.maxStackSize = previousLimit
+        }
+    }
+
+    @Test
+    fun userWildcardMultiplyRule_shouldGiveMergePathSixThousandFourHundredLimit() {
+        // Container.mergeItemStack 读的是 ItemStack.getMaxStackSize()。ItemStackMixin 在该 getter
+        // 的返回处调用 applyDynamicStackLimit，因此这里跳过未装 Mixin 的原版 getter，
+        // 直接走同一入口取合并路径实际消费的数。
+        val previousLimit = StackUpUpConfig.maxStackSize
+        val previousSnapshot = RuleRuntime.currentSnapshot()
+        StackUpUpConfig.maxStackSize = 64000
+        try {
+            RuleRuntime.replaceSnapshot(
+                RuleSnapshot(
+                    version = 101L,
+                    rules = listOf(RuleCompiler.compileLine("item = * -> *100", 1)),
+                ),
+            )
+            val stone = ItemStack(Blocks.STONE, 1, 0)
+
+            assertEquals(64, stone.maxStackSize, "未装 ItemStackMixin 时原版 getter 仍是 64")
+            assertEquals(
+                6400,
+                StackLimitHooks.applyDynamicStackLimit(stone, stone.maxStackSize),
+                "ItemStackMixin 包裹后的 getMaxStackSize 应为 6400",
+            )
+        } finally {
+            RuleRuntime.replaceSnapshot(previousSnapshot)
+            StackUpUpConfig.maxStackSize = previousLimit
+        }
     }
 
     // ---- T6：缓存键机械推导与快路径命中 ----

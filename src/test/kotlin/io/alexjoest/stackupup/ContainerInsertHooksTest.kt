@@ -2,6 +2,9 @@ package io.alexjoest.stackupup
 
 import io.alexjoest.stackupup.core.InventoryStackLimitHook
 import io.alexjoest.stackupup.core.resetInventoryExpansionForTesting
+import io.alexjoest.stackupup.limit.RuleRuntime
+import io.alexjoest.stackupup.rules.compile.RuleCompiler
+import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import net.minecraft.entity.player.EntityPlayer
 import net.minecraft.init.Bootstrap
 import net.minecraft.inventory.Container
@@ -20,10 +23,12 @@ import org.junit.jupiter.api.Test
 /** Hook-adapted tests use real Container.mergeItemStack and inventory setters; Mixin launch coverage lives in dev probes. */
 class ContainerInsertHooksTest {
     private var previousMaxStackSize = 64
+    private lateinit var previousRuleSnapshot: RuleSnapshot
 
     @BeforeEach
     fun enableGenericCapacityForHookTests() {
         previousMaxStackSize = StackUpUpConfig.maxStackSize
+        previousRuleSnapshot = RuleRuntime.currentSnapshot()
         resetInventoryExpansionForTesting()
         InventoryStackLimitHook.configureExpansionEnabled(true)
     }
@@ -31,6 +36,7 @@ class ContainerInsertHooksTest {
     @AfterEach
     fun resetCapacityPolicy() {
         StackUpUpConfig.maxStackSize = previousMaxStackSize
+        RuleRuntime.replaceSnapshot(previousRuleSnapshot)
         resetInventoryExpansionForTesting()
     }
 
@@ -69,6 +75,16 @@ class ContainerInsertHooksTest {
         InventoryStackLimitHook.prepare(maxStackSize, blacklist)
     }
 
+    /** 安装用户实际配置的单行规则 `item = * -> *100`；快照在 [resetCapacityPolicy] 中还原。 */
+    private fun installUserWildcardMultiplyRule() {
+        RuleRuntime.replaceSnapshot(
+            RuleSnapshot(
+                version = 1000L,
+                rules = listOf(RuleCompiler.compileLine("item = * -> *100", 1)),
+            ),
+        )
+    }
+
     private fun assertEmptySlotMergeConserves(inventory: net.minecraft.inventory.IInventory, slotIndex: Int, itemId: String, expectedStored: Int) {
         val offeredCount = 129
         val offered = ItemStack(createItem(128, itemId), offeredCount, 0)
@@ -97,6 +113,15 @@ class ContainerInsertHooksTest {
 
         private fun createItem(maxStack: Int, id: String): Item = object : Item() {
             override fun getItemStackLimit(stack: ItemStack): Int = maxStack
+        }.setRegistryName(ResourceLocation("stackupup_test", id))
+
+        /**
+         * 规则化物品：等价于未装 ItemStackMixin 时在物品层插入同一入口。
+         * 生产里 getMaxStackSize() 的返回值就是 [StackLimitHooks.applyDynamicStackLimit](原版值)，
+         * 所以 `ItemStack(item, n, 0).maxStackSize` 在此处等于装载 Mixin 后的真实动态上限。
+         */
+        private fun ruleBackedItem(vanillaLimit: Int, id: String): Item = object : Item() {
+            override fun getItemStackLimit(stack: ItemStack): Int = StackLimitHooks.applyDynamicStackLimit(stack, vanillaLimit)
         }.setRegistryName(ResourceLocation("stackupup_test", id))
 
         private fun createInventory(limit: Int, size: Int = 1): InventoryBasic = object : InventoryBasic("test", false, size) {
@@ -265,6 +290,38 @@ class ContainerInsertHooksTest {
         assertEquals(0, offered.count)
         val touchedSlots = (0 until 27).count { !inventory.getStackInSlot(it).isEmpty }
         assertEquals(1, touchedSlots, "one mergeItemStack call over 27 empty slots must touch exactly one slot")
+    }
+
+    @Test
+    fun userWildcardMultiplyRule_shouldLand128StoneInExactlyOneChestSlot() {
+        // 用户实际配置：general.maxStackSize=64000，main.su 只有 `item = * -> *100`，
+        // 物品上限 = min(64*100, 64000) = 6400，箱体 getter 抬高到 64000；
+        // shift 放入 128 应一槽装完，而不是摊成 n 个 64。
+        prepareInventoryPolicy(64000, expansionEnabled = true, blacklist = emptyArray())
+        installUserWildcardMultiplyRule()
+        val offeredCount = 128
+        val offered = ItemStack(ruleBackedItem(vanillaLimit = 64, id = "wildcard_multiply_chest_item"), offeredCount, 0)
+        assertEquals(6400, offered.maxStackSize, "规则物品上限应为 min(64*100, 64000)")
+        val chest = chestWithGetterLimit(64000)
+        val container = MergeContainer()
+        repeat(chest.sizeInventory) { index ->
+            container.add(
+                object : Slot(chest, index, 0, 0) {
+                    override fun getSlotStackLimit(): Int = ContainerInsertHooks.resolveMergeSlotLimit(this, offered, super.getSlotStackLimit())
+                },
+            )
+        }
+        assertEquals(6400, container.inventorySlots[0].slotStackLimit)
+
+        assertTrue(container.merge(offered, chest.sizeInventory))
+
+        assertEquals(offeredCount, chest.getStackInSlot(0).count)
+        (1 until chest.sizeInventory).forEach { index ->
+            assertTrue(chest.getStackInSlot(index).isEmpty, "6400 上限的箱体不得把 128 拆到槽 $index")
+        }
+        assertTrue(offered.isEmpty, "整个 128 必须一次搬完并守恒")
+        val touchedSlots = (0 until chest.sizeInventory).count { !chest.getStackInSlot(it).isEmpty }
+        assertEquals(1, touchedSlots, "一次 mergeItemStack 只应占用一个箱体槽位")
     }
 
     @Test

@@ -1,7 +1,5 @@
 package io.alexjoest.stackupup.limit
 
-import io.alexjoest.stackupup.rules.RuleField
-import io.alexjoest.stackupup.rules.compile.RuntimeContextRequirements
 import net.minecraft.creativetab.CreativeTabs
 import net.minecraft.init.Blocks
 import net.minecraft.init.Bootstrap
@@ -9,83 +7,12 @@ import net.minecraft.item.Item
 import net.minecraft.item.ItemStack
 import net.minecraft.util.ResourceLocation
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
 
 class StackContextResolverTest {
     @Test
     fun shouldNormalizeItemStackToUnifiedContext() {
-        Bootstrap.register()
-        val item = Item().setRegistryName(ResourceLocation("gregtech", "meta_ingot"))
-        val stack = ItemStack(item, 1, 324)
-        val index = OreDictIndex.fromStackLoader { setOf("ingotSteel") }
-        val previousIndex = RuleRuntime.oreDictIndex()
-        try {
-            RuleRuntime.replaceOreDictIndex(index)
-
-            val context = StackContextResolver.fromStack(
-                stack = stack,
-                baseLimit = 64,
-                requirements = RuntimeContextRequirements.fromFields(setOf(RuleField.TYPE, RuleField.ORE)),
-            )
-
-            assertNotNull(context)
-            assertEquals("gregtech:meta_ingot", context?.itemId)
-            assertEquals("gregtech", context?.modId)
-            assertEquals(324, context?.metadata)
-            assertEquals("item", context?.type)
-            assertEquals(64, context?.baseLimit)
-            assertEquals(setOf("ingotSteel"), context?.oreNames)
-        } finally {
-            RuleRuntime.replaceOreDictIndex(previousIndex)
-        }
-    }
-
-    @Test
-    fun shouldResolveTypeOnlyWhenRequired() {
-        Bootstrap.register()
-        val stack = ItemStack(Blocks.STONE, 1, 0)
-        val withoutType = RuntimeContextRequirements.EMPTY
-        val withType = RuntimeContextRequirements.fromFields(setOf(RuleField.TYPE))
-
-        assertEquals(false, withoutType.needsType)
-        assertEquals(true, withType.needsType)
-        assertEquals(
-            "",
-            StackContextResolver.fromStack(stack = stack, baseLimit = 64, requirements = withoutType)?.type,
-        )
-        assertEquals(
-            "block",
-            StackContextResolver.fromStack(stack = stack, baseLimit = 64, requirements = withType)?.type,
-        )
-    }
-
-    @Test
-    fun shouldSkipOreDictLookupWhenDisabled() {
-        Bootstrap.register()
-        val item = Item().setRegistryName(ResourceLocation("gregtech", "meta_ingot"))
-        val stack = ItemStack(item, 1, 324)
-        val previousIndex = RuleRuntime.oreDictIndex()
-
-        try {
-            RuleRuntime.replaceOreDictIndex(OreDictIndex.fromStackLoader { error("ore dict must not be queried") })
-
-            val context = StackContextResolver.fromStack(
-                stack = stack,
-                baseLimit = 64,
-                requirements = RuntimeContextRequirements.EMPTY,
-            )
-
-            assertNotNull(context)
-            assertTrue(context?.oreNames?.isEmpty() == true)
-        } finally {
-            RuleRuntime.replaceOreDictIndex(previousIndex)
-        }
-    }
-
-    @Test
-    fun defaultStackContext_shouldQueryOreNamesForCompatibility() {
         Bootstrap.register()
         val item = Item().setRegistryName(ResourceLocation("gregtech", "meta_ingot"))
         val stack = ItemStack(item, 1, 324)
@@ -100,12 +27,18 @@ class StackContextResolverTest {
                 },
             )
 
-            val context = StackContextResolver.fromStack(stack = stack, baseLimit = 64)
+            val context = StackContextResolver.fromStack(stack = stack, baseLimit = 64) ?: error("context missing")
 
-            assertNotNull(context)
+            assertEquals("gregtech:meta_ingot", context.itemId)
+            assertEquals("gregtech", context.modId)
+            assertEquals(324, context.metadata)
+            assertEquals(64, context.baseLimit)
             assertEquals(0, oreDictCalls)
-            assertEquals(setOf("ingotSteel"), context?.oreNames)
-            assertEquals("", context?.type)
+            assertEquals("item", context.type)
+            assertEquals(0, oreDictCalls)
+            assertEquals(setOf("ingotSteel"), context.oreNames)
+            assertEquals(1, oreDictCalls)
+            assertEquals(setOf("ingotSteel"), context.oreNames)
             assertEquals(1, oreDictCalls)
         } finally {
             RuleRuntime.replaceOreDictIndex(previousIndex)
@@ -113,109 +46,120 @@ class StackContextResolverTest {
     }
 
     @Test
-    fun shouldReturnEmptyMaterialWhenMaterialLookupDisabled() {
+    fun shouldResolveBlockTypeFromStack() {
         Bootstrap.register()
-        var calls = 0
-        val restoreResolver = GregTechMaterialResolver.installResolverForTesting {
-            calls++
-            "steel"
-        }
-        val item = Item().setRegistryName(ResourceLocation("gregtech", "meta_ingot"))
-        val stack = ItemStack(item, 1, 324)
+        val context = StackContextResolver.fromStack(ItemStack(Blocks.STONE, 1, 0), 64) ?: error("context missing")
 
-        try {
-            val context = StackContextResolver.fromStack(
-                stack = stack,
-                baseLimit = 64,
-                requirements = RuntimeContextRequirements.EMPTY,
-            )
-
-            assertNotNull(context)
-            assertEquals("", context?.material)
-            assertEquals(0, calls)
-        } finally {
-            restoreResolver()
-        }
+        assertEquals("block", context.type)
     }
 
     @Test
-    fun shouldResolveOnlyRequiredExpensiveFields() {
-        Bootstrap.register()
-        var materialCalls = 0
-        val restoreResolver = GregTechMaterialResolver.installResolverForTesting {
-            materialCalls++
-            "steel"
-        }
-        val item = Item().setRegistryName(ResourceLocation("gregtech", "meta_ingot"))
-        val stack = ItemStack(item, 1, 324)
-        var oreDictCalls = 0
-        val index = OreDictIndex.fromStackLoader {
-            oreDictCalls++
-            setOf("ingotSteel")
-        }
-        val previousIndex = RuleRuntime.oreDictIndex()
-        try {
-            RuleRuntime.replaceOreDictIndex(index)
+    fun shouldUseDirectOptionalValuesWithoutStack() {
+        val context = StackContext(
+            itemId = "example:item",
+            modId = "example",
+            metadata = 3,
+            type = "direct type",
+            baseLimit = 16,
+            oreNames = setOf("directOre"),
+            tab = "direct tab",
+            material = "direct material",
+        )
 
-            val context = StackContextResolver.fromStack(
-                stack = stack,
-                baseLimit = 64,
-                requirements = RuntimeContextRequirements.fromFields(setOf(RuleField.ORE, RuleField.MATERIAL)),
-            )
-
-            assertNotNull(context)
-            assertEquals(0, oreDictCalls)
-            assertEquals(0, materialCalls)
-            assertEquals(setOf("ingotSteel"), context?.oreNames)
-            assertEquals("steel", context?.material)
-            assertEquals(1, oreDictCalls)
-            assertEquals(1, materialCalls)
-            assertEquals(setOf("ingotSteel"), context?.oreNames)
-            assertEquals("steel", context?.material)
-            assertEquals(1, oreDictCalls)
-            assertEquals(1, materialCalls)
-        } finally {
-            RuleRuntime.replaceOreDictIndex(previousIndex)
-            restoreResolver()
-        }
+        assertEquals("direct type", context.type)
+        assertEquals(setOf("directOre"), context.oreNames)
+        assertEquals("direct tab", context.tab)
+        assertEquals("direct material", context.material)
     }
 
     @Test
-    fun shouldCollectTabFromFieldPlanWithoutOtherOptionalLookups() {
+    fun shouldResolveOptionalFieldsLazilyOnce() {
         Bootstrap.register()
         var materialCalls = 0
-        val restoreResolver = GregTechMaterialResolver.installResolverForTesting {
-            materialCalls++
-            "steel"
-        }
         var tabCalls = 0
+        var oreDictCalls = 0
+        val restoreResolver = GregTechMaterialResolver.installResolverForTesting {
+            materialCalls++
+            "steel"
+        }
         val item = object : Item() {
             override fun getCreativeTab(): CreativeTabs? {
                 tabCalls++
                 return CreativeTabs.BUILDING_BLOCKS
             }
-        }.setRegistryName(ResourceLocation("minecraft", "stone"))
-        val stack = ItemStack(item, 1, 0)
+        }.setRegistryName(ResourceLocation("gregtech", "meta_ingot"))
+        val stack = ItemStack(item, 1, 324)
         val previousIndex = RuleRuntime.oreDictIndex()
 
         try {
-            RuleRuntime.replaceOreDictIndex(OreDictIndex.fromStackLoader { error("ore dict must not be queried") })
-
-            val context = StackContextResolver.fromStack(
-                stack = stack,
-                baseLimit = 64,
-                requirements = RuntimeContextRequirements.fromFields(setOf(RuleField.TAB)),
+            RuleRuntime.replaceOreDictIndex(
+                OreDictIndex.fromStackLoader {
+                    oreDictCalls++
+                    setOf("ingotSteel")
+                },
             )
 
-            assertNotNull(context)
-            assertEquals(0, tabCalls)
-            assertEquals("buildingBlocks", context?.tab)
-            assertEquals(1, tabCalls)
-            assertEquals("buildingBlocks", context?.tab)
-            assertEquals(1, tabCalls)
-            assertTrue(context?.oreNames?.isEmpty() == true)
-            assertEquals("", context?.material)
+            val context = StackContextResolver.fromStack(stack = stack, baseLimit = 64) ?: error("context missing")
+            assertEquals(0, oreDictCalls)
             assertEquals(0, materialCalls)
+            assertEquals(0, tabCalls)
+
+            assertEquals(setOf("ingotSteel"), context.oreNames)
+            assertEquals(1, oreDictCalls)
+            assertEquals(setOf("ingotSteel"), context.oreNames)
+            assertEquals(1, oreDictCalls)
+
+            assertEquals("buildingBlocks", context.tab)
+            assertEquals(1, tabCalls)
+            assertEquals("buildingBlocks", context.tab)
+            assertEquals(1, tabCalls)
+
+            assertEquals("steel", context.material)
+            assertEquals(1, materialCalls)
+            assertEquals("steel", context.material)
+            assertEquals(1, materialCalls)
+        } finally {
+            RuleRuntime.replaceOreDictIndex(previousIndex)
+            restoreResolver()
+        }
+    }
+
+    @Test
+    fun identityMethodsShouldNotResolveOptionalFields() {
+        Bootstrap.register()
+        var materialCalls = 0
+        var tabCalls = 0
+        var oreDictCalls = 0
+        val restoreResolver = GregTechMaterialResolver.installResolverForTesting {
+            materialCalls++
+            "steel"
+        }
+        val item = object : Item() {
+            override fun getCreativeTab(): CreativeTabs? {
+                tabCalls++
+                return CreativeTabs.BUILDING_BLOCKS
+            }
+        }.setRegistryName(ResourceLocation("gregtech", "meta_ingot"))
+        val stack = ItemStack(item, 1, 324)
+        val previousIndex = RuleRuntime.oreDictIndex()
+
+        try {
+            RuleRuntime.replaceOreDictIndex(
+                OreDictIndex.fromStackLoader {
+                    oreDictCalls++
+                    setOf("ingotSteel")
+                },
+            )
+
+            val context = StackContextResolver.fromStack(stack = stack, baseLimit = 64) ?: error("context missing")
+            val other = StackContextResolver.fromStack(stack = stack, baseLimit = 64) ?: error("context missing")
+
+            context.hashCode()
+            context.toString()
+            assertFalse(context == other)
+            assertEquals(0, oreDictCalls)
+            assertEquals(0, materialCalls)
+            assertEquals(0, tabCalls)
         } finally {
             RuleRuntime.replaceOreDictIndex(previousIndex)
             restoreResolver()

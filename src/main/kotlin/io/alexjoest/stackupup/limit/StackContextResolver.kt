@@ -1,6 +1,5 @@
 package io.alexjoest.stackupup.limit
 
-import io.alexjoest.stackupup.rules.compile.RuntimeContextRequirements
 import net.minecraft.item.ItemStack
 
 /**
@@ -10,11 +9,7 @@ import net.minecraft.item.ItemStack
  */
 object StackContextResolver {
     @JvmStatic
-    fun fromStack(
-        stack: ItemStack,
-        baseLimit: Int,
-        requirements: RuntimeContextRequirements = RuntimeContextRequirements.DEFAULT_STACK_CONTEXT,
-    ): StackContext? {
+    fun fromStack(stack: ItemStack, baseLimit: Int): StackContext? {
         if (stack.isEmpty) {
             return null
         }
@@ -26,7 +21,6 @@ object StackContextResolver {
             metadata = stack.metadata,
             baseLimit = baseLimit,
             stack = stack,
-            requirements = requirements,
         )
     }
 }

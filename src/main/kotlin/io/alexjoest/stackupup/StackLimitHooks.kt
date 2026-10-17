@@ -2,7 +2,6 @@ package io.alexjoest.stackupup
 
 import io.alexjoest.stackupup.core.InventoryStackLimitHook
 import io.alexjoest.stackupup.limit.RuleRuntime
-import io.alexjoest.stackupup.limit.StackContext
 import io.alexjoest.stackupup.limit.StackContextResolver
 import io.alexjoest.stackupup.limit.StackLimitService
 import net.minecraft.item.ItemStack
@@ -185,20 +184,6 @@ object StackLimitHooks {
         val delegate = (target as? net.minecraftforge.items.wrapper.InvWrapper)?.inv
         return delegate != null && shouldBypassInventoryStackLimit(delegate)
     }
-
-    @JvmStatic
-    @Deprecated("Internal stack limit resolution has moved to ItemStack/StackContext; this overload is kept only for legacy callers.")
-    @Suppress("UNUSED_PARAMETER")
-    fun applyDynamicStackLimit(itemId: String, modId: String, meta: Int, type: String, baseLimit: Int, oreNames: Set<String>): Int =
-        RuleRuntime.limitService().resolve(
-            StackContext(
-                itemId = itemId,
-                metadata = meta,
-                baseLimit = baseLimit,
-                directType = type,
-                directOreNames = oreNames,
-            ),
-        )
 
     @JvmStatic
     fun applyDynamicStackLimit(stack: ItemStack, baseLimit: Int): Int {

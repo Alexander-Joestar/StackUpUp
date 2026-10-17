@@ -1,14 +1,25 @@
 package io.alexjoest.stackupup.rules.field
 
+import io.alexjoest.stackupup.limit.GregTechMaterialResolver
+import io.alexjoest.stackupup.limit.OreDictIndex
+import io.alexjoest.stackupup.limit.RuleRuntime
 import io.alexjoest.stackupup.limit.StackContext
 import io.alexjoest.stackupup.rules.LocalizedRuleException
 import io.alexjoest.stackupup.rules.RuleField
 import io.alexjoest.stackupup.rules.RuleMessageKey
 import io.alexjoest.stackupup.rules.compile.RuleCompiler
+import net.minecraft.creativetab.CreativeTabs
+import net.minecraft.init.Blocks
+import net.minecraft.init.Bootstrap
+import net.minecraft.item.Item
+import net.minecraft.item.ItemStack
+import net.minecraft.util.ResourceLocation
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 /**
@@ -18,6 +29,29 @@ import org.junit.jupiter.api.Test
  * 纯字符串列表 HashSet 命中、通配列表逐项匹配、NOT_EQUALS 取反与缺失值策略优先级。
  */
 class FieldMatcherTest {
+    private lateinit var previousOreDictIndex: OreDictIndex
+    private lateinit var restoreMaterialResolver: () -> Unit
+    private val oreNamesByItemPath: MutableMap<String, Set<String>> = mutableMapOf()
+    private val materialItem: Item by lazy { Item().setRegistryName(ResourceLocation("stackupup_test", "material_item")) }
+
+    @BeforeEach
+    fun installContextSources() {
+        Bootstrap.register()
+        previousOreDictIndex = RuleRuntime.oreDictIndex()
+        RuleRuntime.replaceOreDictIndex(
+            OreDictIndex.fromStackLoader { stack -> oreNamesByItemPath[stack.item.registryName?.path].orEmpty() },
+        )
+        restoreMaterialResolver = GregTechMaterialResolver.installResolverForTesting { stack ->
+            if (stack.item === materialItem) MATERIAL_BY_META[stack.metadata].orEmpty() else ""
+        }
+    }
+
+    @AfterEach
+    fun restoreContextSources() {
+        RuleRuntime.replaceOreDictIndex(previousOreDictIndex)
+        restoreMaterialResolver()
+    }
+
     @Test
     fun chainedInterval_shouldMatchOnlyMiddleValue() {
         val compiled = RuleCompiler.compileLine("1 < meta < 3 -> 512", 1)
@@ -175,35 +209,35 @@ class FieldMatcherTest {
     fun missingValuePolicy_shouldApplyBeforeNegation() {
         val compiled = RuleCompiler.compileLine("material != steel -> 512", 1)
 
-        assertFalse(compiled.matches(ctx(material = "")))
-        assertFalse(compiled.matches(ctx(material = "steel")))
-        assertTrue(compiled.matches(ctx(material = "copper")))
+        assertFalse(compiled.matches(materialCtx("")))
+        assertFalse(compiled.matches(materialCtx("steel")))
+        assertTrue(compiled.matches(materialCtx("copper")))
     }
 
     @Test
     fun stringListWithNeverMatchPolicy_shouldRejectEmptyValue() {
         val compiled = RuleCompiler.compileLine("material in [steel, copper] -> 512", 1)
 
-        assertFalse(compiled.matches(ctx(material = "")))
-        assertTrue(compiled.matches(ctx(material = "steel")))
-        assertTrue(compiled.matches(ctx(material = "copper")))
+        assertFalse(compiled.matches(materialCtx("")))
+        assertTrue(compiled.matches(materialCtx("steel")))
+        assertTrue(compiled.matches(materialCtx("copper")))
     }
 
     @Test
     fun stringSetWildcard_shouldMatchAnyOreName() {
         val compiled = RuleCompiler.compileLine("ore = ingot* -> 512", 1)
 
-        assertTrue(compiled.matches(ctx(oreNames = setOf("ingotIron", "dustGold"))))
-        assertFalse(compiled.matches(ctx(oreNames = setOf("dustSulfur"))))
+        assertTrue(compiled.matches(oreCtx(setOf("ingotIron", "dustGold"))))
+        assertFalse(compiled.matches(oreCtx(setOf("dustSulfur"))))
     }
 
     @Test
     fun stringSetList_shouldMatchAnyMember() {
         val compiled = RuleCompiler.compileLine("ore in [ingotIron, ingotGold] -> 512", 1)
 
-        assertTrue(compiled.matches(ctx(oreNames = setOf("ingotIron"))))
-        assertTrue(compiled.matches(ctx(oreNames = setOf("dustGold", "ingotGold"))))
-        assertFalse(compiled.matches(ctx(oreNames = setOf("dustSulfur"))))
+        assertTrue(compiled.matches(oreCtx(setOf("ingotIron"))))
+        assertTrue(compiled.matches(oreCtx(setOf("dustGold", "ingotGold"))))
+        assertFalse(compiled.matches(oreCtx(setOf("dustSulfur"))))
     }
 
     @Test
@@ -227,10 +261,10 @@ class FieldMatcherTest {
         val typeRule = RuleCompiler.compileLine("type = block -> 512", 1)
         val tabRule = RuleCompiler.compileLine("tab = buildingBlocks -> 512", 1)
 
-        assertTrue(typeRule.matches(ctx(type = "block")))
-        assertFalse(typeRule.matches(ctx(type = "item")))
-        assertTrue(tabRule.matches(ctx(tab = "buildingBlocks")))
-        assertFalse(tabRule.matches(ctx(tab = "tools")))
+        assertTrue(typeRule.matches(ctx(itemId = "minecraft:stone", stack = ItemStack(Blocks.STONE))))
+        assertFalse(typeRule.matches(ctx(itemId = "minecraft:stick", stack = tabbedStack(CreativeTabs.TOOLS))))
+        assertTrue(tabRule.matches(ctx(itemId = "minecraft:stone", stack = ItemStack(Blocks.STONE))))
+        assertFalse(tabRule.matches(ctx(itemId = "minecraft:stick", stack = tabbedStack(CreativeTabs.TOOLS))))
     }
 
     // ---- T6：缓存键读取字段机械推导 ----
@@ -260,21 +294,35 @@ class FieldMatcherTest {
         assertEquals(setOf(RuleField.META), interval.matcher.readFields())
     }
 
-    private fun ctx(
-        itemId: String = "minecraft:egg",
-        meta: Int = 0,
-        type: String = "item",
-        baseLimit: Int = 64,
-        oreNames: Set<String> = emptySet(),
-        tab: String = "",
-        material: String = "",
-    ) = StackContext(
+    private fun ctx(itemId: String = "minecraft:egg", meta: Int = 0, baseLimit: Int = 64, stack: ItemStack? = null) = StackContext(
         itemId = itemId,
         metadata = meta,
         baseLimit = baseLimit,
-        directType = type,
-        directOreNames = oreNames,
-        directTab = tab,
-        directMaterial = material,
+        stack = stack,
     )
+
+    private fun materialCtx(material: String) = ctx(
+        itemId = "minecraft:egg",
+        stack = ItemStack(materialItem, 1, MATERIAL_META.getValue(material)),
+    )
+
+    private fun oreCtx(oreNames: Set<String>): StackContext {
+        val path = "ore_item_${oreNamesByItemPath.size}"
+        oreNamesByItemPath[path] = oreNames
+        val item = Item().setRegistryName(ResourceLocation("stackupup_test", path))
+        return ctx(itemId = "minecraft:egg", stack = ItemStack(item, 1, 0))
+    }
+
+    private fun tabbedStack(tab: CreativeTabs): ItemStack = ItemStack(
+        object : Item() {
+            override fun getCreativeTab(): CreativeTabs? = tab
+        }.setRegistryName(ResourceLocation("stackupup_test", "tabbed_item")),
+        1,
+        0,
+    )
+
+    private companion object {
+        private val MATERIAL_META: Map<String, Int> = mapOf("steel" to 0, "copper" to 1, "" to 2)
+        private val MATERIAL_BY_META: Map<Int, String> = mapOf(0 to "steel", 1 to "copper", 2 to "")
+    }
 }

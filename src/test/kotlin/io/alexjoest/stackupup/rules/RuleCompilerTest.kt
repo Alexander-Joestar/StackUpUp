@@ -1,11 +1,45 @@
 package io.alexjoest.stackupup.rules
 
+import io.alexjoest.stackupup.limit.GregTechMaterialResolver
+import io.alexjoest.stackupup.limit.OreDictIndex
+import io.alexjoest.stackupup.limit.RuleRuntime
 import io.alexjoest.stackupup.limit.StackContext
 import io.alexjoest.stackupup.rules.compile.RuleCompiler
+import net.minecraft.creativetab.CreativeTabs
+import net.minecraft.init.Blocks
+import net.minecraft.init.Bootstrap
+import net.minecraft.item.Item
+import net.minecraft.item.ItemStack
+import net.minecraft.util.ResourceLocation
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 class RuleCompilerTest {
+    private lateinit var previousOreDictIndex: OreDictIndex
+    private lateinit var restoreMaterialResolver: () -> Unit
+    private val oreNamesByItemPath: MutableMap<String, Set<String>> = mutableMapOf()
+    private val gregMetaItem: Item by lazy { Item().setRegistryName(ResourceLocation("gregtech", "meta_item_1")) }
+
+    @BeforeEach
+    fun installContextSources() {
+        Bootstrap.register()
+        previousOreDictIndex = RuleRuntime.oreDictIndex()
+        RuleRuntime.replaceOreDictIndex(
+            OreDictIndex.fromStackLoader { stack -> oreNamesByItemPath[stack.item.registryName?.path].orEmpty() },
+        )
+        restoreMaterialResolver = GregTechMaterialResolver.installResolverForTesting { stack ->
+            if (stack.item === gregMetaItem) MATERIAL_BY_META[stack.metadata].orEmpty() else ""
+        }
+    }
+
+    @AfterEach
+    fun restoreContextSources() {
+        RuleRuntime.replaceOreDictIndex(previousOreDictIndex)
+        restoreMaterialResolver()
+    }
+
     @Test
     fun shouldCompileItemInListToMatchAny() {
         val compiled = RuleCompiler.compileLine("item in [minecraft:egg, minecraft:snowball] -> 128", 7)
@@ -80,8 +114,8 @@ class RuleCompilerTest {
     @Test
     fun shouldSupportOreWildcardMatch() {
         val compiled = RuleCompiler.compileLine("ore != ingot* -> 64", 12)
-        val ingot = ctx("minecraft:iron_ingot", oreNames = setOf("ingotIron"))
-        val dust = ctx("minecraft:gunpowder", oreNames = setOf("dustSulfur"))
+        val ingot = oreCtx("minecraft:iron_ingot", setOf("ingotIron"))
+        val dust = oreCtx("minecraft:gunpowder", setOf("dustSulfur"))
 
         assertEquals(false, compiled.matches(ingot))
         assertEquals(true, compiled.matches(dust))
@@ -165,35 +199,35 @@ class RuleCompilerTest {
     fun shouldMatchTabField() {
         val compiled = RuleCompiler.compileLine("tab = buildingBlocks -> 256", 20)
 
-        assertEquals(true, compiled.matches(ctx("minecraft:stone", type = "block", tab = "buildingBlocks")))
-        assertEquals(false, compiled.matches(ctx("minecraft:stick", tab = "tools")))
+        assertEquals(true, compiled.matches(ctx(itemId = "minecraft:stone", stack = ItemStack(Blocks.STONE))))
+        assertEquals(false, compiled.matches(ctx(itemId = "minecraft:stick", stack = ItemStack(tabbedItem(CreativeTabs.TOOLS)))))
     }
 
     @Test
     fun shouldMatchMaterialFieldExactly() {
         val compiled = RuleCompiler.compileLine("material = steel -> 2048", 21)
 
-        assertEquals(true, compiled.matches(ctx("gregtech:meta_item_1", meta = 1000, material = "steel")))
-        assertEquals(false, compiled.matches(ctx("gregtech:meta_item_1", meta = 1001, material = "copper")))
-        assertEquals(false, compiled.matches(ctx("gregtech:meta_item_1", meta = 1002)))
+        assertEquals(true, compiled.matches(materialCtx("gregtech:meta_item_1", 1000, "steel")))
+        assertEquals(false, compiled.matches(materialCtx("gregtech:meta_item_1", 1001, "copper")))
+        assertEquals(false, compiled.matches(materialCtx("gregtech:meta_item_1", 1002, "")))
     }
 
     @Test
     fun shouldMatchMaterialListAndRejectEmptyDefault() {
         val compiled = RuleCompiler.compileLine("material in [steel, copper] -> 2048", 22)
 
-        assertEquals(true, compiled.matches(ctx("gregtech:meta_item_1", meta = 1000, material = "steel")))
-        assertEquals(true, compiled.matches(ctx("gregtech:meta_item_1", meta = 1001, material = "copper")))
-        assertEquals(false, compiled.matches(ctx("gregtech:meta_item_1", meta = 1002)))
+        assertEquals(true, compiled.matches(materialCtx("gregtech:meta_item_1", 1000, "steel")))
+        assertEquals(true, compiled.matches(materialCtx("gregtech:meta_item_1", 1001, "copper")))
+        assertEquals(false, compiled.matches(materialCtx("gregtech:meta_item_1", 1002, "")))
     }
 
     @Test
     fun materialMissing_shouldNotMatchNegativeComparison() {
         val compiled = RuleCompiler.compileLine("material != steel -> 2048", 23)
 
-        assertEquals(false, compiled.matches(ctx("gregtech:meta_item_1", meta = 1000)))
-        assertEquals(false, compiled.matches(ctx("gregtech:meta_item_1", meta = 1001, material = "steel")))
-        assertEquals(true, compiled.matches(ctx("gregtech:meta_item_1", meta = 1002, material = "copper")))
+        assertEquals(false, compiled.matches(materialCtx("gregtech:meta_item_1", 1000, "")))
+        assertEquals(false, compiled.matches(materialCtx("gregtech:meta_item_1", 1001, "steel")))
+        assertEquals(true, compiled.matches(materialCtx("gregtech:meta_item_1", 1002, "copper")))
     }
 
     @Test
@@ -208,26 +242,36 @@ class RuleCompilerTest {
     fun shouldMatchMetaRange() {
         val compiled = RuleCompiler.compileLine("100 < meta < 300 -> 512", 25)
 
-        assertEquals(true, compiled.matches(ctx("minecraft:wool", meta = 150, type = "block")))
-        assertEquals(false, compiled.matches(ctx("minecraft:wool", meta = 50, type = "block")))
-        assertEquals(false, compiled.matches(ctx("minecraft:wool", meta = 400, type = "block")))
+        assertEquals(true, compiled.matches(woolCtx(meta = 150)))
+        assertEquals(false, compiled.matches(woolCtx(meta = 50)))
+        assertEquals(false, compiled.matches(woolCtx(meta = 400)))
     }
 
-    private fun ctx(
-        itemId: String = "minecraft:egg",
-        meta: Int = 0,
-        baseSize: Int = 64,
-        type: String = "item",
-        oreNames: Set<String> = emptySet(),
-        tab: String = "",
-        material: String = "",
-    ) = StackContext(
+    private fun ctx(itemId: String = "minecraft:egg", meta: Int = 0, baseSize: Int = 64, stack: ItemStack? = null) = StackContext(
         itemId = itemId,
         metadata = meta,
         baseLimit = baseSize,
-        directType = type,
-        directOreNames = oreNames,
-        directTab = tab,
-        directMaterial = material,
+        stack = stack,
     )
+
+    private fun woolCtx(meta: Int) = ctx(itemId = "minecraft:wool", meta = meta, stack = ItemStack(Blocks.WOOL, 1, meta))
+
+    private fun oreCtx(itemId: String, oreNames: Set<String>, meta: Int = 0): StackContext {
+        val path = "ore_item_${oreNamesByItemPath.size}"
+        oreNamesByItemPath[path] = oreNames
+        val item = Item().setRegistryName(ResourceLocation("stackupup_test", path))
+        return ctx(itemId = itemId, meta = meta, stack = ItemStack(item, 1, 0))
+    }
+
+    private fun materialCtx(itemId: String, meta: Int, material: String): StackContext =
+        ctx(itemId = itemId, meta = meta, stack = ItemStack(gregMetaItem, 1, MATERIAL_META.getValue(material)))
+
+    private fun tabbedItem(tab: CreativeTabs): Item = object : Item() {
+        override fun getCreativeTab(): CreativeTabs? = tab
+    }.setRegistryName(ResourceLocation("stackupup_test", "tabbed_item"))
+
+    private companion object {
+        private val MATERIAL_META: Map<String, Int> = mapOf("steel" to 0, "copper" to 1, "" to 2)
+        private val MATERIAL_BY_META: Map<Int, String> = mapOf(0 to "steel", 1 to "copper", 2 to "")
+    }
 }

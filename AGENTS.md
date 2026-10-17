@@ -15,6 +15,7 @@
 
 Minecraft 1.12.2、Forge 14.23.5.2847；Kotlin 业务代码与 Java Mixin handler 分工；`StackUpUpCore` 是 Forge coremod 入口，并注册窄范围 `InventoryStackLimitTransformer`，只处理 IInventory getter；JUnit 5 测试在 `src/test/kotlin`。
 构建需 **JDK 25**：RFG **2.0.2** 插件类为 class file 69，且自身要求 Gradle >= 9.2（wrapper 为 9.4.0）；JDK 21 在配置阶段即以 `UnsupportedClassVersionError` 失败。这只约束构建所用的 Gradle JVM，项目 Java toolchain 仍固定为 8（`build-logic/convention/src/main/kotlin/jvm.gradle.kts:9`），客户端运行期要求未因此改动。
+非命令行路径为 IDE MCP：IntelliJ IDEA MCP Server **2026.2.3**，端点 `http://127.0.0.1:64342/stream`，其 Gradle JVM 已是 JDK 25，天然满足上述要求。该 IDE 只链接主编检出 `C:\dev\mc\1.12.2\StackUpUp`，`.tower/worktrees/` 下的 worktree 分支无法由 IDE Gradle 校验。
 当前 Mixin 基线 MixinBooter **11.17** + CleanMix **0.7.2** 编译期 annotation processor，入口 Sponge Mixin `IMixinConnector`（`StackUpUpMixinConnector`）；兼容性注入通过显式 early/late Mixin 与窄范围 `InventoryStackLimitTransformer` 完成。10.7 与 `IEarlyMixinLoader`/`ILateMixinLoader` 只是历史资料，不得写成当前实现。
 
 库存容量扩展策略：配置文件为 `config/stackupup.cfg`，`compat.inventoryExpansion.enabled` 默认 `true`（新/缺失配置采用 broad-default；已有配置中的显式 `false` 保持关闭）；显式设为 `false` 仅作为重启时的紧急回退，只门控可选容量 lane：启用且无冲突时才注册窄范围 `InventoryStackLimitTransformer`（非 Minecraft 的具体 `IInventory` getter）并入队 `capacity.early` / capacity-late 配置；关闭时这些可选 getter/容量配置不生效。OFF 不等于关闭所有核心写入或安全路径，也不证明每个原版 inventory 都能超过 64：正常无冲突启动时常驻 `baseline.early` 保留有源码依据的具体路线，例如 `InventoryPlayerAddResourceMixin` 的 item-aware clamp，以及 `InventoryWriteLimitMixin` 在 `TileEntityLockableLoot#setInventorySlotContents` 写入前调用 `resolveInventoryWriteLimit`；`VanillaInventoryLimitMixin` 在 OFF 时保留原 getter 值。未知 `IItemHandler` 不因其接口类型而动态扩容。
@@ -40,6 +41,7 @@ Minecraft 1.12.2、Forge 14.23.5.2847；Kotlin 业务代码与 Java Mixin handle
 
 输入、规则、目标签名、依赖状态或 selector 不合约束时尽早失败并留可定位信息；不得静默回退、吞错、空 `catch`、占位实现。明确缺失依赖才可 skip，链接错误与未知 probe ID 必须是 failure。
 行为测试必须调用真实代码；配置、Mixin 注册与字节码护栏属结构检查，须单独标明。生命周期测试、自动化矩阵与客户端 F3+T 只在实际执行后记录通过。Kotlin/Java 用项目 Spotless/ktlint（UTF-8、LF、末尾换行），修改后检查最终内容、`jj diff` 与租约外变更。
+Gradle 生命周期（`spotlessKotlinApply`、`test`、`build`）通过 IDE MCP 的 `run_gradle_tasks` 执行：`projectPath` 指向主编检出、`taskNames` 为任务名，不在 worktree 内跑命令行 `./gradlew`。worktree 分支的 Gradle 结论只在合并后于主编检出取得，合并前不得声称已通过。IDE 未运行（headless/CI）时才回退命令行 `./gradlew`，并仍用 JDK 25。
 
 ## 容量/Mixin Skill 索引与触发顺序
 

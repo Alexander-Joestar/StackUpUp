@@ -114,20 +114,6 @@ class StackLimitService internal constructor(private val snapshot: RuleSnapshot,
         return result.coerceIn(1, StackUpUpConfig.maxStackSize)
     }
 
-    @Deprecated("Use resolve(StackContext)")
-    fun resolve(identity: StackIdentity, baseLimit: Int, oreNames: Set<String>, tab: String = "", material: String = ""): Int = resolve(
-        StackContext(
-            itemId = identity.itemId,
-            modId = identity.modId,
-            metadata = identity.meta,
-            type = identity.type,
-            baseLimit = baseLimit,
-            oreNames = oreNames,
-            tab = tab,
-            material = material,
-        ),
-    )
-
     fun hasRules(): Boolean = snapshot.hasRules
 
     fun needsOreNames(): Boolean = snapshot.needsOreNames

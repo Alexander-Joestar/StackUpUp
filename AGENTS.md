@@ -41,7 +41,7 @@ Minecraft 1.12.2、Forge 14.23.5.2847；Kotlin 业务代码与 Java Mixin handle
 
 输入、规则、目标签名、依赖状态或 selector 不合约束时尽早失败并留可定位信息；不得静默回退、吞错、空 `catch`、占位实现。明确缺失依赖才可 skip，链接错误与未知 probe ID 必须是 failure。
 行为测试必须调用真实代码；配置、Mixin 注册与字节码护栏属结构检查，须单独标明。生命周期测试、自动化矩阵与客户端 F3+T 只在实际执行后记录通过。Kotlin/Java 用项目 Spotless/ktlint（UTF-8、LF、末尾换行），修改后检查最终内容、`jj diff` 与租约外变更。
-Gradle 生命周期（`spotlessApply`、`test`、`check`/`build`）通过 IDE MCP 的 `run_gradle_tasks` 执行：`projectPath` 指向主编检出、`taskNames` 为任务名；worktree 用 `scriptParameters="--project-dir <worktree>"` 路由，结果以实际 rootDir 为证据。长任务传 `timeoutMillis`，避免外层 MCP 约 60s 超时被误判为失败。不用命令行 `./gradlew`；IDE 未运行（headless/CI）时才回退命令行并仍用 JDK 25。合并后仍需在主编检出复验。
+Gradle 生命周期（`spotlessApply`、`test`、`check`/`build`）通过 IDE MCP 的 `run_gradle_tasks` 执行：`projectPath` 指向主编检出、`taskNames` 为任务名；worktree 用 `scriptParameters="--project-dir <worktree>"` 路由，结果以实际 rootDir 为证据。外层 MCP 约 60s 会返回 `-32001 Request timed out` 或空响应，即使传 `timeoutMillis=600000` 也一样，且该参数超时会触发取消请求；这类超时不能判定 Gradle 失败（daemon 可能仍在跑），须查到实际 rootDir、任务终态与 daemon 日志后再下结论。不用命令行 `./gradlew`；IDE 未运行（headless/CI）时才回退命令行并仍用 JDK 25。合并后仍需在主编检出复验。
 
 ## 容量/Mixin Skill 索引与触发顺序
 

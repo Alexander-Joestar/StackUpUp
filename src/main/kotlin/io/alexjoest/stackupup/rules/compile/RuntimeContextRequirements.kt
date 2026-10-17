@@ -5,14 +5,9 @@ import io.alexjoest.stackupup.rules.RuleField
 import io.alexjoest.stackupup.rules.field.RuleFieldContextProvider
 
 /**
- * 运行时构造 `StackContext` 时需要采集的昂贵字段集合。
+ * 运行时规则所需的上下文 provider 和引用字段。
  */
 data class RuntimeContextRequirements(val providers: List<RuleFieldContextProvider>, val referencedFields: Set<RuleField> = emptySet()) {
-    /**
-     * 类型字段只在规则实际引用时采集；否则 resolver 可跳过 ItemBlock 判断。
-     */
-    val needsType: Boolean = RuleField.TYPE in referencedFields
-
     /**
      * 判断指定昂贵字段是否需要在当前规则快照下采集。
      */
@@ -28,12 +23,6 @@ data class RuntimeContextRequirements(val providers: List<RuleFieldContextProvid
          * 不采集任何额外昂贵字段。
          */
         val EMPTY: RuntimeContextRequirements = RuntimeContextRequirements(emptyList())
-
-        /**
-         * 直接从 ItemStack 构造上下文时的兼容默认值：保留矿辞查询。
-         */
-        val DEFAULT_STACK_CONTEXT: RuntimeContextRequirements =
-            RuntimeContextRequirements(listOf(RuleFieldContextProvider.ORE_NAMES))
 
         /**
          * 从规则字段声明创建运行时采集计划。

@@ -103,6 +103,7 @@ class StackContextResolverTest {
             val context = StackContextResolver.fromStack(stack = stack, baseLimit = 64)
 
             assertNotNull(context)
+            assertEquals(0, oreDictCalls)
             assertEquals(setOf("ingotSteel"), context?.oreNames)
             assertEquals("", context?.type)
             assertEquals(1, oreDictCalls)
@@ -147,7 +148,11 @@ class StackContextResolverTest {
         }
         val item = Item().setRegistryName(ResourceLocation("gregtech", "meta_ingot"))
         val stack = ItemStack(item, 1, 324)
-        val index = OreDictIndex.fromStackLoader { setOf("ingotSteel") }
+        var oreDictCalls = 0
+        val index = OreDictIndex.fromStackLoader {
+            oreDictCalls++
+            setOf("ingotSteel")
+        }
         val previousIndex = RuleRuntime.oreDictIndex()
         try {
             RuleRuntime.replaceOreDictIndex(index)
@@ -159,8 +164,15 @@ class StackContextResolverTest {
             )
 
             assertNotNull(context)
+            assertEquals(0, oreDictCalls)
+            assertEquals(0, materialCalls)
             assertEquals(setOf("ingotSteel"), context?.oreNames)
             assertEquals("steel", context?.material)
+            assertEquals(1, oreDictCalls)
+            assertEquals(1, materialCalls)
+            assertEquals(setOf("ingotSteel"), context?.oreNames)
+            assertEquals("steel", context?.material)
+            assertEquals(1, oreDictCalls)
             assertEquals(1, materialCalls)
         } finally {
             RuleRuntime.replaceOreDictIndex(previousIndex)
@@ -176,9 +188,13 @@ class StackContextResolverTest {
             materialCalls++
             "steel"
         }
-        val item = Item()
-            .setRegistryName(ResourceLocation("minecraft", "stone"))
-            .setCreativeTab(CreativeTabs.BUILDING_BLOCKS)
+        var tabCalls = 0
+        val item = object : Item() {
+            override fun getCreativeTab(): CreativeTabs? {
+                tabCalls++
+                return CreativeTabs.BUILDING_BLOCKS
+            }
+        }.setRegistryName(ResourceLocation("minecraft", "stone"))
         val stack = ItemStack(item, 1, 0)
         val previousIndex = RuleRuntime.oreDictIndex()
 
@@ -192,7 +208,11 @@ class StackContextResolverTest {
             )
 
             assertNotNull(context)
+            assertEquals(0, tabCalls)
             assertEquals("buildingBlocks", context?.tab)
+            assertEquals(1, tabCalls)
+            assertEquals("buildingBlocks", context?.tab)
+            assertEquals(1, tabCalls)
             assertTrue(context?.oreNames?.isEmpty() == true)
             assertEquals("", context?.material)
             assertEquals(0, materialCalls)

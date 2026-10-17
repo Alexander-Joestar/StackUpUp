@@ -57,15 +57,15 @@ class StackContextResolverTest {
     fun shouldUseDirectOptionalValuesWithoutStack() {
         val context = StackContext(
             itemId = "example:item",
-            modId = "example",
             metadata = 3,
-            type = "direct type",
             baseLimit = 16,
-            oreNames = setOf("directOre"),
-            tab = "direct tab",
-            material = "direct material",
+            directType = "direct type",
+            directOreNames = setOf("directOre"),
+            directTab = "direct tab",
+            directMaterial = "direct material",
         )
 
+        assertEquals("example", context.modId)
         assertEquals("direct type", context.type)
         assertEquals(setOf("directOre"), context.oreNames)
         assertEquals("direct tab", context.tab)

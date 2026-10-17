@@ -166,14 +166,10 @@ class RuleLiteralMatcherTest {
         assertEquals(listOf(8), error.messageData.args)
     }
 
-    private fun ctx(itemId: String, meta: Int = 0, modId: String = itemId.substringBefore(':'), baseSize: Int = 64) = StackContext(
+    private fun ctx(itemId: String, meta: Int = 0, baseSize: Int = 64) = StackContext(
         itemId = itemId,
-        modId = modId,
         metadata = meta,
-        type = "item",
         baseLimit = baseSize,
-        oreNames = emptySet(),
-        tab = "",
-        material = "",
+        directType = "item",
     )
 }

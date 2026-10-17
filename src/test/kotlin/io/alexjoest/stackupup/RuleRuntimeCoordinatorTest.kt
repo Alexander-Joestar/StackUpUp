@@ -183,11 +183,10 @@ class RuleRuntimeCoordinatorTest {
                 RuleRuntime.limitService().resolve(
                     StackContext(
                         itemId = "gregtech:meta_ingot",
-                        modId = "gregtech",
                         metadata = 0,
-                        type = "item",
                         baseLimit = 64,
-                        oreNames = RuleRuntime.oreDictIndex().getOreNames("gregtech:meta_ingot", 0),
+                        directType = "item",
+                        directOreNames = RuleRuntime.oreDictIndex().getOreNames("gregtech:meta_ingot", 0),
                     ),
                 ),
             )
@@ -212,11 +211,10 @@ class RuleRuntimeCoordinatorTest {
             firstService.resolve(
                 StackContext(
                     itemId = "gregtech:meta_ingot",
-                    modId = "gregtech",
                     metadata = 0,
-                    type = "item",
                     baseLimit = 64,
-                    oreNames = RuleRuntime.oreDictIndex().getOreNames("gregtech:meta_ingot", 0),
+                    directType = "item",
+                    directOreNames = RuleRuntime.oreDictIndex().getOreNames("gregtech:meta_ingot", 0),
                 ),
             )
             assertEquals(1, firstService.debugResolvedCacheSize())
@@ -231,11 +229,10 @@ class RuleRuntimeCoordinatorTest {
                 secondService.resolve(
                     StackContext(
                         itemId = "gregtech:meta_ingot",
-                        modId = "gregtech",
                         metadata = 0,
-                        type = "item",
                         baseLimit = 64,
-                        oreNames = RuleRuntime.oreDictIndex().getOreNames("gregtech:meta_ingot", 0),
+                        directType = "item",
+                        directOreNames = RuleRuntime.oreDictIndex().getOreNames("gregtech:meta_ingot", 0),
                     ),
                 ),
             )

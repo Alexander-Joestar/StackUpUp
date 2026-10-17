@@ -44,7 +44,7 @@ class MarkdownRuleSourceTest {
         assertEquals(1, result.snapshot.rules.size, "compiled rules=${result.snapshot.rules}")
         assertEquals("item = minecraft:egg -> 128", result.snapshot.rules.single().sourceLine)
         val service = StackLimitService(result.snapshot)
-        val context = StackContext("minecraft:egg", "minecraft", 0, "item", 16, emptySet())
+        val context = StackContext("minecraft:egg", 0, 16, directType = "item")
 
         try {
             assertEquals(128, service.resolve(context))
@@ -85,7 +85,7 @@ class MarkdownRuleSourceTest {
 
         val result = MarkdownRuleSource.fromFiles(listOf(pack, world))
         val service = StackLimitService(result.snapshot)
-        val context = StackContext("minecraft:egg", "minecraft", 0, "item", 16, emptySet())
+        val context = StackContext("minecraft:egg", 0, 16, directType = "item")
 
         try {
             assertEquals(128, service.resolve(context))

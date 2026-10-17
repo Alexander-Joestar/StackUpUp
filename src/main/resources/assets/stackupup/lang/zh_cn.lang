@@ -12,6 +12,10 @@ config.stackupup.client.fontScaleLinear.tooltip=让槽位数字使用平滑缩�
 config.stackupup.client.alwaysCompactNumbers.name=始终使用短格式数字
 config.stackupup.client.alwaysCompactNumbers.tooltip=始终先将槽位堆叠数量显示为封顶短格式，再适配槽位和字体缩放：1-999 保持原样，之后为 1K-99K、0.1M-99M、0.1B-2.1B。
 
+config.stackupup.debug.name=调试
+config.stackupup.debug.mergeLimitTrace.name=合并上限追踪
+config.stackupup.debug.mergeLimitTrace.tooltip=仅用于诊断：记录每次容器合并槽位上限解析的双端输入与最终结果。正常游玩请保持关闭，只用于追踪单次复现。
+
 config.stackupup.general.name=通用
 config.stackupup.general.name.tooltip=配置 StackUpUp 的运行行为与规则加载方式。
 config.stackupup.general.enableDslRules.name=启用 DSL v2 规则

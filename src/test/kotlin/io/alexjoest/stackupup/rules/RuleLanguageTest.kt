@@ -78,7 +78,6 @@ class RuleLanguageTest {
 
     private fun cacheCtx(
         itemId: String = "gregtech:meta_item_1",
-        modId: String = itemId.substringBefore(':'),
         metadata: Int = 1000,
         type: String = "item",
         baseLimit: Int = 64,
@@ -87,12 +86,11 @@ class RuleLanguageTest {
         material: String = "",
     ) = StackContext(
         itemId = itemId,
-        modId = modId,
         metadata = metadata,
-        type = type,
         baseLimit = baseLimit,
-        oreNames = oreNames,
-        tab = tab,
-        material = material,
+        directType = type,
+        directOreNames = oreNames,
+        directTab = tab,
+        directMaterial = material,
     )
 }

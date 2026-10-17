@@ -46,11 +46,10 @@ class DevRuleInjectorTest {
         val resolved = StackLimitService(snapshot).resolve(
             StackContext(
                 itemId = "gregtech:meta_ingot",
-                modId = "gregtech",
                 metadata = 324,
-                type = "item",
                 baseLimit = 64,
-                oreNames = setOf("ingotSteel"),
+                directType = "item",
+                directOreNames = setOf("ingotSteel"),
             ),
         )
 

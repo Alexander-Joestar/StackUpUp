@@ -17,7 +17,6 @@ object StackContextResolver {
         val registryName = stack.item.registryName ?: return null
         return StackContext(
             itemId = registryName.toString(),
-            modId = registryName.namespace,
             metadata = stack.metadata,
             baseLimit = baseLimit,
             stack = stack,

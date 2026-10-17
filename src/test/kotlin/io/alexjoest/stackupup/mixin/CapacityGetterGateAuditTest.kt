@@ -27,7 +27,6 @@ class CapacityGetterGateAuditTest {
             "late/enderio/EnderIOInventorySlotLimitMixin.java",
             "late/enderio/EnderIOMachineInventoryLimitMixin.java",
             "late/enderio/EnderIOSlottedInventoryLimitMixin.java",
-            "late/farmersdelight/FarmersDelightInventoryLimitMixin.java",
             "late/ic2/InvSlotMixin.java",
             "late/immersiveengineering/IEInventoryHandlerMixin.java",
             "late/immersiveengineering/IEMachineSlotLimitMixin.java",
@@ -39,7 +38,7 @@ class CapacityGetterGateAuditTest {
             "late/techreborn/RebornCoreInventoryMixin.java",
         )
 
-        assertTrue(paths.size == 27)
+        assertTrue(paths.size == 26)
         paths.forEach { relativePath ->
             val source = String(
                 Files.readAllBytes(

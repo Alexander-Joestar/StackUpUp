@@ -53,7 +53,6 @@ object StackUpUpIds {
     const val LATE_COLOSSALCHESTS_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.colossalchests.json"
     const val LATE_GREGTECH_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.gregtech.json"
     const val LATE_TECHREBORN_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.techreborn.json"
-    const val LATE_FARMERS_DELIGHT_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.farmersdelight.json"
 }
 
 object Constants {

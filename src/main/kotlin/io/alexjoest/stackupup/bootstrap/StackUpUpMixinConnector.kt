@@ -320,7 +320,6 @@ class StackUpUpMixinConnector : IMixinConnector {
         LateMixinModule(StackUpUpIds.LATE_COLOSSALCHESTS_MIXIN_CONFIG, "colossalchests"),
         LateMixinModule(StackUpUpIds.LATE_GREGTECH_MIXIN_CONFIG, "gregtech"),
         LateMixinModule(StackUpUpIds.LATE_TECHREBORN_MIXIN_CONFIG, "techreborn"),
-        LateMixinModule(StackUpUpIds.LATE_FARMERS_DELIGHT_MIXIN_CONFIG, "farmersdelight"),
     )
 
     internal val classicModules: List<LateMixinModule> = listOf(
@@ -343,7 +342,6 @@ class StackUpUpMixinConnector : IMixinConnector {
         LateMixinModule("mixins.stackupup.capacity.late.nuclearcraft.json", "nuclearcraft"),
         LateMixinModule("mixins.stackupup.capacity.late.colossalchests.json", "colossalchests"),
         LateMixinModule("mixins.stackupup.capacity.late.techreborn.json", "techreborn"),
-        LateMixinModule("mixins.stackupup.capacity.late.farmersdelight.json", "farmersdelight"),
     )
 
     internal val classicCapacityModules: List<LateMixinModule> = listOf(

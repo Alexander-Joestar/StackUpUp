@@ -44,9 +44,44 @@ class MixinBooterIntegrationTest {
                 "mixins.stackupup.late.colossalchests.json",
                 "mixins.stackupup.late.gregtech.json",
                 "mixins.stackupup.late.techreborn.json",
-                "mixins.stackupup.late.farmersdelight.json",
             ),
             StackUpUpMixinConnector().modules.map { it.config },
+        )
+    }
+
+    @Test
+    fun farmersDelightCapacity_shouldNotBeRegisteredAsMixin() {
+        // Farmer's Delight Legacy 的 getInventoryStackLimit() 是字面量 return 64;，容量扩展由
+        // InventoryStackLimitTransformer 的字面量替换完成（行为证据见 FarmersDelightAsmLiteralPatchTest），
+        // 因此 connector 不再注册其 ordinary/capacity 配置，随包也不再携带对应 mixin 源与 json。
+        val connector = StackUpUpMixinConnector()
+        val registrations = connector.modules + connector.classicModules +
+            connector.capacityModules + connector.classicCapacityModules
+
+        assertEquals(
+            emptyList<String>(),
+            registrations.filter { it.modId == "farmersdelight" }.map { it.config },
+            "farmersdelight 不应再有 late/capacity Mixin 模块",
+        )
+        assertEquals(
+            emptyList<String>(),
+            registrations.map { it.config }.filter { it.contains("farmersdelight") },
+            "farmersdelight 配置不应出现在模块表中",
+        )
+        assertEquals(
+            emptyList<String>(),
+            Files.list(Paths.get("src", "main", "resources")).use { stream ->
+                stream.map { it.fileName.toString() }
+                    .filter { it.contains("farmersdelight") }
+                    .collect(java.util.stream.Collectors.toList())
+            },
+            "src/main/resources 不应残留 farmersdelight mixin 配置",
+        )
+        assertFalse(
+            Files.exists(
+                Paths.get("src", "main", "java", "io", "alexjoest", "stackupup", "mixin", "late", "farmersdelight"),
+            ),
+            "FarmersDelight mixin 源目录应已删除",
         )
     }
 

@@ -114,11 +114,21 @@ class StackUpUpMixinConnectorSkipLogTest {
 
         connector.connectLate(emptyList(), { true }) { queued += it }
 
-        assertEquals(16, connector.capacityModules.size, "capacity registry must enumerate all 16 late configs")
+        val capacityConfigsOnDisk = Files.list(Paths.get("src", "main", "resources")).use { stream ->
+            stream.map { it.fileName.toString() }
+                .filter { it.startsWith("mixins.stackupup.capacity.late.") && it.endsWith(".json") }
+                .collect(java.util.stream.Collectors.toSet())
+        }
+        val classicCapacityConfigs = connector.classicCapacityModules.map { it.config }.toSet()
+        assertEquals(
+            capacityConfigsOnDisk - classicCapacityConfigs,
+            connector.capacityModules.map { it.config }.toSet(),
+            "capacity registry 必须与 src/main/resources 中的 capacity late 配置一一对应（classic 模块除外）",
+        )
         assertEquals(
             (connector.modules + connector.capacityModules).map { it.config },
             queued,
-            "实际 connectLate 必须按顺序将正常配置及全部 16 个 capacity 配置各入队一次",
+            "实际 connectLate 必须按顺序将正常配置及全部 capacity 配置各入队一次",
         )
         connector.capacityModules.forEach { module ->
             assertTrue(

@@ -22,6 +22,25 @@ import java.util.Set;
  * Class names whose capacity is owned by an explicit configuration path are excluded, as are
  * interfaces, abstract classes, and this mod's own package. Hierarchy metadata is read from bytes;
  * no target class is resolved or initialized.</p>
+ *
+ * <p>The hook call is emitted unconditionally and {@link InventoryStackLimitHook} resolves the value
+ * when the getter runs, so a class transformed before the startup policy is prepared still resolves
+ * the vanilla 64 until the policy exists instead of staying unpatched for the whole session.</p>
+ *
+ * <p>This transformer widens the read side only; it widens no write path and cannot make an
+ * inventory store more than its own writer accepts. {@code InventoryWriteLimitMixin} wraps just
+ * {@code TileEntityLockableLoot#setInventorySlotContents}, so it covers the vanilla subclasses that
+ * inherit that setter ({@code TileEntityChest}, {@code TileEntityDispenser},
+ * {@code TileEntityShulkerBox}) and not {@code TileEntityFurnace} or
+ * {@code TileEntityBrewingStand} (they extend {@code TileEntityLockable}), not
+ * {@code TileEntityHopper} (it overrides the setter), and not {@code EntityMinecartContainer}
+ * (abstract, own setter). Those classes either clamp their own writes to the same getter they
+ * advertise ({@code TileEntityFurnace}, {@code TileEntityHopper}, {@code EntityMinecartContainer})
+ * or do not clamp at all ({@code TileEntityBrewingStand}), so advertised and stored capacity stay
+ * consistent, but none of them receives an item-aware write rule. Because abstract classes are
+ * skipped here, {@code EntityMinecartChest} and {@code EntityMinecartHopper} keep resolving 64
+ * from the inherited declaration, and the vanilla mixin path does not replace that today because
+ * it matches receiver classes exactly.</p>
  */
 public final class InventoryStackLimitTransformer implements IClassTransformer {
     private static final int VANILLA_STACK_LIMIT = 64;
@@ -56,7 +75,7 @@ public final class InventoryStackLimitTransformer implements IClassTransformer {
             return null;
         }
         InventoryStackLimitHook.ClassLoadPolicy policy = InventoryStackLimitHook.classLoadPolicy();
-        if (!policy.isExpansionEnabled() || !policy.isPrepared()) {
+        if (!policy.isExpansionEnabled()) {
             return basicClass;
         }
 
@@ -69,13 +88,13 @@ public final class InventoryStackLimitTransformer implements IClassTransformer {
                 || isExcludedClass(name)
                 || isExcludedClass(transformedName)
                 || (metadata.access & (Opcodes.ACC_INTERFACE | Opcodes.ACC_ABSTRACT)) != 0
-                || !policy.shouldPatch(metadata.name)
+                || policy.isBlacklisted(metadata.name)
                 || !hierarchyRepository.isStackLimitTarget(metadata)) {
                 return basicClass;
             }
 
             ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_MAXS);
-            LiteralPatchVisitor visitor = new LiteralPatchVisitor(writer, policy.getCompatibilityLimit());
+            LiteralPatchVisitor visitor = new LiteralPatchVisitor(writer);
             reader.accept(visitor, 0);
             return visitor.patched ? writer.toByteArray() : basicClass;
         } catch (RuntimeException ignored) {
@@ -98,17 +117,11 @@ public final class InventoryStackLimitTransformer implements IClassTransformer {
         String internalName = className.replace('.', '/');
         return internalName.startsWith(CORE_PACKAGE_PREFIX)
             || "io/alexjoest/stackupup".equals(internalName)
-            || isConfigManagedCapacityClass(internalName)
-            || isConfigManagedCapacityClass(runtimeInternalName(internalName));
+            || isConfigManagedCapacityClass(internalName);
     }
 
     private static boolean isConfigManagedCapacityClass(String internalName) {
         return internalName != null && CONFIG_MANAGED_CAPACITY_CLASSES.contains(internalName);
-    }
-
-    private static String runtimeInternalName(String internalName) {
-        String mapped = FMLDeobfuscatingRemapper.INSTANCE.map(internalName);
-        return mapped == null ? internalName : mapped;
     }
 
     private static boolean isInventoryMethod(String name, String descriptor) {
@@ -138,12 +151,10 @@ public final class InventoryStackLimitTransformer implements IClassTransformer {
     }
 
     private static final class LiteralPatchVisitor extends ClassVisitor {
-        private final int compatibilityLimit;
         private boolean patched;
 
-        private LiteralPatchVisitor(ClassVisitor delegate, int compatibilityLimit) {
+        private LiteralPatchVisitor(ClassVisitor delegate) {
             super(Opcodes.ASM5, delegate);
-            this.compatibilityLimit = compatibilityLimit;
         }
 
         @Override
@@ -157,9 +168,7 @@ public final class InventoryStackLimitTransformer implements IClassTransformer {
             return new MethodVisitor(Opcodes.ASM5, delegate) {
                 @Override
                 public void visitIntInsn(int opcode, int operand) {
-                    if (opcode == Opcodes.BIPUSH
-                        && operand == VANILLA_STACK_LIMIT
-                        && compatibilityLimit != VANILLA_STACK_LIMIT) {
+                    if (opcode == Opcodes.BIPUSH && operand == VANILLA_STACK_LIMIT) {
                         visitVarInsn(Opcodes.ALOAD, 0);
                         visitMethodInsn(
                             Opcodes.INVOKEVIRTUAL,

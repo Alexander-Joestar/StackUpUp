@@ -48,9 +48,9 @@ class InventoryStackLimitTransformerTest {
     }
 
     @Test
-    fun unpreparedPolicy_shouldLeaveClassBytesUnchanged() {
+    fun unpreparedPolicyAtLoadTime_shouldStillEmitHookCallThatResolvesAtCallTime() {
         val original = inventoryClassBytes(
-            className = "example.UnpreparedInventory",
+            className = "example.EarlyLoadedInventory",
             methods = listOf(returningBipushMethod("getInventoryStackLimit", 64)),
             interfaces = arrayOf(INVENTORY_INTERFACE),
         )
@@ -58,7 +58,23 @@ class InventoryStackLimitTransformerTest {
         InventoryStackLimitHook.resetForTesting()
         InventoryStackLimitHook.configureExpansionEnabled(true)
 
-        assertArrayEquals(original, transformer.transform("example.UnpreparedInventory", null, original))
+        val transformed = transformer.transform("example.EarlyLoadedInventory", null, original)
+
+        assertFalse(original.contentEquals(transformed))
+        assertEquals(listOf(64), methodLiterals(transformed, "getInventoryStackLimit", "()I").sipush)
+        assertEquals(emptyList<Int>(), methodLiterals(transformed, "getInventoryStackLimit", "()I").bipush)
+        assertEquals(1, hookInvocationCount(transformed))
+        assertEquals(
+            64,
+            InventoryStackLimitHook.resolveInventoryStackLimit(InventoryStackLimitTransformer::class.java, 64),
+        )
+
+        InventoryStackLimitHook.prepare(256, null)
+
+        assertEquals(
+            256,
+            InventoryStackLimitHook.resolveInventoryStackLimit(InventoryStackLimitTransformer::class.java, 64),
+        )
     }
 
     @Test

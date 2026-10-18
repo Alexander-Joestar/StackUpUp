@@ -8,14 +8,32 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 /**
- * Narrow class-load transformer for concrete third-party inventory, item-handler, and slot classes.
+ * Structural class-load transformer for concrete inventory, item-handler, and slot classes.
  *
- * <p>Only BIPUSH 64 constants in the supported capacity methods are replaced. Hierarchy metadata is
- * read from bytes; no target class is resolved or initialized.</p>
+ * <p>Every concrete class that implements {@code IInventory} or {@code IItemHandler}, or extends
+ * {@code Slot}, is a target regardless of namespace: only BIPUSH 64 constants in the supported
+ * capacity methods are replaced, so classes that delegate or compute their limit are untouched.
+ * Class names whose capacity is owned by an explicit configuration path are excluded, as are
+ * interfaces, abstract classes, and this mod's own package. Hierarchy metadata is read from bytes;
+ * no target class is resolved or initialized.</p>
  */
 public final class InventoryStackLimitTransformer implements IClassTransformer {
     private static final int VANILLA_STACK_LIMIT = 64;
+    private static final String CORE_PACKAGE_PREFIX = "io/alexjoest/stackupup/";
+    private static final Set<String> CONFIG_MANAGED_CAPACITY_CLASSES = Collections.unmodifiableSet(
+        new HashSet<>(Arrays.asList(
+            // compat.vanilla.craftingSlotLimit owns these two through VanillaInventoryLimitMixin;
+            // patching the literal here would take precedence and bypass that configuration.
+            "net/minecraft/inventory/InventoryCrafting",
+            "net/minecraft/inventory/InventoryCraftResult"
+        ))
+    );
     private static final String INVENTORY_METHOD_DESCRIPTOR = "()I";
     private static final String ITEM_HANDLER_METHOD_DESCRIPTOR = "(I)I";
     private static final String SLOT_ITEM_STACK_METHOD_DESCRIPTOR = "(Lnet/minecraft/item/ItemStack;)I";
@@ -78,10 +96,19 @@ public final class InventoryStackLimitTransformer implements IClassTransformer {
             return false;
         }
         String internalName = className.replace('.', '/');
-        return internalName.startsWith("net/minecraft/")
-            || "net/minecraft".equals(internalName)
-            || internalName.startsWith("io/alexjoest/stackupup/")
-            || "io/alexjoest/stackupup".equals(internalName);
+        return internalName.startsWith(CORE_PACKAGE_PREFIX)
+            || "io/alexjoest/stackupup".equals(internalName)
+            || isConfigManagedCapacityClass(internalName)
+            || isConfigManagedCapacityClass(runtimeInternalName(internalName));
+    }
+
+    private static boolean isConfigManagedCapacityClass(String internalName) {
+        return internalName != null && CONFIG_MANAGED_CAPACITY_CLASSES.contains(internalName);
+    }
+
+    private static String runtimeInternalName(String internalName) {
+        String mapped = FMLDeobfuscatingRemapper.INSTANCE.map(internalName);
+        return mapped == null ? internalName : mapped;
     }
 
     private static boolean isInventoryMethod(String name, String descriptor) {

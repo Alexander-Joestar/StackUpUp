@@ -62,11 +62,11 @@ class InventoryStackLimitTransformerTest {
     }
 
     @Test
-    fun nativeAndInternalInventoryClasses_shouldRemainUnchanged() {
+    fun vanillaNamespaceConcreteInventory_shouldBePatchedByStructure() {
         val names = listOf(
+            "net.minecraft.client.player.inventory.ContainerLocalMenu",
             "net.minecraft.entity.player.InventoryPlayer",
-            "net.minecraft.inventory.InventoryLargeChest",
-            "io.alexjoest.stackupup.core.InternalInventory",
+            "net.minecraft.inventory.InventoryBasic",
         )
         for (name in names) {
             val original = inventoryClassBytes(
@@ -75,8 +75,96 @@ class InventoryStackLimitTransformerTest {
                 interfaces = arrayOf(INVENTORY_INTERFACE),
             )
 
-            assertArrayEquals(original, transformer.transform(name, name, original))
+            val transformed = transformer.transform(name, name, original)
+
+            assertFalse(original.contentEquals(transformed), "expected a structural patch for $name")
+            assertEquals(listOf(64), methodLiterals(transformed, "getInventoryStackLimit", "()I").sipush)
+            assertEquals(emptyList<Int>(), methodLiterals(transformed, "getInventoryStackLimit", "()I").bipush)
+            assertEquals(1, hookInvocationCount(transformed))
         }
+    }
+
+    @Test
+    fun configManagedCraftingInventories_shouldRemainUnchanged() {
+        val names = listOf(
+            "net.minecraft.inventory.InventoryCrafting",
+            "net.minecraft.inventory.InventoryCraftResult",
+        )
+        for (name in names) {
+            val original = inventoryClassBytes(
+                className = name,
+                methods = listOf(returningBipushMethod("getInventoryStackLimit", 64)),
+                interfaces = arrayOf(INVENTORY_INTERFACE),
+            )
+
+            val transformed = transformer.transform(name, name, original)
+
+            assertArrayEquals(original, transformed)
+            assertEquals(0, hookInvocationCount(transformed))
+        }
+    }
+
+    @Test
+    fun vanillaDelegatingAndFieldBackedGetters_shouldRemainUnchanged() {
+        val largeChest = inventoryClassBytes(
+            className = "net.minecraft.inventory.InventoryLargeChest",
+            methods = listOf(
+                methodSpec("getInventoryStackLimit") { method ->
+                    method.visitVarInsn(Opcodes.ALOAD, 0)
+                    method.visitFieldInsn(
+                        Opcodes.GETFIELD,
+                        "net/minecraft/inventory/InventoryLargeChest",
+                        "upperChest",
+                        "Lnet/minecraft/inventory/IInventory;",
+                    )
+                    method.visitMethodInsn(
+                        Opcodes.INVOKEINTERFACE,
+                        "net/minecraft/inventory/IInventory",
+                        "getInventoryStackLimit",
+                        "()I",
+                        true,
+                    )
+                    method.visitInsn(Opcodes.IRETURN)
+                },
+            ),
+            interfaces = arrayOf(INVENTORY_INTERFACE),
+        )
+        val fieldBacked = inventoryClassBytes(
+            className = "net.minecraft.inventory.FieldBackedInventory",
+            methods = listOf(
+                methodSpec("getInventoryStackLimit") { method ->
+                    method.visitVarInsn(Opcodes.ALOAD, 0)
+                    method.visitFieldInsn(
+                        Opcodes.GETFIELD,
+                        "net/minecraft/inventory/FieldBackedInventory",
+                        "slotLimit",
+                        "I",
+                    )
+                    method.visitInsn(Opcodes.IRETURN)
+                },
+            ),
+            interfaces = arrayOf(INVENTORY_INTERFACE),
+        )
+        val non64Constant = inventoryClassBytes(
+            className = "net.minecraft.inventory.FixedLimitInventory",
+            methods = listOf(returningBipushMethod("getInventoryStackLimit", 32)),
+            interfaces = arrayOf(INVENTORY_INTERFACE),
+        )
+
+        assertArrayEquals(largeChest, transformer.transform(null, null, largeChest))
+        assertArrayEquals(fieldBacked, transformer.transform(null, null, fieldBacked))
+        assertArrayEquals(non64Constant, transformer.transform(null, null, non64Constant))
+    }
+
+    @Test
+    fun internalPackageAbstractAndInterfaceInventories_shouldRemainUnchanged() {
+        val internalInventory = inventoryClassBytes(
+            className = "io.alexjoest.stackupup.core.InternalInventory",
+            methods = listOf(returningBipushMethod("getInventoryStackLimit", 64)),
+            interfaces = arrayOf(INVENTORY_INTERFACE),
+        )
+
+        assertArrayEquals(internalInventory, transformer.transform(null, null, internalInventory))
 
         val abstractInventory = inventoryClassBytes(
             className = "example.AbstractInventory",

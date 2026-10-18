@@ -104,7 +104,7 @@ remainder；这是它自身写入链的事实。不能把这个结论传播给�
 
 ### 未知 handler 与转发 wrapper
 
-容量准入规则是：未知 `IItemHandler` 不动态扩容。`getSlotLimit()` 只能说明接口报告的值；在看不到实现的情况下，不能按类名、接口实现关系或 `64` 这个数猜测它的写入容量。已移除的是广泛的 dynamic ASM replacement layer；当前另有启动期开关控制的窄范围 `InventoryStackLimitTransformer`，只处理非 Minecraft `IInventory` getter，不是未知 handler 的通用扩容入口。`SlotItemHandlerMixin` 仍处理槽位 `getItemStackLimit()` 结果，未知实现的真实写入容量仍不能由该注入或 getter 数值证明。
+容量准入规则是：未知 `IItemHandler` 不动态扩容。`getSlotLimit()` 只能说明接口报告的值；在看不到实现的情况下，不能按类名、接口实现关系或 `64` 这个数猜测它的写入容量。已移除的是广泛的 dynamic ASM replacement layer；当前另有启动期开关控制的窄范围 `InventoryStackLimitTransformer`，按结构处理具体 `IInventory`/`IItemHandler`/`Slot` 实现者的容量 getter（原版与第三方同一规则，仅排除合成容器等配置托管类），不是未知 handler 的通用扩容入口。`SlotItemHandlerMixin` 仍处理槽位 `getItemStackLimit()` 结果，未知实现的真实写入容量仍不能由该注入或 getter 数值证明。
 
 转发 wrapper 不能因为 wrapper 自己返回一个数就扩大广告：
 
@@ -131,7 +131,9 @@ remainder。这是当前存在的多次真实分片及其守恒风险，不等�
 
 ## Coremod getter transformer 与 Mixin 分层
 
-当前兼容路径由启动期开关控制的窄范围 ASM getter transformer 和分层 Mixin 配置组成。`StackUpUpCore` 仅在库存容量扩展开启且无冲突时注册 `InventoryStackLimitTransformer`，它只处理非 Minecraft 具体 `IInventory` 类的 `getInventoryStackLimit()I`（含 SRG 名称）；这不是已移除的广泛 dynamic ASM 替换层。`StackUpUpMixinConnector` 经 `IMixinConnector` 加入常驻 early/baseline 与 ordinary late 配置，并按启动开关分别加入 optional capacity early/late 配置；`modIds` 仅跳过 capacity late 配置。MixinBooter 的 `general.blacklistedConfigs` 是整配置停用功能，和 selective capacity blacklist 不同，可能连带停用被列入配置中的安全 Mixin。下文若引用 `DynamicCompatTransformer`、`DynamicCompatMethodProbe`、`CompatibilityLimitPatch` 或 `FixedCompatTargets`，仅表示历史实现和审计证据。
+当前兼容路径由启动期开关控制的窄范围 ASM getter transformer 和分层 Mixin 配置组成。`StackUpUpCore` 仅在库存容量扩展开启且无冲突时注册 `InventoryStackLimitTransformer`，它按结构处理具体 `IInventory`/`IItemHandler`/`Slot` 实现者的容量 getter（`getInventoryStackLimit()I` 含 SRG 名称，原版类同样命中，只排除 `InventoryCrafting`/`InventoryCraftResult` 这类配置托管类、抽象类/接口与本 Mod 包）；这不是已移除的广泛 dynamic ASM 替换层。`StackUpUpMixinConnector` 经 `IMixinConnector` 加入常驻 early/baseline 与 ordinary late 配置，并按启动开关分别加入 optional capacity early/late 配置；`modIds` 仅跳过 capacity late 配置。MixinBooter 的 `general.blacklistedConfigs` 是整配置停用功能，和 selective capacity blacklist 不同，可能连带停用被列入配置中的安全 Mixin。下文若引用 `DynamicCompatTransformer`、`DynamicCompatMethodProbe`、`CompatibilityLimitPatch` 或 `FixedCompatTargets`，仅表示历史实现和审计证据。
+
+读侧扩容不扩大写侧：`InventoryStackLimitTransformer` 只改容量 getter，`InventoryWriteLimitMixin` 只包裹 `TileEntityLockableLoot#setInventorySlotContents` 这一处声明，因此它覆盖继承该 setter 的原版子类（`TileEntityChest`、`TileEntityDispenser`、`TileEntityShulkerBox`），不覆盖 `TileEntityFurnace` 与 `TileEntityBrewingStand`（二者继承 `TileEntityLockable`、各自声明 setter），不覆盖 `TileEntityHopper`（重写了 setter），也不覆盖 `EntityMinecartContainer`（抽象类、自带 setter）。这些未覆盖类在自己的 setter 里按同一 getter 夹取（`TileEntityBrewingStand` 不夹取），所以“广告值 = 落库值”仍自洽，但它们没有 item-aware 写入规则。`EntityMinecartContainer` 是抽象类，transformer 跳过抽象类，因此 `EntityMinecartChest`/`EntityMinecartHopper` 仍从继承来的声明解析为 64；`VanillaInventoryLimitMixin` 当前也不会补上，因为它按 receiver 类精确匹配。
 
 ### Early/Baseline Mixin
 
@@ -162,7 +164,7 @@ remainder。这是当前存在的多次真实分片及其守恒风险，不等�
 历史 ASM 按方法名（含映射名）识别候选、按目标方法名查找 `BIPUSH 64` 字节码常量并替换，方法 descriptor 和常量所在的
 真实写入/语义位置未闭合；命中方法名或字节码常量只说明历史补丁尝试，不构成真实容量写入证据。其 early path 使用 Java
 以避免 Kotlin 标准库在 coremod 早期加载，但 `CompatibilityLimitPatch` 曾使用 `Consumer<ClassNode>` 和 lambda，
-不满足 early path 的字节码禁用要求。已移除的是这一广泛 dynamic ASM layer。当前的 `InventoryStackLimitTransformer` 是独立的窄 getter transformer，只处理启用时的非 Minecraft `IInventory#getInventoryStackLimit()I`；不能把它描述成旧 dynamic 层的恢复，也不能把 getter 变换本身当作真实写入容量证据。T2/T11 登记须涵盖实际启用的 transformer 与对应 Mixin 配置，并继续按真实写入路径取证。
+不满足 early path 的字节码禁用要求。已移除的是这一广泛 dynamic ASM layer。当前的 `InventoryStackLimitTransformer` 是独立的窄 getter transformer，启用时按结构处理具体实现者的 `getInventoryStackLimit()I` 等容量 getter（原版类同样命中）；不能把它描述成旧 dynamic 层的恢复，也不能把 getter 变换本身当作真实写入容量证据。T2/T11 登记须涵盖实际启用的 transformer 与对应 Mixin 配置，并继续按真实写入路径取证。
 
 ## 规则数据流
 

@@ -83,11 +83,11 @@ class StackUpUpMixinConnectorSkipLogTest {
     fun requiredFalseConfigModAbsent_shouldAlsoLogSkip() {
         val messages = capturedLogs {
             assertFalse(
-                StackUpUpMixinConnector().shouldQueue(StackUpUpIds.LATE_BRANDONSCORE_MIXIN_CONFIG) { false },
+                StackUpUpMixinConnector().shouldQueue(StackUpUpIds.LATE_ENDERIO_MIXIN_CONFIG) { false },
             )
         }
         assertTrue(
-            messages.any { it.contains(StackUpUpIds.LATE_BRANDONSCORE_MIXIN_CONFIG) },
+            messages.any { it.contains(StackUpUpIds.LATE_ENDERIO_MIXIN_CONFIG) },
             "required:false 配置缺失同样必须记录，实际: $messages",
         )
     }
@@ -119,11 +119,10 @@ class StackUpUpMixinConnectorSkipLogTest {
                 .filter { it.startsWith("mixins.stackupup.capacity.late.") && it.endsWith(".json") }
                 .collect(java.util.stream.Collectors.toSet())
         }
-        val classicCapacityConfigs = connector.classicCapacityModules.map { it.config }.toSet()
         assertEquals(
-            capacityConfigsOnDisk - classicCapacityConfigs,
+            capacityConfigsOnDisk,
             connector.capacityModules.map { it.config }.toSet(),
-            "capacity registry 必须与 src/main/resources 中的 capacity late 配置一一对应（classic 模块除外）",
+            "capacity registry 必须与 src/main/resources 中的 capacity late 配置一一对应",
         )
         assertEquals(
             (connector.modules + connector.capacityModules).map { it.config },

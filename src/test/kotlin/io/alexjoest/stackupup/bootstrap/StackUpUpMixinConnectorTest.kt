@@ -106,5 +106,5 @@ class StackUpUpMixinConnectorTest {
 
     private fun ordinaryModules(connector: StackUpUpMixinConnector) = connector.modules + connector.classicModules
 
-    private fun capacityModules(connector: StackUpUpMixinConnector) = connector.capacityModules + connector.classicCapacityModules
+    private fun capacityModules(connector: StackUpUpMixinConnector) = connector.capacityModules
 }

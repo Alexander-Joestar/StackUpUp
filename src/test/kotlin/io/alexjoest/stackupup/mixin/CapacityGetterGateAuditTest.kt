@@ -21,7 +21,6 @@ class CapacityGetterGateAuditTest {
             "late/ae2/AppEngInternalInventoryMixin.java",
             "late/ae2supergiant/AppEngInternalInventoryMixin.java",
             "late/ae2supergiant/ContainerAdapterMixin.java",
-            "late/ae2supergiant/InternalInventoryMixin.java",
             "late/brandonscore/BrandonsCoreInventoryLimitMixin.java",
             "late/colossalchests/ColossalChestsTileMixin.java",
             "late/cyclopscore/SimpleInventoryMixin.java",
@@ -39,12 +38,10 @@ class CapacityGetterGateAuditTest {
             "late/techreborn/RebornCoreInventoryMixin.java",
         )
 
-        assertTrue(paths.size == 26)
         paths.forEach { relativePath ->
             val source = mixinSource(relativePath)
             assertTrue(
-                source.contains("StackLimitHooks.getInventoryCompatibilityStackSize(") ||
-                    source.contains("StackLimitHooks.getCoreInventoryStackSize("),
+                source.usesCapacityGate(),
                 "$relativePath must use the fail-closed capacity gate",
             )
             assertFalse(
@@ -52,6 +49,11 @@ class CapacityGetterGateAuditTest {
                 "$relativePath must not bypass the capacity gate",
             )
         }
+        assertEquals(
+            capacityGateMixinSources(),
+            paths.toSet(),
+            "清单必须与 src/main/java 下实际调用容量 gate 的 mixin 源逐一对应：新增或删除容量 getter mixin 时同步本清单",
+        )
     }
 
     /**
@@ -76,6 +78,22 @@ class CapacityGetterGateAuditTest {
         Files.readAllBytes(Paths.get("src/main/java/io/alexjoest/stackupup/mixin", relativePath)),
         Charsets.UTF_8,
     )
+
+    private fun capacityGateMixinSources(): Set<String> {
+        val mixinRoot = Paths.get("src/main/java/io/alexjoest/stackupup/mixin")
+        return Files.walk(mixinRoot).use { stream ->
+            stream
+                .filter(Files::isRegularFile)
+                .filter { it.toString().endsWith(".java") }
+                .map { mixinRoot.relativize(it).toString().replace('\\', '/') }
+                .filter { mixinSource(it).usesCapacityGate() }
+                .collect(java.util.stream.Collectors.toSet())
+        }
+    }
+
+    private fun String.usesCapacityGate(): Boolean =
+        contains("StackLimitHooks.getInventoryCompatibilityStackSize(") ||
+            contains("StackLimitHooks.getCoreInventoryStackSize(")
 
     private fun mixinTargets(source: String): List<String> {
         val start = source.indexOf("@Mixin(")

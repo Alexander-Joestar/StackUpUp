@@ -117,6 +117,12 @@ class MixinBooterIntegrationTest {
             setOf("AppEngInternalAEInventoryMixin", "AppEngInternalInventoryMixin"),
             configMixins("mixins.stackupup.capacity.late.ae2.json"),
         )
+        // ContainerAdapter 的 getInventoryStackLimit() 用 `max = 64` 作为 Math.min 折叠初值，因此其 capacity hook
+        // 是 AE2S 容器容量的显式决策点（见 ContainerAdapterMixin 的注释），必须留在 AE2S capacity profile 中。
+        assertEquals(
+            setOf("AppEngInternalInventoryMixin", "ContainerAdapterMixin", "InternalInventoryMixin"),
+            configMixins("mixins.stackupup.capacity.late.ae2supergiant.json"),
+        )
 
         assertEquals(
             setOf("EnderIOInventoryNoDropMixin"),

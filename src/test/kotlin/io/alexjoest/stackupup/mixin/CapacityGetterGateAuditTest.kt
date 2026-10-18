@@ -33,6 +33,7 @@ class CapacityGetterGateAuditTest {
             "late/integrateddynamics/TileMechanicalMachineMixin.java",
             "late/limelib/CommonTileInventoryMixin.java",
             "late/mantle/TileInventoryMixin.java",
+            "late/mysticalagriculture/MysticalAgricultureInventoryLimitMixin.java",
             "late/nuclearcraft/NuclearCraftTileInventoryLimitMixin.java",
             "late/refinedstorage/NetworkNodeStorageMonitorMixin.java",
             "late/techreborn/RebornCoreInventoryMixin.java",

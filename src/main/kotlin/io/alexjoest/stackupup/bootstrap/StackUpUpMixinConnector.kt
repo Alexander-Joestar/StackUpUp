@@ -321,6 +321,7 @@ class StackUpUpMixinConnector : IMixinConnector {
         LateMixinModule("mixins.stackupup.capacity.late.enderio.json", "enderio"),
         LateMixinModule("mixins.stackupup.capacity.late.ic2.json", StackUpUpIds.IC2_MOD_ID),
         LateMixinModule("mixins.stackupup.capacity.late.mantle.json", "mantle"),
+        LateMixinModule("mixins.stackupup.capacity.late.mysticalagriculture.json", "mysticalagriculture"),
         LateMixinModule("mixins.stackupup.capacity.late.refinedstorage.json", "refinedstorage"),
         LateMixinModule("mixins.stackupup.capacity.late.integrateddynamics.json", "integrateddynamics"),
         LateMixinModule("mixins.stackupup.capacity.late.limelib.json", "limelib"),

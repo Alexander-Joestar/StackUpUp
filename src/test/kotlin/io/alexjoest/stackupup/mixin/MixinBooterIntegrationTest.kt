@@ -198,6 +198,43 @@ class MixinBooterIntegrationTest {
     }
 
     @Test
+    fun lateConfigGatingKeys_shouldStayPinned() {
+        // 注册表自证的循环用例无法发现「config 与 modId 同时取自注册表」的漂移，
+        // 因此这里把每条记录的 (config, modId) 字面量钉死；顺序变化同样视为漂移。
+        val connector = StackUpUpMixinConnector()
+        assertEquals(
+            listOf(
+                "mixins.stackupup.late.ae2.json" to "appliedenergistics2",
+                "mixins.stackupup.late.enderio.json" to "enderio",
+                "mixins.stackupup.late.nuclearcraft.json" to "nuclearcraft",
+                "mixins.stackupup.late.gregtech.json" to "gregtech",
+                "mixins.stackupup.late.ic2classic.json" to "ic2",
+            ),
+            (connector.modules + connector.classicModules).map { it.config to it.modId },
+        )
+        assertEquals(
+            listOf(
+                "mixins.stackupup.capacity.late.ae2.json" to "appliedenergistics2",
+                "mixins.stackupup.capacity.late.ae2supergiant.json" to "ae2",
+                "mixins.stackupup.capacity.late.brandonscore.json" to "brandonscore",
+                "mixins.stackupup.capacity.late.actuallyadditions.json" to "actuallyadditions",
+                "mixins.stackupup.capacity.late.cyclopscore.json" to "cyclopscore",
+                "mixins.stackupup.capacity.late.enderio.json" to "enderio",
+                "mixins.stackupup.capacity.late.ic2.json" to "ic2",
+                "mixins.stackupup.capacity.late.mantle.json" to "mantle",
+                "mixins.stackupup.capacity.late.refinedstorage.json" to "refinedstorage",
+                "mixins.stackupup.capacity.late.integrateddynamics.json" to "integrateddynamics",
+                "mixins.stackupup.capacity.late.limelib.json" to "limelib",
+                "mixins.stackupup.capacity.late.immersiveengineering.json" to "immersiveengineering",
+                "mixins.stackupup.capacity.late.nuclearcraft.json" to "nuclearcraft",
+                "mixins.stackupup.capacity.late.colossalchests.json" to "colossalchests",
+                "mixins.stackupup.capacity.late.techreborn.json" to "techreborn",
+            ),
+            connector.capacityModules.map { it.config to it.modId },
+        )
+    }
+
+    @Test
     fun connectorSource_shouldKeepLoaderSemantics() {
         // 结构检查（非行为验证）：connect() 装载链必须保留冲突检测分支与条件 add，
         // 否则 dev/test 与生产装载入口会脱节；实际装载行为由 runServerAutoTest 运行验证覆盖。

@@ -2,6 +2,8 @@
 
 > 状态：PARTIAL（文末「已知限制」与「计划中的任务」所列未实现项未闭合，未完成独立复核，不得记为通过）。
 
+> **现状标注（0.2.5.dev1，基线 `3d6ca1ae`）**：下文「Mixin early path」的「当前实现」是结构化容量 transformer 落地前的形态。`StackUpUpCore.getASMTransformerClass()` 现在在无冲突且容量扩展开启时返回 `InventoryStackLimitTransformer`（`StackUpUpCore.kt:79-92`），它按结构改写具体 `IInventory`/`IItemHandler`/`Slot` 实现者容量 getter 的字面量 64；门槛里「当前兼容性注入不保留窄范围 ASM、dynamic ASM 或 `FixedCompatTargets` 路径」一句已不成立。其余门槛（handler 纯 Java、完整 descriptor、不得用方法名或字节码常量替代写入证据）仍然有效。
+
 > 通用协作规范见根级 `AGENTS.md`；本文件只记 Mixin 引导、容量安全、开发自动验收和规则内核的项目特有门槛。“当前实现”只表示能在现有源码中定位到的行为；“历史机制”表示已删除或仅用于解释背景的实现，不得当作当前事实；“已知限制”表示证据不足或仍需运行验证；“计划中的任务”不属于当前实现。
 
 ## Mixin early path：纯 Java 与注入边界

@@ -48,7 +48,7 @@ storedDelta + remainderCount == offered
 1. 目标类、方法和完整 descriptor 明确，优先使用按模组加载的 late mixin。
 2. 原版或 Forge 基础路径使用 early mixin。
 3. **历史边界**：在动态 ASM replacement layer 存在的中间版本中，已由 mixin 接管的目标还必须从旧跳过表核对；`DynamicCompatTransformer`、profile/probe、patch 与 `FixedCompatTargets` 已由删除提交 `9cff8e7` 移除，该历史跳过表不再是当前运行时。
-4. **当前窄范围例外**：`StackUpUpCore.getASMTransformerClass()` 在容量扩展开关启用且无冲突时注册 `InventoryStackLimitTransformer`，仅处理非 Minecraft 具体 `IInventory` 类的 `getInventoryStackLimit()I` / SRG getter（源码：`StackUpUpCore.kt:77-89`、`InventoryStackLimitTransformer.java:35-74,102-105`）；它不是已删除的广泛 replacement layer，也不改写写入方法。未来新增 ASM 行为仍须重新取得完整目标、写入面和独立准入证据。
+4. **当前窄范围例外**：`StackUpUpCore.getASMTransformerClass()` 在容量扩展开关启用且无冲突时注册 `InventoryStackLimitTransformer`，按结构处理具体 `IInventory`/`IItemHandler`/`Slot` 实现者的容量 getter（含原版具体类；只排除配置托管的 `InventoryCrafting`/`InventoryCraftResult`、抽象类/接口与本 Mod 包，源码：`StackUpUpCore.kt:79-92`、`InventoryStackLimitTransformer.java:72-104,127-151`）；它不是已删除的广泛 replacement layer，也不改写写入方法。未来新增 ASM 行为仍须重新取得完整目标、写入面和独立准入证据。
 
 新的兼容补丁不按上游 StackUp 的 `IInventory`/`Slot` 继承关系无条件放大，也不对未知 `IItemHandler` 动态扩容。
 

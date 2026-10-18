@@ -11,9 +11,9 @@ English documentation: [README.en.md](README.en.md)
 ## 当前状态
 
 - 目标版本：Minecraft **1.12.2** + Forge **14.23.5.2847**
-- 当前版本：**0.2.4**
+- 当前版本：**0.2.5.dev1**
 - 规则系统：DSL v2，支持 `.su` 与带 `state` / `gate` 的 `.su.md`
-- 兼容层：[MixinBooter](https://github.com/CleanroomMC/MixinBooter) **11.17**（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/mixin-booter)）+ [CleanMix](https://github.com/CleanroomMC/CleanMix) **0.7.2**；`IMixinConnector` 注册常驻 early/baseline 与按 mod presence 选择的普通 late Mixin 配置，并在库存容量扩展开启时加入独立 capacity 配置；`StackUpUpCore` 仅在启动开关开启且无冲突时注册窄范围 `InventoryStackLimitTransformer`，处理非 Minecraft `IInventory` 的 getter；10.7 与旧 loader 仅为历史基线
+- 兼容层：[MixinBooter](https://github.com/CleanroomMC/MixinBooter) **11.17**（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/mixin-booter)）+ [CleanMix](https://github.com/CleanroomMC/CleanMix) **0.7.2**；`IMixinConnector` 注册常驻 early/baseline 与按 mod presence 选择的普通 late Mixin 配置，并在库存容量扩展开启时加入独立 capacity 配置；`StackUpUpCore` 仅在启动开关开启且无冲突时注册窄范围 `InventoryStackLimitTransformer`，在类加载时把具体 `IInventory` / `IItemHandler` / `Slot` 实现者容量 getter 里的字面量 `64` 换成对调用时策略的查询；10.7 与旧 loader 仅为历史基线
 
 ## 下载
 
@@ -101,7 +101,8 @@ tab = buildingBlocks -> 256
 - `general.maxStackSize`：全局兼容最大堆叠上限，默认 `64`；规则结果和兼容入口都不会超过这个值。
 - `compat.vanilla.craftingSlotLimit`：工作台网格与合成结果槽上限，默认 `64`。`0` 保持原版/默认行为，大于 `0` 使用指定上限。这主要是性能（Performance）设置：按住 Shift 批量合成极大堆叠可能造成严重卡顿，不是平衡开关。实际上限还会受 `general.maxStackSize` 与物品/配方限制收紧。
 - `compat.nuclearcraft.speedUpgradeLimit` 与 `compat.nuclearcraft.energyUpgradeLimit`：NuclearCraft 速度/能量升级的堆叠上限，默认 `0`（保持 NuclearCraft 默认行为）；大于 `0` 时使用自定义上限。NuclearCraft 未加载时，这些设置不生效。
-- `compat.inventoryExpansion.enabled`：启动期库存容量扩展开关，默认 `true`（新/缺失配置采用 broad-default；已有配置中的显式 `false` 保持关闭）；显式 `false` 仅作为重启时的紧急回退。开启时注册窄范围 `IInventory#getInventoryStackLimit()` getter transformer 并加入可选 capacity Mixin 配置；关闭时跳过这些可选容量扩展。它不会关闭 ItemStack 规则、常驻 early/baseline 配置、普通 late 配置，或 `mixins.stackupup.baseline.early.json` 中调用 `resolveInventoryWriteLimit` 的专用 `InventoryWriteLimitMixin` 写入安全路径；`modIds` 也不会停用该 Mixin。
+- `compat.inventoryExpansion.enabled`：启动期库存容量扩展开关，默认 `true`（新/缺失配置采用 broad-default；已有配置中的显式 `false` 保持关闭）；显式 `false` 仅作为重启时的紧急回退。开启时注册结构化容量 getter transformer（具体 `IInventory` / `IItemHandler` / `Slot` 实现者的容量 getter）并加入可选 capacity Mixin 配置；关闭时跳过这些可选容量扩展。它不会关闭 ItemStack 规则、常驻 early/baseline 配置、普通 late 配置，或 `mixins.stackupup.baseline.early.json` 中调用 `resolveInventoryWriteLimit` 的专用 `InventoryWriteLimitMixin` 写入安全路径；`modIds` 也不会停用该 Mixin。
+- `debug.mergeLimitTrace`：诊断开关，默认 `false`。只在复现单个问题时逐次记录容器合并的槽位上限解析，不改变解析结果，日常游玩保持关闭。
 - `compat.inventoryStackLimitBlacklist.modIds`：仅对列出的 Mod 做选择性容量屏蔽，并跳过它的 capacity late 配置；空列表是 no-op。可用 `/stackupup inspect` 输出的候选作复核起点，但不是安全证明。
 
 黑名单只依据 Forge `ownedPackages` 的精确包边界匹配实际接收端或受支持的公开 owner；仅继承被列入的父类或实现其接口，不会自动排除未列出的 addon。共享实例无公开 owner、私有 delegate 与 receiverless 构造路径仍可能是 UNKNOWN。已加载但没有可归属包的 Mod 会使启动检查失败；未加载的 Mod ID 记录无效果。不要把它当作整 Mod 关闭开关。MixinBooter 的 `general.blacklistedConfigs` 则会停用整个所列配置（其中可能含安全 Mixin），不是 capacity-only 黑名单。
@@ -112,7 +113,7 @@ StackUpUp 对遵循原版堆叠语义的模组通常直接生效；对自行写�
 
 核心安全原则：**对外广告容量不能大于真实写入容量。** 未知 `IItemHandler` 实现不做动态扩容；即使其 `getSlotLimit()` 字面返回 64，也不能据此证明真实写入容量可以扩大，否则 vanilla 可能投入超出库存真实承受能力的物品，触发截断、吞物品或与模组溢出逻辑冲突。
 
-当前架构包含窄范围 coremod getter transformer 与分层 Mixin。`StackUpUpCore` 仅在 `compat.inventoryExpansion.enabled=true` 且无冲突时注册 `InventoryStackLimitTransformer`，只处理非 Minecraft 具体 `IInventory` 类的 `getInventoryStackLimit()I`（含 1.12 SRG 名称）；这不是已移除的广泛 dynamic ASM 替换层。`StackUpUpMixinConnector` 经 `IMixinConnector` 始终加载 ordinary early / baseline early 配置，按 Mod presence 加载 ordinary late 配置；仅容量开关开启时才加入 `mixins.stackupup.capacity.early.json` 与 `mixins.stackupup.capacity.late.*.json`，`modIds` 只跳过所列 Mod 的 capacity late 配置。
+当前架构包含窄范围 coremod getter transformer 与分层 Mixin。`StackUpUpCore` 仅在 `compat.inventoryExpansion.enabled=true` 且无冲突时注册 `InventoryStackLimitTransformer`：它按继承关系命中具体 `IInventory` / `IItemHandler` / `Slot` 实现者（不限命名空间，原版具体类同样命中），只把这些类容量 getter 里的字面量 `64` 换成对调用时策略的查询，排除接口/抽象类、本 Mod 包与由 `compat.vanilla.craftingSlotLimit` 托管的 `InventoryCrafting` / `InventoryCraftResult`；这不是已移除的广泛 dynamic ASM 替换层。`StackUpUpMixinConnector` 经 `IMixinConnector` 始终加载 ordinary early / baseline early 配置，按 Mod presence 加载 ordinary late 配置；仅容量开关开启时才加入 `mixins.stackupup.capacity.early.json` 与 `mixins.stackupup.capacity.late.*.json`，`modIds` 只跳过所列 Mod 的 capacity late 配置。
 
 以下是 Connector 中部分 ordinary late 模块示例；目标 Mod 存在时才排队，注册不等于真实写入路径已验证：
 
@@ -135,7 +136,7 @@ StackUpUp 对遵循原版堆叠语义的模组通常直接生效；对自行写�
 - [Immersive Engineering](https://github.com/BluSunrize/ImmersiveEngineering)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/immersive-engineering)）
 
 - IC2 Classic：`mixins.stackupup.late.ic2classic.json` 是 Mod 在场时加载的 ordinary 配置，其中 `SlotBaseMixin` 将报告的槽位上限收敛到原生 64；它不受容量开关或 `modIds` 中 `ic2` 的影响。独立的 `mixins.stackupup.capacity.late.ic2classic.json` 才受这两项容量控制。
-- Farmer's Delight Legacy：独立的可选 `mixins.stackupup.capacity.late.farmersdelight.json` Mixin 仅列出 Basket、Cabinet、Cooking Pot、Skillet 库存目标。这不表示覆盖该 Mod 的所有库存或证明其真实写入路径。
+- Farmer's Delight Legacy：没有独立 Mixin 配置。其 Basket、Cabinet、Cooking Pot、Skillet 等具体 `IInventory` 实现只返回字面量 `64`，由上面的结构化 transformer 在类加载时改写；这不表示覆盖该 Mod 的所有库存或证明其真实写入路径。
 
 以上是源码中的注册和目标范围，不是第三方运行时验证或全面兼容承诺。
 
@@ -156,7 +157,7 @@ general {
 - 改完需要**重启游戏或服务端**：MixinBooter 在 coremod 阶段就读这份配置并拉黑，`/stackupup reload` 这类运行期重载不会让它生效，也不会把它重新打开。
 - 被拉黑的只是指定配置；同一 Mod 的 ordinary 与 capacity 配置相互独立，不会因为屏蔽其中一份而自动屏蔽另一份。改动后须重启。不要拉黑 `mixins.stackupup.early.json` 或 `mixins.stackupup.baseline.early.json`，否则会停用基础或专用写入安全路径。
 
-当前源码注册 19 个 ordinary late 配置；对应的 capacity 配置另行注册，并仅在容量扩展开启时加入：
+当前源码注册 18 个 ordinary late 配置；capacity late 配置另行注册（不是每个 ordinary 模块都有对应项），并仅在容量扩展开启时加入：
 
 ```
 mixins.stackupup.late.actuallyadditions.json
@@ -166,7 +167,6 @@ mixins.stackupup.late.brandonscore.json
 mixins.stackupup.late.colossalchests.json
 mixins.stackupup.late.cyclopscore.json
 mixins.stackupup.late.enderio.json
-mixins.stackupup.late.farmersdelight.json
 mixins.stackupup.late.gregtech.json
 mixins.stackupup.late.ic2.json
 mixins.stackupup.late.ic2classic.json

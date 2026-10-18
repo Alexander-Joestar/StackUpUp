@@ -1,5 +1,7 @@
 # T2a 容量站点登记表
 
+> **现状标注（0.2.5.dev1，基线 `3d6ca1ae`）**：本表是历史登记。§3 中 EnderIO `TileEnchanter` 目标行与 IE `IEInventoryHandler#getSlotLimit` handler 已被删除（提交 `8a68e83e7000`），`farmersdelight` 配置已整份删除（`925fda5e7ca7`）；§9.5 里的「39 个 JSON」现为 37 个（3 early + 18 ordinary late + 16 capacity-late，`StackUpUpMixinConnector.kt:305-349`）。另外文内「仅非 Minecraft concrete `IInventory` getter」的描述已不成立：transformer 现在也命中具体 `IItemHandler`/`Slot` 实现与原版具体类，现行源码位置为 `StackUpUpCore.kt:79-92`、`InventoryStackLimitTransformer.java:72-104,127-151`（本文引用的旧行号随之失效）。
+
 > 任务：T2a「容量补丁准入规则」（docs/agent/重构任务清单.md 当前状态表）；编译期三分类与 patch 目标登记表，只登记事实与准入规则，不修改生产目标。
 > 状态：PARTIAL（登记表已产出并复核；部分项 UNKNOWN 见正文，独立复核待指派，未完成前不得宣称 PASS）。本表逐站点清单及历史证据以 2026-09 复核快照为基线；2026-10 的容量配置拆分与当前可选开关语义见 §9.5。旧 `VanillaInventoryWriteMixin` 已删除，但当前另有常驻 baseline 的 `InventoryWriteLimitMixin`，并保留 `StackLimitHooks.resolveInventoryWriteLimit`（源码：`InventoryWriteLimitMixin.java:14-30`、`StackLimitHooks.kt:307-335`）；因此本表中写 helper 不存在的旧说法仅为 T4a 中间状态，不能作当前事实。`build/rfg/minecraft-src/java/` 为 Forge/vanilla 反编译源码；第三方写入路径仍须逐目标证据，缺失 jar 项见 §5；生产代码路径一律使用 repo-relative 形式。
 

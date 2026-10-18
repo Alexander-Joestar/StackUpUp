@@ -91,9 +91,8 @@ class CapacityGetterGateAuditTest {
         }
     }
 
-    private fun String.usesCapacityGate(): Boolean =
-        contains("StackLimitHooks.getInventoryCompatibilityStackSize(") ||
-            contains("StackLimitHooks.getCoreInventoryStackSize(")
+    private fun String.usesCapacityGate(): Boolean = contains("StackLimitHooks.getInventoryCompatibilityStackSize(") ||
+        contains("StackLimitHooks.getCoreInventoryStackSize(")
 
     private fun mixinTargets(source: String): List<String> {
         val start = source.indexOf("@Mixin(")

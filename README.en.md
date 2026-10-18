@@ -35,7 +35,7 @@ Download StackUpUp from [CurseForge](https://www.curseforge.com/minecraft/mc-mod
 
 - Infrastructure: [Cleanroom Loader](https://github.com/CleanroomMC/Cleanroom), [MixinBooter](https://github.com/CleanroomMC/MixinBooter) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/mixin-booter)), [CleanMix](https://github.com/CleanroomMC/CleanMix), [Forgelin-Continuous](https://github.com/CleanroomMC/Forgelin-Continuous) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/forgelin-continuous)), and [RetroFuturaGradle](https://github.com/GTNewHorizons/RetroFuturaGradle).
 - Storage and automation: [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/applied-energistics-2)), [AE2 Supergiant](https://github.com/CleanroomMC/Applied-Energistics-2), [Refined Storage](https://github.com/refinedmods/refinedstorage) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/refined-storage)), [Simple Storage Network](https://github.com/Lothrazar/StorageNetwork) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/simple-storage-network)), and [Integrated Dynamics](https://github.com/CyclopsMC/IntegratedDynamics) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/integrated-dynamics)).
-- Industry and technology: [NuclearCraft: Overhauled](https://github.com/tomdodd4598/NuclearCraft) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/nuclearcraft-overhauled)), [TechReborn](https://github.com/TechReborn/TechReborn) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/techreborn)), [RebornCore](https://github.com/TechReborn/RebornCore) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/reborncore)), [Ender IO](https://github.com/SleepyTrousers/EnderIO-1.5-1.12) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/ender-io)), [GregTech CEu](https://github.com/GregTechCEu/GregTech) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/gregtech-ce-unofficial)), [IndustrialCraft 2](https://www.curseforge.com/minecraft/mc-mods/industrial-craft), and [ProjectE](https://github.com/sinkillerj/ProjectE) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/projecte)).
+- Industry and technology: [NuclearCraft: Overhauled](https://github.com/tomdodd4598/NuclearCraft) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/nuclearcraft-overhauled)), [TechReborn](https://github.com/TechReborn/TechReborn) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/techreborn)), [RebornCore](https://github.com/TechReborn/RebornCore) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/reborncore)), [Ender IO](https://github.com/SleepyTrousers/EnderIO-1.5-1.12) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/ender-io)), [GregTech CEu](https://github.com/GregTechCEu/GregTech) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/gregtech-ce-unofficial)), [IndustrialCraft 2](https://www.curseforge.com/minecraft/mc-mods/industrial-craft), [Mystical Agriculture](https://github.com/BlakeBr0/MysticalAgriculture) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/mystical-agriculture)), and [ProjectE](https://github.com/sinkillerj/ProjectE) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/projecte)).
 - Building and inventories: [Mantle](https://github.com/SlimeKnights/Mantle) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/mantle)), [Tinkers' Construct](https://github.com/SlimeKnights/TConstruct) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/tinkers-construct)), [LimeLib](https://www.curseforge.com/minecraft/mc-mods/limelib), [Immersive Engineering](https://github.com/BluSunrize/ImmersiveEngineering) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/immersive-engineering)), [Colossal Chests](https://github.com/CyclopsMC/ColossalChests) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/colossal-chests)), [Actually Additions](https://github.com/Ellpeck/ActuallyAdditions) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/actually-additions)), and [Brandon's Core](https://github.com/bradleyq/BrandonsCore) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/brandons-core)).
 
 ## Rule Files
@@ -146,7 +146,7 @@ replacement layer. Through `IMixinConnector`,
 the target mod is present. It adds `mixins.stackupup.capacity.early.json` and `mixins.stackupup.capacity.late.*.json` only
 when expansion is enabled; `modIds` skips only capacity-late configs for listed mods.
 
-Some ordinary late modules in the connector are listed below; configs are queued only when the target mod is present, and registration does not verify its real write path:
+Some registered late modules in the connector are listed below (ordinary and capacity configs are registered in separate tables); configs are queued only when the target mod is present, and registration does not verify its real write path:
 
 - [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/applied-energistics-2))
 - [Applied Energistics 2 Supergiant](https://github.com/CleanroomMC/Applied-Energistics-2)
@@ -165,7 +165,8 @@ Some ordinary late modules in the connector are listed below; configs are queued
 - [Integrated Dynamics](https://github.com/CyclopsMC/IntegratedDynamics) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/integrated-dynamics))
 - [LimeLib](https://www.curseforge.com/minecraft/mc-mods/limelib)
 - [Immersive Engineering](https://github.com/BluSunrize/ImmersiveEngineering) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/immersive-engineering))
-- IC2 Classic: `mixins.stackupup.late.ic2classic.json` is an ordinary config queued when the mod is present. Its `SlotBaseMixin` caps the reported slot limit at native 64 and is not affected by the capacity switch or an `ic2` entry in `modIds`; only its separate `mixins.stackupup.capacity.late.ic2classic.json` config is subject to those controls.
+- IC2 Classic: `mixins.stackupup.late.ic2classic.json` is an ordinary config queued when the mod is present. Its `SlotBaseMixin` caps the reported slot limit at native 64 and is not affected by the capacity switch or an `ic2` entry in `modIds`. The only IC2-related entry in the capacity table is `mixins.stackupup.capacity.late.ic2.json` (registered under mod id `ic2`); there is no `mixins.stackupup.capacity.late.ic2classic.json` file.
+- Mystical Agriculture: capacity-only — `mixins.stackupup.capacity.late.mysticalagriculture.json`, with no ordinary config. The target is the capacity getter of the abstract base class `TileEssenceReprocessor`: `InventoryStackLimitTransformer` skips `ACC_ABSTRACT` classes at class level, the getter body is the literal `64`, and none of the six concrete reprocessor subclasses (Inferium/Intermedium/Prudentium/Superium/Supremium/Ultimate) overrides it, so a single mixin on the base covers all six machines; the write side (`setInventorySlotContents`) already clamps against that same getter, so it was neither changed nor needed changing. This conclusion comes from jar bytecode plus a repository structural test and is **not validated in a running game**.
 - Farmer's Delight Legacy: there is no dedicated Mixin config. Its Basket, Cabinet, Cooking Pot, and Skillet are concrete `IInventory` implementations whose capacity getter only returns the literal `64`, so the structural transformer described above rewrites them at class load. This does not cover every inventory in that mod or prove real write capacity.
 
 These are source registration/target details, not third-party runtime validation or blanket compatibility promises.
@@ -193,28 +194,37 @@ general {
   one does not automatically suppress the other. Restart after changing it. Do not blacklist
   `mixins.stackupup.early.json` or `mixins.stackupup.baseline.early.json`, as that disables base or dedicated writer-safety paths.
 
-The source currently registers 18 ordinary late configs; separate capacity configs are registered (not every ordinary
-module has a matching capacity config) and queued only when inventory expansion is enabled:
+The source currently registers 5 ordinary late configs (4 `modules` entries + 1 `classicModules` entry); they are not
+affected by the capacity switch or `modIds`:
 
 ```
-mixins.stackupup.late.actuallyadditions.json
 mixins.stackupup.late.ae2.json
-mixins.stackupup.late.ae2supergiant.json
-mixins.stackupup.late.brandonscore.json
-mixins.stackupup.late.colossalchests.json
-mixins.stackupup.late.cyclopscore.json
 mixins.stackupup.late.enderio.json
 mixins.stackupup.late.gregtech.json
-mixins.stackupup.late.ic2.json
 mixins.stackupup.late.ic2classic.json
-mixins.stackupup.late.immersiveengineering.json
-mixins.stackupup.late.integrateddynamics.json
-mixins.stackupup.late.limelib.json
-mixins.stackupup.late.mantle.json
 mixins.stackupup.late.nuclearcraft.json
-mixins.stackupup.late.refinedstorage.json
-mixins.stackupup.late.storagenetwork.json
-mixins.stackupup.late.techreborn.json
+```
+
+A separate table registers 16 capacity late configs (`capacityModules`). The two tables are independent and do not map
+one-to-one; capacity configs are queued only when inventory expansion is enabled:
+
+```
+mixins.stackupup.capacity.late.actuallyadditions.json
+mixins.stackupup.capacity.late.ae2.json
+mixins.stackupup.capacity.late.ae2supergiant.json
+mixins.stackupup.capacity.late.brandonscore.json
+mixins.stackupup.capacity.late.colossalchests.json
+mixins.stackupup.capacity.late.cyclopscore.json
+mixins.stackupup.capacity.late.enderio.json
+mixins.stackupup.capacity.late.ic2.json
+mixins.stackupup.capacity.late.immersiveengineering.json
+mixins.stackupup.capacity.late.integrateddynamics.json
+mixins.stackupup.capacity.late.limelib.json
+mixins.stackupup.capacity.late.mantle.json
+mixins.stackupup.capacity.late.mysticalagriculture.json
+mixins.stackupup.capacity.late.nuclearcraft.json
+mixins.stackupup.capacity.late.refinedstorage.json
+mixins.stackupup.capacity.late.techreborn.json
 ```
 
 For implementation notes, see [docs/StackUpUp-实现与兼容性说明.md](docs/StackUpUp-%E5%AE%9E%E7%8E%B0%E4%B8%8E%E5%85%BC%E5%AE%B9%E6%80%A7%E8%AF%B4%E6%98%8E.md) (Chinese).

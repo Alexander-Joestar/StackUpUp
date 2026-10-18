@@ -10,12 +10,18 @@
 - 判定移到调用时：注入的 hook 调用无条件发出，由 `ClassLoadPolicy.shouldPatch` 在 getter 运行时读取当时的扩展开关、策略是否就绪、黑名单和兼容上限；因此在启动策略发布前完成变换的类不会整局停留在未补丁状态，而是在策略就绪前解析为原版 64（`InventoryStackLimitTransformer.java:26-28,168-186`、`InventoryStackLimitHook.java:126-137`）。
 - 排除表只收配置托管的容量：`InventoryCrafting` 与 `InventoryCraftResult` 由 `compat.vanilla.craftingSlotLimit` 和 `VanillaInventoryLimitMixin` 管理，transformer 跳过它们；接口、抽象类与本 Mod 包同样跳过（`InventoryStackLimitTransformer.java:46-55,86-95,113-125`）。
 
+### 兼容
+
+- 新增 [Mystical Agriculture](https://github.com/BlakeBr0/MysticalAgriculture)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/mystical-agriculture)）精华再处理器（Essence Reprocessor）族的容量支持：新增 capacity-only 配置 `mixins.stackupup.capacity.late.mysticalagriculture.json`，其中只登记一个 `@Pseudo` 目标——抽象基类 `TileEssenceReprocessor`，用 `@ModifyReturnValue` 拦 `func_70297_j_()I` 与 `getInventoryStackLimit()I`（`src/main/java/io/alexjoest/stackupup/mixin/late/mysticalagriculture/MysticalAgricultureInventoryLimitMixin.java:25-35`、`src/main/resources/mixins.stackupup.capacity.late.mysticalagriculture.json:1-8`、注册处 `src/main/kotlin/io/alexjoest/stackupup/bootstrap/StackUpUpMixinConnector.kt:324`）。
+- 只打抽象基类、不逐个子类登记的原因：`InventoryStackLimitTransformer` 在类级按 `ACC_ABSTRACT` 跳过抽象类（`InventoryStackLimitTransformer.java:86-95`），而 `TileEssenceReprocessor` 是 `public abstract class`，其 getter 体就是字面量 `bipush 64; ireturn`；6 个具体子类（`TileInferiumReprocessor`、`TileIntermediumReprocessor`、`TilePrudentiumReprocessor`、`TileSuperiumReprocessor`、`TileSupremiumReprocessor`、`TileUltimateReprocessor`）都不重写该 getter，所以改基类一处即可覆盖 6 台机器（`javap` 读 `MysticalAgriculture-1.12.2-1.7.5.jar`）。同构先例是 EnderIO 抽象基类 `AbstractInventoryMachineEntity`（`src/main/java/io/alexjoest/stackupup/mixin/late/enderio/EnderIOMachineInventoryLimitMixin.java:21-34`）。
+- 写入侧未改动，也不需要改：`TileEssenceReprocessor.func_70299_a`（`setInventorySlotContents`）在落盘前调用同一个 `func_70297_j_()`，并用 `ItemStack.func_190920_e` 把超量夹回该值（同一 jar 字节码，`func_70299_a` 偏移 57-71），因此抬高 getter 等于抬高真实落库上限。该结论只来自 jar 字节码与仓库内结构测试（`src/test/kotlin/io/alexjoest/stackupup/mixin/MysticalAgricultureMixinSourceTest.kt:12-103`）；此功能**没有实机验证**，不构成运行期兼容承诺。
+
 ### 清理
 
 - 删除 Farmer's Delight Legacy 的容量 Mixin：其 Basket/Cabinet/Cooking Pot/Skillet 是具体 `IInventory` 实现，`getInventoryStackLimit()` 直接 `return 64;`，已由结构化 transformer 覆盖，`FarmersDelightInventoryLimitMixin` 与两份 `farmersdelight` 配置一并删除（提交 `925fda5e7ca7`）。
 - 删除 AE2 Supergiant 里从未生效的 `InternalInventoryMixin`：它指向的 `ae2.core.inventory.BaseInternalInventory` 在 Supergiant 源码树中不存在（实际路径为 `ae2/api/inventories/BaseInternalInventory.java`），`@Pseudo` + `require=0` 使其静默失效；该配置保留 `AppEngInternalInventoryMixin` 与 `ContainerAdapterMixin`（提交 `191beb94560a`，`src/main/resources/mixins.stackupup.capacity.late.ae2supergiant.json:8-10`）。
 - 删除 EnderIO `TileEnchanter` 目标与 Immersive Engineering 的 `IEInventoryHandler#getSlotLimit` handler：两者都是具体类上的字面量 64，transformer 已在类加载时改写；保留 EnderIO 抽象基类 `AbstractInventoryMachineEntity` 的 handler 和 IE `insertItem` 内对 `IIEInventory#getSlotLimit` 的包裹（`EnderIOMachineInventoryLimitMixin.java:9-34`、`IEInventoryHandlerMixin.java:9-33`，提交 `8a68e83e7000`）。
-- `compat.inventoryStackLimitBlacklist.modIds` 只作为应急绕行：空列表是 no-op；非空时按 Forge owned packages 让实际 receiver/受支持公开 owner 绕过容量扩展，并跳过所列 Mod 的 capacity late 配置，不关闭其 ordinary/安全配置（`src/main/kotlin/io/alexjoest/stackupup/bootstrap/StackUpUpMixinConnector.kt:117-159,329-349`）。它能绕过容量，不能证明共享 ownerless 或私有 delegate 路径安全。
+- `compat.inventoryStackLimitBlacklist.modIds` 只作为应急绕行：空列表是 no-op；非空时按 Forge owned packages 让实际 receiver/受支持公开 owner 绕过容量扩展，并跳过所列 Mod 的 capacity late 配置，不关闭其 ordinary/安全配置（`src/main/kotlin/io/alexjoest/stackupup/bootstrap/StackUpUpMixinConnector.kt:117-159,315-332`）。它能绕过容量，不能证明共享 ownerless 或私有 delegate 路径安全。
 
 ### 其他
 

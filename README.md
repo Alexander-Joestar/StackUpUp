@@ -33,7 +33,7 @@ English documentation: [README.en.md](README.en.md)
 
 - 基础设施：[Cleanroom Loader](https://github.com/CleanroomMC/Cleanroom)、[MixinBooter](https://github.com/CleanroomMC/MixinBooter)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/mixin-booter)）、[CleanMix](https://github.com/CleanroomMC/CleanMix)、[Forgelin-Continuous](https://github.com/CleanroomMC/Forgelin-Continuous)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/forgelin-continuous)）和 [RetroFuturaGradle](https://github.com/GTNewHorizons/RetroFuturaGradle)。
 - 存储与自动化：[Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/applied-energistics-2)）、[AE2 Supergiant](https://github.com/CleanroomMC/Applied-Energistics-2)、[Refined Storage](https://github.com/refinedmods/refinedstorage)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/refined-storage)）、[Simple Storage Network](https://github.com/Lothrazar/StorageNetwork)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/simple-storage-network)）和 [Integrated Dynamics](https://github.com/CyclopsMC/IntegratedDynamics)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/integrated-dynamics)）。
-- 工业与科技：[NuclearCraft: Overhauled](https://github.com/tomdodd4598/NuclearCraft)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/nuclearcraft-overhauled)）、[TechReborn](https://github.com/TechReborn/TechReborn)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/techreborn)）、[RebornCore](https://github.com/TechReborn/RebornCore)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/reborncore)）、[Ender IO](https://github.com/SleepyTrousers/EnderIO-1.5-1.12)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/ender-io)）、[GregTech CEu](https://github.com/GregTechCEu/GregTech)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/gregtech-ce-unofficial)）、[IndustrialCraft 2](https://www.curseforge.com/minecraft/mc-mods/industrial-craft) 和 [ProjectE](https://github.com/sinkillerj/ProjectE)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/projecte)）。
+- 工业与科技：[NuclearCraft: Overhauled](https://github.com/tomdodd4598/NuclearCraft)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/nuclearcraft-overhauled)）、[TechReborn](https://github.com/TechReborn/TechReborn)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/techreborn)）、[RebornCore](https://github.com/TechReborn/RebornCore)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/reborncore)）、[Ender IO](https://github.com/SleepyTrousers/EnderIO-1.5-1.12)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/ender-io)）、[GregTech CEu](https://github.com/GregTechCEu/GregTech)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/gregtech-ce-unofficial)）、[IndustrialCraft 2](https://www.curseforge.com/minecraft/mc-mods/industrial-craft)、[Mystical Agriculture](https://github.com/BlakeBr0/MysticalAgriculture)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/mystical-agriculture)）和 [ProjectE](https://github.com/sinkillerj/ProjectE)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/projecte)）。
 - 建筑与库存：[Mantle](https://github.com/SlimeKnights/Mantle)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/mantle)）、[Tinkers' Construct](https://www.curseforge.com/minecraft/mc-mods/tinkers-construct)、[LimeLib](https://www.curseforge.com/minecraft/mc-mods/limelib)、[Immersive Engineering](https://github.com/BluSunrize/ImmersiveEngineering)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/immersive-engineering)）、[Colossal Chests](https://github.com/CyclopsMC/ColossalChests)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/colossal-chests)）、[Actually Additions](https://github.com/Ellpeck/ActuallyAdditions)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/actually-additions)）和 [Brandon's Core](https://github.com/bradleyq/BrandonsCore)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/brandons-core)）。
 
 ## 规则文件
@@ -115,7 +115,7 @@ StackUpUp 对遵循原版堆叠语义的模组通常直接生效；对自行写�
 
 当前架构包含窄范围 coremod getter transformer 与分层 Mixin。`StackUpUpCore` 仅在 `compat.inventoryExpansion.enabled=true` 且无冲突时注册 `InventoryStackLimitTransformer`：它按继承关系命中具体 `IInventory` / `IItemHandler` / `Slot` 实现者（不限命名空间，原版具体类同样命中），只把这些类容量 getter 里的字面量 `64` 换成对调用时策略的查询，排除接口/抽象类、本 Mod 包与由 `compat.vanilla.craftingSlotLimit` 托管的 `InventoryCrafting` / `InventoryCraftResult`；这不是已移除的广泛 dynamic ASM 替换层。`StackUpUpMixinConnector` 经 `IMixinConnector` 始终加载 ordinary early / baseline early 配置，按 Mod presence 加载 ordinary late 配置；仅容量开关开启时才加入 `mixins.stackupup.capacity.early.json` 与 `mixins.stackupup.capacity.late.*.json`，`modIds` 只跳过所列 Mod 的 capacity late 配置。
 
-以下是 Connector 中部分 ordinary late 模块示例；目标 Mod 存在时才排队，注册不等于真实写入路径已验证：
+以下是 Connector 中已登记的部分 late 模块（ordinary 与 capacity 两类配置分开登记）；目标 Mod 存在时才排队，注册不等于真实写入路径已验证：
 
 - [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/applied-energistics-2)）
 - [Applied Energistics 2 Supergiant](https://github.com/CleanroomMC/Applied-Energistics-2)
@@ -135,7 +135,8 @@ StackUpUp 对遵循原版堆叠语义的模组通常直接生效；对自行写�
 - [LimeLib](https://www.curseforge.com/minecraft/mc-mods/limelib)
 - [Immersive Engineering](https://github.com/BluSunrize/ImmersiveEngineering)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/immersive-engineering)）
 
-- IC2 Classic：`mixins.stackupup.late.ic2classic.json` 是 Mod 在场时加载的 ordinary 配置，其中 `SlotBaseMixin` 将报告的槽位上限收敛到原生 64；它不受容量开关或 `modIds` 中 `ic2` 的影响。独立的 `mixins.stackupup.capacity.late.ic2classic.json` 才受这两项容量控制。
+- IC2 Classic：`mixins.stackupup.late.ic2classic.json` 是 Mod 在场时加载的 ordinary 配置，其中 `SlotBaseMixin` 将报告的槽位上限收敛到原生 64；它不受容量开关或 `modIds` 中 `ic2` 的影响。capacity 表里与 IC2 相关的只有 `mixins.stackupup.capacity.late.ic2.json`（登记 modId `ic2`），并不存在 `mixins.stackupup.capacity.late.ic2classic.json` 这个文件。
+- Mystical Agriculture：只有 capacity 配置 `mixins.stackupup.capacity.late.mysticalagriculture.json`，没有 ordinary 配置。目标是被 transformer 跳过的抽象基类 `TileEssenceReprocessor` 的容量 getter：`InventoryStackLimitTransformer` 在类级跳过 `ACC_ABSTRACT` 类，而该 getter 体是字面量 `64`，6 个具体再处理器子类（Inferium/Intermedium/Prudentium/Superium/Supremium/Ultimate）都不重写它，所以只能由 Mixin 打在基类上一次覆盖 6 台机器；写入侧 `setInventorySlotContents` 落盘前用同一个 getter 夹取，未改动也无需改动。这条结论来自 jar 字节码与仓库结构测试，**没有实机验证**。
 - Farmer's Delight Legacy：没有独立 Mixin 配置。其 Basket、Cabinet、Cooking Pot、Skillet 等具体 `IInventory` 实现只返回字面量 `64`，由上面的结构化 transformer 在类加载时改写；这不表示覆盖该 Mod 的所有库存或证明其真实写入路径。
 
 以上是源码中的注册和目标范围，不是第三方运行时验证或全面兼容承诺。
@@ -157,27 +158,35 @@ general {
 - 改完需要**重启游戏或服务端**：MixinBooter 在 coremod 阶段就读这份配置并拉黑，`/stackupup reload` 这类运行期重载不会让它生效，也不会把它重新打开。
 - 被拉黑的只是指定配置；同一 Mod 的 ordinary 与 capacity 配置相互独立，不会因为屏蔽其中一份而自动屏蔽另一份。改动后须重启。不要拉黑 `mixins.stackupup.early.json` 或 `mixins.stackupup.baseline.early.json`，否则会停用基础或专用写入安全路径。
 
-当前源码注册 18 个 ordinary late 配置；capacity late 配置另行注册（不是每个 ordinary 模块都有对应项），并仅在容量扩展开启时加入：
+当前源码注册 5 个 ordinary late 配置（模块表 `modules` 4 条 + `classicModules` 1 条），它们不受容量开关与 `modIds` 影响：
 
 ```
-mixins.stackupup.late.actuallyadditions.json
 mixins.stackupup.late.ae2.json
-mixins.stackupup.late.ae2supergiant.json
-mixins.stackupup.late.brandonscore.json
-mixins.stackupup.late.colossalchests.json
-mixins.stackupup.late.cyclopscore.json
 mixins.stackupup.late.enderio.json
 mixins.stackupup.late.gregtech.json
-mixins.stackupup.late.ic2.json
 mixins.stackupup.late.ic2classic.json
-mixins.stackupup.late.immersiveengineering.json
-mixins.stackupup.late.integrateddynamics.json
-mixins.stackupup.late.limelib.json
-mixins.stackupup.late.mantle.json
 mixins.stackupup.late.nuclearcraft.json
-mixins.stackupup.late.refinedstorage.json
-mixins.stackupup.late.storagenetwork.json
-mixins.stackupup.late.techreborn.json
+```
+
+另注册 16 个 capacity late 配置（`capacityModules` 16 条）。两套表分开登记、不是一一对应，且 capacity 配置仅在容量扩展开启时加入：
+
+```
+mixins.stackupup.capacity.late.actuallyadditions.json
+mixins.stackupup.capacity.late.ae2.json
+mixins.stackupup.capacity.late.ae2supergiant.json
+mixins.stackupup.capacity.late.brandonscore.json
+mixins.stackupup.capacity.late.colossalchests.json
+mixins.stackupup.capacity.late.cyclopscore.json
+mixins.stackupup.capacity.late.enderio.json
+mixins.stackupup.capacity.late.ic2.json
+mixins.stackupup.capacity.late.immersiveengineering.json
+mixins.stackupup.capacity.late.integrateddynamics.json
+mixins.stackupup.capacity.late.limelib.json
+mixins.stackupup.capacity.late.mantle.json
+mixins.stackupup.capacity.late.mysticalagriculture.json
+mixins.stackupup.capacity.late.nuclearcraft.json
+mixins.stackupup.capacity.late.refinedstorage.json
+mixins.stackupup.capacity.late.techreborn.json
 ```
 
 更完整的实现说明见 [docs/StackUpUp-实现与兼容性说明.md](docs/StackUpUp-%E5%AE%9E%E7%8E%B0%E4%B8%8E%E5%85%BC%E5%AE%B9%E6%80%A7%E8%AF%B4%E6%98%8E.md)。

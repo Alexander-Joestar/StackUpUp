@@ -25,25 +25,14 @@ class MixinBooterIntegrationTest {
 
     @Test
     fun lateConfigFileName_shouldBeStable() {
+        // 只有仍携带 mixin 的 ordinary late 配置留在模块表；其余空配置已随 0.2.5 收尾删除，
+        // capacity-only 覆盖改由列表下方的 capacity 模块表登记。
         assertEquals(
             listOf(
                 "mixins.stackupup.late.ae2.json",
-                "mixins.stackupup.late.ae2supergiant.json",
-                "mixins.stackupup.late.brandonscore.json",
-                "mixins.stackupup.late.actuallyadditions.json",
-                "mixins.stackupup.late.cyclopscore.json",
                 "mixins.stackupup.late.enderio.json",
-                "mixins.stackupup.late.ic2.json",
-                "mixins.stackupup.late.mantle.json",
-                "mixins.stackupup.late.refinedstorage.json",
-                "mixins.stackupup.late.storagenetwork.json",
-                "mixins.stackupup.late.integrateddynamics.json",
-                "mixins.stackupup.late.limelib.json",
-                "mixins.stackupup.late.immersiveengineering.json",
                 "mixins.stackupup.late.nuclearcraft.json",
-                "mixins.stackupup.late.colossalchests.json",
                 "mixins.stackupup.late.gregtech.json",
-                "mixins.stackupup.late.techreborn.json",
             ),
             StackUpUpMixinConnector().modules.map { it.config },
         )
@@ -55,8 +44,7 @@ class MixinBooterIntegrationTest {
         // InventoryStackLimitTransformer 的字面量替换完成（行为证据见 FarmersDelightAsmLiteralPatchTest），
         // 因此 connector 不再注册其 ordinary/capacity 配置，随包也不再携带对应 mixin 源与 json。
         val connector = StackUpUpMixinConnector()
-        val registrations = connector.modules + connector.classicModules +
-            connector.capacityModules + connector.classicCapacityModules
+        val registrations = connector.modules + connector.classicModules + connector.capacityModules
 
         assertEquals(
             emptyList<String>(),
@@ -88,8 +76,18 @@ class MixinBooterIntegrationTest {
     @Test
     fun lateAndCapacityConfigFiles_shouldReferenceExistingMixinSources() {
         val connector = StackUpUpMixinConnector()
-        val registeredConfigs = (connector.modules + connector.classicModules + connector.capacityModules + connector.classicCapacityModules)
+        val registeredConfigs = (connector.modules + connector.classicModules + connector.capacityModules)
             .map { it.config }
+        val onDisk = Files.list(Paths.get("src", "main", "resources")).use { stream ->
+            stream.map { it.fileName.toString() }
+                .filter { it.startsWith("mixins.stackupup.late.") || it.startsWith("mixins.stackupup.capacity.late.") }
+                .collect(java.util.stream.Collectors.toSet())
+        }
+        assertEquals(
+            registeredConfigs.toSet(),
+            onDisk,
+            "磁盘上的 late/capacity late 配置必须与模块表一一对应：既不允许未登记配置，也不允许登记缺失配置",
+        )
         for (config in registeredConfigs) {
             val configPath = Paths.get("src", "main", "resources", config)
             assertTrue(Files.isRegularFile(configPath), "Missing mixin config: $config")
@@ -150,9 +148,15 @@ class MixinBooterIntegrationTest {
             setOf("SlotBaseMixin"),
             configMixins("mixins.stackupup.late.ic2classic.json"),
         )
-        assertEquals(
-            emptySet<String>(),
-            configMixins("mixins.stackupup.capacity.late.ic2classic.json"),
+        // IC2 Classic 的 native-64 保护只存在于 ordinary profile；空的 capacity.late.ic2classic 配置
+        // 与对应模块已删除，SlotBaseMixin 不得重新出现在任何 capacity 配置中。
+        assertFalse(
+            Files.exists(Paths.get("src", "main", "resources", "mixins.stackupup.capacity.late.ic2classic.json")),
+            "空的 capacity.late.ic2classic 配置应已删除",
+        )
+        assertFalse(
+            StackUpUpMixinConnector().capacityModules.any { it.config.contains("ic2classic") },
+            "ic2classic 不应再有 capacity 模块",
         )
     }
 
@@ -166,45 +170,31 @@ class MixinBooterIntegrationTest {
         fun present(vararg modIds: String): (String) -> Boolean = { modId -> modId in modIds }
 
         val connector = StackUpUpMixinConnector()
-        assertTrue(connector.shouldQueue("mixins.stackupup.late.ae2.json", present("appliedenergistics2")))
-        assertFalse(connector.shouldQueue("mixins.stackupup.late.ae2.json", present()))
-
-        assertTrue(connector.shouldQueue("mixins.stackupup.late.actuallyadditions.json", present("actuallyadditions")))
-        assertFalse(connector.shouldQueue("mixins.stackupup.late.actuallyadditions.json", present()))
-
-        assertTrue(connector.shouldQueue("mixins.stackupup.late.brandonscore.json", present("brandonscore")))
-        assertFalse(connector.shouldQueue("mixins.stackupup.late.brandonscore.json", present()))
-
-        assertTrue(connector.shouldQueue("mixins.stackupup.late.mantle.json", present("mantle")))
-        assertFalse(connector.shouldQueue("mixins.stackupup.late.mantle.json", present()))
-
-        assertTrue(connector.shouldQueue("mixins.stackupup.late.ic2.json", present("ic2")))
-        assertTrue(connector.shouldQueue("mixins.stackupup.late.cyclopscore.json", present("cyclopscore")))
-        assertFalse(connector.shouldQueue("mixins.stackupup.late.cyclopscore.json", present()))
-
-        assertTrue(connector.shouldQueue("mixins.stackupup.late.enderio.json", present("enderio")))
-        assertFalse(connector.shouldQueue("mixins.stackupup.late.enderio.json", present()))
-
-        assertTrue(connector.shouldQueue("mixins.stackupup.late.refinedstorage.json", present("refinedstorage")))
-        assertFalse(connector.shouldQueue("mixins.stackupup.late.refinedstorage.json", present()))
-
-        assertTrue(connector.shouldQueue("mixins.stackupup.late.integrateddynamics.json", present("integrateddynamics")))
-        assertFalse(connector.shouldQueue("mixins.stackupup.late.integrateddynamics.json", present()))
-
-        assertTrue(connector.shouldQueue("mixins.stackupup.late.limelib.json", present("limelib")))
-        assertFalse(connector.shouldQueue("mixins.stackupup.late.limelib.json", present()))
-
-        assertTrue(connector.shouldQueue("mixins.stackupup.late.immersiveengineering.json", present("immersiveengineering")))
-        assertFalse(connector.shouldQueue("mixins.stackupup.late.immersiveengineering.json", present()))
-
-        assertTrue(connector.shouldQueue("mixins.stackupup.late.colossalchests.json", present("colossalchests")))
-        assertFalse(connector.shouldQueue("mixins.stackupup.late.colossalchests.json", present()))
-
-        assertTrue(connector.shouldQueue("mixins.stackupup.late.gregtech.json", present("gregtech")))
-        assertFalse(connector.shouldQueue("mixins.stackupup.late.gregtech.json", present()))
-
-        assertTrue(connector.shouldQueue("mixins.stackupup.late.techreborn.json", present("techreborn")))
-        assertFalse(connector.shouldQueue("mixins.stackupup.late.techreborn.json", present()))
+        val ordinaryRegistry = connector.modules + connector.classicModules
+        for (module in ordinaryRegistry) {
+            assertTrue(
+                connector.shouldQueue(module.config, present(module.modId), ordinaryRegistry),
+                "${module.config} 应在 ${module.modId} 存在时入队",
+            )
+            assertFalse(
+                connector.shouldQueue(module.config, present(), ordinaryRegistry),
+                "${module.config} 应在 ${module.modId} 缺失时跳过",
+            )
+        }
+        for (module in connector.capacityModules) {
+            assertTrue(
+                connector.shouldQueue(module.config, present(module.modId), connector.capacityModules),
+                "${module.config} 应在 ${module.modId} 存在时入队",
+            )
+            assertFalse(
+                connector.shouldQueue(module.config, present(), connector.capacityModules),
+                "${module.config} 应在 ${module.modId} 缺失时跳过",
+            )
+        }
+        assertFalse(
+            connector.shouldQueue("mixins.stackupup.late.storagenetwork.json", present("storagenetwork")),
+            "已删除的空配置不得再被模块表接受",
+        )
     }
 
     @Test

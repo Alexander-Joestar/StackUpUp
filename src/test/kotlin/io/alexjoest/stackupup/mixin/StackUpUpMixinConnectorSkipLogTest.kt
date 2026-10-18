@@ -32,10 +32,8 @@ class StackUpUpMixinConnectorSkipLogTest {
     fun emptyBlacklist_shouldQueueEachOrdinaryAndCapacityProfileOnce() {
         val connector = StackUpUpMixinConnector()
         val queued = queue(connector)
-        val registered = (connector.modules + connector.classicModules + connector.capacityModules + connector.classicCapacityModules)
-            .map { it.config }
 
-        assertEquals(registered, queued)
+        assertEquals(registered(connector), queued)
         assertEquals(queued.size, queued.toSet().size, "a known profile must not be registered twice")
         assertTrue(queued.contains(StackUpUpIds.LATE_AE2_MIXIN_CONFIG))
         assertTrue(queued.contains(AE2_CAPACITY_CONFIG))
@@ -48,8 +46,8 @@ class StackUpUpMixinConnectorSkipLogTest {
 
         assertTrue(queued.contains(StackUpUpIds.LATE_AE2_MIXIN_CONFIG), "ordinary AE2 safety/writer profile must remain queued")
         assertFalse(queued.contains(AE2_CAPACITY_CONFIG), "only the selected AE2 capacity profile may be skipped")
-        assertTrue(queued.contains(StackUpUpIds.LATE_AE2_SUPERGIANT_MIXIN_CONFIG))
-        assertTrue(queued.contains(AE2_SUPERGIANT_CAPACITY_CONFIG))
+        assertTrue(queued.contains(AE2_SUPERGIANT_CAPACITY_CONFIG), "'ae2' capacity profile is a different mod id and stays queued")
+        assertEquals(registered(connector) - AE2_CAPACITY_CONFIG, queued, "only the blacklisted capacity profile may be dropped")
         assertEquals(queued.size, queued.toSet().size)
     }
 
@@ -60,9 +58,12 @@ class StackUpUpMixinConnectorSkipLogTest {
 
         assertTrue(queued.contains(StackUpUpIds.LATE_AE2_MIXIN_CONFIG))
         assertTrue(queued.contains(AE2_CAPACITY_CONFIG))
-        assertTrue(queued.contains(StackUpUpIds.LATE_AE2_SUPERGIANT_MIXIN_CONFIG))
         assertFalse(queued.contains(AE2_SUPERGIANT_CAPACITY_CONFIG))
+        assertEquals(registered(connector) - AE2_SUPERGIANT_CAPACITY_CONFIG, queued)
     }
+
+    private fun registered(connector: StackUpUpMixinConnector): List<String> =
+        (connector.modules + connector.classicModules + connector.capacityModules).map { it.config }
 
     private fun queue(connector: StackUpUpMixinConnector, blacklist: Set<String> = emptySet()): List<String> {
         val queued = mutableListOf<String>()

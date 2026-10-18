@@ -35,6 +35,8 @@ class Ic2ClassicMixinSourceTest {
         const val DEOBF_PATH_PROPERTY = "stackupup.ic2classic.deobfJar"
         const val RAW_PATH_ENV = "STACKUPUP_IC2CLASSIC_RAW_JAR"
         const val DEOBF_PATH_ENV = "STACKUPUP_IC2CLASSIC_DEOBF_JAR"
+        const val IC2_CAPACITY_CONFIG = "mixins.stackupup.capacity.late.ic2.json"
+        const val IC2_CLASSIC_CAPACITY_CONFIG = "mixins.stackupup.capacity.late.ic2classic.json"
     }
 
     @BeforeEach
@@ -50,7 +52,7 @@ class Ic2ClassicMixinSourceTest {
     @Test
     fun classicConfigs_shouldUseClassicTargetWithoutTouchingExperimentalTarget() {
         val lateConfig = read("src/main/resources/mixins.stackupup.late.ic2classic.json")
-        val capacityConfig = read("src/main/resources/mixins.stackupup.capacity.late.ic2classic.json")
+        val capacityConfig = read("src/main/resources/mixins.stackupup.capacity.late.ic2.json")
         val classicMixin = read("src/main/java/io/alexjoest/stackupup/mixin/late/ic2classic/SlotBaseMixin.java")
         val nativeLimitUtility = read("src/main/java/io/alexjoest/stackupup/compat/ic2classic/SlotBaseNativeLimit.java")
         val experimentalMixin = read("src/main/java/io/alexjoest/stackupup/mixin/late/ic2/InvSlotMixin.java")
@@ -75,40 +77,33 @@ class Ic2ClassicMixinSourceTest {
     }
 
     @Test
-    fun classicRegistration_shouldUseIc2ModIdForBothProfiles() {
+    fun classicRegistration_shouldGateNativeSafetyAndCapacityOnIc2ModId() {
         InventoryStackLimitHook.configureExpansionEnabled(true)
         val queued = queueIc2()
 
         assertTrue(queued.contains(StackUpUpIds.LATE_IC2_CLASSIC_MIXIN_CONFIG))
-        assertTrue(queued.contains(StackUpUpIds.CAPACITY_LATE_IC2_CLASSIC_MIXIN_CONFIG))
-        assertTrue(queued.contains(StackUpUpIds.LATE_IC2_MIXIN_CONFIG))
-        assertTrue(queued.contains("mixins.stackupup.capacity.late.ic2.json"))
+        assertTrue(queued.contains(IC2_CAPACITY_CONFIG))
+        assertFalse(queued.contains(IC2_CLASSIC_CAPACITY_CONFIG), "ic2classic 不再有 capacity 配置")
 
         val absent = queueIc2(modPresent = false)
         assertFalse(absent.contains(StackUpUpIds.LATE_IC2_CLASSIC_MIXIN_CONFIG))
-        assertFalse(absent.contains(StackUpUpIds.CAPACITY_LATE_IC2_CLASSIC_MIXIN_CONFIG))
+        assertFalse(absent.contains(IC2_CAPACITY_CONFIG))
     }
 
     @Test
     fun classicConfigs_shouldRegisterOnlyTheirOwnMixinTargets() {
         val classicConfig = read("src/main/resources/mixins.stackupup.late.ic2classic.json")
-        val classicCapacityConfig = read("src/main/resources/mixins.stackupup.capacity.late.ic2classic.json")
-        val experimentalConfig = read("src/main/resources/mixins.stackupup.late.ic2.json")
         val experimentalCapacityConfig = read("src/main/resources/mixins.stackupup.capacity.late.ic2.json")
         val classicMixin = read("src/main/java/io/alexjoest/stackupup/mixin/late/ic2classic/SlotBaseMixin.java")
         val experimentalMixin = read("src/main/java/io/alexjoest/stackupup/mixin/late/ic2/InvSlotMixin.java")
 
         assertEquals(listOf("SlotBaseMixin"), mixinNames(classicConfig))
-        assertEquals(emptyList<String>(), mixinNames(classicCapacityConfig))
-        assertEquals(emptyList<String>(), mixinNames(experimentalConfig))
         assertEquals(listOf("InvSlotMixin"), mixinNames(experimentalCapacityConfig))
         assertTrue(classicConfig.contains("\"package\": \"io.alexjoest.stackupup.mixin.late.ic2classic\""))
         assertTrue(experimentalCapacityConfig.contains("\"package\": \"io.alexjoest.stackupup.mixin.late.ic2\""))
         assertTrue(classicMixin.contains(StackUpUpIds.IC2_CLASSIC_TARGET_CLASS))
         assertTrue(experimentalMixin.contains(StackUpUpIds.IC2_EXPERIMENTAL_TARGET_CLASS))
         assertFalse(classicConfig.contains("InvSlotMixin"))
-        assertFalse(classicCapacityConfig.contains("SlotBaseMixin"))
-        assertFalse(experimentalConfig.contains("SlotBaseMixin"))
         assertFalse(experimentalCapacityConfig.contains("SlotBaseMixin"))
         assertFalse(classicMixin.contains(StackUpUpIds.IC2_EXPERIMENTAL_TARGET_CLASS))
         assertFalse(experimentalMixin.contains(StackUpUpIds.IC2_CLASSIC_TARGET_CLASS))
@@ -128,7 +123,11 @@ class Ic2ClassicMixinSourceTest {
             queueConfiguration = { disabledQueued += it },
         )
         assertTrue(disabledQueued.contains(StackUpUpIds.LATE_IC2_CLASSIC_MIXIN_CONFIG))
-        assertFalse(disabledQueued.contains(StackUpUpIds.CAPACITY_LATE_IC2_CLASSIC_MIXIN_CONFIG))
+        assertEquals(
+            listOf(StackUpUpIds.LATE_IC2_CLASSIC_MIXIN_CONFIG),
+            disabledQueued.filter { it.contains("ic2classic") },
+            "扩容关闭时 ic2classic 只应保留 native-64 safety 配置",
+        )
 
         resetInventoryExpansionForTesting()
         InventoryStackLimitHook.configureExpansionEnabled(true)
@@ -140,7 +139,7 @@ class Ic2ClassicMixinSourceTest {
             queueConfiguration = { blacklistedQueued += it },
         )
         assertTrue(blacklistedQueued.contains(StackUpUpIds.LATE_IC2_CLASSIC_MIXIN_CONFIG))
-        assertFalse(blacklistedQueued.contains(StackUpUpIds.CAPACITY_LATE_IC2_CLASSIC_MIXIN_CONFIG))
+        assertFalse(blacklistedQueued.contains(IC2_CAPACITY_CONFIG), "黑名单只跳过可选容量 lane")
     }
 
     @Test

@@ -4,11 +4,11 @@
 
 ## 0.2.5
 
-这一版改变了「让模组容器接受超过 64 的堆叠」的做法：不再为每个模组单独写补丁，改由容器自己报出真实容量，因此原版箱子、木桶、多数模组机器和库存都能自然接受更大的堆叠。物品本身的堆叠上限仍然完全由规则文件决定，item 级粒度不变。
+这一版改变了「让模组容器接受超过 64 的堆叠」的做法：不再为每个模组单独写补丁，改由容器自己报出真实容量，因此原版箱子等普通容器、多数模组机器和库存都能自然接受更大的堆叠。物品本身的堆叠上限仍然完全由规则文件决定，item 级粒度不变。
 
 ### 核心变化
 
-- 现在大多数模组容器都能接受超过 64 的物品堆叠，包括原版箱子、木桶、各类模组机器和库存。
+- 现在大多数模组容器都能接受超过 64 的物品堆叠，包括原版箱子等普通容器、各类模组机器和库存。
 - 不再需要为每个模组单独写兼容补丁：容器自己报出真实容量，此前没有专门适配过的模组容器也一并生效。
 - 物品本身的堆叠上限仍由规则文件决定，item 级粒度不变，规则求值没有改动。
 - 对外显示的容量不会超过对应写入路径的真实容量，因此容器放入不会吞掉多余物品。
@@ -29,11 +29,11 @@
 
 ### English
 
-This release changes how modded containers are allowed to hold more than 64 items: instead of a per-mod patch, containers now report their real capacity themselves, so vanilla chests, barrels, most mod machines and inventories accept larger stacks without any per-mod work. Item stack limits themselves are still decided entirely by the rule files, with item-level granularity unchanged.
+This release changes how modded containers are allowed to hold more than 64 items: instead of a per-mod patch, containers now report their real capacity themselves, so vanilla chests and other ordinary containers, most mod machines and inventories accept larger stacks without any per-mod work. Item stack limits themselves are still decided entirely by the rule files, with item-level granularity unchanged.
 
 #### Core changes
 
-- Most mod containers now accept stacks larger than 64, including vanilla chests, barrels, mod machines and their inventories.
+- Most mod containers now accept stacks larger than 64, including vanilla chests and other ordinary containers, mod machines and their inventories.
 - No more per-mod compatibility patches: containers report their real capacity themselves, and containers from mods that were never specifically adapted follow as well.
 - Item stack limits are still decided by the rule files, item-level granularity is unchanged, and rule evaluation was not touched.
 - The advertised capacity never exceeds the real capacity of the matching write path, so inserting into containers does not swallow leftover items.

@@ -265,7 +265,6 @@ object DevAutomationServerDriver {
         val context = StackContextResolver.fromStack(
             stack = stick,
             baseLimit = baseLimit,
-            requirements = RuleRuntime.limitService().contextRequirements(),
         )
             ?: return BoundaryProbeResult.failed("minecraft:stick 无法解析为统一堆叠上下文。")
         val resolvedLimit = RuleRuntime.limitService().resolve(context)
@@ -301,7 +300,6 @@ object DevAutomationServerDriver {
         val context = StackContextResolver.fromStack(
             stack = probeStack,
             baseLimit = baseLimit,
-            requirements = RuleRuntime.limitService().contextRequirements(),
         )
             ?: error("开发自动验收[服务端]：目标物品无法解析为统一堆叠上下文。")
         val resolvedLimit = RuleRuntime.limitService().resolve(context)

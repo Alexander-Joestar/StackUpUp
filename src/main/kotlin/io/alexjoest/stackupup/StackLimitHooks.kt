@@ -188,15 +188,15 @@ object StackLimitHooks {
 
     @JvmStatic
     @Deprecated("Internal stack limit resolution has moved to ItemStack/StackContext; this overload is kept only for legacy callers.")
+    @Suppress("UNUSED_PARAMETER")
     fun applyDynamicStackLimit(itemId: String, modId: String, meta: Int, type: String, baseLimit: Int, oreNames: Set<String>): Int =
         RuleRuntime.limitService().resolve(
             StackContext(
                 itemId = itemId,
-                modId = modId,
                 metadata = meta,
-                type = type,
                 baseLimit = baseLimit,
-                oreNames = oreNames,
+                directType = type,
+                directOreNames = oreNames,
             ),
         )
 
@@ -212,7 +212,6 @@ object StackLimitHooks {
             val context = StackContextResolver.fromStack(
                 stack = stack,
                 baseLimit = originalBaseline,
-                requirements = limitService.contextRequirements(),
             ) ?: return originalBaseline
             return limitService.resolve(context)
         } finally {

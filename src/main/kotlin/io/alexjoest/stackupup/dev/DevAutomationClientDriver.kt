@@ -161,7 +161,6 @@ class DevAutomationClientDriver(private val controller: DevAutomationController 
         val context = StackContextResolver.fromStack(
             stack = probeStack,
             baseLimit = StackLimitHooks.resolveOriginalBaseline(probeStack),
-            requirements = RuleRuntime.limitService().contextRequirements(),
         ) ?: return
         val resolvedLimit = RuleRuntime.limitService().resolve(context)
 

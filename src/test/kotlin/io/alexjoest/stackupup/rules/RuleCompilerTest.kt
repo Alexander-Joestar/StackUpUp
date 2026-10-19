@@ -29,7 +29,7 @@ class RuleCompilerTest {
     @Test
     fun shouldSupportModListWildcard() {
         val compiled = RuleCompiler.compileLine("mod in [therm*, ic2] -> 512", 8)
-        val thermal = ctx("thermal:foo", modId = "thermalexpansion", baseSize = 16)
+        val thermal = ctx("thermalexpansion:foo", baseSize = 16)
         val ic2 = ctx("ic2:bar", baseSize = 16)
         val vanilla = ctx("minecraft:egg", baseSize = 16)
 
@@ -215,7 +215,6 @@ class RuleCompilerTest {
 
     private fun ctx(
         itemId: String = "minecraft:egg",
-        modId: String = itemId.substringBefore(':'),
         meta: Int = 0,
         baseSize: Int = 64,
         type: String = "item",
@@ -224,12 +223,11 @@ class RuleCompilerTest {
         material: String = "",
     ) = StackContext(
         itemId = itemId,
-        modId = modId,
         metadata = meta,
         baseLimit = baseSize,
-        type = type,
-        oreNames = oreNames,
-        tab = tab,
-        material = material,
+        directType = type,
+        directOreNames = oreNames,
+        directTab = tab,
+        directMaterial = material,
     )
 }

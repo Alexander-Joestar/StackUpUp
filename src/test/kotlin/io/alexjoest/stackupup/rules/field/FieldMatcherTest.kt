@@ -123,34 +123,34 @@ class FieldMatcherTest {
     fun pureStringList_shouldMatchAnyMember() {
         val compiled = RuleCompiler.compileLine("mod in [thermal, ic2] -> 512", 1)
 
-        assertTrue(compiled.matches(ctx(modId = "thermal")))
-        assertTrue(compiled.matches(ctx(modId = "ic2")))
-        assertFalse(compiled.matches(ctx(modId = "vanilla")))
+        assertTrue(compiled.matches(ctx("thermal:gear")))
+        assertTrue(compiled.matches(ctx("ic2:bar")))
+        assertFalse(compiled.matches(ctx("vanilla:egg")))
     }
 
     @Test
     fun wildcardList_shouldMatchPerItem() {
         val compiled = RuleCompiler.compileLine("mod in [therm*, ic2] -> 512", 1)
 
-        assertTrue(compiled.matches(ctx(modId = "thermalexpansion")))
-        assertTrue(compiled.matches(ctx(modId = "ic2")))
-        assertFalse(compiled.matches(ctx(modId = "minecraft")))
+        assertTrue(compiled.matches(ctx("thermalexpansion:gear")))
+        assertTrue(compiled.matches(ctx("ic2:bar")))
+        assertFalse(compiled.matches(ctx("minecraft:egg")))
     }
 
     @Test
     fun stringNotEquals_shouldNegateMatch() {
         val compiled = RuleCompiler.compileLine("mod != thermal -> 512", 1)
 
-        assertFalse(compiled.matches(ctx(modId = "thermal")))
-        assertTrue(compiled.matches(ctx(modId = "ic2")))
+        assertFalse(compiled.matches(ctx("thermal:gear")))
+        assertTrue(compiled.matches(ctx("ic2:bar")))
     }
 
     @Test
     fun stringNotEqualsWildcard_shouldNegatePattern() {
         val compiled = RuleCompiler.compileLine("mod != therm* -> 512", 1)
 
-        assertFalse(compiled.matches(ctx(modId = "thermalexpansion")))
-        assertTrue(compiled.matches(ctx(modId = "ic2")))
+        assertFalse(compiled.matches(ctx("thermalexpansion:gear")))
+        assertTrue(compiled.matches(ctx("ic2:bar")))
     }
 
     @Test
@@ -262,7 +262,6 @@ class FieldMatcherTest {
 
     private fun ctx(
         itemId: String = "minecraft:egg",
-        modId: String = "minecraft",
         meta: Int = 0,
         type: String = "item",
         baseLimit: Int = 64,
@@ -271,12 +270,11 @@ class FieldMatcherTest {
         material: String = "",
     ) = StackContext(
         itemId = itemId,
-        modId = modId,
         metadata = meta,
-        type = type,
         baseLimit = baseLimit,
-        oreNames = oreNames,
-        tab = tab,
-        material = material,
+        directType = type,
+        directOreNames = oreNames,
+        directTab = tab,
+        directMaterial = material,
     )
 }

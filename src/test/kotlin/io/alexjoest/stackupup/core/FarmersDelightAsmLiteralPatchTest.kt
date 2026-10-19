@@ -180,6 +180,10 @@ class FarmersDelightAsmLiteralPatchTest {
         return count
     }
 
+    /**
+     * 直接 `defineClass`，不走 `loadClass`，因此不存在父优先问题：即使测试 classpath 上有同名的真实
+     * Farmer's Delight 类，也一定用测试自己生成的字节。
+     */
     private class BytesClassLoader(private val className: String, private val bytes: ByteArray) :
         ClassLoader(
             FarmersDelightAsmLiteralPatchTest::class.java.classLoader,

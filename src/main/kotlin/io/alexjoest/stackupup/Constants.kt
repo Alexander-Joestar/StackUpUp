@@ -38,6 +38,11 @@ object StackUpUpIds {
     const val LATE_BRANDONSCORE_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.brandonscore.json"
     const val LATE_ENDERIO_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.enderio.json"
     const val LATE_IC2_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.ic2.json"
+    const val LATE_IC2_CLASSIC_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.ic2classic.json"
+    const val CAPACITY_LATE_IC2_CLASSIC_MIXIN_CONFIG: String = "mixins.$MOD_ID.capacity.late.ic2classic.json"
+    const val IC2_MOD_ID: String = "ic2"
+    const val IC2_EXPERIMENTAL_TARGET_CLASS: String = "ic2.core.block.invslot.InvSlot"
+    const val IC2_CLASSIC_TARGET_CLASS: String = "ic2.core.inventory.slots.SlotBase"
     const val LATE_MANTLE_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.mantle.json"
     const val LATE_REFINED_STORAGE_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.refinedstorage.json"
     const val LATE_STORAGE_NETWORK_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.storagenetwork.json"
@@ -48,6 +53,7 @@ object StackUpUpIds {
     const val LATE_COLOSSALCHESTS_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.colossalchests.json"
     const val LATE_GREGTECH_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.gregtech.json"
     const val LATE_TECHREBORN_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.techreborn.json"
+    const val LATE_FARMERS_DELIGHT_MIXIN_CONFIG: String = "mixins.$MOD_ID.late.farmersdelight.json"
 }
 
 object Constants {

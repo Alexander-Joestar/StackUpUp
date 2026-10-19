@@ -44,6 +44,7 @@ class MixinBooterIntegrationTest {
                 "mixins.stackupup.late.colossalchests.json",
                 "mixins.stackupup.late.gregtech.json",
                 "mixins.stackupup.late.techreborn.json",
+                "mixins.stackupup.late.farmersdelight.json",
             ),
             StackUpUpMixinConnector().modules.map { it.config },
         )
@@ -66,6 +67,11 @@ class MixinBooterIntegrationTest {
                 assertTrue(Files.isRegularFile(sourcePath), "Missing mixin source for $config: $mixin")
             }
         }
+    }
+
+    @Test
+    fun capacityLateConfigs_shouldBeSkippedWhenConflictIsDetected() {
+        assertFalse(StackUpUpMixinConnector().shouldQueueCapacity(listOf("StackUp")))
     }
 
     @Test

@@ -17,10 +17,18 @@ import org.spongepowered.asm.mixin.Pseudo;
 )
 abstract class NuclearCraftTileInventoryLimitMixin {
     public int getInventoryStackLimit() {
-        return StackLimitHooks.getCompatibilityStackSize();
+        int original = 64;
+        if (StackLimitHooks.shouldBypassInventoryStackLimit(this)) {
+            return original;
+        }
+        return StackLimitHooks.getInventoryCompatibilityStackSize(original);
     }
 
     public int func_70297_j_() {
-        return StackLimitHooks.getCompatibilityStackSize();
+        int original = 64;
+        if (StackLimitHooks.shouldBypassInventoryStackLimit(this)) {
+            return original;
+        }
+        return StackLimitHooks.getInventoryCompatibilityStackSize(original);
     }
 }

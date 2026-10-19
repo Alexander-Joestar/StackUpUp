@@ -13,9 +13,13 @@
 
 ## 项目基线
 
-Minecraft 1.12.2、Forge 14.23.5.2847；Kotlin 业务代码与 Java Mixin handler 分工，`StackUpUpCore` 仅作为 Forge coremod 入口，不提供兼容性 ASM transformer；JUnit 5 测试在 `src/test/kotlin`。
+Minecraft 1.12.2、Forge 14.23.5.2847；Kotlin 业务代码与 Java Mixin handler 分工；`StackUpUpCore` 是 Forge coremod 入口，并注册窄范围 `InventoryStackLimitTransformer`，只处理 IInventory getter；JUnit 5 测试在 `src/test/kotlin`。
 构建需 **JDK 25**：RFG **2.0.2** 插件类为 class file 69，且自身要求 Gradle >= 9.2（wrapper 为 9.4.0）；JDK 21 在配置阶段即以 `UnsupportedClassVersionError` 失败。这只约束构建所用的 Gradle JVM，项目 Java toolchain 仍固定为 8（`build-logic/convention/src/main/kotlin/jvm.gradle.kts:9`），客户端运行期要求未因此改动。
-当前 Mixin 基线 MixinBooter **11.17** + CleanMix **0.7.2** 编译期 annotation processor，入口 Sponge Mixin `IMixinConnector`（`StackUpUpMixinConnector`）；兼容性注入当前只通过显式 early/late Mixin 完成。10.7 与 `IEarlyMixinLoader`/`ILateMixinLoader` 只是历史资料，不得写成当前实现。
+当前 Mixin 基线 MixinBooter **11.17** + CleanMix **0.7.2** 编译期 annotation processor，入口 Sponge Mixin `IMixinConnector`（`StackUpUpMixinConnector`）；兼容性注入通过显式 early/late Mixin 与窄范围 `InventoryStackLimitTransformer` 完成。10.7 与 `IEarlyMixinLoader`/`ILateMixinLoader` 只是历史资料，不得写成当前实现。
+
+库存容量扩展策略：配置文件为 `config/stackupup.cfg`，`compat.inventoryExpansion.enabled` 默认 `false`，只门控可选容量 lane：启用且无冲突时才注册窄范围 `InventoryStackLimitTransformer`（非 Minecraft 的具体 `IInventory` getter）并入队 `capacity.early` / capacity-late 配置；关闭时这些可选 getter/容量配置不生效。OFF 不等于关闭所有核心写入或安全路径，也不证明每个原版 inventory 都能超过 64：正常无冲突启动时常驻 `baseline.early` 保留有源码依据的具体路线，例如 `InventoryPlayerAddResourceMixin` 的 item-aware clamp，以及 `InventoryWriteLimitMixin` 在 `TileEntityLockableLoot#setInventorySlotContents` 写入前调用 `resolveInventoryWriteLimit`；`VanillaInventoryLimitMixin` 在 OFF 时保留原 getter 值。未知 `IItemHandler` 不因其接口类型而动态扩容。
+
+`compat.inventoryStackLimitBlacklist.modIds` 是唯一容量黑名单输入：空列表是 no-op；非空时，窄 getter hook 按 Forge owned packages 对实际 receiver/受支持公开 owner 做选择性 bypass，connector 另跳过所列 Mod 对应的 capacity-late 配置；这不会全局关闭其他 Mod，也不会关闭该 Mod 的普通/安全 late 配置（例如 IC2 Classic 的 SlotBase 原生 64 上限保护）；EnderIO 与 NuclearCraft 的 no-drop 修复属于各自独立的 ordinary late profiles，不是 IC2 Classic 路径。不引入 `classNames` 配置。启动读取 Mod ID 列表并冻结，首次 preInit 发布包归属，之后仅更新兼容上限；改变开关/黑名单必须重启。已加载 Mod 无归属包须失败，未加载 ID 记录无效果。receiver 或受支持公开 owner 的真实 class 按精确包边界命中才可归属；仅继承黑名单父类或实现黑名单接口不排除未列入的 addon，其实际写入安全性仍需独立验证。共享实例无公开 owner 时无法推断创建者 Mod（例如 plain ItemStackHandler），receiverless optional constructor/private delegate 路径仍 UNKNOWN，不声称完整第三方排除/守恒已证明。设备 wrapper 同时判断实际 wrapper 及实体；关闭扩容时该专用 getter fallback 只保留精确 Forge hands/armor wrapper 与原版实体组合。AE2 UEL v0.56.7 的 typed API 为标准 compile-only 依赖，不随游戏强制安装；其两个内部库存保留原生 maxStack 元数据，仅 getter 按 receiver 与当前公开 TE owner/typed final te 决定扩容，public setTileEntity 换 owner 不缓存初始归属、不修改已有物品。ItemStack DSL、NBT、网络和 NoDrop 不受该开关压制。
 
 ## DSL 规则链
 
@@ -36,6 +40,11 @@ Minecraft 1.12.2、Forge 14.23.5.2847；Kotlin 业务代码与 Java Mixin handle
 
 输入、规则、目标签名、依赖状态或 selector 不合约束时尽早失败并留可定位信息；不得静默回退、吞错、空 `catch`、占位实现。明确缺失依赖才可 skip，链接错误与未知 probe ID 必须是 failure。
 行为测试必须调用真实代码；配置、Mixin 注册与字节码护栏属结构检查，须单独标明。生命周期测试、自动化矩阵与客户端 F3+T 只在实际执行后记录通过。Kotlin/Java 用项目 Spotless/ktlint（UTF-8、LF、末尾换行），修改后检查最终内容、`jj diff` 与租约外变更。
+
+## 容量/Mixin Skill 索引与触发顺序
+
+- 审计：[mod-capacity-audit](docs/agent/skills/mod-capacity-audit/SKILL.md)（只读）；修复：[mod-capacity-fix](docs/agent/skills/mod-capacity-fix/SKILL.md)（仅在审计明确 `UNSAFE` 后使用）。
+- 顺序：先按审计 Skill 取证；`SAFE` 停止，`UNKNOWN` 先补证据，只有 `UNSAFE` 才进入最小修复；修复后先做静态验证，再单独记录用户实际运行测试。
 
 ## 文档索引
 入口 [START_HERE](docs/agent/START_HERE.md)，硬约束 [hard-rules](docs/agent/2026-04-18-hard-rules.md)，决策 [CDR](docs/agent/compatibility-decision-record.md)，任务 [清单](docs/agent/%E9%87%8D%E6%9E%84%E4%BB%BB%E5%8A%A1%E6%B8%85%E5%8D%95.md)，子代理 [库](docs/agent/%E5%AD%90%E4%BB%A3%E7%90%86%E5%BA%93.md)，实现 [说明](docs/StackUpUp-%E5%AE%9E%E7%8E%B0%E4%B8%8E%E5%85%BC%E5%AE%B9%E6%80%A7%E8%AF%B4%E6%98%8E.md)，回归 [runServer](docs/runServer-%E8%87%AA%E5%8A%A8%E5%8C%96%E5%9B%9E%E5%BD%92.md)，DSL [示例](docs/DSL-v2-%E8%A7%84%E5%88%99%E7%A4%BA%E4%BE%8B.md)。

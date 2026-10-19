@@ -47,10 +47,10 @@ storedDelta + remainderCount == offered
 
 1. 目标类、方法和完整 descriptor 明确，优先使用按模组加载的 late mixin。
 2. 原版或 Forge 基础路径使用 early mixin。
-3. **历史边界**：在动态 ASM 存在的中间版本中，已由 mixin 接管的目标还必须从动态 ASM 跳过表核对，不能重复注入；动态 ASM 已由删除提交 `9cff8e7` 移除，当前不存在该跳过表或重复注入面。
-4. 只有 mixin 无法表达且有明确写入证据时，才考虑窄范围 ASM；当前不保留动态 ASM 实现，未来恢复必须重新取得完整目标、写入面和独立准入证据。
+3. **历史边界**：在动态 ASM replacement layer 存在的中间版本中，已由 mixin 接管的目标还必须从旧跳过表核对；`DynamicCompatTransformer`、profile/probe、patch 与 `FixedCompatTargets` 已由删除提交 `9cff8e7` 移除，该历史跳过表不再是当前运行时。
+4. **当前窄范围例外**：`StackUpUpCore.getASMTransformerClass()` 在容量扩展开关启用且无冲突时注册 `InventoryStackLimitTransformer`，仅处理非 Minecraft 具体 `IInventory` 类的 `getInventoryStackLimit()I` / SRG getter（源码：`StackUpUpCore.kt:77-89`、`InventoryStackLimitTransformer.java:35-74,102-105`）；它不是已删除的广泛 replacement layer，也不改写写入方法。未来新增 ASM 行为仍须重新取得完整目标、写入面和独立准入证据。
 
-新的兼容补丁不按上游 StackUp 的 `IInventory`/`Slot` 继承关系无条件放大；当前不恢复或扩展已删除的动态 ASM 层，也不对未知 `IItemHandler` 动态扩容。
+新的兼容补丁不按上游 StackUp 的 `IInventory`/`Slot` 继承关系无条件放大，也不对未知 `IItemHandler` 动态扩容。
 
 ### 1.4 未知 `IItemHandler` 不扩容
 
@@ -84,15 +84,17 @@ chunk 的 remainder 只能决定该 chunk 的返回值和进度，不能重新�
 
 ## 2. 当前实现（源码事实）
 
-以下内容描述当前代码，不代表 T3/T10/T11 已完成收敛：
+以下内容描述当前代码，不代表 T3/T10/T11 已完成收敛。
 
-- `src/main/java/io/alexjoest/stackupup/mixin/early/ForgeItemHandlerLimitMixin.java:33-46` 的 `@Mixin` 目标只有 `net.minecraftforge.items.ItemStackHandler` 和 `net.minecraftforge.items.wrapper.EntityEquipmentInvWrapper` 两个类（T3 收敛后），`@ModifyReturnValue(method = "getSlotLimit", at = @At("RETURN"))` 把原值 `original == 64` 替换为 `StackLimitHooks.getCompatibilityStackSize()`，其余值保持原值。该值检查是目标类的取值语义（ItemStackHandler 恒为 64；EntityEquipmentInvWrapper 装甲槽 1、手部 64，装甲槽 1 必须保持），不再是「该目标是否可 patch」的准入判据（§3.5）。`InvWrapper`、`SidedInvWrapper`、`CombinedInvWrapper`、`RangedWrapper` 四个转发 wrapper 已不在注入目标内。
-- `src/main/java/io/alexjoest/stackupup/mixin/early/SlotItemHandlerMixin.java:26-39` 只保留 `@Shadow getSlotStackLimit()` 与对 `getItemStackLimit` 的 `@ModifyReturnValue`：转调 `StackLimitHooks.resolveItemHandlerSlotLimit(stack, original, slotLimit)`（定义于 `src/main/kotlin/io/alexjoest/stackupup/StackLimitHooks.kt:175-189`）。`getSlotStackLimit` 的独立动态上限注入已移除，不存在 `Math.max` 分支；槽位广告自然跟随 `itemHandler.getSlotLimit(index)` 的真实来源。
-- `src/main/java/io/alexjoest/stackupup/mixin/early/VanillaInventoryLimitMixin.java:28-41` 声明编译期显式目标表 12 个 vanilla 类，`getInventoryStackLimit()I` 的 `@ModifyReturnValue`（:43-50，`require = 0`）无条件替换为 `StackLimitHooks.getCompatibilityStackSize()`；运行时不再按 `original == 64` 哨兵判断（哨兵已删除，t2b §6.3），也不调用任何写入上限解析函数。
-- `src/main/java/io/alexjoest/stackupup/mixin/late/AppEngAdaptorItemHandlerMixin.java`（方案 A，2026-08-08）不再包含任何注入：类保留为 AE2 late config 入口保险丝，`AdaptorItemHandler#addItems` 的 `insertItem` 调用原样执行——热路径零分支、零分配（不用 `@WrapOperation` + `operation.call`：`Operation.call(Object...)` 是 varargs，javac 产物含 Object[] 与装箱分配，字节码证据见 §3.8）。"不吞"由原版/Forge remainder 契约结构性保证，运行期由边界探针 `DevAutomationServerDriver#probeBoundaryLimit` 验证。
+**当前容量 gating（2026-10-14 源码核对）**：`compat.inventoryExpansion.enabled` 默认 false、须重启；它只控制窄范围 getter/可选 capacity profiles。OFF 时 coremod 不注册 `InventoryStackLimitTransformer`，connector 不排队 `capacity.early` 或 capacity-late profiles；无冲突时常驻 baseline profile 仍排队，ordinary late safety profiles 则独立按目标 Mod 在场排队，不受该开关控制。OFF 不关闭 ItemStack 规则或所有核心写入路径：例如 `InventoryPlayerAddResourceMixin` 的 clamp 调用仍保留、baseline `InventoryWriteLimitMixin` 写入前解析仍存在，而 `VanillaInventoryLimitMixin` 在 OFF 时返回原 getter 值。`modIds` 对窄 getter 按 actual receiver/支持的 owner owned-package 做 selective bypass，并由 connector 跳过匹配 Mod 的 capacity-late profile；它不关闭该 Mod 的 ordinary safety profile、不会关闭其它 Mod，也不能据此称未知 handler 已安全。`CoreCapacityOffBehaviorTest` 是 hook-adapted fixture 行为测试，不是 production Mixin launch test；本文不据此宣称运行时通过。源码：`StackUpUpConfig.kt:80-98`、`StackUpUpCore.kt:77-89`、`StackUpUpMixinConnector.kt:57-65,109-145`。
+
+- `src/main/java/io/alexjoest/stackupup/mixin/early/ForgeItemHandlerLimitMixin.java:9-15` 当前只目标 `net.minecraftforge.items.ItemStackHandler`，并登记在可选 `mixins.stackupup.capacity.early.json:8-13`；其 `getSlotLimit(I)I` hook 调用 receiver-aware 的 `StackLimitHooks.getInventoryCompatibilityStackSize(this, original)`。该路径受 expansion/prepared 状态与 receiver 黑名单判断约束，不是无条件的通用 handler 扩容。设备 wrapper 不是该 Mixin 的第二目标：常驻 `EntityEquipmentInventoryLimitMixin.java:12-21` 单独目标 `EntityEquipmentInvWrapper`，登记在 `mixins.stackupup.baseline.early.json:8-15`，将 wrapper 与实体传给 `StackLimitHooks.getEquipmentInventoryStackSize`；`StackLimitHooks.kt:94-116` 分别执行 wrapper/entity 黑名单检查，并在 OFF 时仅保留精确 Forge hands/armor wrapper 与原版实体 fallback。四个转发 wrapper 不属于独立扩容目标。
+- `src/main/java/io/alexjoest/stackupup/mixin/early/SlotItemHandlerMixin.java:26-39` 只保留 `@Shadow getSlotStackLimit()` 与对 `getItemStackLimit` 的 `@ModifyReturnValue`：转调 `StackLimitHooks.resolveItemHandlerSlotLimit(stack, original, slotLimit)`（定义于 `src/main/kotlin/io/alexjoest/stackupup/StackLimitHooks.kt:372-387`）。`getSlotStackLimit` 的独立动态上限注入已移除，不存在 `Math.max` 分支；槽位广告自然跟随 `itemHandler.getSlotLimit(index)` 的真实来源。
+- `VanillaInventoryLimitMixin.java:39-74` 属于常驻 baseline profile 中的 vanilla getter lane，目标表为 12 个 vanilla 类；仅在扩展开启、receiver 未命中黑名单且核心目标允许时修改 getter，OFF 时返回原值。表外目标不由该 Mixin 扩容；其源存在不代表所有 vanilla inventory 均支持大堆叠。
+- `src/main/java/io/alexjoest/stackupup/mixin/late/AppEngAdaptorItemHandlerMixin.java`（方案 A，2026-08-08）不再包含任何注入：类保留为 AE2 late config 入口保险丝，`AdaptorItemHandler#addItems` 的 `insertItem` 调用原样执行——热路径零分支、零分配（不用 `@WrapOperation` + `operation.call`：`Operation.call(Object...)` 是 varargs，javac 产物含 Object[] 与装箱分配，字节码证据见 §3.8）。项目不在该 AE2 调用点执行限流、回填或补偿；Forge remainder 契约仍是 API 边界，但 AE2 caller 是否正确处理 remainder 仍为 **无源码不可判定**，不能由通用 handler 探针替代。
 - `src/main/java/io/alexjoest/stackupup/core/Ae2ItemHandlerInsertLimiter.java`（方案 A 后）保留为纯工具类：只被 `Ae2ItemHandlerInsertLimiterTest` / `WrapperCapacityDiagnosticTest` 等测试护栏直接使用，已不在任何热路径上；对不在白名单的 handler 的 `min(64, getSlotLimit(slot))` 分片投喂逻辑原样保留（预先限幅而非写入后回填，§3.6 判定不变），原 ConservationAuditor 审计分支已随审计器整体移除（§3.8）。
 - `src/main/java/io/alexjoest/stackupup/mixin/late/AppEngPatternTermMixin.java:24-56` 只在 AE2 三类 pattern terminal 构造结束后经反射提升空白 pattern 输入槽 `patternSlotIN`；该项目代码不证明 AE2 其他槽或第三方内部写入容量，相关目标仍须按源码和运行证据审查。
-- `StackLimitHooks.resolveInventoryClampLimit` 定义于 `src/main/kotlin/io/alexjoest/stackupup/StackLimitHooks.kt:192-203`；当前两个 `InventoryPlayer` 业务调用点是 `src/main/java/io/alexjoest/stackupup/mixin/early/InventoryPlayerAddResourceMixin.java:19-21`（`stackupup$useMergeLimit`）和 `:42-44`（`stackupup$usePickedStackLimit`），二者均以 `@ModifyExpressionValue` 接入。`resolveInventoryWriteLimit` 在当前工作副本中已不存在（`rg -n "resolveInventoryWriteLimit" src/` 无命中），旧 inventory-write 状态通道与 `VanillaInventoryWriteMixin` 已随 T4a 移除；上述 resolver 及两个调用点仍必须保留，不得以“没有调用方”为由删除。
+- `StackLimitHooks.resolveInventoryClampLimit` 当前定义于 `src/main/kotlin/io/alexjoest/stackupup/StackLimitHooks.kt:390-400`；`InventoryPlayerAddResourceMixin.java:19-21,42-44` 的两个 `InventoryPlayer` clamp 调用点仍以 `@ModifyExpressionValue` 接入。T4a 删除的是旧 `VanillaInventoryWriteMixin` 通道；当前 `resolveInventoryWriteLimit` 仍定义于 `StackLimitHooks.kt:307-335`，并由常驻 baseline `InventoryWriteLimitMixin.java:14-30` 在 `TileEntityLockableLoot#setInventorySlotContents` 写入前调用。它受 native-64 writer capability receiver 集约束，不是通用未知库存扩容器。
 
 ## 3. Forge 与 vanilla 写入事实
 
@@ -144,7 +146,7 @@ Forge wrapper 文档明确它通过 `EntityLivingBase#getItemStackFromSlot` / `s
 | `wrapper/CombinedInvWrapper#getSlotLimit(I)I` | 转发 | `:109-115`（insertItem 转发子 handler）、`:128-134`（getSlotLimit 按 index 转发） | 移除注入 |
 | `wrapper/RangedWrapper#getSlotLimit(I)I` | 转发 | `:66-74`（insertItem 转发 compose）、`:98-106`（getSlotLimit 转发） | 移除注入 |
 | `items/SlotItemHandler#getSlotStackLimit()I` | 转发 | `:107-110`（广告转发 `itemHandler.getSlotLimit(index)`） | 移除独立动态上限注入（原 `Math.max(original, compat)` 会把广告抬到 handler 真实上限之上；槽位上限自然跟随 handler 真实来源） |
-| `items/SlotItemHandler#getItemStackLimit(ItemStack)I` | 自洽 | `:112-140`（广告由 handler 侧 `insertItem(..., true)` simulate 求得），再由 `StackLimitHooks.resolveItemHandlerSlotLimit`（src/main/kotlin/io/alexjoest/stackupup/StackLimitHooks.kt:175-189）按 min(slotLimit, itemLimit) 收敛 | 保留 |
+| `items/SlotItemHandler#getItemStackLimit(ItemStack)I` | 自洽 | `:112-140`（广告由 handler 侧 `insertItem(..., true)` simulate 求得），再由 `StackLimitHooks.resolveItemHandlerSlotLimit`（src/main/kotlin/io/alexjoest/stackupup/StackLimitHooks.kt:372-387）按 min(slotLimit, itemLimit) 收敛 | 保留 |
 判定结论与红线核对：
 
 - 四个转发 wrapper 与 `SlotItemHandler#getSlotStackLimit` 不再作为独立容量来源注入；`EntityEquipmentInvWrapper` 未写成「无余量必吞」（Forge `insertItem` 上限计算与 remainder 由源码闭合，vanilla setter 为无截断直写）。
@@ -170,7 +172,7 @@ Forge wrapper 文档明确它通过 `EntityLivingBase#getItemStackFromSlot` / `s
 - 移入 0 项：自洽集合（ItemStackHandler、EntityEquipmentInvWrapper）与零容量拒绝目标（EmptyHandler）原已在白名单内，无新的自洽 IItemHandler 类需要移入；未为功能便利扩大白名单。
 - 移出后行为：InvWrapper/SidedInvWrapper 进入 untrusted 分片路径（cap=`min(64, getSlotLimit)`）。对原版自洽 delegate（InventoryBasic/TileEntityLockableLoot 系 setter 按同一上限夹取）分片全部接受，结果与直通等价；对未知第三方 delegate 单次投喂上限更紧（原设计，方案 A 后该路径仅测试使用，不再处于热路径）。
 - `EntityEquipmentInvWrapper` 未移出、未写成「无余量必吞」：Forge insertItem 的上限计算与 remainder 由源码闭合（引用 P0 事实 a）；白名单只决定投喂方是否直通，不影响其自洽写入。
-- 静态白名单不替代运行期验证：方案 A 后 `insertCapped` 不再处于热路径（mixin 已透传，§3.8），白名单/分片行为仅由测试护栏覆盖；运行期"不吞"由 remainder 契约结构性保证 + 边界探针验证，不再有守恒审计事件。
+- 静态白名单不替代运行期验证：方案 A 后 `insertCapped` 不再处于热路径（mixin 已透传，§3.8），白名单/分片行为仅由测试护栏覆盖；通用 Forge `ItemStackHandler` 的边界探针只验证该 handler 路径的 remainder 行为，不证明 AE2 `AdaptorItemHandler` caller 如何处理 remainder；AE2 内部写入仍为 **无源码不可判定**，且不再有守恒审计事件。
 - 剩余风险：`instanceof ItemStackHandler` 会信任第三方子类覆盖的 `insertItem`/`getStackLimit`，子类行为无源码不可判定；该静态性风险与重排前一致，不因本任务扩大。方案 A 后我方不干预投喂语义，未知子类的写入行为交由目标侧 remainder 契约自回收，我方不再观测。
 
 测试：
@@ -220,10 +222,10 @@ Forge wrapper 文档明确它通过 `EntityLivingBase#getItemStackFromSlot` / `s
 
 用户决策：结构性移除热路径逻辑，依赖原版/Forge remainder 契约保证"不吞"，并移除 ConservationAuditor。事实链：原版/Forge 天然"超量不吞"——`InventoryPlayer.addResource`（双上限夹取返回剩余）、`Container.mergeItemStack`（余量留参数栈）、`ItemStackHandler.insertItem`（超量返回 remainder）；硬编码返回 64 的 mod 在 insertItem 按上限夹取时回退到 64、remainder 返回剩余、不吞（用户确认语义）。
 
-- **热路径零逻辑**：`AppEngAdaptorItemHandlerMixin.java` 不再包含任何注入（类保留为 AE2 late config 入口保险丝），AE2 `AdaptorItemHandler#addItems` 的 `IItemHandler#insertItem` 调用原样执行——mixin 层零分支、零分配。初始方案曾尝试 `@WrapOperation` 改调 `operation.call(handler, slot, stack, simulate)`，但编译产物（javap 字节码证据）显示 `Operation.call(Object...)` 是 varargs：每次调用生成 `Object[4]` 数组与 Integer/Boolean 装箱，违背零分配约束，故最终采用"不包裹、直接放行原调用"的最简形态。我方不干预即可保证"我方不吞"：AE2 收到的堆叠若超过其写入容量，remainder 由 AE2 自身回收（AE2 无源码，`无源码不可判定`，但我方不再执行任何限幅/分片/补偿）。
+- **热路径零逻辑**：`AppEngAdaptorItemHandlerMixin.java` 不再包含任何注入（类保留为 AE2 late config 入口保险丝），AE2 `AdaptorItemHandler#addItems` 的 `IItemHandler#insertItem` 调用原样执行——mixin 层零分支、零分配。初始方案曾尝试 `@WrapOperation` 改调 `operation.call(handler, slot, stack, simulate)`，但编译产物（javap 字节码证据）显示 `Operation.call(Object...)` 是 varargs：每次调用生成 `Object[4]` 数组与 Integer/Boolean 装箱，违背零分配约束，故最终采用"不包裹、直接放行原调用"的最简形态。我方不干预 AE2 caller 的 remainder 处理，也不据此作无损结论；AE2 无源码，实际处理仍为 `无源码不可判定`，且我方不执行任何限幅/分片/补偿。
 - **ConservationAuditor 移除**：删除 `src/main/kotlin/io/alexjoest/stackupup/audit/` 整包（ConservationAuditor/ConservationEvent/ConservationReportWriter）与 4 个审计测试；`DevAutomationServerDriver` 删审计事件块（探针判定 evaluateProbeResult/evaluateBoundaryProbe 不依赖审计，保留）。
 - **Ae2ItemHandlerInsertLimiter 保留为纯工具类**：仅测试护栏直接使用，不在热路径上；白名单/分片行为原样保留（预先限幅语义不变），不再承担任何运行期审计。
-- **"不吞"验证改由边界探针承担**：`DevAutomationServerDriver#probeBoundaryLimit` 验证 `insertItem(N)` 全部存入（remainder=0）+ 追加 `insertItem(1)` 被拒（remainder=1），N 为规则解析值。
+- **通用边界验证改由探针承担**：`DevAutomationServerDriver#probeBoundaryLimit` 仅对单槽 Forge `ItemStackHandler` 验证 `insertItem(N)` 全部存入（remainder=0）及追加 `insertItem(1)` 被拒（remainder=1），N 为规则解析值；它不调用 AE2 `AdaptorItemHandler`，不能证明 AE2 caller 的 remainder 处理，AE2 内部行为仍 UNKNOWN。
 - **删除的文档**：`docs/agent/t12.5-报告schema.md`（JSONL 报告 schema 随审计器废弃）。
 
 ### 3.9 六 mod 源码审阅后的 late mixin 修正与新增（2026-08-08 执行）
@@ -292,11 +294,17 @@ Forge wrapper 文档明确它通过 `EntityLivingBase#getItemStackFromSlot` / `s
 - 验证（实际执行）：`runServerAutoTestMatrix` BUILD SUCCESSFUL（exit 0，外层 Exec 与子 Gradle `runServerAutoTest` 均通过，无 autotest-failed marker）：activeMaxStackSize=10000 下 5 个 wrapper 探针全绿——`combined_inv_wrapper_limit 槽位上限=[10000,10000]`、`inv_wrapper_limit 槽位上限=64`、`ranged_wrapper_limit 槽位上限=[10000,10000]`、`sided_inv_wrapper_limit 槽位上限=64`、`slot_item_handler_limit 槽位上限=10000 物品上限=10000`；未装 mod 探针按规则跳过、GT 矩阵跳过、探针结束自动停服。`./gradlew test` 全量 BUILD SUCCESSFUL（0 failures）；spotlessCheck 仅剩 `RuleFieldContextProvider.kt` 预存违规（租约外，未修），本任务改动文件无 spotless 违规。
 - 剩余风险：inv/sided 探针只观测广告值、不覆盖写入路径（写入面判定仍按 §3.1/§3.5 源码事实）；`activeMaxStackSize`=64 时新预期与旧预期等价（64==64），行为不变，无回归面。
 - **取代关系：** 本节结论取代 §8.8「验证结果」中 `runServerAutoTestMatrix` FAILED（`inv_wrapper_limit`/`sided_inv_wrapper_limit` 槽位上限=64 预期=10000）的记录——该记录为探针预期问题，已由本节修正并实测通过。此后最近一次矩阵运行（2026-08-10，`run/logs/autotest-report.txt` 最终状态 PASS）同样无该两项失败；2026-08-10 之后的代码改动未经矩阵重跑，故当前工作副本不因此节记为矩阵通过。
+### 3.13 IC2 Classic native-64 slot safety (2026-10-14 source/fixture boundary)
+
+`mixins.stackupup.late.ic2classic.json` is the ordinary late profile and registers `SlotBaseMixin`; the separate `mixins.stackupup.capacity.late.ic2classic.json` currently has an empty mixins list. `SlotBaseMixin.keepNativeSlotLimit` caps `SlotBase#func_75219_a()I` at 64 while preserving lower native values; the injected method only clamps the slot-limit getter and does not rewrite the IC2 writer or alter the stack. Because the connector gates blacklisting and `inventoryExpansion.enabled` only on capacity profiles, this ordinary native-64 safety config remains queued whenever IC2 is present, including expansion OFF or `ic2` blacklisted (the ordinary module loop is independent of the capacity conflict gate).
+
+`Ic2ClassicMixinSourceTest.kt:31-112` verifies resource text, registry decisions, the static clamp helper, and ItemStack fixture split arithmetic. It is not a Mixin launch test or a real IC2 Classic writer test; no runtime injection/target-resolution claim is made, and actual writer behavior remains UNKNOWN.
+
 ## 4. 当前限制
 
-1. **历史动态 ASM 限制（已删除）**：删除提交 `9cff8e7` 前，动态 patch 基类可能传播到没有覆盖方法的第三方子类；静态目标表不能穷举第三方实现。该风险与 profile/probe/skip 表均保留作历史审计证据，当前不存在动态 patch 层。没有源码或可重复运行证据的条目仍统一为 **无源码不可判定**。
-2. `ForgeItemHandlerLimitMixin` 已按 §3.5 收敛为两个自洽目标（ItemStackHandler、EntityEquipmentInvWrapper），四个转发 wrapper 与 `SlotItemHandler#getSlotStackLimit` 的独立注入已移除（T3 执行，2026-08-08）。
-3. 当前 AE2 热路径已按方案 A（§3.8）改为 mixin 原样透传，`Ae2ItemHandlerInsertLimiter` 白名单保留为纯工具类（仅测试使用，§3.6 判定不变）；"不吞"由 remainder 契约结构性保证 + 边界探针验证，不再有守恒审计。AE2 的 `AdaptorItemHandler`、三个 pattern terminal 目标及其第三方内部写入链在本记录中没有对应第三方源码，统一记为 **无源码不可判定**，不能用项目自己的 mixin 名称补出结论。
+1. **历史广泛动态 ASM 限制（已删除）**：删除提交 `9cff8e7` 前，`DynamicCompatTransformer` patch 基类可能传播到没有覆盖方法的第三方子类；静态目标表不能穷举第三方实现。该风险与 profile/probe/skip 表均保留作历史审计证据。该广泛 replacement layer 当前不存在；§1.3 所述可选窄 `InventoryStackLimitTransformer` 仅处理 IInventory getter，不能因此给未知第三方写入路径升级结论。没有源码或可重复运行证据的条目仍统一为 **无源码不可判定**。
+2. **T3 历史收敛与当前拆分（2026-08-08）**：当时 §3.5 的双目标记录是历史 T3 结果；当前 `ForgeItemHandlerLimitMixin` 已拆为可选 capacity early 的 `ItemStackHandler` 目标（receiver-aware getter hook），常驻 baseline 的 `EntityEquipmentInventoryLimitMixin` 则单独负责 `EntityEquipmentInvWrapper` 与实体 receiver/entity checks。四个转发 wrapper 与 `SlotItemHandler#getSlotStackLimit` 的独立注入已移除；当前拆分证据见 §2 与 `mixins.stackupup.capacity.early.json` / `mixins.stackupup.baseline.early.json`。
+3. 当前 AE2 热路径已按方案 A（§3.8）改为 mixin 原样透传，`Ae2ItemHandlerInsertLimiter` 白名单保留为纯工具类（仅测试使用，§3.6 判定不变）；项目不在 AE2 调用点执行限流、回填或补偿。通用单槽 Forge `ItemStackHandler` 边界探针只验证 generic remainder 行为，不调用 AE2 `AdaptorItemHandler`；AE2 的 `AdaptorItemHandler`、三个 pattern terminal 目标及其第三方内部写入/remainder 处理在本记录中没有对应第三方源码，统一记为 **无源码不可判定**，且不再有守恒审计。
 4. `InventoryLargeChest` 的上限转发与按 index 写入存在结构性不一致风险；T11 不能仅保留现有 mixin 目标而跳过两半箱验证。
 5. NuclearCraft、Tech Reborn、RebornCore 等第三方内部写入链不因方法名或历史注释自动获得分类。当前缺少对应版本源码时，记录为 **无源码不可判定**，不写成断链，也不允许据此新增 patch。NuclearCraft 的 1.12.2 源码已在本批次取得（§3.9 B），其 `ITileInventory` 基类链按源码事实收敛；Tech Reborn / RebornCore 仍无源码。
 6. 本记录没有真实客户端 F3+T 的运行证据，因此真实资源重载基线当前视为 **尚未建立**。`LanguageMap.replaceWith()` 的源码只能证明清空/替换行为，不能填补 T8.0 的行为证据缺口。
@@ -332,11 +340,11 @@ Forge 自身 wrapper 和 vanilla 反编译源码不属于上述缺失项；它�
 
 ### 5.5 AE2 投喂路径
 
-方案 A（§3.8）后，AE2 投喂热路径不再经过任何项目代码：`AppEngAdaptorItemHandlerMixin.java` 不包含任何注入（仅保留为 config 入口保险丝），`IItemHandler#insertItem` 调用原样执行，零分支、零分配。Forge `IItemHandler` 的正式契约在 `build/rfg/minecraft-src/java/net/minecraftforge/items/IItemHandler.java:61-75`：`insertItem` 接受 `simulate` 参数并返回未插入的 remainder——"不吞"由该契约结构性保证。
+方案 A（§3.8）后，AE2 投喂热路径不再经过任何项目代码：`AppEngAdaptorItemHandlerMixin.java` 不包含任何注入（仅保留为 config 入口保险丝），`IItemHandler#insertItem` 调用原样执行，零分支、零分配。Forge `IItemHandler` 的正式契约在 `build/rfg/minecraft-src/java/net/minecraftforge/items/IItemHandler.java:61-75`：`insertItem` 接受 `simulate` 参数并返回未插入的 remainder；这是通用 API 契约，不是 AE2 `AdaptorItemHandler` 实现或其 caller 处理 remainder 的证据，AE2 内部行为仍为 **无源码不可判定**。
 
 `src/main/java/io/alexjoest/stackupup/core/Ae2ItemHandlerInsertLimiter.java` 保留为纯工具类（仅测试护栏直接使用，不在热路径上）：对超出 cap 的 `simulate=false` 输入把输入预先拆成多个独立 chunk，每个 chunk 都是一次不超过 cap 的真实 `insertItem`，只有该 chunk 的 remainder 或零进度会停止后续 chunk。这是预先限幅而非写入后回填（§3.6 判定不变）；该循环已不处于任何热路径。
 
-AE2 `AdaptorItemHandler`、三个 pattern terminal 目标及其包裹 handler 的第三方内部实现，在本记录中均为 **无源码不可判定**。项目自己的 `AppEngPatternTermMixin.java:15-29` 只证明它尝试提升空白 pattern 输入槽 `patternSlotIN`，不证明其他槽或 AE2 内部写入容量；"不吞"的运行期验证由边界探针（`DevAutomationServerDriver#probeBoundaryLimit`）承担。
+AE2 `AdaptorItemHandler`、三个 pattern terminal 目标及其包裹 handler 的第三方内部实现，在本记录中均为 **无源码不可判定**。项目自己的 `AppEngPatternTermMixin.java:15-29` 只证明它尝试提升空白 pattern 输入槽 `patternSlotIN`，不证明其他槽或 AE2 内部写入容量。`DevAutomationServerDriver#probeBoundaryLimit`（源码：`DevAutomationServerDriver.kt:248-274`）仅构造一个单槽 Forge `ItemStackHandler` 做通用边界探针，不调用 AE2 `AdaptorItemHandler`，因此不能证明 AE2 caller 正确处理 remainder；AE2 内部 remainder 行为仍 UNKNOWN。
 ## 6. 拟议任务与准入边界
 
 ### T3：Forge handler 目标收敛
@@ -351,7 +359,7 @@ AE2 `AdaptorItemHandler`、三个 pattern terminal 目标及其包裹 handler �
 
 **待决边界：**白名单是静态、窄范围的调用方策略，不是全局 handler 规则；`isTrusted` 不能以类名作为理由。`EntityEquipmentInvWrapper` 不能直接移除并声称必吞，也不能直接保留并声称已安全，必须引用第 3.2 节的 Forge/vanilla 分界证据。
 
-**准入条件：**白名单内外分别覆盖真实插入、模拟插入和 remainder；第三方源码缺失时写**无源码不可判定**并维持 64 安全上限。方案 A（§3.8）后白名单不再承担运行期职责，运行期"不吞"由 remainder 契约结构性保证 + 边界探针验证。
+**准入条件：**白名单内外分别覆盖真实插入、模拟插入和 remainder；第三方源码缺失时写**无源码不可判定**并维持 64 安全上限。方案 A（§3.8）后白名单不再承担运行期职责；通用单槽 Forge `ItemStackHandler` 边界探针只覆盖 generic handler 行为，不是 AE2 `AdaptorItemHandler` caller 的 remainder 证据，AE2 内部处理仍 UNKNOWN。
 
 **执行状态（2026-08-08）：**判定与重排完成，见 §3.6。移出 InvWrapper、SidedInvWrapper（转发 wrapper，delegate 任意 IInventory/ISidedInventory，第三方写入面无源码）；保留 ItemStackHandler、VanillaDoubleChestItemHandler、EntityEquipmentInvWrapper、EmptyHandler；移入 0 项。白名单内外真实/模拟/remainder 测试落地于 `Ae2ItemHandlerInsertLimiterTest`（`Ae2ItemHandlerInsertLimiterConservationAuditTest` 已随方案 A 删除）；`WrapperCapacityDiagnosticTest` 的端到端守恒测试（租约外未改动）只断言守恒公式，移出后仍通过。
 

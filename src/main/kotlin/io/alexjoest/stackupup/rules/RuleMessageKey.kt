@@ -72,6 +72,18 @@ internal enum class RuleMessageKey(val translationKey: String) {
     COMMAND_STATE_GET("commands.stackupup.state.get"),
     COMMAND_STATE_SET("commands.stackupup.state.set"),
     COMMAND_STATE_MISSING("commands.stackupup.state.missing"),
+    COMMAND_INSPECT_USAGE("commands.stackupup.inspect.usage"),
+    COMMAND_INSPECT_PLAYER_REQUIRED("commands.stackupup.inspect.player_required"),
+    COMMAND_INSPECT_PERMISSION("commands.stackupup.inspect.permission"),
+    COMMAND_INSPECT_NO_TARGET("commands.stackupup.inspect.no_target"),
+    COMMAND_INSPECT_SLOT_RANGE("commands.stackupup.inspect.slot_range"),
+    COMMAND_INSPECT_HEADER("commands.stackupup.inspect.header"),
+    COMMAND_INSPECT_OBJECT("commands.stackupup.inspect.object"),
+    COMMAND_INSPECT_SLOT("commands.stackupup.inspect.slot"),
+    COMMAND_INSPECT_DELEGATE_UNKNOWN("commands.stackupup.inspect.delegate_unknown"),
+    COMMAND_INSPECT_TRUNCATED("commands.stackupup.inspect.truncated"),
+    COMMAND_INSPECT_CONFIG("commands.stackupup.inspect.config"),
+    COMMAND_INSPECT_WARNING("commands.stackupup.inspect.warning"),
 
     // ---- message.stackupup.*（原 B 类） ----
     RULE_COMPLEXITY_PREFIX("message.stackupup.rule_complexity.prefix"),

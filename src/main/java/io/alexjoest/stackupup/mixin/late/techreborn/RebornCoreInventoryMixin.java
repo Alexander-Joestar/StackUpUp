@@ -10,7 +10,10 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(targets = "reborncore.common.util.Inventory", remap = false)
 abstract class RebornCoreInventoryMixin {
     @ModifyReturnValue(method = {"getInventoryStackLimit()I", "func_70297_j_()I"}, at = @At("RETURN"), require = 0)
-    private static int stackupup$expandInventoryStackLimit(int original) {
-        return StackLimitHooks.getCompatibilityStackSize();
+    private int stackupup$expandInventoryStackLimit(int original) {
+        if (StackLimitHooks.shouldBypassInventoryStackLimit(this)) {
+            return original;
+        }
+        return StackLimitHooks.getInventoryCompatibilityStackSize(original);
     }
 }

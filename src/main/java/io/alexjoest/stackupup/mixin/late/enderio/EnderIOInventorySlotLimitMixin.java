@@ -4,7 +4,6 @@ import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import io.alexjoest.stackupup.StackLimitHooks;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 
 /**
@@ -26,11 +25,9 @@ import org.spongepowered.asm.mixin.injection.At;
 @Pseudo
 @Mixin(targets = "com.enderio.core.common.inventory.InventorySlot", remap = false)
 abstract class EnderIOInventorySlotLimitMixin {
-    @Unique
-    private static final int VANILLA_STACK_LIMIT = 64;
 
     @ModifyReturnValue(method = "getMaxStackSize()I", at = @At("RETURN"), require = 0)
     private int stackupup$expandInventorySlotLimit(int original) {
-        return original == VANILLA_STACK_LIMIT ? StackLimitHooks.getCompatibilityStackSize() : original;
+        return StackLimitHooks.getInventoryCompatibilityStackSize(this, original);
     }
 }

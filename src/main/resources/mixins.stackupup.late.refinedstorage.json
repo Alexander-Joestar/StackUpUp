@@ -4,11 +4,7 @@
   "target": "@env(DEFAULT)",
   "minVersion": "0.8",
   "compatibilityLevel": "JAVA_8",
-  "mixins": [
-    "ItemGridHandlerMixin",
-    "ItemGridHandlerPortableMixin",
-    "NetworkNodeStorageMonitorMixin"
-  ],
+  "mixins": [],
   "client": [],
   "server": []
 }

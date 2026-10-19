@@ -5,23 +5,14 @@
   "minVersion": "0.8",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
-    "ContainerMixin",
-    "CommandGiveMixin",
-    "CommandReplaceItemMixin",
     "EntityItemMergeMixin",
-    "ForgeItemHandlerLimitMixin",
-    "InventoryPlayerAddResourceMixin",
     "InventoryHelperMixin",
     "ItemMixin",
     "ItemStackNbtMixin",
     "ItemStackMixin",
     "NetHandlerPlayServerMixin",
     "PacketBufferMixin",
-    "PacketUtilMixin",
-    "ServerRecipeBookHelperMixin",
-    "SlotLimitMixin",
-    "SlotItemHandlerMixin",
-    "VanillaInventoryLimitMixin"
+    "PacketUtilMixin"
   ],
   "client": [
     "NetHandlerPlayClientMixin",

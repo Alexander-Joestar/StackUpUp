@@ -32,7 +32,7 @@ class McModInfoExpansionTest {
             "产物 mcmod.info 的 mcversion 必须是解析后的字面 MC 版本: $actual",
         )
         assertFalse(
-            actual!!.contains("extension") || actual.contains("property"),
+            actual.orEmpty().contains("extension") || actual.orEmpty().contains("property"),
             "mcversion 被写成了 Provider 的 toString 结果: $actual",
         )
     }

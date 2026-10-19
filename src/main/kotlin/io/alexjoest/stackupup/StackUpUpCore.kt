@@ -7,7 +7,7 @@ import org.apache.logging.log4j.Logger
 @IFMLLoadingPlugin.Name("StackUpUpCore")
 @IFMLLoadingPlugin.MCVersion("1.12.2")
 @IFMLLoadingPlugin.SortingIndex(1001)
-// 只排除 core 包，避免把 mixin 包一起挡在 LaunchClassLoader 的变换链外。
+// 排除 core 实现包和配置入口类，避免把 mixin 包一起挡在 LaunchClassLoader 的变换链外。
 @IFMLLoadingPlugin.TransformerExclusions(StackUpUpIds.CORE_PACKAGE_NAME, StackUpUpIds.CONFIG_CLASS_NAME)
 class StackUpUpCore : IFMLLoadingPlugin {
     companion object {
@@ -74,7 +74,19 @@ class StackUpUpCore : IFMLLoadingPlugin {
         }
     }
 
-    override fun getASMTransformerClass(): Array<String> = emptyArray()
+    override fun getASMTransformerClass(): Array<String> {
+        if (ensureConflictState().isNotEmpty()) {
+            return emptyArray()
+        }
+        val policy = io.alexjoest.stackupup.core.InventoryExpansionStartupConfig.load()
+        io.alexjoest.stackupup.core.InventoryStackLimitHook.configureExpansionEnabled(policy.enabled)
+        return if (policy.enabled) {
+            arrayOf("io.alexjoest.stackupup.core.InventoryStackLimitTransformer")
+        } else {
+            logger.info("Inventory capacity expansion is disabled at startup; inventory getter transformer will not be registered")
+            emptyArray()
+        }
+    }
 
     override fun getModContainerClass(): String? = null
 

@@ -10,7 +10,10 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
 @Mixin(targets = "ae2.api.inventories.ContainerAdapter", remap = false)
 abstract class ContainerAdapterMixin {
     @ModifyConstant(method = "getInventoryStackLimit", constant = @Constant(intValue = 64), require = 0)
-    private static int replaceCompatibilityLimit(int original) {
-        return StackLimitHooks.getCompatibilityStackSize();
+    private int replaceCompatibilityLimit(int original) {
+        if (StackLimitHooks.shouldBypassInventoryStackLimit(this)) {
+            return original;
+        }
+        return StackLimitHooks.getInventoryCompatibilityStackSize(original);
     }
 }

@@ -2,6 +2,8 @@ package io.alexjoest.stackupup.bootstrap
 
 import io.alexjoest.stackupup.StackUpUpCore
 import io.alexjoest.stackupup.StackUpUpIds
+import io.alexjoest.stackupup.core.InventoryExpansionStartupConfig
+import io.alexjoest.stackupup.core.InventoryStackLimitHook
 import net.minecraft.launchwrapper.Launch
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
@@ -12,55 +14,115 @@ import java.io.File
 import java.util.jar.JarFile
 
 /**
- * Mixin 装载入口（MixinBooter 11 官方路径，替代已弃用的 [zone.rong.mixinbooter.IEarlyMixinLoader] 与
- * [zone.rong.mixinbooter.ILateMixinLoader]）。
+ * MixinBooter 11.17 的 `IMixinConnector` 装载入口。
  *
- * 注册方式：jar manifest 的 `MixinConnector` 属性指向本类（MixinBooter 11.13 的
- * `MixinPlatformAgentDefault.prepare()` 读取，属性名取自 CleanMix `ManifestAttributes.MIXINCONNECTOR`）；
- * `MixinConnectorManager.loadConnectors()` 经无参构造器实例化后，在 `MixinBooterPlugin.injectData` 的
- * `platform.inject()` 内调用 [connect]——时序在 early loader 收集之后、late CONSTRUCTING 之前。11.13
- * CleanMix 模型中 DEFAULT 配置统一在 DEFAULT 阶段（EnvironmentStateTweaker → gotoPhase(DEFAULT)）装载，
- * 与入队时刻无关，因此 connect() 里 add 的早/晚配置无行为差异（全部配置 target 均为 `@env(DEFAULT)`）。
+ * `connect()` 通过 `Mixins.addConfiguration` 按当前冲突状态、模块表和 mod 在场探针注册
+ * early/late 配置。容量配置额外受扩容开关、冲突状态和启动黑名单约束；Supergiant `ae2` 的
+ * fallback 只检查已知 marker resource，不能证明一般的 mod 在场或归属。
  *
- * 必须声明为 class 而非 Kotlin object：`MixinConnectorManager` 用 `getDeclaredConstructor().newInstance()`
- * 且不调用 setAccessible，Kotlin object 编译为私有构造器会导致 IllegalAccessException、connector 永不装载；
- * 与旧 `ILateMixinLoader`（class + 公共无参构造）同一约束。
- *
- * 装载语义与旧 loader 完全一致：
- * - early：冲突检测（[StackUpUpCore.ensureConflictState]）非空 → ERROR + 不 add（冲突禁用设计）；通过 → add；
- * - late：按模块表逐配置判断 mod 在场（[ModDiscoverer.isModPresent]；Supergiant `ae2` 的结果为 false
- *   或不可用时回退到 Cleanroom marker probe）→ 条件 add；
- *   不在模块表的配置不装载。
+ * 早期配置按顺序入队；某个入队操作失败时，之前成功入队的配置不会回滚，late 配置仍会继续处理。
  */
 class StackUpUpMixinConnector : IMixinConnector {
     private val logger: Logger = LogManager.getLogger("stackupup.mixin.connector")
 
     override fun connect() {
-        connectEarly()
-        connectLate()
+        val policy = InventoryExpansionStartupConfig.load()
+        InventoryStackLimitHook.configureExpansionEnabled(policy.enabled)
+        if (policy.enabled && policy.modIds.isNotEmpty()) {
+            logger.info(
+                "Inventory capacity expansion enabled; blacklist modIds bypass matching owned-package inventories only: {}",
+                policy.modIds.joinToString(", "),
+            )
+        }
+        val conflicts = StackUpUpCore.ensureConflictState()
+        connectEarly(conflicts)
+        connectLateWithClassicModules(
+            conflicts = conflicts,
+            blacklistedModIds = policy.modIds.toSet(),
+        )
     }
 
-    private fun connectEarly() {
-        val conflicts = StackUpUpCore.ensureConflictState()
+    internal fun connectEarly(conflicts: List<String>, queueConfiguration: (String) -> Unit = { config -> Mixins.addConfiguration(config) }) {
         if (!shouldQueueEarly(conflicts)) {
             return
         }
         try {
-            Mixins.addConfiguration(StackUpUpIds.EARLY_MIXIN_CONFIG)
+            queueConfiguration(StackUpUpIds.EARLY_MIXIN_CONFIG)
+            queueConfiguration("mixins.stackupup.baseline.early.json")
+            if (InventoryStackLimitHook.isExpansionEnabled()) {
+                queueConfiguration("mixins.stackupup.capacity.early.json")
+            }
         } catch (e: Exception) {
-            logger.error("Early mixin loading failed; early mixins are disabled (late mixins continue)", e)
+            logger.error(
+                "Early mixin configuration enqueue failed; previously queued early configs remain registered and late mixins continue",
+                e,
+            )
         }
     }
 
-    private fun connectLate() {
-        val isModPresent: (String) -> Boolean = { modId ->
-            isModPresentForConnector(modId)
-        }
-        for ((config) in modules) {
-            if (!shouldQueue(config, isModPresent)) {
+    internal fun connectLate(
+        conflicts: List<String>,
+        isModPresent: (String) -> Boolean = { modId -> isModPresentForConnector(modId) },
+        blacklistedModIds: Set<String> = emptySet(),
+        queueConfiguration: (String) -> Unit = { config -> Mixins.addConfiguration(config) },
+    ) {
+        connectLateInternal(
+            conflicts = conflicts,
+            isModPresent = isModPresent,
+            blacklistedModIds = blacklistedModIds,
+            includeClassic = false,
+            queueConfiguration = queueConfiguration,
+        )
+    }
+
+    internal fun connectLateWithClassicModules(
+        conflicts: List<String>,
+        isModPresent: (String) -> Boolean = { modId -> isModPresentForConnector(modId) },
+        blacklistedModIds: Set<String> = emptySet(),
+        queueConfiguration: (String) -> Unit = { config -> Mixins.addConfiguration(config) },
+    ) {
+        connectLateInternal(
+            conflicts = conflicts,
+            isModPresent = isModPresent,
+            blacklistedModIds = blacklistedModIds,
+            includeClassic = true,
+            queueConfiguration = queueConfiguration,
+        )
+    }
+
+    private fun connectLateInternal(
+        conflicts: List<String>,
+        isModPresent: (String) -> Boolean,
+        blacklistedModIds: Set<String>,
+        includeClassic: Boolean,
+        queueConfiguration: (String) -> Unit,
+    ) {
+        val normalModules = if (includeClassic) modules + classicModules else modules
+        for ((config) in normalModules) {
+            if (!shouldQueue(config, isModPresent, normalModules)) {
                 continue
             }
-            Mixins.addConfiguration(config)
+            queueConfiguration(config)
+        }
+        if (!shouldQueueCapacity(conflicts)) {
+            if (conflicts.isNotEmpty()) {
+                logger.error(
+                    "Capacity late mixin configs are NOT queued because conflicting stacking mods were detected [{}]",
+                    conflicts.joinToString(", "),
+                )
+            }
+            return
+        }
+        val capacityModules = if (includeClassic) this.capacityModules + classicCapacityModules else this.capacityModules
+        for ((config, modId) in capacityModules) {
+            if (modId in blacklistedModIds) {
+                logger.info("Skipping capacity mixin config '{}': mod '{}' is blacklisted", config, modId)
+                continue
+            }
+            if (!shouldQueue(config, isModPresent, capacityModules)) {
+                continue
+            }
+            queueConfiguration(config)
         }
     }
 
@@ -82,18 +144,18 @@ class StackUpUpMixinConnector : IMixinConnector {
             )
             null
         }
-        if (forgePresence == true) {
-            return true
-        }
-        return try {
-            cleanroomProbe()
-        } catch (e: Throwable) {
-            logger.warn(
-                "Cleanroom marker probe for '{}' failed; treating mod as absent",
-                modId,
-                e,
-            )
-            false
+        return when (forgePresence) {
+            true -> true
+            false, null -> try {
+                cleanroomProbe()
+            } catch (e: Throwable) {
+                logger.warn(
+                    "Cleanroom marker probe for '{}' failed; treating mod as absent",
+                    modId,
+                    e,
+                )
+                false
+            }
         }
     }
 
@@ -166,8 +228,7 @@ class StackUpUpMixinConnector : IMixinConnector {
     }
 
     /**
-     * early 装载决策（原 getMixinConfigs 的冲突分支语义）：冲突非空 → ERROR 说明原因并拒绝装载；
-     * 无冲突 → 允许装载。冲突禁用是既有设计，但必须 ERROR 说明原因，不再静默返回空表（T14.5 停止条件 1/5）。
+     * early 配置入队决策：冲突状态非空时拒绝所有 early 配置并记录原因；无冲突时允许入队。
      */
     internal fun shouldQueueEarly(conflicts: List<String>): Boolean {
         if (conflicts.isEmpty()) {
@@ -182,12 +243,15 @@ class StackUpUpMixinConnector : IMixinConnector {
         return false
     }
 
+    internal fun shouldQueueCapacity(conflicts: List<String>): Boolean = InventoryStackLimitHook.isExpansionEnabled() && conflicts.isEmpty()
+
     /**
-     * 单配置装载决策（原 shouldMixinConfigQueue(Context) 语义；connect() 无 Context 参数，mod 在场判断改为
-     * 注入式谓词，生产路径由 [connectLate] 传入按 modId 分派的在场判断）。
+     * 单配置装载决策：只允许模块表中登记的配置，并通过注入式谓词判断所需 mod 是否在场。
      */
-    internal fun shouldQueue(config: String, isModPresent: (String) -> Boolean): Boolean {
-        val module = modules.firstOrNull { it.config == config }
+    internal fun shouldQueue(config: String, isModPresent: (String) -> Boolean): Boolean = shouldQueue(config, isModPresent, modules)
+
+    internal fun shouldQueue(config: String, isModPresent: (String) -> Boolean, registry: List<LateMixinModule>): Boolean {
+        val module = registry.firstOrNull { it.config == config }
         if (module == null) {
             // T14.5 停止条件 3：不在模块表的配置不再无条件入队（原 ?: return true 会绕过模块检查静默全量装载）。
             logger.error(
@@ -213,7 +277,7 @@ class StackUpUpMixinConnector : IMixinConnector {
         LateMixinModule(StackUpUpIds.LATE_ACTUALLY_ADDITIONS_MIXIN_CONFIG, "actuallyadditions"),
         LateMixinModule(StackUpUpIds.LATE_CYCLOPSCORE_MIXIN_CONFIG, "cyclopscore"),
         LateMixinModule(StackUpUpIds.LATE_ENDERIO_MIXIN_CONFIG, "enderio"),
-        LateMixinModule(StackUpUpIds.LATE_IC2_MIXIN_CONFIG, "ic2"),
+        LateMixinModule(StackUpUpIds.LATE_IC2_MIXIN_CONFIG, StackUpUpIds.IC2_MOD_ID),
         LateMixinModule(StackUpUpIds.LATE_MANTLE_MIXIN_CONFIG, "mantle"),
         LateMixinModule(StackUpUpIds.LATE_REFINED_STORAGE_MIXIN_CONFIG, "refinedstorage"),
         LateMixinModule(StackUpUpIds.LATE_STORAGE_NETWORK_MIXIN_CONFIG, "storagenetwork"),
@@ -224,6 +288,34 @@ class StackUpUpMixinConnector : IMixinConnector {
         LateMixinModule(StackUpUpIds.LATE_COLOSSALCHESTS_MIXIN_CONFIG, "colossalchests"),
         LateMixinModule(StackUpUpIds.LATE_GREGTECH_MIXIN_CONFIG, "gregtech"),
         LateMixinModule(StackUpUpIds.LATE_TECHREBORN_MIXIN_CONFIG, "techreborn"),
+        LateMixinModule(StackUpUpIds.LATE_FARMERS_DELIGHT_MIXIN_CONFIG, "farmersdelight"),
+    )
+
+    internal val classicModules: List<LateMixinModule> = listOf(
+        LateMixinModule(StackUpUpIds.LATE_IC2_CLASSIC_MIXIN_CONFIG, StackUpUpIds.IC2_MOD_ID),
+    )
+
+    internal val capacityModules: List<LateMixinModule> = listOf(
+        LateMixinModule("mixins.stackupup.capacity.late.ae2.json", "appliedenergistics2"),
+        LateMixinModule("mixins.stackupup.capacity.late.ae2supergiant.json", "ae2"),
+        LateMixinModule("mixins.stackupup.capacity.late.brandonscore.json", "brandonscore"),
+        LateMixinModule("mixins.stackupup.capacity.late.actuallyadditions.json", "actuallyadditions"),
+        LateMixinModule("mixins.stackupup.capacity.late.cyclopscore.json", "cyclopscore"),
+        LateMixinModule("mixins.stackupup.capacity.late.enderio.json", "enderio"),
+        LateMixinModule("mixins.stackupup.capacity.late.ic2.json", StackUpUpIds.IC2_MOD_ID),
+        LateMixinModule("mixins.stackupup.capacity.late.mantle.json", "mantle"),
+        LateMixinModule("mixins.stackupup.capacity.late.refinedstorage.json", "refinedstorage"),
+        LateMixinModule("mixins.stackupup.capacity.late.integrateddynamics.json", "integrateddynamics"),
+        LateMixinModule("mixins.stackupup.capacity.late.limelib.json", "limelib"),
+        LateMixinModule("mixins.stackupup.capacity.late.immersiveengineering.json", "immersiveengineering"),
+        LateMixinModule("mixins.stackupup.capacity.late.nuclearcraft.json", "nuclearcraft"),
+        LateMixinModule("mixins.stackupup.capacity.late.colossalchests.json", "colossalchests"),
+        LateMixinModule("mixins.stackupup.capacity.late.techreborn.json", "techreborn"),
+        LateMixinModule("mixins.stackupup.capacity.late.farmersdelight.json", "farmersdelight"),
+    )
+
+    internal val classicCapacityModules: List<LateMixinModule> = listOf(
+        LateMixinModule(StackUpUpIds.CAPACITY_LATE_IC2_CLASSIC_MIXIN_CONFIG, StackUpUpIds.IC2_MOD_ID),
     )
 
     private companion object {

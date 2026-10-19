@@ -1,0 +1,12 @@
+{
+  "required": false,
+  "package": "io.alexjoest.stackupup.mixin.late.enderio",
+  "refmap": "${refmap}",
+  "target": "@env(DEFAULT)",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "EnderIOMachineInventoryLimitMixin",
+    "EnderIOSlottedInventoryLimitMixin",
+    "EnderIOInventorySlotLimitMixin"
+  ]
+}

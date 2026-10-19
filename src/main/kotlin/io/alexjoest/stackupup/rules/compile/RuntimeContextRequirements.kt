@@ -7,7 +7,12 @@ import io.alexjoest.stackupup.rules.field.RuleFieldContextProvider
 /**
  * 运行时构造 `StackContext` 时需要采集的昂贵字段集合。
  */
-data class RuntimeContextRequirements(val providers: List<RuleFieldContextProvider>) {
+data class RuntimeContextRequirements(val providers: List<RuleFieldContextProvider>, val referencedFields: Set<RuleField> = emptySet()) {
+    /**
+     * 类型字段只在规则实际引用时采集；否则 resolver 可跳过 ItemBlock 判断。
+     */
+    val needsType: Boolean = RuleField.TYPE in referencedFields
+
     /**
      * 判断指定昂贵字段是否需要在当前规则快照下采集。
      */
@@ -34,9 +39,10 @@ data class RuntimeContextRequirements(val providers: List<RuleFieldContextProvid
          * 从规则字段声明创建运行时采集计划。
          */
         fun fromFields(fields: Iterable<RuleField>): RuntimeContextRequirements {
-            val providers = fields
+            val referencedFields = fields.toCollection(LinkedHashSet())
+            val providers = referencedFields
                 .flatMapTo(LinkedHashSet(), RuleField::contextProviders)
-            return fromProviders(providers)
+            return RuntimeContextRequirements(providers.toList(), referencedFields)
         }
 
         fun fromProviders(providers: Iterable<RuleFieldContextProvider>): RuntimeContextRequirements =

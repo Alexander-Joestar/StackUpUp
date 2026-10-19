@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
 @Mixin(ServerRecipeBookHelper.class)
 abstract class ServerRecipeBookHelperMixin {
     @ModifyConstant(
-        method = "func_194324_a",
+        method = "func_194324_a(IZ)I",
         constant = @Constant(intValue = 64)
     )
     private int replaceRecipeBookLimit(int original) {

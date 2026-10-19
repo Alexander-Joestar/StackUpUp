@@ -1,5 +1,6 @@
 package io.alexjoest.stackupup.core;
 
+import net.minecraftforge.fml.common.asm.transformers.deobf.FMLDeobfuscatingRemapper;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Opcodes;
@@ -13,6 +14,8 @@ import java.util.Set;
 /** Reads class hierarchy metadata without resolving or initializing target classes. */
 final class InventoryClassHierarchyRepository {
     private static final String INVENTORY_INTERFACE = "net/minecraft/inventory/IInventory";
+    private static final String ITEM_HANDLER_INTERFACE = "net/minecraftforge/items/IItemHandler";
+    private static final String SLOT_CLASS = "net/minecraft/inventory/Slot";
     private static final String INVENTORY_METHOD_DESCRIPTOR = "()I";
     private final MetadataSource source;
 
@@ -24,12 +27,35 @@ final class InventoryClassHierarchyRepository {
         this.source = source;
     }
 
+    boolean isStackLimitTarget(ClassMetadata root) {
+        return implementsInventory(root) || implementsItemHandler(root) || extendsSlot(root);
+    }
+
     boolean implementsInventory(ClassMetadata root) {
-        Set<String> visited = new HashSet<>();
-        if (root.name != null) {
-            visited.add(root.name);
+        return implementsInterface(root, INVENTORY_INTERFACE);
+    }
+
+    private boolean implementsItemHandler(ClassMetadata root) {
+        return implementsInterface(root, ITEM_HANDLER_INTERFACE);
+    }
+
+    private boolean extendsSlot(ClassMetadata root) {
+        if (root == null) {
+            return false;
         }
-        return implementsInventory(root.interfaces, root.superName, visited);
+        Set<String> visited = new HashSet<>();
+        String current = root.superName;
+        while (current != null && visited.add(current)) {
+            if (SLOT_CLASS.equals(current)) {
+                return true;
+            }
+            ClassMetadata metadata = read(current);
+            if (metadata == null) {
+                return false;
+            }
+            current = metadata.superName;
+        }
+        return false;
     }
 
     /**
@@ -38,7 +64,8 @@ final class InventoryClassHierarchyRepository {
      * here: transforming the inherited method is sufficient because it sees the runtime receiver.
      */
     String inheritedGetterForConcreteClass(ClassMetadata root) {
-        if (root.superName == null || hasConcreteInventoryAncestor(root.superName, new HashSet<>())) {
+        if (root == null || root.superName == null
+            || hasConcreteInventoryAncestor(root.superName, new HashSet<>())) {
             return null;
         }
 
@@ -77,27 +104,39 @@ final class InventoryClassHierarchyRepository {
         return hasConcreteInventoryAncestor(metadata.superName, visited);
     }
 
-    private boolean implementsInventory(String[] interfaces, String superName, Set<String> visited) {
+    private boolean implementsInterface(ClassMetadata root, String targetInterface) {
+        if (root == null) {
+            return false;
+        }
+        Set<String> visited = new HashSet<>();
+        if (root.name != null) {
+            visited.add(root.name);
+        }
+        return implementsInterface(root.interfaces, root.superName, targetInterface, visited);
+    }
+
+    private boolean implementsInterface(String[] interfaces, String superName, String targetInterface, Set<String> visited) {
         if (interfaces != null) {
             for (String interfaceName : interfaces) {
-                if (INVENTORY_INTERFACE.equals(interfaceName)
-                    || implementsInventory(interfaceName, visited)) {
+                if (targetInterface.equals(interfaceName)
+                    || implementsInterface(interfaceName, targetInterface, visited)) {
                     return true;
                 }
             }
         }
-        return superName != null && implementsInventory(superName, visited);
+        return superName != null && implementsInterface(superName, targetInterface, visited);
     }
 
-    private boolean implementsInventory(String className, Set<String> visited) {
-        if (INVENTORY_INTERFACE.equals(className)) {
+    private boolean implementsInterface(String className, String targetInterface, Set<String> visited) {
+        if (targetInterface.equals(className)) {
             return true;
         }
         if (!visited.add(className)) {
             return false;
         }
         ClassMetadata metadata = read(className);
-        return metadata != null && implementsInventory(metadata.interfaces, metadata.superName, visited);
+        return metadata != null
+            && implementsInterface(metadata.interfaces, metadata.superName, targetInterface, visited);
     }
 
     private ClassMetadata read(String internalName) {
@@ -133,9 +172,10 @@ final class InventoryClassHierarchyRepository {
 
         @Override
         public byte[] read(String internalName) throws IOException {
+            String resourceName = FMLDeobfuscatingRemapper.INSTANCE.unmap(internalName) + ".class";
             InputStream stream = loader == null
-                ? ClassLoader.getSystemResourceAsStream(internalName + ".class")
-                : loader.getResourceAsStream(internalName + ".class");
+                ? ClassLoader.getSystemResourceAsStream(resourceName)
+                : loader.getResourceAsStream(resourceName);
             if (stream == null) {
                 return null;
             }
@@ -182,7 +222,20 @@ final class InventoryClassHierarchyRepository {
         @Override
         public void visit(int version, int access, String name, String signature,
                           String superName, String[] interfaces) {
-            metadata = new ClassMetadata(name, access, superName, interfaces, null, 0);
+            String[] mappedInterfaces = interfaces == null ? new String[0] : new String[interfaces.length];
+            if (interfaces != null) {
+                for (int index = 0; index < interfaces.length; index++) {
+                    mappedInterfaces[index] = mapName(interfaces[index]);
+                }
+            }
+            metadata = new ClassMetadata(
+                mapName(name),
+                access,
+                mapName(superName),
+                mappedInterfaces,
+                null,
+                0
+            );
         }
 
         @Override
@@ -202,6 +255,10 @@ final class InventoryClassHierarchyRepository {
                 );
             }
             return null;
+        }
+
+        private static String mapName(String internalName) {
+            return internalName == null ? null : FMLDeobfuscatingRemapper.INSTANCE.map(internalName);
         }
     }
 }

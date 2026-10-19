@@ -32,8 +32,9 @@ public abstract class InventoryHelperMixin {
         float yOffset = StackLimitHooks.RANDOM.nextFloat() * 0.8F + 0.1F;
         float zOffset = StackLimitHooks.RANDOM.nextFloat() * 0.8F + 0.1F;
 
-        int minStackSize = (stack.getMaxStackSize() + 7) / 8;
-        int maxStackSize = (stack.getMaxStackSize() + 1) / 2;
+        int itemMaxStackSize = stack.getMaxStackSize();
+        int minStackSize = (itemMaxStackSize + 7) / 8;
+        int maxStackSize = (itemMaxStackSize + 1) / 2;
         if (stack.getCount() <= MIN_SPLIT_THRESHOLD) {
             minStackSize = stack.getCount();
             maxStackSize = stack.getCount();

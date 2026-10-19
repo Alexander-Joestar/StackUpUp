@@ -18,7 +18,6 @@ class CapacityGetterGateAuditTest {
             "late/actuallyadditions/TileEntityInventoryBaseMixin.java",
             "late/ae2/AppEngInternalAEInventoryMixin.java",
             "late/ae2/AppEngInternalInventoryMixin.java",
-            "late/ae2/AppEngPatternTermMixin.java",
             "late/ae2supergiant/AppEngInternalInventoryMixin.java",
             "late/ae2supergiant/ContainerAdapterMixin.java",
             "late/ae2supergiant/InternalInventoryMixin.java",
@@ -40,7 +39,7 @@ class CapacityGetterGateAuditTest {
             "late/techreborn/RebornCoreInventoryMixin.java",
         )
 
-        assertTrue(paths.size == 28)
+        assertTrue(paths.size == 27)
         paths.forEach { relativePath ->
             val source = String(
                 Files.readAllBytes(

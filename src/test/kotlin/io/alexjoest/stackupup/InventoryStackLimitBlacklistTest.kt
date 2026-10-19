@@ -52,6 +52,54 @@ class InventoryStackLimitBlacklistTest {
     }
 
     @Test
+    fun disabledPolicy_shouldKeepOriginalAndRejectClassLoadPatch() {
+        io.alexjoest.stackupup.core.InventoryStackLimitHook.configureExpansionEnabled(false)
+        io.alexjoest.stackupup.core.InventoryStackLimitHook.prepare(256, null)
+
+        val policy = io.alexjoest.stackupup.core.InventoryStackLimitHook.classLoadPolicy()
+        assertFalse(policy.isExpansionEnabled)
+        assertTrue(policy.isPrepared)
+        assertEquals(256, policy.compatibilityLimit)
+        assertFalse(policy.shouldPatch("example.Inventory"))
+        assertEquals(64, policy.resolveInventoryStackLimit("example.Inventory", 64))
+    }
+
+    @Test
+    fun classLoadPolicy_shouldSnapshotLimitAndBlacklist() {
+        io.alexjoest.stackupup.core.InventoryStackLimitHook.configureExpansionEnabled(true)
+        io.alexjoest.stackupup.core.InventoryStackLimitHook.prepare(256, arrayOf("listed.inventory"))
+        val captured = io.alexjoest.stackupup.core.InventoryStackLimitHook.classLoadPolicy()
+
+        io.alexjoest.stackupup.core.InventoryStackLimitHook.prepare(128, emptyArray())
+
+        assertEquals(256, captured.compatibilityLimit)
+        assertTrue(captured.isBlacklisted("listed.inventory.Storage"))
+        assertFalse(captured.isBlacklisted("listed.inventoryaddon.Storage"))
+        assertFalse(captured.shouldPatch("listed.inventory.Storage"))
+        assertTrue(captured.shouldPatch("other.inventory.Storage"))
+        assertEquals(256, captured.resolveInventoryStackLimit("other.inventory.Storage", 64))
+    }
+
+    @Test
+    fun inheritedReceiver_shouldNotInheritExactBlacklistBypass() {
+        io.alexjoest.stackupup.core.InventoryStackLimitHook.configureExpansionEnabled(true)
+        io.alexjoest.stackupup.core.InventoryStackLimitHook.prepare(
+            256,
+            arrayOf(BlacklistedParent::class.java.name),
+        )
+
+        assertTrue(io.alexjoest.stackupup.core.InventoryStackLimitHook.isBlacklisted(BlacklistedParent::class.java))
+        assertFalse(io.alexjoest.stackupup.core.InventoryStackLimitHook.isBlacklisted(AddonChild::class.java))
+        assertEquals(
+            256,
+            io.alexjoest.stackupup.core.InventoryStackLimitHook.resolveInventoryStackLimit(
+                AddonChild::class.java,
+                64,
+            ),
+        )
+    }
+
+    @Test
     fun ownedPackageMatching_requiresANameBoundary() {
         io.alexjoest.stackupup.core.InventoryStackLimitHook.configureExpansionEnabled(true)
         io.alexjoest.stackupup.core.InventoryStackLimitHook.prepare(256, arrayOf("listed.inventory"))
@@ -115,4 +163,8 @@ class InventoryStackLimitBlacklistTest {
     }
 
     private class TestInventory
+
+    private open class BlacklistedParent
+
+    private class AddonChild : BlacklistedParent()
 }

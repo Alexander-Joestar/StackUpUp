@@ -22,17 +22,6 @@ abstract class InventoryPlayerAddResourceMixin {
     }
 
     @ModifyExpressionValue(
-        method = "addResource(ILnet/minecraft/item/ItemStack;)I",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/item/ItemStack;getMaxStackSize()I"
-            )
-    )
-    private static int stackupup$usePickedItemLimit(int original, int slot, ItemStack source) {
-        return source.getMaxStackSize();
-    }
-
-    @ModifyExpressionValue(
             method = "addResource(ILnet/minecraft/item/ItemStack;)I",
             at = @At(
                     value = "INVOKE",

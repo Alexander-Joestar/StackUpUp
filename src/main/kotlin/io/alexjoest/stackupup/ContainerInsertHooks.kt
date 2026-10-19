@@ -9,14 +9,31 @@ object ContainerInsertHooks {
         if (StackLimitHooks.isSpecialContainerInventory(slot.inventory)) {
             return declaredSlotLimit
         }
+        val rawInventoryLimit = slot.inventory.inventoryStackLimit
+        if (rawInventoryLimit <= 0) return 0
+        if (stack.isEmpty) {
+            val inventoryLimit = StackLimitHooks.resolveInventoryWriteLimit(
+                stack,
+                slot.inventory,
+                rawInventoryLimit,
+            )
+            if (inventoryLimit <= 0) return 0
+            return minOf(declaredSlotLimit, inventoryLimit)
+        }
+
+        val itemLimit = stack.maxStackSize
         val inventoryLimit = StackLimitHooks.resolveInventoryWriteLimit(
             stack,
             slot.inventory,
-            slot.inventory.inventoryStackLimit,
+            rawInventoryLimit,
+            itemLimit,
         )
         if (inventoryLimit <= 0) return 0
 
-        val dynamic = StackLimitHooks.resolveDynamicSlotLimit(stack, declaredSlotLimit)
-        return if (stack.isEmpty) minOf(dynamic, inventoryLimit) else minOf(dynamic, inventoryLimit, stack.maxStackSize)
+        return if (declaredSlotLimit == Constants.VANILLA_STACK_LIMIT) {
+            inventoryLimit
+        } else {
+            minOf(declaredSlotLimit, inventoryLimit)
+        }
     }
 }

@@ -122,10 +122,21 @@ class EarlyMixinConfigTest {
 
         assertTrue(source.contains("canMergeStacks"))
         assertTrue(source.contains("addResource"))
-        assertTrue(source.contains("getMaxStackSize()I"))
+        assertFalse(source.contains("usePickedItemLimit"), "无行为效果的 getMaxStackSize 注入应移除")
         assertTrue(source.contains("getInventoryStackLimit()I"))
         assertTrue(source.contains("resolveInventoryClampLimit"))
         assertTrue(source.contains("(InventoryPlayer) (Object) this"))
+    }
+
+    @Test
+    fun inventoryHelper_shouldReadDynamicLimitOnceAndPreserveSplitRange() {
+        val source = readMixinSource("InventoryHelperMixin.java")
+
+        assertEquals(1, source.split("stack.getMaxStackSize()").size - 1)
+        assertTrue(source.contains("(itemMaxStackSize + 7) / 8"))
+        assertTrue(source.contains("(itemMaxStackSize + 1) / 2"))
+        assertTrue(source.contains("stack.getCount() <= MIN_SPLIT_THRESHOLD"))
+        assertTrue(source.contains("stack.splitStack("))
     }
 
     @Test

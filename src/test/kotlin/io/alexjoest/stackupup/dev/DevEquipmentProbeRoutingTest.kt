@@ -18,6 +18,7 @@ class DevEquipmentProbeRoutingTest {
                 EQUIPMENT_BLACKLIST_FOCUS,
                 AE2_OWNER_OFF_FOCUS,
                 AE2_OWNER_BLACKLIST_FOCUS,
+                TARGETED_CONTAINER_FOCUS,
             ),
             focusedProbeIds,
         )

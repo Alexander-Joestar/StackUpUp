@@ -1,12 +1,29 @@
 package io.alexjoest.stackupup.mixin
 
+import io.alexjoest.stackupup.StackUpUpIds
+import io.alexjoest.stackupup.bootstrap.StackUpUpMixinConnector
+import io.alexjoest.stackupup.core.InventoryStackLimitHook
+import io.alexjoest.stackupup.core.resetInventoryExpansionForTesting
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.nio.file.Files
 import java.nio.file.Paths
 
 class EnderIOMixinSourceTest {
+    @BeforeEach
+    fun resetExpansionBeforeTest() {
+        resetInventoryExpansionForTesting()
+    }
+
+    @AfterEach
+    fun resetExpansionAfterTest() {
+        resetInventoryExpansionForTesting()
+    }
+
     @Test
     fun enderIoMachineMixin_shouldTargetNoArgInventoryLimitDescriptor() {
         val source = String(
@@ -94,6 +111,66 @@ class EnderIOMixinSourceTest {
         assertTrue(classBytes.containsAscii("spawnAsEntity"), "编译产物应携带 spawnAsEntity 目标")
         assertTrue(classBytes.containsAscii("shrink(I)V"), "编译产物应携带 shrink 目标")
     }
+
+    @Test
+    fun enderIoProfiles_shouldKeepSafetyAndCapacityMixinsInSeparateConfigs() {
+        val ordinary = String(
+            Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.late.enderio.json")),
+            Charsets.UTF_8,
+        )
+        val capacity = String(
+            Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.capacity.late.enderio.json")),
+            Charsets.UTF_8,
+        )
+
+        assertEquals(
+            listOf("EnderIOInventoryNoDropMixin"),
+            mixinNames(ordinary),
+            "EnderIO overflow safety must belong to the ordinary late profile",
+        )
+        assertEquals(
+            listOf(
+                "EnderIOMachineInventoryLimitMixin",
+                "EnderIOSlottedInventoryLimitMixin",
+                "EnderIOInventorySlotLimitMixin",
+            ),
+            mixinNames(capacity),
+            "EnderIO capacity ownership must stay in the optional capacity profile",
+        )
+        assertFalse(capacity.contains("EnderIOInventoryNoDropMixin"), "capacity profile must not duplicate overflow safety")
+        assertFalse(ordinary.contains("InventoryLimitMixin"), "ordinary profile must not own capacity getter mixins")
+    }
+
+    @Test
+    fun enderIoSafetyRegistration_shouldSurviveCapacityOffAndBlacklist() {
+        val connector = StackUpUpMixinConnector()
+        val ordinaryConfig = StackUpUpIds.LATE_ENDERIO_MIXIN_CONFIG
+        val capacityConfig = "mixins.stackupup.capacity.late.enderio.json"
+
+        InventoryStackLimitHook.configureExpansionEnabled(false)
+        val disabledQueued = mutableListOf<String>()
+        connector.connectLate(
+            conflicts = emptyList(),
+            isModPresent = { it == "enderio" },
+            queueConfiguration = { disabledQueued += it },
+        )
+        assertEquals(listOf(ordinaryConfig), disabledQueued, "capacity OFF must not disable EnderIO safety")
+        assertFalse(disabledQueued.contains(capacityConfig))
+
+        resetInventoryExpansionForTesting()
+        InventoryStackLimitHook.configureExpansionEnabled(true)
+        val blacklistedQueued = mutableListOf<String>()
+        connector.connectLate(
+            conflicts = emptyList(),
+            isModPresent = { it == "enderio" },
+            blacklistedModIds = setOf("enderio"),
+            queueConfiguration = { blacklistedQueued += it },
+        )
+        assertEquals(listOf(ordinaryConfig), blacklistedQueued, "capacity blacklist must not disable EnderIO safety")
+        assertFalse(blacklistedQueued.contains(capacityConfig))
+    }
+
+    private fun mixinNames(config: String): List<String> = Regex("\"([A-Z][A-Za-z0-9]+Mixin)\"").findAll(config).map { it.groupValues[1] }.toList()
 
     private fun ByteArray.containsAscii(value: String): Boolean {
         if (isEmpty()) {

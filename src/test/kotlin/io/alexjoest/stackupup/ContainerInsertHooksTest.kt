@@ -155,6 +155,43 @@ class ContainerInsertHooksTest {
     }
 
     @Test
+    fun mergeSlotLimit_shouldReadNonEmptyItemLimitOnce() {
+        var reads = 0
+        val item = object : Item() {
+            override fun getItemStackLimit(stack: ItemStack): Int {
+                reads++
+                return 128
+            }
+        }.setRegistryName(ResourceLocation("stackupup_test", "single_item_limit_read"))
+        val stack = ItemStack(item, 1, 0)
+        val inventory = createInventory(128)
+        val slot = Slot(inventory, 0, 0, 0)
+
+        val result = ContainerInsertHooks.resolveMergeSlotLimit(slot, stack, 64)
+
+        assertEquals(128, result)
+        assertEquals(1, reads)
+    }
+
+    @Test
+    fun placementLimit_shouldReadNonEmptyItemLimitOnce() {
+        var reads = 0
+        val item = object : Item() {
+            override fun getItemStackLimit(stack: ItemStack): Int {
+                reads++
+                return 128
+            }
+        }.setRegistryName(ResourceLocation("stackupup_test", "single_placement_item_limit_read"))
+        val stack = ItemStack(item, 1, 0)
+        val inventory = createInventory(128)
+
+        val result = StackLimitHooks.resolvePlacementSlotLimit(stack, inventory, 64, 128)
+
+        assertEquals(128, result)
+        assertEquals(1, reads)
+    }
+
+    @Test
     fun realContainerSlotMerge_shouldConserveWhenInventoryLimitIs128() {
         val item = createItem(256, "real_container_merge_item")
         val inventory = createInventory(128)
@@ -173,6 +210,32 @@ class ContainerInsertHooksTest {
         assertEquals(128, stored, "真实 Container/Slot 写入应受 inventory 上限约束")
         assertEquals(offeredCount, stored + remainder, "真实 Container/Slot 写入必须守恒")
         assertEquals(72, remainder)
+    }
+
+    @Test
+    fun realContainerMerge_shouldRespectTightestDeclaredInventoryAndItemLimit() {
+        assertRealContainerMergeLimit(40, 100, 90, 40, "merge_declared_limit")
+        assertRealContainerMergeLimit(100, 50, 90, 50, "merge_inventory_limit")
+        assertRealContainerMergeLimit(100, 100, 30, 30, "merge_item_limit")
+    }
+
+    private fun assertRealContainerMergeLimit(declaredSlotLimit: Int, inventoryLimit: Int, itemLimit: Int, expectedStored: Int, itemId: String) {
+        val offeredCount = 96
+        val offered = ItemStack(createItem(itemLimit, itemId), offeredCount, 0)
+        val inventory = createInventory(inventoryLimit)
+        val slot = object : Slot(inventory, 0, 0, 0) {
+            override fun getSlotStackLimit(): Int = ContainerInsertHooks.resolveMergeSlotLimit(this, offered, declaredSlotLimit)
+        }
+        val container = MergeContainer()
+        container.add(slot)
+
+        assertTrue(container.merge(offered))
+
+        val stored = inventory.getStackInSlot(0).count
+        val remainder = offered.count
+        assertEquals(expectedStored, stored)
+        assertEquals(offeredCount - expectedStored, remainder)
+        assertEquals(offeredCount, stored + remainder, "real Container/Slot merge must conserve the offered stack")
     }
 
     @Test
@@ -277,6 +340,27 @@ class ContainerInsertHooksTest {
         val result = ContainerInsertHooks.resolveMergeSlotLimit(slot, stack, 64)
 
         assertEquals(0, result)
+    }
+
+    @Test
+    fun nonPositiveInventoryLimit_shouldNotReadItemLimit() {
+        assertItemLimitNotRead(0, "zero_inv_read_item")
+        assertItemLimitNotRead(-1, "negative_inv_read_item")
+    }
+
+    private fun assertItemLimitNotRead(inventoryLimit: Int, itemId: String) {
+        var reads = 0
+        val item = object : Item() {
+            override fun getItemStackLimit(stack: ItemStack): Int {
+                reads++
+                return 10000
+            }
+        }.setRegistryName(ResourceLocation("stackupup_test", itemId))
+        val inventory = createInventory(inventoryLimit)
+        val slot = Slot(inventory, 0, 0, 0)
+
+        assertEquals(0, ContainerInsertHooks.resolveMergeSlotLimit(slot, ItemStack(item, 1, 0), 64))
+        assertEquals(0, reads)
     }
 
     @Test

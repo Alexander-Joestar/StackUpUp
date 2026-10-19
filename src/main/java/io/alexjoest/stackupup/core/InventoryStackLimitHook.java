@@ -6,7 +6,7 @@ import java.util.Locale;
 import java.util.Set;
 
 /**
- * Runtime-only state used by the narrow inventory transformer.
+ * Runtime hook and immutable policy used by the narrow inventory transformer.
  *
  * <p>The transformer can be loaded while Forge is still constructing its class loader. This
  * class therefore has no Forge, Minecraft, Kotlin, or configuration dependency. The mod can
@@ -14,8 +14,7 @@ import java.util.Set;
  */
 public final class InventoryStackLimitHook {
     private static final int VANILLA_STACK_LIMIT = 64;
-    private static volatile State state = State.unprepared();
-    private static volatile boolean expansionEnabled;
+    private static volatile ClassLoadPolicy classLoadPolicy = ClassLoadPolicy.unprepared();
     private static volatile boolean expansionDecisionFrozen;
 
     private InventoryStackLimitHook() {
@@ -26,93 +25,147 @@ public final class InventoryStackLimitHook {
         if (expansionDecisionFrozen && enabled) {
             return;
         }
-        expansionEnabled = enabled;
+        ClassLoadPolicy previous = classLoadPolicy;
+        classLoadPolicy = previous.withExpansionEnabled(enabled);
         expansionDecisionFrozen = true;
     }
 
+    /**
+     * Returns the immutable snapshot consumed by classes transformed after startup policy setup.
+     * The snapshot uses class names rather than {@code Class<?>} values so callers can inspect
+     * hierarchy metadata without resolving or initializing the target class.
+     */
+    public static ClassLoadPolicy classLoadPolicy() {
+        return classLoadPolicy;
+    }
+
     public static boolean isExpansionEnabled() {
-        return expansionEnabled;
+        return classLoadPolicy.isExpansionEnabled();
     }
 
-    public static void prepare(int compatibilityLimit, String[] blacklistedPackages) {
-        if (compatibilityLimit <= 0) {
-            throw new IllegalArgumentException("compatibilityLimit must be positive");
-        }
-        state = State.prepared(compatibilityLimit, blacklistedPackages);
+    public static synchronized void prepare(int compatibilityLimit, String[] blacklistedPackages) {
+        requirePositiveLimit(compatibilityLimit);
+        ClassLoadPolicy previous = classLoadPolicy;
+        classLoadPolicy = ClassLoadPolicy.prepared(
+            previous.isExpansionEnabled(),
+            compatibilityLimit,
+            blacklistedPackages
+        );
     }
 
-    public static void setCompatibilityStackSize(int compatibilityLimit) {
-        if (compatibilityLimit <= 0) {
-            throw new IllegalArgumentException("compatibilityLimit must be positive");
-        }
-        State previous = state;
-        state = new State(true, compatibilityLimit, previous.blacklistedPackages);
+    public static synchronized void setCompatibilityStackSize(int compatibilityLimit) {
+        requirePositiveLimit(compatibilityLimit);
+        classLoadPolicy = classLoadPolicy.withCompatibilityLimit(compatibilityLimit);
     }
 
     public static boolean isPrepared() {
-        return state.prepared;
+        return classLoadPolicy.isPrepared();
     }
 
     public static int resolveInventoryStackLimit(String className, int original) {
-        State current = state;
-        if (!expansionEnabled || !current.prepared || original != VANILLA_STACK_LIMIT
-            || className == null || current.matches(className)) {
-            return original;
-        }
-        return current.compatibilityLimit;
+        return classLoadPolicy.resolveInventoryStackLimit(className, original);
     }
 
     public static int resolveInventoryStackLimit(Class<?> receiverClass, int original) {
-        State current = state;
-        if (!expansionEnabled || !current.prepared || original != VANILLA_STACK_LIMIT
-            || receiverClass == null || current.bypasses(receiverClass)) {
-            return original;
-        }
-        return current.compatibilityLimit;
+        return receiverClass == null
+            ? original
+            : classLoadPolicy.resolveInventoryStackLimit(receiverClass.getName(), original);
     }
 
     public static boolean isBlacklisted(Class<?> receiverClass) {
-        return state.bypasses(receiverClass);
+        return receiverClass != null && classLoadPolicy.isBlacklisted(receiverClass.getName());
     }
 
     static synchronized void resetForTesting() {
-        state = State.unprepared();
-        expansionEnabled = false;
+        classLoadPolicy = ClassLoadPolicy.unprepared();
         expansionDecisionFrozen = false;
     }
 
-    private static final class State {
+    private static void requirePositiveLimit(int compatibilityLimit) {
+        if (compatibilityLimit <= 0) {
+            throw new IllegalArgumentException("compatibilityLimit must be positive");
+        }
+    }
+
+    /** Immutable class-load-time policy for the narrow inventory capacity transformer. */
+    public static final class ClassLoadPolicy {
+        private final boolean expansionEnabled;
         private final boolean prepared;
         private final int compatibilityLimit;
         private final Set<String> blacklistedPackages;
-        private final ClassValue<Boolean> classResults = new ClassValue<Boolean>() {
-            @Override
-            protected Boolean computeValue(Class<?> receiverClass) {
-                return matches(receiverClass.getName());
-            }
-        };
 
-        private boolean bypasses(Class<?> receiverClass) {
-            return receiverClass != null && classResults.get(receiverClass);
-        }
-
-        private State(boolean prepared, int compatibilityLimit, Set<String> blacklistedPackages) {
+        private ClassLoadPolicy(
+            boolean expansionEnabled,
+            boolean prepared,
+            int compatibilityLimit,
+            Set<String> blacklistedPackages
+        ) {
+            this.expansionEnabled = expansionEnabled;
             this.prepared = prepared;
             this.compatibilityLimit = compatibilityLimit;
             this.blacklistedPackages = blacklistedPackages;
         }
 
-        private static State unprepared() {
-            return new State(false, VANILLA_STACK_LIMIT, Collections.<String>emptySet());
+        public boolean isExpansionEnabled() {
+            return expansionEnabled;
         }
 
-        private static State prepared(int compatibilityLimit, String[] packageNames) {
-            Set<String> normalizedPackages = normalize(packageNames);
-            return new State(
+        public boolean isPrepared() {
+            return prepared;
+        }
+
+        public int getCompatibilityLimit() {
+            return compatibilityLimit;
+        }
+
+        /** Returns whether this exact class name belongs to a blacklisted owned package. */
+        public boolean isBlacklisted(String className) {
+            return className != null && matches(className);
+        }
+
+        /** Returns whether a class-load-time capacity patch may be applied to this class. */
+        public boolean shouldPatch(String className) {
+            return expansionEnabled && prepared && className != null && !matches(className);
+        }
+
+        /** Resolves a legacy runtime getter value using this immutable class-name policy. */
+        public int resolveInventoryStackLimit(String className, int original) {
+            if (!shouldPatch(className) || original != VANILLA_STACK_LIMIT) {
+                return original;
+            }
+            return compatibilityLimit;
+        }
+
+        private ClassLoadPolicy withExpansionEnabled(boolean enabled) {
+            return new ClassLoadPolicy(enabled, prepared, compatibilityLimit, blacklistedPackages);
+        }
+
+        private ClassLoadPolicy withCompatibilityLimit(int limit) {
+            return new ClassLoadPolicy(expansionEnabled, true, limit, blacklistedPackages);
+        }
+
+        private static ClassLoadPolicy unprepared() {
+            return new ClassLoadPolicy(false, false, VANILLA_STACK_LIMIT, Collections.<String>emptySet());
+        }
+
+        private static ClassLoadPolicy prepared(
+            boolean expansionEnabled,
+            int compatibilityLimit,
+            String[] packageNames
+        ) {
+            return new ClassLoadPolicy(
+                expansionEnabled,
                 true,
                 compatibilityLimit,
-                Collections.unmodifiableSet(normalizedPackages)
+                immutablePackages(normalize(packageNames))
             );
+        }
+
+        private static Set<String> immutablePackages(Set<String> packages) {
+            if (packages.isEmpty()) {
+                return Collections.emptySet();
+            }
+            return Collections.unmodifiableSet(packages);
         }
 
         private static Set<String> normalize(String[] names) {
@@ -132,6 +185,9 @@ public final class InventoryStackLimitHook {
         }
 
         private boolean matches(String className) {
+            if (blacklistedPackages.isEmpty()) {
+                return false;
+            }
             String normalizedClassName = className.replace('/', '.').toLowerCase(Locale.ROOT);
             for (String packageName : blacklistedPackages) {
                 if (normalizedClassName.equals(packageName)

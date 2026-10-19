@@ -4,6 +4,7 @@ import io.alexjoest.stackupup.rules.RuleMessageKey
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class StackUpUpConfigTest {
@@ -107,6 +108,11 @@ class StackUpUpConfigTest {
         } finally {
             StackUpUpConfig.compat.vanilla.craftingSlotLimit = previousCraftingSlotLimit
         }
+    }
+
+    @Test
+    fun inventoryExpansion_shouldDefaultToBroadForNewConfig() {
+        assertTrue(StackUpUpConfig.InventoryExpansion().enabled)
     }
 
     @Test

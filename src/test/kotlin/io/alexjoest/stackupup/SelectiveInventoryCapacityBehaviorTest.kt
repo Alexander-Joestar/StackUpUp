@@ -211,6 +211,27 @@ class SelectiveInventoryCapacityBehaviorTest {
     }
 
     @Test
+    fun lowerItemRuleRemainsEffectiveAcrossPlacementAndMerge() {
+        io.alexjoest.stackupup.limit.RuleRuntime.replaceSnapshot(
+            io.alexjoest.stackupup.rules.compile.RuleSnapshot(
+                2L,
+                listOf(io.alexjoest.stackupup.rules.compile.RuleCompiler.compileLine("size >= 1 -> 16", 1)),
+            ),
+        )
+        val inventory = UnlistedInventory()
+        val stack = stack(200)
+
+        assertEquals(
+            16,
+            StackLimitHooks.resolvePlacementSlotLimit(stack, inventory, 64, inventory.inventoryStackLimit),
+        )
+        assertEquals(
+            16,
+            ContainerInsertHooks.resolveMergeSlotLimit(Slot(inventory, 0, 0, 0), stack, 64),
+        )
+    }
+
+    @Test
     fun loadedModWithoutPackagesFailsAndAbsentModHasNoEffect() {
         assertThrows(IllegalStateException::class.java) {
             StackLimitHooks.refreshInventoryStackLimitBlacklist(listOf("listed_mod"), mapOf("listed_mod" to emptyList()))

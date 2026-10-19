@@ -80,11 +80,17 @@ if (autoTestRequest.focus.isNotEmpty()) {
                 "equipment_inventory_blacklist",
                 "ae2_owner_off",
                 "ae2_owner_blacklist",
+                "targeted_container_probe",
             ),
     ) {
         "Unknown AutoTestFocus: ${autoTestRequest.focus}"
     }
     require(autoTestRequest.matrix == "false") { "AutoTestFocus cannot be combined with Matrix" }
+    if (autoTestRequest.focus == "targeted_container_probe") {
+        require(!autoTestCandidate.isNullOrBlank()) {
+            "targeted_container_probe requires -PstackupupDevAutoTestCandidate=class=<fqcn>[;modid=<id>]"
+        }
+    }
 }
 
 // ── -D 参数注入（enabled/autoShutdown/failFast/clearInventoryBeforeGive 恒为 true） ──
@@ -162,12 +168,18 @@ fun autoTestServerPropertiesHeaderLines(
         "level-name=$levelName",
     )
 
-fun focusedAutoTestConfigText(focus: String): String =
+fun focusedAutoTestConfigText(
+    focus: String,
+    candidate: String? = null,
+): String =
     buildString {
         val blacklistEnabled = focus.endsWith("_blacklist")
+        val targetedCapacityOn =
+            focus == "targeted_container_probe" &&
+                candidate.orEmpty().split(';', ',').any { it.trim().equals("capacity=on", ignoreCase = true) }
         val expansionEnabled =
             focus != "equipment_inventory_off_blacklist" &&
-                (blacklistEnabled || focus == "equipment_inventory_on")
+                (blacklistEnabled || focus == "equipment_inventory_on" || targetedCapacityOn)
         append("general {\n")
         append("    I:maxStackSize=256\n")
         append("}\n")
@@ -196,7 +208,7 @@ fun writeFocusedAutoTestConfigIfAbsent(
         return false
     }
     config.parentFile.mkdirs()
-    config.writeText(focusedAutoTestConfigText(focus), Charsets.UTF_8)
+    config.writeText(focusedAutoTestConfigText(focus, autoTestCandidate), Charsets.UTF_8)
     return true
 }
 

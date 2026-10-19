@@ -220,7 +220,7 @@ late 目标 **当前 16 个模组** jar 均缺失（文件名/版本未登记，
 
 ### 9.5 2026-10-14 当前 profile / writer / IC2 Classic addendum
 
-当前容量设置及装载边界以 `StackUpUpConfig.kt:80-98`、`StackUpUpCore.kt:77-89`、`StackUpUpMixinConnector.kt:57-65,109-145,293-339` 为准：`compat.inventoryExpansion.enabled` 默认 false；开启且无冲突时注册窄范围 `InventoryStackLimitTransformer`，并排队 `capacity.early` 与 capacity-late profiles。当前资源 registry 为 39 个 JSON：3 个 early（ordinary、baseline、capacity）、19 个 ordinary late（18 modules + IC2 Classic）和 17 个 capacity-late（16 modules + IC2 Classic）。关闭开关只关闭可选容量 profiles/通用 getter expansion，不移除常驻 baseline writer/safety lanes；普通 late profiles 仍按 Mod 在场独立排队。
+当前容量设置及装载边界以 `StackUpUpConfig.kt:80-98`、`StackUpUpCore.kt:77-89`、`StackUpUpMixinConnector.kt:57-65,109-145,293-339` 为准：`compat.inventoryExpansion.enabled` 默认 `true`（新/缺失配置采用 broad-default；已有配置中的显式 `false` 保持关闭）；显式 `false` 仅作为重启时的紧急回退；开启且无冲突时注册窄范围 `InventoryStackLimitTransformer`，并排队 `capacity.early` 与 capacity-late profiles。当前资源 registry 为 39 个 JSON：3 个 early（ordinary、baseline、capacity）、19 个 ordinary late（18 modules + IC2 Classic）和 17 个 capacity-late（16 modules + IC2 Classic）。关闭开关只关闭可选容量 profiles/通用 getter expansion，不移除常驻 baseline writer/safety lanes；普通 late profiles 仍按 Mod 在场独立排队。
 
 `compat.inventoryStackLimitBlacklist.modIds` 在 transformer/getter hook 按实际 receiver 或受支持 owner 的 Forge owned-package 边界选择性 bypass，并让 connector 跳过所列 Mod 对应的 capacity-late profile；它不关闭整个 capacity early lane 或普通 safety late profile，也不影响未列出的 Mod。精确 owner 的可推断范围之外（如无 owner 的共享实例、receiverless constructor/private delegate）仍 UNKNOWN；不得推成所有 handler 或 addon 已安全排除。
 

@@ -30,13 +30,14 @@
 
 ### 配置结构
 
-`StackUpUpConfig` 的配置分为 `general`、`compat` 和 `client` 三组。`general.maxStackSize` 是全局兼容上限，默认值为
+`StackUpUpConfig` 的配置分为 `general`、`compat`、`client` 和 `debug` 四组（`src/main/kotlin/io/alexjoest/stackupup/StackUpUpConfig.kt:19-37`）。`general.maxStackSize` 是全局兼容上限，默认值为
 `64`；`compat.vanilla.craftingSlotLimit` 是工作台网格与合成结果槽的性能上限，默认值为 `64`，`0` 保持原版/默认行为，
 而不是平衡设置。NuclearCraft 兼容配置位于 `compat.nuclearcraft`：`speedUpgradeLimit` 和 `energyUpgradeLimit` 默认值为
-`0`，分别表示保留 NuclearCraft 的默认升级堆叠上限；正值才覆盖对应升级类型。配置重载由
+`0`，分别表示保留 NuclearCraft 的默认升级堆叠上限；正值才覆盖对应升级类型。`debug.mergeLimitTrace` 默认 `false`，
+只门控容器合并上限解析的诊断日志，不改变解析结果（`StackUpUpConfig.kt:162-169`）。配置重载由
 `StackUpUpConfig.applyReloadControlledValues()` 统一应用。
 
-启动容量策略由 `InventoryExpansionStartupConfig` 在 coremod 阶段从 `config/stackupup.cfg` 读取并缓存，修改后必须重启。`compat.inventoryExpansion.enabled` 默认 `true`（新/缺失配置采用 broad-default；已有配置中的显式 `false` 保持关闭）；显式 `false` 仅作为重启时的紧急回退，控制窄范围 IInventory getter transformer 与可选 capacity Mixin 配置；OFF 不会停用 ItemStack 规则、ordinary late 配置、常驻 early/baseline 配置或其中的专用写入安全 Mixin。`compat.inventoryStackLimitBlacklist.modIds` 是唯一容量黑名单输入：空列表为 no-op，所列 Mod 的可归属接收端/受支持公开 owner 按 Forge `ownedPackages` 精确包边界绕过容量扩展，并跳过该 Mod 的 capacity late 配置，不会禁用其 ordinary/safety 配置。继承黑名单父类或实现其接口本身不排除 addon；共享 ownerless 对象、私有 delegate、receiverless 构造路径仍可能 UNKNOWN。已加载但无归属包的 Mod 会导致启动检查失败，未加载 ID 记录无效果；当前没有 `classNames` 黑名单配置。
+启动容量策略由 `InventoryExpansionStartupConfig` 在 coremod 阶段从 `config/stackupup.cfg` 读取并缓存，修改后必须重启。`compat.inventoryExpansion.enabled` 默认 `true`（新/缺失配置采用 broad-default；已有配置中的显式 `false` 保持关闭）；显式 `false` 仅作为重启时的紧急回退，控制结构化容量 getter transformer 与可选 capacity Mixin 配置；OFF 不会停用 ItemStack 规则、ordinary late 配置、常驻 early/baseline 配置或其中的专用写入安全 Mixin。`compat.inventoryStackLimitBlacklist.modIds` 是唯一容量黑名单输入：空列表为 no-op，所列 Mod 的可归属接收端/受支持公开 owner 按 Forge `ownedPackages` 精确包边界绕过容量扩展，并跳过该 Mod 的 capacity late 配置，不会禁用其 ordinary/safety 配置。继承黑名单父类或实现其接口本身不排除 addon；共享 ownerless 对象、私有 delegate、receiverless 构造路径仍可能 UNKNOWN。已加载但无归属包的 Mod 会导致启动检查失败，未加载 ID 记录无效果；当前没有 `classNames` 黑名单配置。
 
 ### 原版库存、槽位与网络路径
 
@@ -104,7 +105,7 @@ remainder；这是它自身写入链的事实。不能把这个结论传播给�
 
 ### 未知 handler 与转发 wrapper
 
-容量准入规则是：未知 `IItemHandler` 不动态扩容。`getSlotLimit()` 只能说明接口报告的值；在看不到实现的情况下，不能按类名、接口实现关系或 `64` 这个数猜测它的写入容量。已移除的是广泛的 dynamic ASM replacement layer；当前另有启动期开关控制的窄范围 `InventoryStackLimitTransformer`，只处理非 Minecraft `IInventory` getter，不是未知 handler 的通用扩容入口。`SlotItemHandlerMixin` 仍处理槽位 `getItemStackLimit()` 结果，未知实现的真实写入容量仍不能由该注入或 getter 数值证明。
+容量准入规则是：未知 `IItemHandler` 不动态扩容。`getSlotLimit()` 只能说明接口报告的值；在看不到实现的情况下，不能按类名、接口实现关系或 `64` 这个数猜测它的写入容量。已移除的是广泛的 dynamic ASM replacement layer；当前另有启动期开关控制的窄范围 `InventoryStackLimitTransformer`，按结构处理具体 `IInventory`/`IItemHandler`/`Slot` 实现者的容量 getter（原版与第三方同一规则，仅排除合成容器等配置托管类），不是未知 handler 的通用扩容入口。`SlotItemHandlerMixin` 仍处理槽位 `getItemStackLimit()` 结果，未知实现的真实写入容量仍不能由该注入或 getter 数值证明。
 
 转发 wrapper 不能因为 wrapper 自己返回一个数就扩大广告：
 
@@ -131,7 +132,40 @@ remainder。这是当前存在的多次真实分片及其守恒风险，不等�
 
 ## Coremod getter transformer 与 Mixin 分层
 
-当前兼容路径由启动期开关控制的窄范围 ASM getter transformer 和分层 Mixin 配置组成。`StackUpUpCore` 仅在库存容量扩展开启且无冲突时注册 `InventoryStackLimitTransformer`，它只处理非 Minecraft 具体 `IInventory` 类的 `getInventoryStackLimit()I`（含 SRG 名称）；这不是已移除的广泛 dynamic ASM 替换层。`StackUpUpMixinConnector` 经 `IMixinConnector` 加入常驻 early/baseline 与 ordinary late 配置，并按启动开关分别加入 optional capacity early/late 配置；`modIds` 仅跳过 capacity late 配置。MixinBooter 的 `general.blacklistedConfigs` 是整配置停用功能，和 selective capacity blacklist 不同，可能连带停用被列入配置中的安全 Mixin。下文若引用 `DynamicCompatTransformer`、`DynamicCompatMethodProbe`、`CompatibilityLimitPatch` 或 `FixedCompatTargets`，仅表示历史实现和审计证据。
+当前兼容路径由启动期开关控制的窄范围 ASM getter transformer 和分层 Mixin 配置组成。`StackUpUpCore` 仅在无冲突且库存容量扩展开启时注册 `InventoryStackLimitTransformer`（`src/main/kotlin/io/alexjoest/stackupup/StackUpUpCore.kt:79-92`），它不是已移除的广泛 dynamic ASM 替换层。`StackUpUpMixinConnector` 经 `IMixinConnector` 加入常驻 early/baseline 与 ordinary late 配置，并按启动开关分别加入 optional capacity early/late 配置；`modIds` 仅跳过 capacity late 配置。MixinBooter 的 `general.blacklistedConfigs` 是整配置停用功能，和 selective capacity blacklist 不同，可能连带停用被列入配置中的安全 Mixin。下文若引用 `DynamicCompatTransformer`、`DynamicCompatMethodProbe`、`CompatibilityLimitPatch` 或 `FixedCompatTargets`，仅表示历史实现和审计证据。
+
+#### `InventoryStackLimitTransformer` 的匹配条件
+
+1. 类加载时先读不可变策略快照：`InventoryStackLimitHook.classLoadPolicy()`；`isExpansionEnabled()` 为 `false` 时原样返回该类字节（`src/main/java/io/alexjoest/stackupup/core/InventoryStackLimitTransformer.java:77-80`）。
+2. 目标判定只读类自身字节码元数据，不解析、不初始化目标类（`InventoryStackLimitTransformer.java:84-94,106-111`）。满足「实现 `IInventory`」「实现 `IItemHandler`」「继承 `Slot`」任一条件即为容量目标，命名空间不参与判定，原版具体类与第三方具体类走同一条规则（`src/main/java/io/alexjoest/stackupup/core/InventoryClassHierarchyRepository.java:30-59`）。
+3. 排除表与结构跳过条件（`InventoryStackLimitTransformer.java:46-55,86-95,113-125`）：
+   - 接口与抽象类；抽象基类里的字面量 getter 只能靠 per-mod capacity late mixin 覆盖其具体子类，见下文「Late Mixin」；
+   - 本 Mod 包 `io/alexjoest/stackupup/` 与其根类；
+   - `net/minecraft/inventory/InventoryCrafting` 与 `net/minecraft/inventory/InventoryCraftResult`：这两个类的容量由 `compat.vanilla.craftingSlotLimit` 与 `VanillaInventoryLimitMixin` 托管，在这里替换字面量会盖过该配置；
+   - 类加载时已落在黑名单包内的类（黑名单在策略发布后才完整，调用时判定仍会再拦一次，见下）。
+
+#### 方法白名单与 literal 替换
+
+只替换容量 getter 内的 `BIPUSH 64`（`InventoryStackLimitTransformer.java:127-151`）：
+
+- `getInventoryStackLimit` / `func_70297_j_`，descriptor `()I`；
+- `getSlotLimit`，descriptor `(I)I`；
+- `getSlotStackLimit` / `func_75219_a`，descriptor `()I`；
+- `getItemStackLimit` / `func_178170_b`，descriptor 经 `FMLDeobfuscatingRemapper.mapDesc` 归一后为 `(Lnet/minecraft/item/ItemStack;)I`。
+
+抽象、本地与静态方法不在处理范围（`InventoryStackLimitTransformer.java:160-167`）。命中时把该常量替换为 `aload_0 → Object.getClass() → sipush 64 → invokestatic InventoryStackLimitHook.resolveInventoryStackLimit(Class,int)`，其余字节码不变；整个类没有命中则返回原始字节数组（`InventoryStackLimitTransformer.java:96-99,168-188`）。处理过程抛出的 `RuntimeException` 会保留原类，不产生半补丁结果（`InventoryStackLimitTransformer.java:100-103`）。
+
+#### 调用时判定
+
+`InventoryStackLimitHook.ClassLoadPolicy` 是不可变快照：`shouldPatch(className)` = 扩展开关开启 且策略已 `prepared` 且类名不在黑名单包内；`resolveInventoryStackLimit` 再要求 `original == 64` 才返回兼容上限，否则保持原值（`src/main/java/io/alexjoest/stackupup/core/InventoryStackLimitHook.java:126-137`）。因此 transformer 只决定「这个类的 64 是否变成一次可判定的调用」，具体数值由每次 getter 调用时的策略快照决定；在策略发布前完成变换的类会先解析为原版 64，不会整局停留在未补丁状态（`InventoryStackLimitTransformer.java:26-28`）。
+
+#### 策略发布时序
+
+- `configureExpansionEnabled` 由 coremod 注册阶段与 connector 的 `connect()` 各调用一次；`prepare(compatibilityLimit, blacklistedPackages)` 才把策略标记为 `prepared`。决策冻结后只允许关闭，不允许重新开启（`InventoryStackLimitHook.java:23-31,46-54`、`StackUpUpCore.kt:85`、`src/main/kotlin/io/alexjoest/stackupup/bootstrap/StackUpUpMixinConnector.kt:44`）。
+- `prepare` 的实际调用点在 `StackUpUp.preInit`：`handleConfigChanged()` → `StackLimitHooks.refreshInventoryStackLimitBlacklist()`，后者用 `Loader.instance().modList` 的 `ownedPackages` 把配置的 Mod ID 展开成包名，再调用 `InventoryStackLimitHook.prepare(StackUpUpConfig.maxStackSize, packages)`（`src/main/kotlin/io/alexjoest/stackupup/StackUpUp.kt:47-51,83`、`src/main/kotlin/io/alexjoest/stackupup/StackLimitHooks.kt:139-172`）。黑名单为空时不展开 `ownedPackages`，直接以空数组 prepare（`StackLimitHooks.kt:145-151`）。
+- 启动策略直接读 `config/stackupup.cfg`，不初始化 Forge ConfigManager（`src/main/java/io/alexjoest/stackupup/core/InventoryExpansionStartupConfig.java:14-40,50-110`）。策略已发布后，配置变更只会更新兼容上限（`StackLimitHooks.kt:141-143`）；改变开关或黑名单必须重启。
+
+读侧扩容不扩大写侧：`InventoryStackLimitTransformer` 只改容量 getter，`InventoryWriteLimitMixin` 只包裹 `TileEntityLockableLoot#setInventorySlotContents` 这一处声明，因此它覆盖继承该 setter 的原版子类（`TileEntityChest`、`TileEntityDispenser`、`TileEntityShulkerBox`），不覆盖 `TileEntityFurnace` 与 `TileEntityBrewingStand`（二者继承 `TileEntityLockable`、各自声明 setter），不覆盖 `TileEntityHopper`（重写了 setter），也不覆盖 `EntityMinecartContainer`（抽象类、自带 setter）。这些未覆盖类在自己的 setter 里按同一 getter 夹取（`TileEntityBrewingStand` 不夹取），所以“广告值 = 落库值”仍自洽，但它们没有 item-aware 写入规则。`EntityMinecartContainer` 是抽象类，transformer 跳过抽象类，因此 `EntityMinecartChest`/`EntityMinecartHopper` 仍从继承来的声明解析为 64；`VanillaInventoryLimitMixin` 当前也不会补上，因为它按 receiver 类精确匹配。这类「字面量 64 写在抽象基类 getter 里」的情形在第三方侧要按「Late Mixin」一节的 per-mod mixin 模式处理，原版这两个类目前没有对应实现。
 
 ### Early/Baseline Mixin
 
@@ -141,10 +175,12 @@ remainder。这是当前存在的多次真实分片及其守恒风险，不等�
 
 ### Late Mixin
 
-`StackUpUpMixinConnector` 分别登记 ordinary late 与 capacity late 模块，并按目标 Mod presence 加载 ordinary profiles。当前模块表有 18 个 ordinary late 模块，另有独立的 IC2 Classic ordinary 模块；ordinary 配置不受 `inventoryExpansion.enabled` 或 `modIds` 容量黑名单影响。容量开关开启时才加入 16 个 capacity late 配置与独立的 IC2 Classic capacity 配置；容量黑名单仅跳过与所列 Mod ID 对应的 capacity 配置。修改启动开关/黑名单需重启；MixinBooter `general.blacklistedConfigs` 是单个完整配置级别的停用方式。
+`StackUpUpMixinConnector` 分别登记 ordinary late 与 capacity late 模块，并按目标 Mod presence 加载 ordinary profiles。当前模块表有 4 个 ordinary late 配置（`StackUpUpMixinConnector.kt:304-309`），加 1 条 IC2 Classic ordinary 配置（`:311-313`），合计 5 个；ordinary 配置不受 `inventoryExpansion.enabled` 或 `modIds` 容量黑名单影响。容量开关开启时才加入 `capacityModules` 的 16 条 capacity late 配置（`:315-332`）；两张表分开登记、不是一一对应。容量黑名单仅跳过与所列 Mod ID 对应的 capacity 配置（`:148-158`）。修改启动开关/黑名单需重启；MixinBooter `general.blacklistedConfigs` 是单个完整配置级别的停用方式。
 
-- IC2 Classic 的 `mixins.stackupup.late.ic2classic.json` 是 ordinary 配置，`SlotBaseMixin` 将报告的 slot limit 限制在原生 64；独立的 `mixins.stackupup.capacity.late.ic2classic.json` 当前为空，仍与普通 safety Mixin 分开登记。
-- Farmer's Delight Legacy 的 ordinary late 配置当前为空；可选 `mixins.stackupup.capacity.late.farmersdelight.json` 只声明 Basket、Cabinet、Cooking Pot、Skillet 的 getter Mixin 目标。
+- 抽象基类的容量 getter 为什么需要 per-mod mixin：`InventoryStackLimitTransformer` 在类级按 `ACC_ABSTRACT` 跳过抽象类（`src/main/java/io/alexjoest/stackupup/core/InventoryStackLimitTransformer.java:86-95`），而字面量 `64` 常常正写在抽象基类的 getter 体里、具体子类并不重写它。这类子类既没有自己可 patch 的 getter 声明，也继承不到 transformer 的改写，只能由 per-mod 的 `@Pseudo` capacity late mixin 打在基类上，一次覆盖全部具体子类。两个已落地先例：EnderIO 的 `AbstractInventoryMachineEntity`（`src/main/java/io/alexjoest/stackupup/mixin/late/enderio/EnderIOMachineInventoryLimitMixin.java:21-34`）与 Mystical Agriculture 的 `TileEssenceReprocessor`。判断是否走这条路要先确认具体子类真的没有重写该 getter：具体类自身声明里的字面量 `64` 已由 transformer 处理，不必在 mixin 里重复登记。
+- Mystical Agriculture：只有 capacity 配置 `mixins.stackupup.capacity.late.mysticalagriculture.json`（登记 modId `mysticalagriculture`，`StackUpUpMixinConnector.kt:324`），没有 ordinary 配置；目标是抽象基类 `com.blakebr0.mysticalagriculture.tileentity.reprocessor.TileEssenceReprocessor` 的 `func_70297_j_()I`/`getInventoryStackLimit()I`，用 `@ModifyReturnValue` 改返回值（`src/main/java/io/alexjoest/stackupup/mixin/late/mysticalagriculture/MysticalAgricultureInventoryLimitMixin.java:25-35`）。`javap` 读 `MysticalAgriculture-1.12.2-1.7.5.jar` 可见该基类是 `public abstract class`、getter 体为 `bipush 64; ireturn`，6 个具体子类（Inferium/Intermedium/Prudentium/Superium/Supremium/Ultimate Reprocessor）都不声明该 getter。写入侧未改动也不需要改：`func_70299_a`（`setInventorySlotContents`）落盘前调用同一个 `func_70297_j_()` 并用 `ItemStack.func_190920_e` 夹回该值（同一 jar 字节码，`func_70299_a` 偏移 57-71），所以抬高 getter 等于抬高真实落库上限。该结论来自 jar 字节码与仓库结构测试 `src/test/kotlin/io/alexjoest/stackupup/mixin/MysticalAgricultureMixinSourceTest.kt:12-103`，**没有实机验证**。
+- IC2 Classic 的 `mixins.stackupup.late.ic2classic.json` 是 ordinary 配置，`SlotBaseMixin` 将报告的 slot limit 限制在原生 64；capacity 表里没有 `ic2classic` 条目（`mixins.stackupup.capacity.late.ic2classic.json` 这个文件不存在），与 IC2 相关的是 `mixins.stackupup.capacity.late.ic2.json`（登记 modId `ic2`）。
+- Farmer's Delight Legacy 已没有独立配置（ordinary 与 capacity 两份 `farmersdelight` JSON 及其 Mixin 类已删除）：其 Basket、Cabinet、Cooking Pot、Skillet 是具体 `IInventory` 实现，`getInventoryStackLimit()` 为字面量 `return 64;`，由 `InventoryStackLimitTransformer` 在类加载时改写。仓库内以真实类名生成等价字节码的测试是 `src/test/kotlin/io/alexjoest/stackupup/core/FarmersDelightAsmLiteralPatchTest.kt`，它不是第三方运行时验证。
 
 这些模块登记只说明 Mixin 配置和目标类的源码范围；不等于第三方真实写入容量已验证或 Mod 整体获得无损兼容。第三方源码缺失的写入语义仍按“无源码不可判定”处理。
 
@@ -162,7 +198,7 @@ remainder。这是当前存在的多次真实分片及其守恒风险，不等�
 历史 ASM 按方法名（含映射名）识别候选、按目标方法名查找 `BIPUSH 64` 字节码常量并替换，方法 descriptor 和常量所在的
 真实写入/语义位置未闭合；命中方法名或字节码常量只说明历史补丁尝试，不构成真实容量写入证据。其 early path 使用 Java
 以避免 Kotlin 标准库在 coremod 早期加载，但 `CompatibilityLimitPatch` 曾使用 `Consumer<ClassNode>` 和 lambda，
-不满足 early path 的字节码禁用要求。已移除的是这一广泛 dynamic ASM layer。当前的 `InventoryStackLimitTransformer` 是独立的窄 getter transformer，只处理启用时的非 Minecraft `IInventory#getInventoryStackLimit()I`；不能把它描述成旧 dynamic 层的恢复，也不能把 getter 变换本身当作真实写入容量证据。T2/T11 登记须涵盖实际启用的 transformer 与对应 Mixin 配置，并继续按真实写入路径取证。
+不满足 early path 的字节码禁用要求。已移除的是这一广泛 dynamic ASM layer。当前的 `InventoryStackLimitTransformer` 是独立的窄 getter transformer，启用时按结构处理具体实现者的 `getInventoryStackLimit()I` 等容量 getter（原版类同样命中）；不能把它描述成旧 dynamic 层的恢复，也不能把 getter 变换本身当作真实写入容量证据。T2/T11 登记须涵盖实际启用的 transformer 与对应 Mixin 配置，并继续按真实写入路径取证。
 
 ## 规则数据流
 
@@ -232,7 +268,7 @@ count 或 NBT 变化时不会被重新分键或使这项内容缓存失效，而
 2. **原版目标表的闭合范围有限。** `VanillaInventoryLimitMixin` 已改为编译期显式目标表（12 类，`VanillaInventoryTargets.TARGETS`，
    含登记护栏测试），但表内结论只覆盖这 12 类的写入路径；表外目标（`InventoryLargeChest`、`TileEntityBeacon`、`ContainerEnchantment`
    匿名子类等）的处置不能由该表外推，且本文不把该表写成已完成独立复核的安全登记。
-3. **第三方真实写入容量仍有 UNKNOWN。** 目标 Mod 的 Mixin 注册或我方目标类声明，不等于取得其真实 setter/handler 源码，也不证明容量守恒。仍须按第三方实际 write path 取证的登记目标包括 `appliedenergistics2`、`ae2`、`actuallyadditions`、`brandonscore`、`cyclopscore`、`enderio`、`ic2`（IC2 Classic 共用此 Mod ID）、`mantle`、`refinedstorage`、`storagenetwork`、`integrateddynamics`、`limelib`、`immersiveengineering`、`nuclearcraft`、`colossalchests`、`gregtech`、`techreborn`/`reborncore` 和 `farmersdelight`。本仓库 Farmer's Delight Mixin 只列出四个 getter 目标；IC2 Classic 的 `SlotBaseMixin` 是客户端仓库中的 ordinary safety config，不构成第三方 writer 实现证据。Tech Reborn 补丁仅尝试修改 RebornCore `Inventory#getInventoryStackLimit()`；AE2 内部槽与输出限制也只说明项目代码尝试设置，第三方真实写入仍按“无源码不可判定”处理（缺失依赖台账见 [T2a 登记表](agent/t2a-%E5%AE%B9%E9%87%8F%E7%AB%99%E7%82%B9%E7%99%BB%E8%AE%B0%E8%A1%A8.md) §5）。
+3. **第三方真实写入容量仍有 UNKNOWN。** 目标 Mod 的 Mixin 注册或我方目标类声明，不等于取得其真实 setter/handler 源码，也不证明容量守恒。仍须按第三方实际 write path 取证的登记目标包括 `appliedenergistics2`、`ae2`、`actuallyadditions`、`brandonscore`、`cyclopscore`、`enderio`、`ic2`（IC2 Classic 共用此 Mod ID）、`mantle`、`refinedstorage`、`storagenetwork`、`integrateddynamics`、`limelib`、`immersiveengineering`、`nuclearcraft`、`colossalchests`、`gregtech`、`techreborn`/`reborncore`、`mysticalagriculture` 和 `farmersdelight`。Mystical Agriculture 的 `TileEssenceReprocessor` 行附有本地 jar 的读侧字节码证据（`func_70299_a` 落盘前调用同一容量 getter 夹取），但仍无运行期验证。Farmer's Delight Legacy 已没有自己的 Mixin 配置，其容量只由结构化 transformer 的 literal 补丁承担，因此连 getter 目标清单都不再由本仓库的 Mixin 声明表达，第三方写入语义仍不可判定。IC2 Classic 的 `SlotBaseMixin` 是 ordinary safety config，不构成第三方 writer 实现证据。Tech Reborn 补丁仅尝试修改 RebornCore `Inventory#getInventoryStackLimit()`；AE2 内部槽与输出限制也只说明项目代码尝试设置，第三方真实写入仍按“无源码不可判定”处理（缺失依赖台账见 [T2a 登记表](agent/t2a-%E5%AE%B9%E9%87%8F%E7%AB%99%E7%82%B9%E7%99%BB%E8%AE%B0%E8%A1%A8.md) §5）。
 4. **区分现行 writer hook 与已移除的旧状态通道。** `resolveInventoryClampLimit` 仍由 `InventoryPlayerAddResourceMixin` 的 `canMergeStacks` 与 `addResource` 直接调用；`InventoryWriteLimitMixin` 仍在 baseline early 配置中调用 `resolveInventoryWriteLimit` 处理 `TileEntityLockableLoot#setInventorySlotContents`。T4a 移除的是旧 inventory-write 上下文状态通道，不是上述 resolver 或当前 Mixin。
 5. **非标准库存路径未闭合。** 完全绕过 vanilla `Slot`/`Container` 或 Forge 标准 handler 契约的自定义容器，需要独立取得真实写入证据；当前不因类名扩大容量。
 6. **运行时审计尚未落地。** 现有 wrapper 诊断测试若只运行未打 mixin 的 Forge 基线，不能证明 mixin 生效态的守恒，也不能替代
@@ -242,7 +278,7 @@ count 或 NBT 变化时不会被重新分键或使这项内容缓存失效，而
 8. **本地化重载缺少真实基线。** 当前 `ProxyClient` 只在语言代码变化时调用 `RuleMessages.syncLanguage`；标准 F3+T
    会重建语言资源，不能用某个局部 `LanguageMap` 调用或代码静态推断代替真实客户端 F3+T。T8.0 必须先记录同语言代码下资源重载前后的消息解析和注入结果。
 9. **重载错误的原子发布语义尚未闭合。** `RuleReloadPipeline` 可以返回带错误的报告，而当前协调器仍把返回快照交给发布路径；不能把“报告含错误时保留旧运行态”当作当前保证。
-10. **历史 broad dynamic ASM 层已移除；当前另有窄范围 getter transformer。** `DynamicCompatMethodProbe` 曾按当前类直接声明的方法名（含映射名）识别候选，`CompatibilityLimitPatch` 曾按目标方法名查找 `BIPUSH 64`；方法 descriptor 和该常量所在的真实写入/语义位置未闭合，且其 early path 曾有 `Consumer<ClassNode>` 与 lambda 的字节码禁用问题。当前 `InventoryStackLimitTransformer` 是 `StackUpUpCore` 在容量开关开启且无冲突时注册的 `IInventory#getInventoryStackLimit()I` 窄 transformer；Mixin 另有 early/baseline、ordinary late 和 optional capacity early/late 配置。两种形式的目标注册均不代替真实写入证据，必须逐路径取证。
+10. **历史 broad dynamic ASM 层已移除；当前另有窄范围 getter transformer。** `DynamicCompatMethodProbe` 曾按当前类直接声明的方法名（含映射名）识别候选，`CompatibilityLimitPatch` 曾按目标方法名查找 `BIPUSH 64`；方法 descriptor 和该常量所在的真实写入/语义位置未闭合，且其 early path 曾有 `Consumer<ClassNode>` 与 lambda 的字节码禁用问题。当前 `InventoryStackLimitTransformer` 是 `StackUpUpCore` 在容量开关开启且无冲突时注册的窄 transformer，按结构处理具体 `IInventory`/`IItemHandler`/`Slot` 实现者的容量 getter（含原版具体类，只排除配置托管类、抽象类/接口与本 Mod 包，见本文「Coremod getter transformer 与 Mixin 分层」）；Mixin 另有 early/baseline、ordinary late 和 optional capacity early/late 配置。两种形式的目标注册均不代替真实写入证据，必须逐路径取证。
 11. **规则主文件创建会改变 legacy fallback。** `RuleSourceLocator.resolveLoadOrder()` 只在 `main.su` 不存在时加入旧规则文件，而
     `RuleReloadPipeline.loadDslRules()` 会在读取前创建缺失的 `main.su`；缺失的 `main.su` 被 pipeline 创建后，若旧
     `stackupup-rules.su` 仍存在，下一次 reload 将不再满足 legacy fallback 条件，加载结果可能改变。该迁移语义尚未显式定型。

@@ -12,12 +12,11 @@ import org.spongepowered.asm.mixin.injection.At;
 @Pseudo
 @Mixin(targets = "appeng.tile.inventory.AppEngInternalAEInventory", remap = false)
 abstract class AppEngInternalAEInventoryMixin {
-    private static final int VANILLA_STACK_LIMIT = 64;
     @Shadow @Final private IAEAppEngInventory te;
 
     @ModifyReturnValue(method = "getSlotLimit(I)I", at = @At("RETURN"), require = 0)
     private int replaceDefaultSlotLimit(int original) {
-        if (original != VANILLA_STACK_LIMIT
+        if (original != 64
             || !getClass().getName().equals("appeng.tile.inventory.AppEngInternalAEInventory")) {
             return original;
         }

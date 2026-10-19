@@ -1,6 +1,5 @@
 package io.alexjoest.stackupup.mixin
 
-import io.alexjoest.stackupup.StackUpUpIds
 import io.alexjoest.stackupup.bootstrap.StackUpUpMixinConnector
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -11,7 +10,7 @@ import java.nio.file.Paths
 class ColossalChestsMixinSourceTest {
     @Test
     fun colossalChestsTileMixin_shouldPatchInventoryConstructionStackLimit() {
-        val config = String(Files.readAllBytes(Paths.get("src/main/resources/mixins.stackupup.capacity.late.colossalchests.json")), Charsets.UTF_8)
+        val config = String(Files.readAllBytes(Paths.get("src/main/resources", CAPACITY_CONFIG)), Charsets.UTF_8)
         val mixin = String(
             Files.readAllBytes(Paths.get("src/main/java/io/alexjoest/stackupup/mixin/late/colossalchests/ColossalChestsTileMixin.java")),
             Charsets.UTF_8,
@@ -48,23 +47,27 @@ class ColossalChestsMixinSourceTest {
     }
 
     @Test
-    fun colossalChestsLateMixin_shouldBeRegisteredInLoaderAndToggled() {
+    fun colossalChestsCapacityMixin_shouldBeRegisteredInLoaderAndToggled() {
         assertTrue(
-            StackUpUpMixinConnector().modules.any { it.config.contains("colossalchests") },
-            "colossalchests late config 必须登记在 connector 模块表",
+            StackUpUpMixinConnector().capacityModules.any { it.config == CAPACITY_CONFIG && it.modId == "colossalchests" },
+            "colossalchests capacity 配置必须以 modid=colossalchests 登记在 connector capacity 模块表",
         )
         assertTrue(
-            StackUpUpIds.LATE_COLOSSALCHESTS_MIXIN_CONFIG == "mixins.stackupup.late.colossalchests.json",
-            "配置名常量必须与资源一致",
-        )
-        assertTrue(
-            StackUpUpMixinConnector().shouldQueue(StackUpUpIds.LATE_COLOSSALCHESTS_MIXIN_CONFIG) { it == "colossalchests" },
+            StackUpUpMixinConnector().shouldQueue(CAPACITY_CONFIG, { it == "colossalchests" }, StackUpUpMixinConnector().capacityModules),
             "modid=colossalchests 存在时配置应入队",
         )
         assertFalse(
-            StackUpUpMixinConnector().shouldQueue(StackUpUpIds.LATE_COLOSSALCHESTS_MIXIN_CONFIG) { false },
+            StackUpUpMixinConnector().shouldQueue(CAPACITY_CONFIG, { false }, StackUpUpMixinConnector().capacityModules),
             "modid 缺失时配置应跳过",
         )
+        assertFalse(
+            StackUpUpMixinConnector().shouldQueue("mixins.stackupup.late.colossalchests.json", { it == "colossalchests" }),
+            "已删除的空 ordinary 配置不得再被模块表接受",
+        )
+    }
+
+    private companion object {
+        const val CAPACITY_CONFIG = "mixins.stackupup.capacity.late.colossalchests.json"
     }
 
     private fun ByteArray.containsAscii(value: String): Boolean {

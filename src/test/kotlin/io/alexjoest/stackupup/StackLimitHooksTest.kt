@@ -50,30 +50,6 @@ class StackLimitHooksTest {
     }
 
     @Test
-    fun applyDynamicStackLimit_shouldDelegateToCurrentSnapshot() {
-        RuleRuntime.replaceSnapshot(
-            RuleSnapshot(
-                version = 2L,
-                rules = listOf(
-                    RuleCompiler.compileLine("ore = ingotSteel -> 512", 1),
-                    RuleCompiler.compileLine("ore = ingotSteel -> *2", 2),
-                ),
-            ),
-        )
-
-        val result = StackLimitHooks.applyDynamicStackLimit(
-            itemId = "gregtech:gt.metaitem.01",
-            modId = "gregtech",
-            meta = 11305,
-            type = "item",
-            baseLimit = 64,
-            oreNames = setOf("ingotSteel"),
-        )
-
-        assertEquals(1024, result)
-    }
-
-    @Test
     fun applyDynamicStackLimit_shouldResolveFromItemStack() {
         Bootstrap.register()
         RuleRuntime.replaceSnapshot(

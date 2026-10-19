@@ -37,7 +37,7 @@ class DslRuleSourceMultiFileTest {
 
         val result = DslRuleSource.fromFiles(listOf(pack, world))
         val service = StackLimitService(result.snapshot)
-        val context = StackContext("minecraft:egg", 0, 16, directType = "item")
+        val context = StackContext("minecraft:egg", 0, 16)
 
         assertEquals(128, service.resolve(context))
         assertTrue(result.errors.isEmpty())
@@ -72,7 +72,7 @@ class DslRuleSourceMultiFileTest {
             gateContext = RuleGateContext(loadedMods = setOf("gamestages")),
         )
         val service = StackLimitService(result.snapshot)
-        val context = StackContext("minecraft:egg", 0, 16, directType = "item")
+        val context = StackContext("minecraft:egg", 0, 16)
 
         assertEquals(128, service.resolve(context))
         assertTrue(result.errors.isEmpty())

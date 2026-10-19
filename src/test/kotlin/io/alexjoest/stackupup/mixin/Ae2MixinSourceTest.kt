@@ -108,7 +108,11 @@ class Ae2MixinSourceTest {
         assertTrue(source.contains("StackLimitHooks.getInventoryCompatibilityStackSize("), "按receiver与当前owner共同判断真实容量: $path")
         assertTrue(source.contains("@ModifyReturnValue"), "应覆盖真实 getSlotLimit 返回路径: $path")
         assertTrue(source.contains("getSlotLimit(I)I"), "应使用明确的 getSlotLimit(int) descriptor: $path")
-        assertTrue(source.contains("VANILLA_STACK_LIMIT"), "显式 slot 上限必须保留非默认值: $path")
+        assertTrue(source.contains("original != 64"), "显式 slot 上限必须保留非默认值: $path")
+        assertFalse(
+            source.contains("static final int"),
+            "编译期常量会被 javac 内联；mixin 内声明字段会合入目标类，除非 @Unique，故不得声明: $path",
+        )
         assertTrue(source.contains("getClass().getName()"), "继承 Oversized inventory 的直接写入路径不得被误扩容: $path")
         assertFalse(
             source.contains("getInventoryStackLimit"),

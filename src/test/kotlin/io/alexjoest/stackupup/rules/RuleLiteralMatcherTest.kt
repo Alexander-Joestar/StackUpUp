@@ -170,6 +170,5 @@ class RuleLiteralMatcherTest {
         itemId = itemId,
         metadata = meta,
         baseLimit = baseSize,
-        directType = "item",
     )
 }

@@ -48,7 +48,7 @@ storedDelta + remainderCount == offered
 1. 目标类、方法和完整 descriptor 明确，优先使用按模组加载的 late mixin。
 2. 原版或 Forge 基础路径使用 early mixin。
 3. **历史边界**：在动态 ASM replacement layer 存在的中间版本中，已由 mixin 接管的目标还必须从旧跳过表核对；`DynamicCompatTransformer`、profile/probe、patch 与 `FixedCompatTargets` 已由删除提交 `9cff8e7` 移除，该历史跳过表不再是当前运行时。
-4. **当前窄范围例外**：`StackUpUpCore.getASMTransformerClass()` 在容量扩展开关启用且无冲突时注册 `InventoryStackLimitTransformer`，仅处理非 Minecraft 具体 `IInventory` 类的 `getInventoryStackLimit()I` / SRG getter（源码：`StackUpUpCore.kt:77-89`、`InventoryStackLimitTransformer.java:35-74,102-105`）；它不是已删除的广泛 replacement layer，也不改写写入方法。未来新增 ASM 行为仍须重新取得完整目标、写入面和独立准入证据。
+4. **当前窄范围例外**：`StackUpUpCore.getASMTransformerClass()` 在容量扩展开关启用且无冲突时注册 `InventoryStackLimitTransformer`，按结构处理具体 `IInventory`/`IItemHandler`/`Slot` 实现者的容量 getter（含原版具体类；只排除配置托管的 `InventoryCrafting`/`InventoryCraftResult`、抽象类/接口与本 Mod 包，源码：`StackUpUpCore.kt:79-92`、`InventoryStackLimitTransformer.java:72-104,127-151`）；它不是已删除的广泛 replacement layer，也不改写写入方法。未来新增 ASM 行为仍须重新取得完整目标、写入面和独立准入证据。
 
 新的兼容补丁不按上游 StackUp 的 `IInventory`/`Slot` 继承关系无条件放大，也不对未知 `IItemHandler` 动态扩容。
 
@@ -296,7 +296,7 @@ Forge wrapper 文档明确它通过 `EntityLivingBase#getItemStackFromSlot` / `s
 - **取代关系：** 本节结论取代 §8.8「验证结果」中 `runServerAutoTestMatrix` FAILED（`inv_wrapper_limit`/`sided_inv_wrapper_limit` 槽位上限=64 预期=10000）的记录——该记录为探针预期问题，已由本节修正并实测通过。此后最近一次矩阵运行（2026-08-10，`run/logs/autotest-report.txt` 最终状态 PASS）同样无该两项失败；2026-08-10 之后的代码改动未经矩阵重跑，故当前工作副本不因此节记为矩阵通过。
 ### 3.13 IC2 Classic native-64 slot safety (2026-10-14 source/fixture boundary)
 
-`mixins.stackupup.late.ic2classic.json` is the ordinary late profile and registers `SlotBaseMixin`; the separate `mixins.stackupup.capacity.late.ic2classic.json` currently has an empty mixins list. `SlotBaseMixin.keepNativeSlotLimit` caps `SlotBase#func_75219_a()I` at 64 while preserving lower native values; the injected method only clamps the slot-limit getter and does not rewrite the IC2 writer or alter the stack. Because the connector gates blacklisting and `inventoryExpansion.enabled` only on capacity profiles, this ordinary native-64 safety config remains queued whenever IC2 is present, including expansion OFF or `ic2` blacklisted (the ordinary module loop is independent of the capacity conflict gate).
+`mixins.stackupup.late.ic2classic.json` is the ordinary late profile and registers `SlotBaseMixin`; the separate `mixins.stackupup.capacity.late.ic2classic.json` was deleted in M119 (`01b1b73`), so there is no capacity profile for IC2 Classic; the IC2-related capacity entry is `mixins.stackupup.capacity.late.ic2.json` (registered under mod id `ic2`). `SlotBaseMixin.keepNativeSlotLimit` caps `SlotBase#func_75219_a()I` at 64 while preserving lower native values; the injected method only clamps the slot-limit getter and does not rewrite the IC2 writer or alter the stack. Because the connector gates blacklisting and `inventoryExpansion.enabled` only on capacity profiles, this ordinary native-64 safety config remains queued whenever IC2 is present, including expansion OFF or `ic2` blacklisted (the ordinary module loop is independent of the capacity conflict gate).
 
 `Ic2ClassicMixinSourceTest.kt:31-112` verifies resource text, registry decisions, the static clamp helper, and ItemStack fixture split arithmetic. It is not a Mixin launch test or a real IC2 Classic writer test; no runtime injection/target-resolution claim is made, and actual writer behavior remains UNKNOWN.
 

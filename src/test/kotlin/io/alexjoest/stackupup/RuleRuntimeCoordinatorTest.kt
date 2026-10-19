@@ -9,6 +9,10 @@ import io.alexjoest.stackupup.rules.compile.RuleSnapshot
 import io.alexjoest.stackupup.rules.io.RuleFileExampleTemplate
 import io.alexjoest.stackupup.rules.io.RuleFileLocator
 import io.alexjoest.stackupup.rules.io.RuleSourceLocator
+import net.minecraft.init.Bootstrap
+import net.minecraft.item.Item
+import net.minecraft.item.ItemStack
+import net.minecraft.util.ResourceLocation
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertSame
@@ -185,8 +189,7 @@ class RuleRuntimeCoordinatorTest {
                         itemId = "gregtech:meta_ingot",
                         metadata = 0,
                         baseLimit = 64,
-                        directType = "item",
-                        directOreNames = RuleRuntime.oreDictIndex().getOreNames("gregtech:meta_ingot", 0),
+                        stack = gregMetaIngotStack(),
                     ),
                 ),
             )
@@ -213,8 +216,7 @@ class RuleRuntimeCoordinatorTest {
                     itemId = "gregtech:meta_ingot",
                     metadata = 0,
                     baseLimit = 64,
-                    directType = "item",
-                    directOreNames = RuleRuntime.oreDictIndex().getOreNames("gregtech:meta_ingot", 0),
+                    stack = gregMetaIngotStack(),
                 ),
             )
             assertEquals(1, firstService.debugResolvedCacheSize())
@@ -231,13 +233,18 @@ class RuleRuntimeCoordinatorTest {
                         itemId = "gregtech:meta_ingot",
                         metadata = 0,
                         baseLimit = 64,
-                        directType = "item",
-                        directOreNames = RuleRuntime.oreDictIndex().getOreNames("gregtech:meta_ingot", 0),
+                        stack = gregMetaIngotStack(),
                     ),
                 ),
             )
         } finally {
             RuleRuntime.replaceRuntime(previousSnapshot, previousIndex)
         }
+    }
+
+    private fun gregMetaIngotStack(): ItemStack {
+        Bootstrap.register()
+        val item = Item().setRegistryName(ResourceLocation("gregtech", "meta_ingot"))
+        return ItemStack(item, 1, 0)
     }
 }

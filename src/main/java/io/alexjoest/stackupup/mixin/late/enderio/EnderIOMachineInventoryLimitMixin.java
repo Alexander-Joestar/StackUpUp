@@ -6,12 +6,21 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
 
+/**
+ * Capacity mixin for the legacy EnderIO machine base only.
+ *
+ * <p>{@code AbstractInventoryMachineEntity} is {@code public abstract class} and returns a literal
+ * 64 from {@code getInventoryStackLimit()}; {@code InventoryStackLimitTransformer} skips abstract
+ * classes, so this mixin is the only path for the concrete machines that inherit that getter.</p>
+ *
+ * <p>{@code crazypants.enderio.machines.machine.enchanter.TileEnchanter} was a second target until
+ * its own {@code getInventoryStackLimit()} override (a literal {@code return 64;} on a concrete
+ * class) was deleted here: the structural transformer already rewrites that bytecode at class load,
+ * so the mixin entry only duplicated it.</p>
+ */
 @Pseudo
 @Mixin(
-        targets = {
-                "crazypants.enderio.base.machine.baselegacy.AbstractInventoryMachineEntity",
-                "crazypants.enderio.machines.machine.enchanter.TileEnchanter"
-        },
+        targets = {"crazypants.enderio.base.machine.baselegacy.AbstractInventoryMachineEntity"},
         remap = false
 )
 abstract class EnderIOMachineInventoryLimitMixin {

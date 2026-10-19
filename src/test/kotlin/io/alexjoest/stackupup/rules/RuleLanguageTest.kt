@@ -1,7 +1,12 @@
 package io.alexjoest.stackupup.rules
 
+import io.alexjoest.stackupup.limit.GregTechMaterialResolver
 import io.alexjoest.stackupup.limit.StackContext
 import io.alexjoest.stackupup.rules.field.RuleFieldContextProvider
+import net.minecraft.init.Bootstrap
+import net.minecraft.item.Item
+import net.minecraft.item.ItemStack
+import net.minecraft.util.ResourceLocation
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -53,10 +58,19 @@ class RuleLanguageTest {
 
     @Test
     fun cacheKeyField_shouldExtractDeclaredFieldValue() {
-        assertEquals(
-            "steel",
-            RuleField.MATERIAL.cacheKeyValue(cacheCtx(material = "steel")),
-        )
+        Bootstrap.register()
+        val restoreResolver = GregTechMaterialResolver.installResolverForTesting { stack ->
+            if (stack.metadata == MATERIAL_META) "steel" else ""
+        }
+
+        try {
+            assertEquals(
+                "steel",
+                RuleField.MATERIAL.cacheKeyValue(cacheCtx()),
+            )
+        } finally {
+            restoreResolver()
+        }
     }
 
     @Test
@@ -76,21 +90,17 @@ class RuleLanguageTest {
         }
     }
 
-    private fun cacheCtx(
-        itemId: String = "gregtech:meta_item_1",
-        metadata: Int = 1000,
-        type: String = "item",
-        baseLimit: Int = 64,
-        oreNames: Set<String> = emptySet(),
-        tab: String = "",
-        material: String = "",
-    ) = StackContext(
-        itemId = itemId,
-        metadata = metadata,
-        baseLimit = baseLimit,
-        directType = type,
-        directOreNames = oreNames,
-        directTab = tab,
-        directMaterial = material,
-    )
+    private fun cacheCtx(): StackContext {
+        val item = Item().setRegistryName(ResourceLocation("gregtech", "meta_item_1"))
+        return StackContext(
+            itemId = "gregtech:meta_item_1",
+            metadata = MATERIAL_META,
+            baseLimit = 64,
+            stack = ItemStack(item, 1, MATERIAL_META),
+        )
+    }
+
+    private companion object {
+        private const val MATERIAL_META: Int = 1000
+    }
 }

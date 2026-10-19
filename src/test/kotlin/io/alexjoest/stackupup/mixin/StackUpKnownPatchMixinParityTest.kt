@@ -36,7 +36,6 @@ class StackUpKnownPatchMixinParityTest {
         val currentMixin: String,
         val currentMixinClass: String,
         val currentDescriptor: String?,
-        val ordinaryConfig: String,
         val capacityConfig: String,
         val parity: LegacyParityStatus,
         val unknownReason: String,
@@ -104,7 +103,6 @@ class StackUpKnownPatchMixinParityTest {
             "src/main/java/io/alexjoest/stackupup/mixin/late/refinedstorage/ItemGridHandlerMixin.java",
             "ItemGridHandlerMixin",
             "onExtract(Lnet/minecraft/entity/player/EntityPlayerMP;Ljava/util/UUID;II)V",
-            "mixins.stackupup.late.refinedstorage.json",
             "mixins.stackupup.capacity.late.refinedstorage.json",
             LegacyParityStatus.UNKNOWN,
             "Legacy StackUp selected a class-name prefix and method name without a descriptor; no pinned 1.12 target source is available to prove this overload is equivalent.",
@@ -116,7 +114,6 @@ class StackUpKnownPatchMixinParityTest {
             "src/main/java/io/alexjoest/stackupup/mixin/late/refinedstorage/ItemGridHandlerPortableMixin.java",
             "ItemGridHandlerPortableMixin",
             "onExtract(Lnet/minecraft/entity/player/EntityPlayerMP;Ljava/util/UUID;II)V",
-            "mixins.stackupup.late.refinedstorage.json",
             "mixins.stackupup.capacity.late.refinedstorage.json",
             LegacyParityStatus.UNKNOWN,
             "Legacy StackUp wildcard covers ItemGridHandlerPortable by class-name prefix, but selected only the method name; no pinned 1.12 target source proves this overload is equivalent.",
@@ -128,7 +125,6 @@ class StackUpKnownPatchMixinParityTest {
             "src/main/java/io/alexjoest/stackupup/mixin/late/refinedstorage/NetworkNodeStorageMonitorMixin.java",
             "NetworkNodeStorageMonitorMixin",
             null,
-            "mixins.stackupup.late.refinedstorage.json",
             "mixins.stackupup.capacity.late.refinedstorage.json",
             LegacyParityStatus.UNKNOWN,
             "This is a current StackUpUp-only capacity target outside the legacy ItemGridHandler* wildcard; the old StackUp transformer provides no descriptor or parity evidence.",
@@ -140,7 +136,6 @@ class StackUpKnownPatchMixinParityTest {
             "src/main/java/io/alexjoest/stackupup/mixin/late/mantle/TileInventoryMixin.java",
             "TileInventoryMixin",
             null,
-            "mixins.stackupup.late.mantle.json",
             "mixins.stackupup.capacity.late.mantle.json",
             LegacyParityStatus.UNKNOWN,
             "Legacy StackUp selected constructors by name only; the target dependency/source is absent, so no exact constructor descriptor can be established.",
@@ -152,7 +147,6 @@ class StackUpKnownPatchMixinParityTest {
             "src/main/java/io/alexjoest/stackupup/mixin/late/ic2/InvSlotMixin.java",
             "InvSlotMixin",
             null,
-            "mixins.stackupup.late.ic2.json",
             "mixins.stackupup.capacity.late.ic2.json",
             LegacyParityStatus.UNKNOWN,
             "Legacy StackUp selected constructors by name only; this workspace has IC2 Classic rather than the original IC2 target source.",
@@ -164,7 +158,6 @@ class StackUpKnownPatchMixinParityTest {
             "src/main/java/io/alexjoest/stackupup/mixin/late/ae2/AppEngInternalInventoryMixin.java",
             "AppEngInternalInventoryMixin",
             "getSlotLimit(I)I",
-            "mixins.stackupup.late.ae2.json",
             "mixins.stackupup.capacity.late.ae2.json",
             LegacyParityStatus.UNKNOWN,
             "Legacy StackUp patched constructor constants; current AE2 UEL source is version 0.56.7 and cannot establish the old 1.12 constructor/write path or parity of this getter route.",
@@ -176,7 +169,6 @@ class StackUpKnownPatchMixinParityTest {
             "src/main/java/io/alexjoest/stackupup/mixin/late/ae2/AppEngInternalAEInventoryMixin.java",
             "AppEngInternalAEInventoryMixin",
             "getSlotLimit(I)I",
-            "mixins.stackupup.late.ae2.json",
             "mixins.stackupup.capacity.late.ae2.json",
             LegacyParityStatus.UNKNOWN,
             "Legacy StackUp patched constructor constants; current AE2 UEL source is version 0.56.7 and cannot establish the old 1.12 constructor/write path or parity of this getter route.",
@@ -188,7 +180,6 @@ class StackUpKnownPatchMixinParityTest {
             "src/main/java/io/alexjoest/stackupup/mixin/late/actuallyadditions/TileEntityInventoryBaseMixin.java",
             "TileEntityInventoryBaseMixin",
             null,
-            "mixins.stackupup.late.actuallyadditions.json",
             "mixins.stackupup.capacity.late.actuallyadditions.json",
             LegacyParityStatus.UNKNOWN,
             "Legacy StackUp selected the method by name only; the Actually Additions target dependency/source is absent, so its descriptor and actual write path are unverified.",
@@ -253,7 +244,11 @@ class StackUpKnownPatchMixinParityTest {
                 assertTrue(source.contains(mapping.currentDescriptor), "current descriptor changed: ${mapping.currentMixin}")
             }
             assertTrue(configMixins(mapping.capacityConfig).contains(mapping.currentMixinClass))
-            assertFalse(configMixins(mapping.ordinaryConfig).contains(mapping.currentMixinClass))
+            assertEquals(
+                setOf(mapping.capacityConfig),
+                configsRegistering(mapping),
+                "mixin 只能由 capacity 配置登记（ordinary late 配置已随空配置收尾删除）: ${mapping.currentMixin}",
+            )
             assertFalse(baselineMixins.contains(mapping.currentMixinClass))
         }
     }
@@ -268,7 +263,7 @@ class StackUpKnownPatchMixinParityTest {
         assertTrue(portableSource.contains("@WrapOperation"))
         assertFalse(portableSource.contains("@Redirect"))
         assertTrue(configMixins(portable.capacityConfig).contains(portable.currentMixinClass))
-        assertFalse(configMixins(portable.ordinaryConfig).contains(portable.currentMixinClass))
+        assertEquals(setOf(portable.capacityConfig), configsRegistering(portable))
         assertFalse(configMixins("mixins.stackupup.baseline.early.json").contains(portable.currentMixinClass))
 
         val absentQueue = queueLateConfigurations(emptySet())
@@ -281,7 +276,7 @@ class StackUpKnownPatchMixinParityTest {
         assertEquals("not selected by legacy ItemGridHandler* wildcard", monitor.legacyMethodSelector)
         assertEquals(LegacyParityStatus.UNKNOWN, monitor.parity)
         assertTrue(configMixins(monitor.capacityConfig).contains(monitor.currentMixinClass))
-        assertFalse(configMixins(monitor.ordinaryConfig).contains(monitor.currentMixinClass))
+        assertEquals(setOf(monitor.capacityConfig), configsRegistering(monitor))
     }
 
     @Test
@@ -366,6 +361,19 @@ class StackUpKnownPatchMixinParityTest {
     }
 
     private fun extractJsonString(json: String, key: String): String? = Regex("\"$key\"\\s*:\\s*\"([^\"]+)\"").find(json)?.groupValues?.get(1)
+
+    /**
+     * 返回登记了该 mapping 当前 mixin 全限定名的所有配置文件（跨 early/late/capacity 全表）。
+     * 用于替代原先散落的 "ordinary 配置不得登记该 mixin" 断言：空 ordinary 配置删除后，该性质
+     * 由全表扫描表达，强度不低于逐文件否定断言。
+     */
+    private fun configsRegistering(mapping: OptionalLegacyMapping): Set<String> {
+        val className = mapping.currentMixin
+            .removePrefix("src/main/java/")
+            .removeSuffix(".java")
+            .replace('/', '.')
+        return allConfiguredMixins().filter { it.className == className }.map { it.config }.toSet()
+    }
 
     private fun extractJsonStringArray(json: String, key: String): List<String> {
         val body = Regex("\"$key\"\\s*:\\s*\\[(.*?)]", RegexOption.DOT_MATCHES_ALL)

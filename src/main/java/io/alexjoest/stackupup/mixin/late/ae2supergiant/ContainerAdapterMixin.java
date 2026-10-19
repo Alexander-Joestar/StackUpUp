@@ -6,6 +6,24 @@ import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
 
+/**
+ * Capacity mixin for the AE2-Supergiant {@code ContainerAdapter} {@code IInventory} bridge.
+ *
+ * <p>Source decision record
+ * ({@code Applied-Energistics-2-Supergiant/src/main/java/ae2/api/inventories/ContainerAdapter.java}):
+ * {@code getInventoryStackLimit()} starts from {@code int max = 64;} and folds every
+ * {@code inventory.getSlotLimit(i)} into it with {@code Math.min}. The literal is the initial value
+ * of a minimum, not the advertised limit, so replacing it turns "always at most 64" into "the
+ * smallest per-slot limit, capped at the compatibility size". That is semantically safe: the getter
+ * still advertises no more than the smallest limit a slot actually accepts, and the AE2S write path
+ * ({@code inventory.setItemDirect} / {@code extractItem}) is untouched.</p>
+ *
+ * <p>Kept, not deleted. The transformer ({@code InventoryStackLimitTransformer}) already rewrites the
+ * same literal at class load, so removing this mixin would leave AE2S container capacity defined
+ * solely by that class-load rewrite while this file still looks like it owns the getter. Keeping the
+ * explicit constant hook states the AE2S decision where a reader looks for it, and both paths
+ * resolve the same compatibility size, so they agree rather than fight.</p>
+ */
 @Pseudo
 @Mixin(targets = "ae2.api.inventories.ContainerAdapter", remap = false)
 abstract class ContainerAdapterMixin {

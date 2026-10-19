@@ -1,5 +1,7 @@
 # T2a 容量站点登记表
 
+> **现状标注（0.2.5.dev1，基线 `3d6ca1ae`）**：本表是历史登记。§3 中 EnderIO `TileEnchanter` 目标行与 IE `IEInventoryHandler#getSlotLimit` handler 已被删除（提交 `8a68e83e7000`），`farmersdelight` 配置已整份删除（`925fda5e7ca7`）；§9.5 里 2026-10-14 快照的 registry 计数均为历史值；M124 复核磁盘与模块表为 24 个（3 early + 5 ordinary late = `modules` 4 条 + `classicModules` 1 条，16 capacity-late，`StackUpUpMixinConnector.kt:304-332`），§3 表已补 MysticalAgricultureInventoryLimitMixin 行（M123）。另外文内「仅非 Minecraft concrete `IInventory` getter」的描述已不成立：transformer 现在也命中具体 `IItemHandler`/`Slot` 实现与原版具体类，现行源码位置为 `StackUpUpCore.kt:79-92`、`InventoryStackLimitTransformer.java:72-104,127-151`（本文引用的旧行号随之失效）。
+
 > 任务：T2a「容量补丁准入规则」（docs/agent/重构任务清单.md 当前状态表）；编译期三分类与 patch 目标登记表，只登记事实与准入规则，不修改生产目标。
 > 状态：PARTIAL（登记表已产出并复核；部分项 UNKNOWN 见正文，独立复核待指派，未完成前不得宣称 PASS）。本表逐站点清单及历史证据以 2026-09 复核快照为基线；2026-10 的容量配置拆分与当前可选开关语义见 §9.5。旧 `VanillaInventoryWriteMixin` 已删除，但当前另有常驻 baseline 的 `InventoryWriteLimitMixin`，并保留 `StackLimitHooks.resolveInventoryWriteLimit`（源码：`InventoryWriteLimitMixin.java:14-30`、`StackLimitHooks.kt:307-335`）；因此本表中写 helper 不存在的旧说法仅为 T4a 中间状态，不能作当前事实。`build/rfg/minecraft-src/java/` 为 Forge/vanilla 反编译源码；第三方写入路径仍须逐目标证据，缺失 jar 项见 §5；生产代码路径一律使用 repo-relative 形式。
 
@@ -116,6 +118,7 @@
 | NuclearCraftTileInventoryLimitMixin（nuclearcraft.json，审计后新增） | 4 个 nc.tile.*Inventory 抽象基类（TileInventory / TileFluidInventory / TileEnergyInventory / TileEnergyFluidInventory） | 以 mixin 类方法体直接覆写 `getInventoryStackLimit()I`（无注入注解；接口 default 不能直接 patch，字节码证据 CDR §3.9） | 无源码不可判定（广告值替换；NC 夹取点动态读该方法，CDR §3.10-B） | src/main/java/.../mixin/late/NuclearCraftTileInventoryLimitMixin.java:25-39 | nuclearcraft |
 | NuclearCraftDistributorNoDropMixin（nuclearcraft.json，审计后新增） | nc.multiblock.distributor.Distributor | `cullInventory()Z` 与 `dropOverflow(Ljava/util/List;)V` 各一处 `@Inject(HEAD, cancellable)`（require=0；不裁不丢） | 非容量站点（不改变上限广告；取消裁减/掉落，CDR §3.10-B） | src/main/java/.../mixin/late/NuclearCraftDistributorNoDropMixin.java:33-47 | nuclearcraft |
 | RebornCoreInventoryMixin（techreborn.json，当前新增） | reborncore.common.util.Inventory | `getInventoryStackLimit()I` 返回值替换为兼容上限（`@ModifyReturnValue`，require=0） | 无源码不可判定（Tech Reborn 通过 RebornCore 共享该容量入口；真实 setter/handler 仍需第三方源码或运行证据） | src/main/java/.../mixin/late/techreborn/RebornCoreInventoryMixin.java:9-16 | techreborn、reborncore |
+| MysticalAgricultureInventoryLimitMixin（`mixins.stackupup.capacity.late.mysticalagriculture.json`，M123 新增；覆盖方式 = capacity-late mixin） | com.blakebr0.mysticalagriculture.tileentity.reprocessor.TileEssenceReprocessor（`public abstract class`） | `func_70297_j_()I` / `getInventoryStackLimit()I` 返回值 64→compat（`@ModifyReturnValue`，require=0）；只打抽象基类，6 个具体子类（TileInferium/Intermedium/Prudentium/Superium/Supremium/UltimateReprocessor）都不重写该 getter，打基类一次覆盖 6 台机器 | 广告与写入同源（字节码级）：`func_70299_a`（`setInventorySlotContents`）落盘前调用同一 `func_70297_j_()` 并用 `ItemStack.func_190920_e` 夹回该值（偏移 57-71）。`InventoryStackLimitTransformer` 按 `ACC_ABSTRACT` 跳过该类，故此处是这些机器唯一的容量路径。第三方源码不可读、无运行期验证，整体兼容仍不作结论 | src/main/java/.../mixin/late/mysticalagriculture/MysticalAgricultureInventoryLimitMixin.java:25-35（jar 字节码：本地未入库 `local-dev-mods/MysticalAgriculture-1.12.2-1.7.5.jar`） | mysticalagriculture |
 
 ## 4. 动态兼容层（历史中间层，已删除；旧 core/ 配置面）
 
@@ -136,6 +139,8 @@
 ## 5. 缺失第三方 jar 台账（P0 基线：`local-dev-mods/` 不存在、`run/mods/` 为空）
 
 late 目标 **当前 16 个模组** jar 均缺失（文件名/版本未登记，不得补猜）：`appliedenergistics2`（AE2）、`brandonscore`、`actuallyadditions`、`cyclopscore`、`enderio`、`ic2`、`mantle`、`refinedstorage`、`storagenetwork`、`integrateddynamics`、`limelib`、`immersiveengineering`、`nuclearcraft`、`colossalchests`、`gregtech`、`techreborn`（通过 `reborncore`，其对应 jar 同样缺失；**审计当时为 12 个**，nuclearcraft/colossalchests/gregtech/techreborn 为审计后新增）。当前工作副本 `run/mods/`、`local-dev-mods/` 均为空（gitignored），无任何可读第三方字节码/源码。Forge 自身 wrapper 与 vanilla 反编译源码不属缺失项（§2/§4 已按 repo-relative 源码核验）。注：CDR §3.10/§3.11 的 Colossal Chests / GregTech / NuclearCraft 源码审阅使用本工作副本之外的本地 `../mods-under-test/` 副本，仓库内无可运行 jar，故上述条目仍计入「jar 缺失」台账（缺失的是可运行 jar，非源码副本）。
+
+> **M124 复核注记（2026 文档轮次）**：本地主编检出的 `local-dev-mods/` 现已放入若干 1.12.2 jar（其中包含 `MysticalAgriculture-1.12.2-1.7.5.jar`），但它们仍不入库、版本未登记，因此本台账维持「未入库即缺失」的口径；§3 的 Mystical Agriculture 行是唯一按本地 jar 字节码（`javap`）给出读侧证据的条目，其余条目仍为 **无源码不可判定**。
 
 ## 6. patch 目标集合与登记表比对规则（未登记目标失败规则）
 
@@ -220,11 +225,11 @@ late 目标 **当前 16 个模组** jar 均缺失（文件名/版本未登记，
 
 ### 9.5 2026-10-14 当前 profile / writer / IC2 Classic addendum
 
-当前容量设置及装载边界以 `StackUpUpConfig.kt:80-98`、`StackUpUpCore.kt:77-89`、`StackUpUpMixinConnector.kt:57-65,109-145,293-339` 为准：`compat.inventoryExpansion.enabled` 默认 `true`（新/缺失配置采用 broad-default；已有配置中的显式 `false` 保持关闭）；显式 `false` 仅作为重启时的紧急回退；开启且无冲突时注册窄范围 `InventoryStackLimitTransformer`，并排队 `capacity.early` 与 capacity-late profiles。当前资源 registry 为 39 个 JSON：3 个 early（ordinary、baseline、capacity）、19 个 ordinary late（18 modules + IC2 Classic）和 17 个 capacity-late（16 modules + IC2 Classic）。关闭开关只关闭可选容量 profiles/通用 getter expansion，不移除常驻 baseline writer/safety lanes；普通 late profiles 仍按 Mod 在场独立排队。
+当前容量设置及装载边界以 `StackUpUpConfig.kt:80-98`、`StackUpUpCore.kt:77-89`、`StackUpUpMixinConnector.kt:57-65,109-145,304-332` 为准：`compat.inventoryExpansion.enabled` 默认 `true`（新/缺失配置采用 broad-default；已有配置中的显式 `false` 保持关闭）；显式 `false` 仅作为重启时的紧急回退；开启且无冲突时注册窄范围 `InventoryStackLimitTransformer`，并排队 `capacity.early` 与 capacity-late profiles。资源 registry 在 **2026-10-14 快照** 时是 39 个（3 个 early：ordinary、baseline、capacity；19 个 ordinary late：18 modules + IC2 Classic；17 个 capacity-late：16 modules + IC2 Classic），这些是历史计数；现行计数见文首「现状标注」——24 个（3 early + 5 ordinary late + 16 capacity-late，`StackUpUpMixinConnector.kt:304-332`）。关闭开关只关闭可选容量 profiles/通用 getter expansion，不移除常驻 baseline writer/safety lanes；普通 late profiles 仍按 Mod 在场独立排队。
 
 `compat.inventoryStackLimitBlacklist.modIds` 在 transformer/getter hook 按实际 receiver 或受支持 owner 的 Forge owned-package 边界选择性 bypass，并让 connector 跳过所列 Mod 对应的 capacity-late profile；它不关闭整个 capacity early lane 或普通 safety late profile，也不影响未列出的 Mod。精确 owner 的可推断范围之外（如无 owner 的共享实例、receiverless constructor/private delegate）仍 UNKNOWN；不得推成所有 handler 或 addon 已安全排除。
 
-IC2 Classic ordinary late profile (`mixins.stackupup.late.ic2classic.json`) 注册 `SlotBaseMixin`；该 mixin 只将 `SlotBase` 的 slot getter 限到最多 native 64、保留更低原值，不改写 writer。分离的 capacity profile 当前为空；OFF 或 `ic2` blacklist 不会跳过 ordinary safety profile。`Ic2ClassicMixinSourceTest.kt:31-112` 仅核对配置/注册与 clamp/helper+ItemStack fixture arithmetic；未在真实 IC2 Classic 运行环境验证注入命中或 writer 行为，运行态仍 UNKNOWN。
+IC2 Classic ordinary late profile (`mixins.stackupup.late.ic2classic.json`) 注册 `SlotBaseMixin`；该 mixin 只将 `SlotBase` 的 slot getter 限到最多 native 64、保留更低原值，不改写 writer。capacity 表里没有 IC2 Classic 条目（`mixins.stackupup.capacity.late.ic2classic.json` 已在 M119 删除）；与 IC2 相关的是 `mixins.stackupup.capacity.late.ic2.json`（登记 modId `ic2`）。OFF 或 `ic2` blacklist 不会跳过 ordinary safety profile。`Ic2ClassicMixinSourceTest.kt:31-112` 仅核对配置/注册与 clamp/helper+ItemStack fixture arithmetic（其中 `:86` 断言不再登记 `capacity.late.ic2classic` 配置，文件已删除的存在性断言见 `MixinBooterIntegrationTest.kt:151-155`）；未在真实 IC2 Classic 运行环境验证注入命中或 writer 行为，运行态仍 UNKNOWN。
 
 ## 10. 复核记录
 
@@ -233,3 +238,4 @@ IC2 Classic ordinary late profile (`mixins.stackupup.late.ic2classic.json`) 注�
 - 2026-09 计数 lane：只做只读取证 + 本文档写入（§3 标题/表、§5、§9.2、§9.4）；未修改任何生产代码、测试或构建配置。
 - 本文档重写原因：先前草稿引用 T4a 前状态（`VanillaInventoryWriteMixin`、`resolveInventoryWriteLimit`、旧 StackLimitHooks.kt 行号），与当前工作副本不符；本次按 T4a 后现状逐行复核重写。
 - 独立复核：待指派（未完成独立复核前，本登记表不得宣称 PASS）。
+- M124（文档代理，2026 文档轮次）：只做只读取证 + 文档写入。补 §3 的 `MysticalAgricultureInventoryLimitMixin` 行（M123 合入 `f4e2394`）；复核磁盘与 `StackUpUpMixinConnector.kt` 得 3 early + 5 ordinary late + 16 capacity-late，据此改写 §顶部现状标注的计数句。字节码证据来自本地未入库的 `local-dev-mods/MysticalAgriculture-1.12.2-1.7.5.jar`（`javap`）：基类 `public abstract class`、`func_70297_j_` 体为 `bipush 64; ireturn`、6 个具体子类均不声明该 getter、`func_70299_a` 偏移 57-71 用同一 getter 夹取。未修改任何生产代码、测试或构建配置；该 mixin 没有实机验证。复核后补正（同一 mission，新提交）：§9.5 的 registry 计数改为显式「2026-10-14 快照」并指向顶部现状标注（24），§9.5 的 IC2 Classic 段按「capacity 表无 IC2 Classic 条目、`capacity.late.ic2classic.json` 已删除」改写并补测试行号来源。

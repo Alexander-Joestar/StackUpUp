@@ -1,11 +1,16 @@
 package io.alexjoest.stackupup.dev
 
 import io.alexjoest.stackupup.StackUpUpConfig
+import io.alexjoest.stackupup.limit.OreDictIndex
 import io.alexjoest.stackupup.limit.RuleRuntime
 import io.alexjoest.stackupup.limit.StackContext
 import io.alexjoest.stackupup.limit.StackLimitService
 import io.alexjoest.stackupup.rules.compile.RuleCompiler
 import io.alexjoest.stackupup.rules.compile.RuleSnapshot
+import net.minecraft.init.Bootstrap
+import net.minecraft.item.Item
+import net.minecraft.item.ItemStack
+import net.minecraft.util.ResourceLocation
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -14,12 +19,19 @@ import org.junit.jupiter.api.Test
 class DevRuleInjectorTest {
     private var previousMaxStackSize: Int = 10240
     private var previousSnapshot: RuleSnapshot = RuleSnapshot(version = 0L, rules = emptyList())
+    private lateinit var previousOreDictIndex: OreDictIndex
+    private val metaIngotItem: Item by lazy { Item().setRegistryName(ResourceLocation("gregtech", "meta_ingot")) }
 
     @BeforeEach
     fun setUp() {
+        Bootstrap.register()
         previousMaxStackSize = StackUpUpConfig.maxStackSize
         StackUpUpConfig.maxStackSize = 10240
         previousSnapshot = RuleRuntime.currentSnapshot()
+        previousOreDictIndex = RuleRuntime.oreDictIndex()
+        RuleRuntime.replaceOreDictIndex(
+            OreDictIndex.fromStackLoader { stack -> if (stack.item === metaIngotItem) setOf("ingotSteel") else emptySet() },
+        )
         DevRuleInjector.resetForTests()
     }
 
@@ -27,6 +39,7 @@ class DevRuleInjectorTest {
     fun restoreState() {
         StackUpUpConfig.maxStackSize = previousMaxStackSize
         RuleRuntime.replaceSnapshot(previousSnapshot)
+        RuleRuntime.replaceOreDictIndex(previousOreDictIndex)
         DevRuleInjector.resetForTests()
     }
 
@@ -48,8 +61,7 @@ class DevRuleInjectorTest {
                 itemId = "gregtech:meta_ingot",
                 metadata = 324,
                 baseLimit = 64,
-                directType = "item",
-                directOreNames = setOf("ingotSteel"),
+                stack = ItemStack(metaIngotItem, 1, 324),
             ),
         )
 

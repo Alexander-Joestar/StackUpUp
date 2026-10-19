@@ -13,9 +13,9 @@ Chinese README: [README.md](README.md) (Chinese)
 ## Status
 
 - Target: Minecraft **1.12.2** + Forge **14.23.5.2847**
-- Current version: **0.2.4**
+- Current version: **0.2.5.dev1**
 - Rule system: DSL v2, using `.su` files or Markdown `.su.md` containers with `state` and `gate`
-- Compatibility layer: [MixinBooter](https://github.com/CleanroomMC/MixinBooter) **11.17** ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/mixin-booter)) + [CleanMix](https://github.com/CleanroomMC/CleanMix) **0.7.2**; `IMixinConnector` registers always-on early/baseline and mod-presence-selected ordinary late Mixin configs, then adds separate capacity configs when inventory expansion is enabled. `StackUpUpCore` conditionally registers the narrow `InventoryStackLimitTransformer` only when the startup switch is enabled and there is no conflict; it targets getters on non-Minecraft `IInventory` classes. MixinBooter 10.7 and the old loaders are historical baselines only
+- Compatibility layer: [MixinBooter](https://github.com/CleanroomMC/MixinBooter) **11.17** ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/mixin-booter)) + [CleanMix](https://github.com/CleanroomMC/CleanMix) **0.7.2**; `IMixinConnector` registers always-on early/baseline and mod-presence-selected ordinary late Mixin configs, then adds separate capacity configs when inventory expansion is enabled. `StackUpUpCore` conditionally registers the narrow `InventoryStackLimitTransformer` only when the startup switch is enabled and there is no conflict; it replaces the literal `64` in concrete `IInventory` / `IItemHandler` / `Slot` capacity getters with a call-time policy lookup at class load. MixinBooter 10.7 and the old loaders are historical baselines only
 
 ## Download
 
@@ -35,7 +35,7 @@ Download StackUpUp from [CurseForge](https://www.curseforge.com/minecraft/mc-mod
 
 - Infrastructure: [Cleanroom Loader](https://github.com/CleanroomMC/Cleanroom), [MixinBooter](https://github.com/CleanroomMC/MixinBooter) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/mixin-booter)), [CleanMix](https://github.com/CleanroomMC/CleanMix), [Forgelin-Continuous](https://github.com/CleanroomMC/Forgelin-Continuous) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/forgelin-continuous)), and [RetroFuturaGradle](https://github.com/GTNewHorizons/RetroFuturaGradle).
 - Storage and automation: [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/applied-energistics-2)), [AE2 Supergiant](https://github.com/CleanroomMC/Applied-Energistics-2), [Refined Storage](https://github.com/refinedmods/refinedstorage) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/refined-storage)), [Simple Storage Network](https://github.com/Lothrazar/StorageNetwork) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/simple-storage-network)), and [Integrated Dynamics](https://github.com/CyclopsMC/IntegratedDynamics) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/integrated-dynamics)).
-- Industry and technology: [NuclearCraft: Overhauled](https://github.com/tomdodd4598/NuclearCraft) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/nuclearcraft-overhauled)), [TechReborn](https://github.com/TechReborn/TechReborn) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/techreborn)), [RebornCore](https://github.com/TechReborn/RebornCore) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/reborncore)), [Ender IO](https://github.com/SleepyTrousers/EnderIO-1.5-1.12) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/ender-io)), [GregTech CEu](https://github.com/GregTechCEu/GregTech) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/gregtech-ce-unofficial)), [IndustrialCraft 2](https://www.curseforge.com/minecraft/mc-mods/industrial-craft), and [ProjectE](https://github.com/sinkillerj/ProjectE) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/projecte)).
+- Industry and technology: [NuclearCraft: Overhauled](https://github.com/tomdodd4598/NuclearCraft) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/nuclearcraft-overhauled)), [TechReborn](https://github.com/TechReborn/TechReborn) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/techreborn)), [RebornCore](https://github.com/TechReborn/RebornCore) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/reborncore)), [Ender IO](https://github.com/SleepyTrousers/EnderIO-1.5-1.12) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/ender-io)), [GregTech CEu](https://github.com/GregTechCEu/GregTech) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/gregtech-ce-unofficial)), [IndustrialCraft 2](https://www.curseforge.com/minecraft/mc-mods/industrial-craft), [Mystical Agriculture](https://github.com/BlakeBr0/MysticalAgriculture) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/mystical-agriculture)), and [ProjectE](https://github.com/sinkillerj/ProjectE) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/projecte)).
 - Building and inventories: [Mantle](https://github.com/SlimeKnights/Mantle) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/mantle)), [Tinkers' Construct](https://github.com/SlimeKnights/TConstruct) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/tinkers-construct)), [LimeLib](https://www.curseforge.com/minecraft/mc-mods/limelib), [Immersive Engineering](https://github.com/BluSunrize/ImmersiveEngineering) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/immersive-engineering)), [Colossal Chests](https://github.com/CyclopsMC/ColossalChests) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/colossal-chests)), [Actually Additions](https://github.com/Ellpeck/ActuallyAdditions) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/actually-additions)), and [Brandon's Core](https://github.com/bradleyq/BrandonsCore) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/brandons-core)).
 
 ## Rule Files
@@ -57,7 +57,7 @@ See [docs/DSL-v2-规则示例.md](docs/DSL-v2-%E8%A7%84%E5%88%99%E7%A4%BA%E4%BE%
 
 ## Commands
 
-Commands: `/stackupup reload`, `/stackupup edit`, `/stackup state get <name>`, `/stackupup state set <name> <value>`, `/stackupup inspect [slot N]`, and `/stackupup inspect block <x> <y> <z> <none|down|up|north|south|west|east> [slot N]`.
+Commands: `/stackupup reload`, `/stackupup edit`, `/stackupup state get <name>`, `/stackupup state set <name> <value>`, `/stackupup inspect [slot N]`, and `/stackupup inspect block <x> <y> <z> <none|down|up|north|south|west|east> [slot N]`.
 
 - `inspect` read-only inspects the server player's currently open container; `inspect slot N` focuses on one container slot. Console/command-block senders can use `inspect block x y z none|down|up|north|south|west|east [slot N]` in a loaded chunk to query an ordinary inventory or an item-handler capability on the selected side.
 - By default, at most 8 slots are listed. The report shows Container, Slot, inventory/handler class names and object IDs local to that report, plus Forge `ownedPackages`-based modId candidates where possible. Multiple candidates are marked ambiguous; unknown ownership is UNKNOWN. Class names are diagnostic evidence only and cannot currently be used as blacklist settings. `InvWrapper.getInv()` is a supported public delegate accessor; other inaccessible handler delegates are explicitly UNKNOWN rather than reflectively inspected.
@@ -117,7 +117,8 @@ after changing either setting.
 - `general.maxStackSize`: global compatibility stack limit, default `64`; rule results and compatibility entry points are clamped to this value.
 - `compat.vanilla.craftingSlotLimit`: workbench grid and crafting-result slot limit, default `64`. `0` keeps vanilla/default behavior; values above `0` use the custom limit. This is mainly a Performance setting: holding Shift to batch-craft very large stacks can cause severe lag, not a balance switch. The effective limit can still be reduced by `general.maxStackSize` and item/recipe limits.
 - `compat.nuclearcraft.speedUpgradeLimit` and `compat.nuclearcraft.energyUpgradeLimit`: NuclearCraft speed/energy upgrade stack limits, default `0` (keep NuclearCraft's native behavior); values above `0` use a custom limit. These settings have no effect when NuclearCraft is not loaded.
-- `compat.inventoryExpansion.enabled`: startup inventory-capacity expansion switch, default `true` for new or missing configuration (broad-default); an existing explicit `false` remains off, and setting `false` is a restart-time emergency fallback. When enabled it registers the narrow `IInventory#getInventoryStackLimit()` getter transformer and queues optional capacity Mixin configs. When off, those optional capacity hooks are skipped; ItemStack rules, always-loaded early/baseline configs, and ordinary late configs remain. The dedicated `InventoryWriteLimitMixin` in `mixins.stackupup.baseline.early.json` still calls `resolveInventoryWriteLimit`; neither this switch nor `modIds` disables that writer-safety path.
+- `compat.inventoryExpansion.enabled`: startup inventory-capacity expansion switch, default `true` for new or missing configuration (broad-default); an existing explicit `false` remains off, and setting `false` is a restart-time emergency fallback. When enabled it registers the structural capacity getter transformer (capacity getters of concrete `IInventory` / `IItemHandler` / `Slot` implementations) and queues optional capacity Mixin configs. When off, those optional capacity hooks are skipped; ItemStack rules, always-loaded early/baseline configs, and ordinary late configs remain. The dedicated `InventoryWriteLimitMixin` in `mixins.stackupup.baseline.early.json` still calls `resolveInventoryWriteLimit`; neither this switch nor `modIds` disables that writer-safety path.
+- `debug.mergeLimitTrace`: diagnostic switch, default `false`. It logs each container merge slot-limit resolution for a single reproduction and does not change the resolved value; leave it off in normal play.
 - `compat.inventoryStackLimitBlacklist.modIds`: selectively bypass capacity expansion for listed mods and skip their capacity-late configs; an empty list is a no-op. `/stackupup inspect` can suggest a candidate, but is not a safety proof.
 
 The blacklist uses Forge `ownedPackages` and exact package boundaries for the actual receiver or supported public owner. Merely extending a listed superclass or implementing its interface does not automatically exclude an unlisted addon. Shared objects without a public owner, private delegates, and receiverless constructor paths can remain UNKNOWN. Startup fails if a loaded mod has no attributable packages; an ID for a mod that is not loaded has no effect. This is not a whole-mod disable switch. MixinBooter's `general.blacklistedConfigs`, by contrast, suppresses an entire named config (which may contain safety Mixins) and is not a capacity-only blacklist.
@@ -135,13 +136,17 @@ mod's own overflow handling.
 
 The current architecture combines a narrow coremod getter transformer with separated Mixin profiles. `StackUpUpCore`
 registers `InventoryStackLimitTransformer` only when `compat.inventoryExpansion.enabled=true` and there is no detected
-conflict; it targets `getInventoryStackLimit()I` (including the 1.12 SRG name) on concrete non-Minecraft `IInventory`
-classes. It is not the removed broad dynamic ASM replacement layer. Through `IMixinConnector`,
+conflict. At class load it matches concrete `IInventory` / `IItemHandler` / `Slot` implementations by hierarchy
+regardless of namespace (so vanilla concrete classes are matched too) and replaces the literal `64` inside their
+capacity getters (`getInventoryStackLimit()I` including the 1.12 SRG name, `getSlotLimit(I)I`, `getSlotStackLimit()I`,
+`getItemStackLimit(ItemStack)`) with a call-time policy lookup; interfaces, abstract classes, this mod's own package, and
+the config-managed `InventoryCrafting` / `InventoryCraftResult` are excluded. It is not the removed broad dynamic ASM
+replacement layer. Through `IMixinConnector`,
 `StackUpUpMixinConnector` always queues ordinary early and baseline early configs, and queues ordinary late configs when
 the target mod is present. It adds `mixins.stackupup.capacity.early.json` and `mixins.stackupup.capacity.late.*.json` only
 when expansion is enabled; `modIds` skips only capacity-late configs for listed mods.
 
-Some ordinary late modules in the connector are listed below; configs are queued only when the target mod is present, and registration does not verify its real write path:
+Some registered late modules in the connector are listed below (ordinary and capacity configs are registered in separate tables); configs are queued only when the target mod is present, and registration does not verify its real write path:
 
 - [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/applied-energistics-2))
 - [Applied Energistics 2 Supergiant](https://github.com/CleanroomMC/Applied-Energistics-2)
@@ -160,8 +165,9 @@ Some ordinary late modules in the connector are listed below; configs are queued
 - [Integrated Dynamics](https://github.com/CyclopsMC/IntegratedDynamics) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/integrated-dynamics))
 - [LimeLib](https://www.curseforge.com/minecraft/mc-mods/limelib)
 - [Immersive Engineering](https://github.com/BluSunrize/ImmersiveEngineering) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/immersive-engineering))
-- IC2 Classic: `mixins.stackupup.late.ic2classic.json` is an ordinary config queued when the mod is present. Its `SlotBaseMixin` caps the reported slot limit at native 64 and is not affected by the capacity switch or an `ic2` entry in `modIds`; only its separate `mixins.stackupup.capacity.late.ic2classic.json` config is subject to those controls.
-- Farmer's Delight Legacy: the separate optional `mixins.stackupup.capacity.late.farmersdelight.json` Mixin currently names only Basket, Cabinet, Cooking Pot, and Skillet inventory targets. This does not cover every inventory or prove real write capacity.
+- IC2 Classic: `mixins.stackupup.late.ic2classic.json` is an ordinary config queued when the mod is present. Its `SlotBaseMixin` caps the reported slot limit at native 64 and is not affected by the capacity switch or an `ic2` entry in `modIds`. The only IC2-related entry in the capacity table is `mixins.stackupup.capacity.late.ic2.json` (registered under mod id `ic2`); there is no `mixins.stackupup.capacity.late.ic2classic.json` file.
+- Mystical Agriculture: capacity-only — `mixins.stackupup.capacity.late.mysticalagriculture.json`, with no ordinary config. The target is the capacity getter of the abstract base class `TileEssenceReprocessor`: `InventoryStackLimitTransformer` skips `ACC_ABSTRACT` classes at class level, the getter body is the literal `64`, and none of the six concrete reprocessor subclasses (Inferium/Intermedium/Prudentium/Superium/Supremium/Ultimate) overrides it, so a single mixin on the base covers all six machines; the write side (`setInventorySlotContents`) already clamps against that same getter, so it was neither changed nor needed changing. This conclusion comes from jar bytecode plus a repository structural test and is **not validated in a running game**.
+- Farmer's Delight Legacy: there is no dedicated Mixin config. Its Basket, Cabinet, Cooking Pot, and Skillet are concrete `IInventory` implementations whose capacity getter only returns the literal `64`, so the structural transformer described above rewrites them at class load. This does not cover every inventory in that mod or prove real write capacity.
 
 These are source registration/target details, not third-party runtime validation or blanket compatibility promises.
 
@@ -188,29 +194,37 @@ general {
   one does not automatically suppress the other. Restart after changing it. Do not blacklist
   `mixins.stackupup.early.json` or `mixins.stackupup.baseline.early.json`, as that disables base or dedicated writer-safety paths.
 
-The source currently registers 19 ordinary late configs; separate capacity configs are registered and queued only
-when inventory expansion is enabled:
+The source currently registers 5 ordinary late configs (4 `modules` entries + 1 `classicModules` entry); they are not
+affected by the capacity switch or `modIds`:
 
 ```
-mixins.stackupup.late.actuallyadditions.json
 mixins.stackupup.late.ae2.json
-mixins.stackupup.late.ae2supergiant.json
-mixins.stackupup.late.brandonscore.json
-mixins.stackupup.late.colossalchests.json
-mixins.stackupup.late.cyclopscore.json
 mixins.stackupup.late.enderio.json
-mixins.stackupup.late.farmersdelight.json
 mixins.stackupup.late.gregtech.json
-mixins.stackupup.late.ic2.json
 mixins.stackupup.late.ic2classic.json
-mixins.stackupup.late.immersiveengineering.json
-mixins.stackupup.late.integrateddynamics.json
-mixins.stackupup.late.limelib.json
-mixins.stackupup.late.mantle.json
 mixins.stackupup.late.nuclearcraft.json
-mixins.stackupup.late.refinedstorage.json
-mixins.stackupup.late.storagenetwork.json
-mixins.stackupup.late.techreborn.json
+```
+
+A separate table registers 16 capacity late configs (`capacityModules`). The two tables are independent and do not map
+one-to-one; capacity configs are queued only when inventory expansion is enabled:
+
+```
+mixins.stackupup.capacity.late.actuallyadditions.json
+mixins.stackupup.capacity.late.ae2.json
+mixins.stackupup.capacity.late.ae2supergiant.json
+mixins.stackupup.capacity.late.brandonscore.json
+mixins.stackupup.capacity.late.colossalchests.json
+mixins.stackupup.capacity.late.cyclopscore.json
+mixins.stackupup.capacity.late.enderio.json
+mixins.stackupup.capacity.late.ic2.json
+mixins.stackupup.capacity.late.immersiveengineering.json
+mixins.stackupup.capacity.late.integrateddynamics.json
+mixins.stackupup.capacity.late.limelib.json
+mixins.stackupup.capacity.late.mantle.json
+mixins.stackupup.capacity.late.mysticalagriculture.json
+mixins.stackupup.capacity.late.nuclearcraft.json
+mixins.stackupup.capacity.late.refinedstorage.json
+mixins.stackupup.capacity.late.techreborn.json
 ```
 
 For implementation notes, see [docs/StackUpUp-实现与兼容性说明.md](docs/StackUpUp-%E5%AE%9E%E7%8E%B0%E4%B8%8E%E5%85%BC%E5%AE%B9%E6%80%A7%E8%AF%B4%E6%98%8E.md) (Chinese).

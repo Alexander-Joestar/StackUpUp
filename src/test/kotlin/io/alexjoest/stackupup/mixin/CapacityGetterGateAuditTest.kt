@@ -33,7 +33,6 @@ class CapacityGetterGateAuditTest {
             "late/integrateddynamics/TileMechanicalMachineMixin.java",
             "late/limelib/CommonTileInventoryMixin.java",
             "late/mantle/TileInventoryMixin.java",
-            "late/mysticalagriculture/MysticalAgricultureInventoryLimitMixin.java",
             "late/nuclearcraft/NuclearCraftTileInventoryLimitMixin.java",
             "late/refinedstorage/NetworkNodeStorageMonitorMixin.java",
             "late/techreborn/RebornCoreInventoryMixin.java",
@@ -58,11 +57,15 @@ class CapacityGetterGateAuditTest {
     }
 
     /**
-     * EnderIO 机器容量 mixin 只保留 `AbstractInventoryMachineEntity`：该类是 `public abstract class`，
-     * `InventoryStackLimitTransformer` 现在同样改写抽象类的具体 getter，两条路径落到同一份字节码，
-     * mixin 退化为 passthrough（读到 original 时它已是扩展值），作为防御性第二路径保留。
-     * `TileEnchanter` 的 `getInventoryStackLimit()` 在 concrete 类中只 `return 64;`，transformer 已在类加载时改写，
-     * 因此不再作为 mixin target（否则同一字面量被替换两次）。
+     * EnderIO 机器容量 mixin 只保留 `AbstractInventoryMachineEntity`，而且它**不是** transformer 的重复路径：
+     * `javap -p` 在 `EnderIO-CEu-5.5.1` 上显示该类是 `public abstract class ... extends
+     * AbstractMachineEntity`，整条祖先链（`AbstractMachineEntity` → `TileEntityEio` →
+     * `com.enderio.core.common.TileEntityBase` → `TileEntity`）**没有任何一环 implements `IInventory`**；
+     * 真正桥接 `IInventory` 的是内部类 `AbstractInventoryMachineEntity$InventoryWrapper`，它的
+     * `func_70297_j_()` 转调 `this$0.getInventoryStackLimit()`。因此 `isStackLimitTarget` 不会命中
+     * `AbstractInventoryMachineEntity`，transformer 不改写它的 `bipush 64`，这个 mixin 是唯一的容量来源。
+     * `TileEnchanter`（`implements ISidedInventory`，getter 是 `func_70297_j_()` + `bipush 64`）满足结构化
+     * 目标判定，transformer 已在类加载时改写它，所以不再作为 mixin target（否则同一字面量被替换两次）。
      */
     @Test
     fun enderIoMachineLimitMixinShouldTargetOnlyTheAbstractBase() {
@@ -71,8 +74,8 @@ class CapacityGetterGateAuditTest {
         assertEquals(
             listOf("crazypants.enderio.base.machine.baselegacy.AbstractInventoryMachineEntity"),
             mixinTargets(source),
-            "只允许抽象父类目标：transformer 与 mixin 现在都改写该 getter，mixin 是防御性第二路径" +
-                "；concrete 类里只 return 64; 的 TileEnchanter 由 transformer 覆盖",
+            "只允许抽象父类目标：该类不 implements IInventory，transformer 不会命中它，" +
+                "mixin 是唯一容量来源；而 concrete 且 implements IInventory 的 TileEnchanter 由 transformer 覆盖",
         )
     }
 

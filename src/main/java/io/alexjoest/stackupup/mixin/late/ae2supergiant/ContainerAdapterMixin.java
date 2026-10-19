@@ -18,11 +18,17 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
  * still advertises no more than the smallest limit a slot actually accepts, and the AE2S write path
  * ({@code inventory.setItemDirect} / {@code extractItem}) is untouched.</p>
  *
- * <p>Kept, not deleted. The transformer ({@code InventoryStackLimitTransformer}) already rewrites the
- * same literal at class load, so removing this mixin would leave AE2S container capacity defined
- * solely by that class-load rewrite while this file still looks like it owns the getter. Keeping the
- * explicit constant hook states the AE2S decision where a reader looks for it, and both paths
- * resolve the same compatibility size, so they agree rather than fight.</p>
+ * <p>Kept, not deleted. This file targets a genuinely different structural concern than the
+ * transformer, though the literal is the same: {@code ae2.api.inventories.ContainerAdapter} is a
+ * package-private class that {@code implements net.minecraft.inventory.IInventory} ({@code javap -p}
+ * on {@code AppliedEnergistics2-Supergiant-1.0.15}), so the transformer <i>does</i> rewrite this
+ * literal at class load and the two paths agree rather than fight. The reason this stays is that the
+ * 64 here is <b>not</b> an advertised limit: it is the initial value of a {@code Math.min} fold. The
+ * transformer would blindly turn it into the compatibility size, which is harmless because the fold
+ * still takes the minimum; but that is an accident of this method's shape, not a guarantee. Keeping
+ * the explicit constant hook puts the AE2S decision where a reader looks for it, with the
+ * blacklist gate attached, and documents that the first fold value is allowed to exceed any single
+ * slot's limit. Both paths resolve the same compatibility size, so the outcome is identical.
  *
  * <p><b>Method name:</b> {@code ContainerAdapter implements IInventory}, so the reobfuscated release
  * jar declares {@code getInventoryStackLimit()} as {@code func_70297_j_()I} and the MCP name exists

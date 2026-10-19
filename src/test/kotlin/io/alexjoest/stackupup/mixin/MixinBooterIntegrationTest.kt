@@ -222,7 +222,6 @@ class MixinBooterIntegrationTest {
                 "mixins.stackupup.capacity.late.enderio.json" to "enderio",
                 "mixins.stackupup.capacity.late.ic2.json" to "ic2",
                 "mixins.stackupup.capacity.late.mantle.json" to "mantle",
-                "mixins.stackupup.capacity.late.mysticalagriculture.json" to "mysticalagriculture",
                 "mixins.stackupup.capacity.late.refinedstorage.json" to "refinedstorage",
                 "mixins.stackupup.capacity.late.integrateddynamics.json" to "integrateddynamics",
                 "mixins.stackupup.capacity.late.limelib.json" to "limelib",

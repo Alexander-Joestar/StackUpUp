@@ -10,7 +10,7 @@ compatibility patches for common hard-coded `64` limits.
 
 Chinese README: [README.md](README.md) (Chinese)
 
-Changelog: [CHANGELOG.en.md](CHANGELOG.en.md) (English), [CHANGELOG.md](CHANGELOG.md) (Chinese)
+Changelog: [CHANGELOG.md](CHANGELOG.md) (bilingual, Chinese and English)
 
 ## Status
 

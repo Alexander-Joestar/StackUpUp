@@ -13,7 +13,7 @@ Chinese README: [README.md](README.md) (Chinese)
 ## Status
 
 - Target: Minecraft **1.12.2** + Forge **14.23.5.2847**
-- Current version: **0.2.5.dev1**
+- Current version: **0.2.5**
 - Rule system: DSL v2, using `.su` files or Markdown `.su.md` containers with `state` and `gate`
 - Compatibility layer: [MixinBooter](https://github.com/CleanroomMC/MixinBooter) **11.17** ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/mixin-booter)) + [CleanMix](https://github.com/CleanroomMC/CleanMix) **0.7.2**; `IMixinConnector` registers always-on early/baseline and mod-presence-selected ordinary late Mixin configs, then adds separate capacity configs when inventory expansion is enabled. `StackUpUpCore` conditionally registers the narrow `InventoryStackLimitTransformer` only when the startup switch is enabled and there is no conflict; it replaces the literal `64` in concrete `IInventory` / `IItemHandler` / `Slot` capacity getters with a call-time policy lookup at class load. MixinBooter 10.7 and the old loaders are historical baselines only
 

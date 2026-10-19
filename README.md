@@ -11,7 +11,7 @@ English documentation: [README.en.md](README.en.md)
 ## 当前状态
 
 - 目标版本：Minecraft **1.12.2** + Forge **14.23.5.2847**
-- 当前版本：**0.2.5.dev1**
+- 当前版本：**0.2.5**
 - 规则系统：DSL v2，支持 `.su` 与带 `state` / `gate` 的 `.su.md`
 - 兼容层：[MixinBooter](https://github.com/CleanroomMC/MixinBooter) **11.17**（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/mixin-booter)）+ [CleanMix](https://github.com/CleanroomMC/CleanMix) **0.7.2**；`IMixinConnector` 注册常驻 early/baseline 与按 mod presence 选择的普通 late Mixin 配置，并在库存容量扩展开启时加入独立 capacity 配置；`StackUpUpCore` 仅在启动开关开启且无冲突时注册窄范围 `InventoryStackLimitTransformer`，在类加载时把具体 `IInventory` / `IItemHandler` / `Slot` 实现者容量 getter 里的字面量 `64` 换成对调用时策略的查询；10.7 与旧 loader 仅为历史基线
 

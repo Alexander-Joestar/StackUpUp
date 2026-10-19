@@ -139,7 +139,7 @@ StackUpUp 对遵循原版堆叠语义的模组通常直接生效；对自行写�
 - [RFTools](https://github.com/McJtyMods/RFTools)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/rftools)）
 
 - IC2 Classic：`mixins.stackupup.late.ic2classic.json` 是 Mod 在场时加载的 ordinary 配置，其中 `SlotBaseMixin` 将报告的槽位上限收敛到原生 64；它不受容量开关或 `modIds` 中 `ic2` 的影响。capacity 表里与 IC2 相关的只有 `mixins.stackupup.capacity.late.ic2.json`（登记 modId `ic2`），并不存在 `mixins.stackupup.capacity.late.ic2classic.json` 这个文件。
-- Mystical Agriculture：只有 capacity 配置 `mixins.stackupup.capacity.late.mysticalagriculture.json`，没有 ordinary 配置。目标是抽象基类 `TileEssenceReprocessor` 的容量 getter：getter 体是字面量 `64`，6 个具体再处理器子类（Inferium/Intermedium/Prudentium/Superium/Supremium/Ultimate）都不重写它。transformer 现在也会改写抽象基类里的具体 getter 体，所以这条 Mixin 是防御性第二路径（transformer 先生效时它只是 passthrough）；写入侧 `setInventorySlotContents` 落盘前用同一个 getter 夹取，未改动也无需改动。这条结论来自 jar 字节码与仓库结构测试；维护者已在实机测试 6 台精华再处理器，未复现放入超量物品的问题，实机测试只覆盖这条路径，未做矩阵式全量验证。
+- Mystical Agriculture：**0.2.5.1 起没有独立的 capacity 配置**——`mixins.stackupup.capacity.late.mysticalagriculture.json` 与 `MysticalAgricultureInventoryLimitMixin` 已删除，配置表里也没有 ordinary 配置。原来的目标是抽象基类 `TileEssenceReprocessor`：它 `implements ISidedInventory`，getter 体是纯字面量 `bipush 64`，6 个具体再处理器子类（Inferium/Intermedium/Prudentium/Superium/Supremium/Ultimate）都不重写它，所以结构化 transformer 本来就已经覆盖这条路径，那条 Mixin 只是重复登记。删除后容量改由 transformer 提供，**行为不变**；写入侧 `setInventorySlotContents` 落盘前仍用同一个 getter 夹取，未改动也无需改动。维护者此前已在实机测试 6 台精华再处理器、未复现放入超量物品的问题，该实机结论仍只覆盖这条路径。
 - RFTools（0.2.5.1 新增）：只有一条 capacity 配置 `mixins.stackupup.capacity.late.rftools.json`（登记 modId `rftools`），没有 ordinary 配置。**容量的读侧主要靠公共改写**：Modular Storage、Storage Scanner 等容器的容量来自 `mcjty.lib.container.DefaultSidedInventory` 的接口 default `getInventoryStackLimit()`（字面 `return 64;`），transformer 现在会改写接口 default 方法体，实现者自动继承扩容量，因此没有逐类登记它们的容器类。**唯一的显式补丁是安全性的**：`StorageScannerTileEntity#update` 把未注入完的余量写回输入槽时，`InventoryHelper.setInventorySlotContents(stackLimit, index, stack)` 的第一个参数是上限而非槽位下标，`McJtyLib` 会就地把 `stack` 截断到该上限，于是没有可路由存储时放入 >64 会在下一帧被截断并丢掉超出部分。`RftoolsStorageScannerLimitMixin` 用 `@ModifyArg(index = 0)` 把该参数换成 receiver 自己的 `getInventoryStackLimit()`，不改写任何写入方法。**该修复已由维护者实机确认**，实机只覆盖这一条路径。
 - Farmer's Delight Legacy：没有独立 Mixin 配置。其 Basket、Cabinet、Cooking Pot、Skillet 等具体 `IInventory` 实现只返回字面量 `64`，由上面的结构化 transformer 在类加载时改写；这不表示覆盖该 Mod 的所有库存或证明其真实写入路径。
 
@@ -172,7 +172,7 @@ mixins.stackupup.late.ic2classic.json
 mixins.stackupup.late.nuclearcraft.json
 ```
 
-另注册 17 个 capacity late 配置（`capacityModules` 17 条）。两套表分开登记、不是一一对应，且 capacity 配置仅在容量扩展开启时加入：
+另注册 16 个 capacity late 配置（`capacityModules` 16 条）。两套表分开登记、不是一一对应，且 capacity 配置仅在容量扩展开启时加入：
 
 ```
 mixins.stackupup.capacity.late.actuallyadditions.json
@@ -187,7 +187,6 @@ mixins.stackupup.capacity.late.immersiveengineering.json
 mixins.stackupup.capacity.late.integrateddynamics.json
 mixins.stackupup.capacity.late.limelib.json
 mixins.stackupup.capacity.late.mantle.json
-mixins.stackupup.capacity.late.mysticalagriculture.json
 mixins.stackupup.capacity.late.nuclearcraft.json
 mixins.stackupup.capacity.late.refinedstorage.json
 mixins.stackupup.capacity.late.rftools.json

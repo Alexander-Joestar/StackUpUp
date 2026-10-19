@@ -21,6 +21,10 @@
 - 黑名单只让容量扩展跳过所列模组，不会关闭它们的其他兼容配置，也不会全局关掉其他模组。
 - 容量「广告面」的一个已知边界：`getSlotLimit` 只影响显示与余量判断，真实写入读的是库存自己的上限。若某个 wrapper 与它包装的库存分属两个 Mod（McJtyLib 与 RFTools 就是这种情况），只把库存所在的 Mod 加进黑名单会让 wrapper 继续广告扩容后的值，此时显示的余量大于实际能放进去的数量——不会丢物，只是多几次无用的插入尝试。需要时把两个 Mod 都加进名单。
 
+### 内部清理
+
+- 删掉了 Mystical Agriculture 精华再处理器的那条专用补丁：它的目标基类本来就由通用容量补丁覆盖，那条补丁只是重复登记。**6 台机器的行为不变**（0.2.5 里的扩容能力保留），此处不涉及任何功能增减。
+
 ### English
 
 This is a fix release: the previous "let containers report their own real capacity" approach missed the containers that write `64` inside an interface default method or an abstract base class, so those still clamped at 64; the same path also hid a truncation bug where the expansion looked active but the leftover was cut off and lost.
@@ -39,6 +43,10 @@ This is a fix release: the previous "let containers report their own real capaci
 - A mod that genuinely conflicts can still be added to `compat.inventoryStackLimitBlacklist.modIds` as an emergency bypass; the switch and the list behave as before and still require a restart.
 - The blacklist only makes capacity expansion skip the listed mods; it does not disable their other compatibility configs and does not switch off other mods globally.
 - One known edge on the advertised side: `getSlotLimit` only affects display and free-space checks, while real writes read the inventory's own limit. When a wrapper and the inventory it wraps belong to two different mods (McJtyLib and RFTools are such a pair), adding only the inventory's mod to the blacklist leaves the wrapper advertising the expanded value, so the reported free space is larger than what actually fits — no items are lost, it just costs a few pointless insert attempts. Add both mods to the list when that matters.
+
+#### Internal cleanup
+
+- Removed the dedicated patch for the Mystical Agriculture essence reprocessors: their base class is already covered by the general capacity patch, so that entry only registered the same target twice. **The six machines behave exactly as before** — the expanded capacity from 0.2.5 is kept, and nothing is gained or lost here.
 
 ## 0.2.5
 

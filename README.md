@@ -136,7 +136,7 @@ StackUpUp 对遵循原版堆叠语义的模组通常直接生效；对自行写�
 - [Immersive Engineering](https://github.com/BluSunrize/ImmersiveEngineering)（[CurseForge](https://www.curseforge.com/minecraft/mc-mods/immersive-engineering)）
 
 - IC2 Classic：`mixins.stackupup.late.ic2classic.json` 是 Mod 在场时加载的 ordinary 配置，其中 `SlotBaseMixin` 将报告的槽位上限收敛到原生 64；它不受容量开关或 `modIds` 中 `ic2` 的影响。capacity 表里与 IC2 相关的只有 `mixins.stackupup.capacity.late.ic2.json`（登记 modId `ic2`），并不存在 `mixins.stackupup.capacity.late.ic2classic.json` 这个文件。
-- Mystical Agriculture：只有 capacity 配置 `mixins.stackupup.capacity.late.mysticalagriculture.json`，没有 ordinary 配置。目标是被 transformer 跳过的抽象基类 `TileEssenceReprocessor` 的容量 getter：`InventoryStackLimitTransformer` 在类级跳过 `ACC_ABSTRACT` 类，而该 getter 体是字面量 `64`，6 个具体再处理器子类（Inferium/Intermedium/Prudentium/Superium/Supremium/Ultimate）都不重写它，所以只能由 Mixin 打在基类上一次覆盖 6 台机器；写入侧 `setInventorySlotContents` 落盘前用同一个 getter 夹取，未改动也无需改动。这条结论来自 jar 字节码与仓库结构测试，**没有实机验证**。
+- Mystical Agriculture：只有 capacity 配置 `mixins.stackupup.capacity.late.mysticalagriculture.json`，没有 ordinary 配置。目标是被 transformer 跳过的抽象基类 `TileEssenceReprocessor` 的容量 getter：`InventoryStackLimitTransformer` 在类级跳过 `ACC_ABSTRACT` 类，而该 getter 体是字面量 `64`，6 个具体再处理器子类（Inferium/Intermedium/Prudentium/Superium/Supremium/Ultimate）都不重写它，所以只能由 Mixin 打在基类上一次覆盖 6 台机器；写入侧 `setInventorySlotContents` 落盘前用同一个 getter 夹取，未改动也无需改动。这条结论来自 jar 字节码与仓库结构测试；维护者已在实机测试 6 台精华再处理器，未复现放入超量物品的问题，实机测试只覆盖这条路径，未做矩阵式全量验证。
 - Farmer's Delight Legacy：没有独立 Mixin 配置。其 Basket、Cabinet、Cooking Pot、Skillet 等具体 `IInventory` 实现只返回字面量 `64`，由上面的结构化 transformer 在类加载时改写；这不表示覆盖该 Mod 的所有库存或证明其真实写入路径。
 
 以上是源码中的注册和目标范围，不是第三方运行时验证或全面兼容承诺。

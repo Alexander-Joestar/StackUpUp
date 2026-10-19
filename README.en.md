@@ -10,6 +10,8 @@ compatibility patches for common hard-coded `64` limits.
 
 Chinese README: [README.md](README.md) (Chinese)
 
+Changelog: [CHANGELOG.en.md](CHANGELOG.en.md) (English), [CHANGELOG.md](CHANGELOG.md) (Chinese)
+
 ## Status
 
 - Target: Minecraft **1.12.2** + Forge **14.23.5.2847**
@@ -166,7 +168,7 @@ Some registered late modules in the connector are listed below (ordinary and cap
 - [LimeLib](https://www.curseforge.com/minecraft/mc-mods/limelib)
 - [Immersive Engineering](https://github.com/BluSunrize/ImmersiveEngineering) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/immersive-engineering))
 - IC2 Classic: `mixins.stackupup.late.ic2classic.json` is an ordinary config queued when the mod is present. Its `SlotBaseMixin` caps the reported slot limit at native 64 and is not affected by the capacity switch or an `ic2` entry in `modIds`. The only IC2-related entry in the capacity table is `mixins.stackupup.capacity.late.ic2.json` (registered under mod id `ic2`); there is no `mixins.stackupup.capacity.late.ic2classic.json` file.
-- Mystical Agriculture: capacity-only — `mixins.stackupup.capacity.late.mysticalagriculture.json`, with no ordinary config. The target is the capacity getter of the abstract base class `TileEssenceReprocessor`: `InventoryStackLimitTransformer` skips `ACC_ABSTRACT` classes at class level, the getter body is the literal `64`, and none of the six concrete reprocessor subclasses (Inferium/Intermedium/Prudentium/Superium/Supremium/Ultimate) overrides it, so a single mixin on the base covers all six machines; the write side (`setInventorySlotContents`) already clamps against that same getter, so it was neither changed nor needed changing. This conclusion comes from jar bytecode plus a repository structural test and is **not validated in a running game**.
+- Mystical Agriculture: capacity-only — `mixins.stackupup.capacity.late.mysticalagriculture.json`, with no ordinary config. The target is the capacity getter of the abstract base class `TileEssenceReprocessor`: `InventoryStackLimitTransformer` skips `ACC_ABSTRACT` classes at class level, the getter body is the literal `64`, and none of the six concrete reprocessor subclasses (Inferium/Intermedium/Prudentium/Superium/Supremium/Ultimate) overrides it, so a single mixin on the base covers all six machines; the write side (`setInventorySlotContents`) already clamps against that same getter, so it was neither changed nor needed changing. This conclusion comes from jar bytecode plus a repository structural test; the maintainer has since tested the six essence reprocessors in-game without reproducing the oversized-insert issue, which covers this path only and is not a matrix-wide validation.
 - Farmer's Delight Legacy: there is no dedicated Mixin config. Its Basket, Cabinet, Cooking Pot, and Skillet are concrete `IInventory` implementations whose capacity getter only returns the literal `64`, so the structural transformer described above rewrites them at class load. This does not cover every inventory in that mod or prove real write capacity.
 
 These are source registration/target details, not third-party runtime validation or blanket compatibility promises.

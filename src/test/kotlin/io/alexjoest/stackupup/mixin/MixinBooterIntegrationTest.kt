@@ -230,6 +230,7 @@ class MixinBooterIntegrationTest {
                 "mixins.stackupup.capacity.late.nuclearcraft.json" to "nuclearcraft",
                 "mixins.stackupup.capacity.late.colossalchests.json" to "colossalchests",
                 "mixins.stackupup.capacity.late.techreborn.json" to "techreborn",
+                "mixins.stackupup.capacity.late.rftools.json" to "rftools",
             ),
             connector.capacityModules.map { it.config to it.modId },
         )

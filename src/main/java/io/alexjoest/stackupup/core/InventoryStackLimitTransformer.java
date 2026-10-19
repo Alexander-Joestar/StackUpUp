@@ -14,14 +14,22 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Structural class-load transformer for concrete inventory, item-handler, and slot classes.
+ * Structural class-load transformer for inventory, item-handler, and slot capacity getters.
  *
- * <p>Every concrete class that implements {@code IInventory} or {@code IItemHandler}, or extends
- * {@code Slot}, is a target regardless of namespace: only BIPUSH 64 constants in the supported
- * capacity methods are replaced, so classes that delegate or compute their limit are untouched.
- * Class names whose capacity is owned by an explicit configuration path are excluded, as are
- * interfaces, abstract classes, and this mod's own package. Hierarchy metadata is read from bytes;
- * no target class is resolved or initialized.</p>
+ * <p>Every class that implements {@code IInventory} or {@code IItemHandler}, or extends
+ * {@code Slot}, and declares a supported capacity method with a body is a target regardless of
+ * namespace and regardless of whether the class or the method is concrete: interface {@code default}
+ * methods and concrete methods on abstract classes are rewritten too, which is what lets the
+ * implementations and subclasses that never override the getter inherit the expanded capacity
+ * (for vanilla, {@code EntityMinecartContainer} is abstract and its concrete
+ * {@code EntityMinecartChest} / {@code EntityMinecartHopper} declare no getter of their own). Only
+ * BIPUSH 64 constants in the supported capacity methods are replaced, so classes that delegate or
+ * compute their limit are untouched. Declarations without a body to rewrite stay untouched even
+ * inside a target class: an interface or abstract getter ({@code ACC_ABSTRACT}), a {@code native}
+ * method, and a {@code static} method (no {@code this} to emit the receiver hook with) are skipped
+ * per method, not per class. Class names whose capacity is owned by an explicit configuration path
+ * are excluded, as is this mod's own package. Hierarchy metadata is read from bytes; no target class
+ * is resolved or initialized.</p>
  *
  * <p>The hook call is emitted unconditionally and {@link InventoryStackLimitHook} resolves the value
  * when the getter runs, so a class transformed before the startup policy is prepared still resolves
@@ -37,10 +45,19 @@ import java.util.Set;
  * (abstract, own setter). Those classes either clamp their own writes to the same getter they
  * advertise ({@code TileEntityFurnace}, {@code TileEntityHopper}, {@code EntityMinecartContainer})
  * or do not clamp at all ({@code TileEntityBrewingStand}), so advertised and stored capacity stay
- * consistent, but none of them receives an item-aware write rule. Because abstract classes are
- * skipped here, {@code EntityMinecartChest} and {@code EntityMinecartHopper} keep resolving 64
- * from the inherited declaration, and the vanilla mixin path does not replace that today because
- * it matches receiver classes exactly.</p>
+ * consistent, but none of them receives an item-aware write rule. {@code EntityMinecartChest} and
+ * {@code EntityMinecartHopper} inherit their getter from the abstract
+ * {@code EntityMinecartContainer}, so the inherited declaration is patched here and both now
+ * advertise the compatibility limit; their inherited setter clamps against that same getter, so the
+ * raise is consistent rather than advertised-only.</p>
+ *
+ * <p>Blacklist scope differs by check. The class-load check ({@code policy.isBlacklisted}) sees only
+ * the name of the class being rewritten, so it decides whether a declaring class is patched at all:
+ * an interface {@code default} method can be excluded only by blacklisting the package that declares
+ * the interface, never by blacklisting an implementing mod. The hook call then resolves at getter
+ * time from the actual receiver class, so a blacklisted implementing package still receives the
+ * original 64 from the patched declaration. The patched interface keeps the hook call and stays a
+ * no-op for those receivers.</p>
  */
 public final class InventoryStackLimitTransformer implements IClassTransformer {
     private static final int VANILLA_STACK_LIMIT = 64;
@@ -87,7 +104,6 @@ public final class InventoryStackLimitTransformer implements IClassTransformer {
                 || isExcludedClass(metadata.name)
                 || isExcludedClass(name)
                 || isExcludedClass(transformedName)
-                || (metadata.access & (Opcodes.ACC_INTERFACE | Opcodes.ACC_ABSTRACT)) != 0
                 || policy.isBlacklisted(metadata.name)
                 || !hierarchyRepository.isStackLimitTarget(metadata)) {
                 return basicClass;

@@ -28,8 +28,9 @@ class MysticalAgricultureMixinSourceTest {
         assertTrue(Files.isRegularFile(Paths.get(sourceRelative)), "mixin 源必须存在于 package 对应路径：$sourceRelative")
         val mixin = String(Files.readAllBytes(Paths.get(sourceRelative)), Charsets.UTF_8)
 
-        // 唯一目标：abstract 基类。transformer 按 ACC_ABSTRACT 在类级跳过，6 个具体子类都没有自己的 getter，
-        // 因此只打基类，不逐个子类重复登记。
+        // 唯一目标：abstract 基类。transformer 现在也改写抽象类的具体 getter（两条路径落到同一份
+        // 字节码，mixin 退化为 passthrough），6 个具体子类都没有自己的 getter，因此只打基类，
+        // 不逐个子类重复登记。
         assertTrue(mixin.contains("targets = \"$TARGET_CLASS\""), "目标必须是 abstract 的 TileEssenceReprocessor")
         assertEquals(1, Regex("targets = ").findAll(mixin).count(), "只允许一个 @Mixin 目标；不得逐个子类登记")
         assertTrue(mixin.contains("@Pseudo"), "mod 未加载时目标类不在编译类路径，必须 Pseudo 跳过")

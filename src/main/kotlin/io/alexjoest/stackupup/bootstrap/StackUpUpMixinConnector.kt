@@ -329,6 +329,7 @@ class StackUpUpMixinConnector : IMixinConnector {
         LateMixinModule("mixins.stackupup.capacity.late.nuclearcraft.json", "nuclearcraft"),
         LateMixinModule("mixins.stackupup.capacity.late.colossalchests.json", "colossalchests"),
         LateMixinModule("mixins.stackupup.capacity.late.techreborn.json", "techreborn"),
+        LateMixinModule("mixins.stackupup.capacity.late.rftools.json", "rftools"),
     )
 
     init {

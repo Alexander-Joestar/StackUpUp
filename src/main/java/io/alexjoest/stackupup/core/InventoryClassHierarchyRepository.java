@@ -16,7 +16,6 @@ final class InventoryClassHierarchyRepository {
     private static final String INVENTORY_INTERFACE = "net/minecraft/inventory/IInventory";
     private static final String ITEM_HANDLER_INTERFACE = "net/minecraftforge/items/IItemHandler";
     private static final String SLOT_CLASS = "net/minecraft/inventory/Slot";
-    private static final String INVENTORY_METHOD_DESCRIPTOR = "()I";
     private final MetadataSource source;
 
     InventoryClassHierarchyRepository() {
@@ -56,52 +55,6 @@ final class InventoryClassHierarchyRepository {
             current = metadata.superName;
         }
         return false;
-    }
-
-    /**
-     * Returns the inherited concrete inventory getter that a concrete class must expose itself.
-     * When hierarchy metadata identifies a concrete inventory ancestor, no override is generated
-     * here: transforming the inherited method is sufficient because it sees the runtime receiver.
-     */
-    String inheritedGetterForConcreteClass(ClassMetadata root) {
-        if (root == null || root.superName == null
-            || hasConcreteInventoryAncestor(root.superName, new HashSet<>())) {
-            return null;
-        }
-
-        Set<String> visited = new HashSet<>();
-        String current = root.superName;
-        while (current != null && visited.add(current)) {
-            ClassMetadata metadata = read(current);
-            if (metadata == null) {
-                return null;
-            }
-            if (metadata.getterName != null) {
-                if ((metadata.getterAccess
-                    & (Opcodes.ACC_ABSTRACT | Opcodes.ACC_FINAL | Opcodes.ACC_NATIVE | Opcodes.ACC_STATIC)) != 0
-                    || (metadata.access & Opcodes.ACC_INTERFACE) != 0) {
-                    return null;
-                }
-                return metadata.getterName;
-            }
-            current = metadata.superName;
-        }
-        return null;
-    }
-
-    private boolean hasConcreteInventoryAncestor(String className, Set<String> visited) {
-        if (className == null || !visited.add(className)) {
-            return false;
-        }
-        ClassMetadata metadata = read(className);
-        if (metadata == null) {
-            return false;
-        }
-        if ((metadata.access & (Opcodes.ACC_INTERFACE | Opcodes.ACC_ABSTRACT)) == 0
-            && implementsInventory(metadata)) {
-            return true;
-        }
-        return hasConcreteInventoryAncestor(metadata.superName, visited);
     }
 
     private boolean implementsInterface(ClassMetadata root, String targetInterface) {
@@ -197,23 +150,17 @@ final class InventoryClassHierarchyRepository {
         final int access;
         final String superName;
         final String[] interfaces;
-        final String getterName;
-        final int getterAccess;
 
-        ClassMetadata(String name, int access, String superName, String[] interfaces,
-                      String getterName, int getterAccess) {
+        ClassMetadata(String name, int access, String superName, String[] interfaces) {
             this.name = name;
             this.access = access;
             this.superName = superName;
             this.interfaces = interfaces == null ? new String[0] : interfaces;
-            this.getterName = getterName;
-            this.getterAccess = getterAccess;
         }
     }
 
     static final class MetadataVisitor extends ClassVisitor {
         ClassMetadata metadata;
-        private String getterName;
 
         MetadataVisitor() {
             super(Opcodes.ASM5);
@@ -232,29 +179,8 @@ final class InventoryClassHierarchyRepository {
                 mapName(name),
                 access,
                 mapName(superName),
-                mappedInterfaces,
-                null,
-                0
+                mappedInterfaces
             );
-        }
-
-        @Override
-        public org.objectweb.asm.MethodVisitor visitMethod(int access, String name, String descriptor,
-                                                            String signature, String[] exceptions) {
-            if (INVENTORY_METHOD_DESCRIPTOR.equals(descriptor)
-                && ("getInventoryStackLimit".equals(name) || "func_70297_j_".equals(name))
-                && getterName == null) {
-                getterName = name;
-                metadata = new ClassMetadata(
-                    metadata.name,
-                    metadata.access,
-                    metadata.superName,
-                    metadata.interfaces,
-                    getterName,
-                    access
-                );
-            }
-            return null;
         }
 
         private static String mapName(String internalName) {

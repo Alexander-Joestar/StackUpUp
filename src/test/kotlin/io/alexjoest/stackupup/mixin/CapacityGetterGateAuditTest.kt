@@ -59,18 +59,19 @@ class CapacityGetterGateAuditTest {
 
     /**
      * EnderIO 机器容量 mixin 只保留 `AbstractInventoryMachineEntity`：该类是 `public abstract class`，
-     * `InventoryStackLimitTransformer` 跳过抽象类，故 mixin 是该 getter 唯一路径。
+     * `InventoryStackLimitTransformer` 现在同样改写抽象类的具体 getter，两条路径落到同一份字节码，
+     * mixin 退化为 passthrough（读到 original 时它已是扩展值），作为防御性第二路径保留。
      * `TileEnchanter` 的 `getInventoryStackLimit()` 在 concrete 类中只 `return 64;`，transformer 已在类加载时改写，
      * 因此不再作为 mixin target（否则同一字面量被替换两次）。
      */
     @Test
-    fun enderIoMachineLimitMixinShouldTargetOnlyTransformerSkippedAbstractBase() {
+    fun enderIoMachineLimitMixinShouldTargetOnlyTheAbstractBase() {
         val source = mixinSource("late/enderio/EnderIOMachineInventoryLimitMixin.java")
 
         assertEquals(
             listOf("crazypants.enderio.base.machine.baselegacy.AbstractInventoryMachineEntity"),
             mixinTargets(source),
-            "只允许抽象父类目标：transformer 跳过抽象类，mixin 是继承该 getter 的具体机器唯一路径" +
+            "只允许抽象父类目标：transformer 与 mixin 现在都改写该 getter，mixin 是防御性第二路径" +
                 "；concrete 类里只 return 64; 的 TileEnchanter 由 transformer 覆盖",
         )
     }

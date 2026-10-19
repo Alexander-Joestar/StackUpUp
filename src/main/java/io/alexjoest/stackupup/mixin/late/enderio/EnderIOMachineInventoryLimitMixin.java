@@ -10,8 +10,10 @@ import org.spongepowered.asm.mixin.injection.At;
  * Capacity mixin for the legacy EnderIO machine base only.
  *
  * <p>{@code AbstractInventoryMachineEntity} is {@code public abstract class} and returns a literal
- * 64 from {@code getInventoryStackLimit()}; {@code InventoryStackLimitTransformer} skips abstract
- * classes, so this mixin is the only path for the concrete machines that inherit that getter.</p>
+ * 64 from {@code getInventoryStackLimit()}. {@code InventoryStackLimitTransformer} now rewrites
+ * abstract classes as well, so both paths target the same bytecode and this mixin degrades to a
+ * passthrough ({@code original} is already the expanded limit when it runs). It is kept as a
+ * defensive second path for the concrete machines that inherit that getter.</p>
  *
  * <p>{@code crazypants.enderio.machines.machine.enchanter.TileEnchanter} was a second target until
  * its own {@code getInventoryStackLimit()} override (a literal {@code return 64;} on a concrete

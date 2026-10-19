@@ -145,6 +145,41 @@ class InventoryExpansionStartupConfigTest {
     }
 
     @Test
+    fun configuredFalseDoesNotRegisterTheTransformer() {
+        val originalMinecraftHome = Launch.minecraftHome
+        val configFile = File(temporaryDirectory.toFile(), "config/${InventoryExpansionStartupConfig.CONFIG_FILE_NAME}")
+        configFile.parentFile.mkdirs()
+        configFile.writeText("compat {\n    inventoryexpansion {\n        B:enabled=false\n    }\n}\n")
+        Launch.minecraftHome = temporaryDirectory.toFile()
+
+        try {
+            assertEquals(0, StackUpUpCore().getASMTransformerClass().size)
+            assertFalse(InventoryStackLimitHook.isExpansionEnabled())
+        } finally {
+            Launch.minecraftHome = originalMinecraftHome
+        }
+    }
+
+    @Test
+    fun configuredTrueRegistersExactlyTheCapacityTransformer() {
+        val originalMinecraftHome = Launch.minecraftHome
+        val configFile = File(temporaryDirectory.toFile(), "config/${InventoryExpansionStartupConfig.CONFIG_FILE_NAME}")
+        configFile.parentFile.mkdirs()
+        configFile.writeText("compat {\n    inventoryexpansion {\n        B:enabled=true\n    }\n}\n")
+        Launch.minecraftHome = temporaryDirectory.toFile()
+
+        try {
+            assertEquals(
+                listOf("io.alexjoest.stackupup.core.InventoryStackLimitTransformer"),
+                StackUpUpCore().getASMTransformerClass().toList(),
+            )
+            assertTrue(InventoryStackLimitHook.isExpansionEnabled())
+        } finally {
+            Launch.minecraftHome = originalMinecraftHome
+        }
+    }
+
+    @Test
     fun conflictShortCircuitsMalformedLaunchPolicy() {
         val originalMinecraftHome = Launch.minecraftHome
         val disabledProperty = "${StackUpUpIds.MOD_ID}.conflict.disabled"

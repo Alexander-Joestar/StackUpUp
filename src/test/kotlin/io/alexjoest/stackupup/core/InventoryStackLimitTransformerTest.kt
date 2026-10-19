@@ -173,7 +173,7 @@ class InventoryStackLimitTransformerTest {
     }
 
     @Test
-    fun internalPackageAbstractAndInterfaceInventories_shouldRemainUnchanged() {
+    fun internalPackageInventories_shouldRemainUnchanged() {
         val internalInventory = inventoryClassBytes(
             className = "io.alexjoest.stackupup.core.InternalInventory",
             methods = listOf(returningBipushMethod("getInventoryStackLimit", 64)),
@@ -181,28 +181,121 @@ class InventoryStackLimitTransformerTest {
         )
 
         assertArrayEquals(internalInventory, transformer.transform(null, null, internalInventory))
+    }
 
+    @Test
+    fun interfaceDefaultGetter_shouldBePatchedInItsOwnBody() {
+        val inventoryInterface = inventoryClassBytes(
+            className = "example.SidedInventory",
+            interfaceClass = true,
+            access = Opcodes.ACC_ABSTRACT,
+            methods = listOf(returningBipushMethod("getInventoryStackLimit", 64)),
+            interfaces = arrayOf(INVENTORY_INTERFACE),
+        )
+
+        val transformed = transformer.transform("example.SidedInventory", null, inventoryInterface)
+
+        assertFalse(inventoryInterface.contentEquals(transformed), "接口 default 方法体应被字面量替换命中")
+        assertEquals(listOf(64), methodLiterals(transformed, "getInventoryStackLimit", "()I").sipush)
+        assertEquals(emptyList<Int>(), methodLiterals(transformed, "getInventoryStackLimit", "()I").bipush)
+        assertEquals(1, hookInvocationCount(transformed))
+    }
+
+    @Test
+    fun abstractClassConcreteGetter_shouldBePatchedInItsOwnBody() {
         val abstractInventory = inventoryClassBytes(
             className = "example.AbstractInventory",
             access = Opcodes.ACC_ABSTRACT,
             methods = listOf(returningBipushMethod("getInventoryStackLimit", 64)),
             interfaces = arrayOf(INVENTORY_INTERFACE),
         )
+
+        val transformed = transformer.transform(null, null, abstractInventory)
+
+        assertFalse(abstractInventory.contentEquals(transformed), "抽象基类的具体 getter 应被字面量替换命中")
+        assertEquals(listOf(64), methodLiterals(transformed, "getInventoryStackLimit", "()I").sipush)
+        assertEquals(emptyList<Int>(), methodLiterals(transformed, "getInventoryStackLimit", "()I").bipush)
+        assertEquals(1, hookInvocationCount(transformed))
+    }
+
+    @Test
+    fun abstractGetterDeclarations_shouldRemainUnchangedWithoutThrowing() {
+        // 接口/抽象方法的 abstract 声明没有方法体：类级 target 判定命中也不得注入 hook。
         val inventoryInterface = inventoryClassBytes(
-            className = "example.InventoryInterface",
+            className = "example.AbstractGetterInterface",
             interfaceClass = true,
+            access = Opcodes.ACC_ABSTRACT,
             methods = listOf(
-                returningBipushMethod(
-                    "getInventoryStackLimit",
-                    64,
-                    access = Opcodes.ACC_PUBLIC or Opcodes.ACC_ABSTRACT,
-                ),
+                methodSpec("getInventoryStackLimit", access = Opcodes.ACC_PUBLIC or Opcodes.ACC_ABSTRACT) { },
+            ),
+            interfaces = arrayOf(INVENTORY_INTERFACE),
+        )
+        val abstractClass = inventoryClassBytes(
+            className = "example.AbstractGetterClass",
+            access = Opcodes.ACC_ABSTRACT,
+            methods = listOf(
+                methodSpec("func_70297_j_", access = Opcodes.ACC_PUBLIC or Opcodes.ACC_ABSTRACT) { },
             ),
             interfaces = arrayOf(INVENTORY_INTERFACE),
         )
 
-        assertArrayEquals(abstractInventory, transformer.transform(null, null, abstractInventory))
         assertArrayEquals(inventoryInterface, transformer.transform(null, null, inventoryInterface))
+        assertArrayEquals(abstractClass, transformer.transform(null, null, abstractClass))
+    }
+
+    @Test
+    fun staticAndNativeCapacityMethods_shouldRemainUnchangedInsideATargetClass() {
+        // 方法级跳过必须仍然生效：static 没有 receiver 可注入，native 没有方法体；
+        // 同一类的具体实例方法仍要被改写，才能证明是方法级而不是类级跳过。
+        val original = inventoryClassBytes(
+            className = "example.MixedInventory",
+            methods = listOf(
+                returningBipushMethod("getInventoryStackLimit", 64, access = Opcodes.ACC_PUBLIC or Opcodes.ACC_STATIC),
+                methodSpec("func_70297_j_", access = Opcodes.ACC_PUBLIC or Opcodes.ACC_NATIVE) { },
+                returningBipushMethod("getSlotStackLimit", 64),
+            ),
+            interfaces = arrayOf(INVENTORY_INTERFACE),
+        )
+
+        val transformed = transformer.transform(null, null, original)
+
+        assertEquals(
+            listOf(64),
+            methodLiterals(transformed, "getInventoryStackLimit", "()I").bipush,
+            "static 方法没有 receiver，不得注入 hook",
+        )
+        assertEquals(emptyList<Int>(), methodLiterals(transformed, "getInventoryStackLimit", "()I").sipush)
+        assertEquals(emptyList<Int>(), methodLiterals(transformed, "func_70297_j_", "()I").sipush)
+        assertEquals(
+            listOf(64),
+            methodLiterals(transformed, "getSlotStackLimit", "()I").sipush,
+            "同一类里的具体实例方法仍应被改写",
+        )
+        assertEquals(1, hookInvocationCount(transformed))
+    }
+
+    @Test
+    fun disabledExpansion_shouldLeaveInterfaceAndAbstractTargetsUnchanged() {
+        val inventoryInterface = inventoryClassBytes(
+            className = "example.DisabledInterface",
+            interfaceClass = true,
+            access = Opcodes.ACC_ABSTRACT,
+            methods = listOf(returningBipushMethod("getInventoryStackLimit", 64)),
+            interfaces = arrayOf(INVENTORY_INTERFACE),
+        )
+        val abstractInventory = inventoryClassBytes(
+            className = "example.DisabledAbstractInventory",
+            access = Opcodes.ACC_ABSTRACT,
+            methods = listOf(returningBipushMethod("getInventoryStackLimit", 64)),
+            interfaces = arrayOf(INVENTORY_INTERFACE),
+        )
+
+        InventoryStackLimitHook.configureExpansionEnabled(false)
+
+        assertArrayEquals(inventoryInterface, transformer.transform(null, null, inventoryInterface))
+        assertArrayEquals(abstractInventory, transformer.transform(null, null, abstractInventory))
+        assertEquals(0, hookInvocationCount(inventoryInterface))
+        assertEquals(0, hookInvocationCount(abstractInventory))
     }
 
     @Test
@@ -315,7 +408,7 @@ class InventoryStackLimitTransformerTest {
     }
 
     @Test
-    fun inheritedGetterFromAbstractParent_shouldRemainNaturalFallback() {
+    fun inheritedGetterFromAbstractParent_shouldBePatchedOnceAndInheritedByChildren() {
         val parentName = "example.AbstractInventoryParent"
         val childName = "example.InventoryChild"
         val parent = makeAbstract(
@@ -332,8 +425,15 @@ class InventoryStackLimitTransformerTest {
             InventoryClassHierarchyRepository(MapMetadataSource(metadata)),
         )
 
+        val transformedParent = customTransformer.transform(parentName, parentName, parent)
+
+        // 抽象基类的具体 getter 现在会被改写；子类自己没有声明 getter，经继承获得同一份被改写的代码。
+        assertFalse(parent.contentEquals(transformedParent), "抽象基类的具体 getter 应被字面量替换命中")
+        assertEquals(listOf(64), methodLiterals(transformedParent, "getInventoryStackLimit", "()I").sipush)
+        assertEquals(emptyList<Int>(), methodLiterals(transformedParent, "getInventoryStackLimit", "()I").bipush)
+        assertEquals(1, hookInvocationCount(transformedParent))
         assertArrayEquals(child, customTransformer.transform(childName, childName, child))
-        assertArrayEquals(parent, customTransformer.transform(parentName, parentName, parent))
+        assertFalse(hasDeclaredMethod(child, "getInventoryStackLimit", "()I"))
     }
 
     @Test

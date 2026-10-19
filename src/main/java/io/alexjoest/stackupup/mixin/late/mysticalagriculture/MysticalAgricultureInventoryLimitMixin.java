@@ -12,8 +12,10 @@ import org.spongepowered.asm.mixin.injection.At;
  * <p>{@code TileEssenceReprocessor} is {@code public abstract class} and its inventory stack limit
  * getter is a literal {@code return 64;} (bytecode: {@code bipush 64; ireturn}). None of the six
  * concrete machine subclasses declares the getter, so every one of them inherits that literal.
- * {@code InventoryStackLimitTransformer} skips abstract classes, so this mixin is the only path to
- * those machines' advertised capacity. The write side needs no hook: the same getter is what
+ * {@code InventoryStackLimitTransformer} now rewrites abstract classes too, so both paths target the
+ * same bytecode and this mixin degrades to a passthrough ({@code original} is already the expanded
+ * limit when it runs); it stays as a defensive second path to those machines' advertised capacity.
+ * The write side needs no hook: the same getter is what
  * {@code setInventorySlotContents} clamps against.</p>
  *
  * <p>{@code javap} on the mod jar shows the getter under {@code func_70297_j_}, so that SRG name is

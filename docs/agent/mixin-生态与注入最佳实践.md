@@ -228,7 +228,7 @@ Forge/FML + LaunchWrapper
 - **`expect`**：注解级预期回调数。`Inject.java` 默认 `1`，`InjectionInfo.java` 只在 `mixin.debug.countInjections`/`DEBUG_INJECTORS` 开启时用它检查；是 debug 诊断门，不是生产环境最低成功要求。
 - **`injectors.defaultRequire`**：Mixin JSON `injectors` 对象中的默认 `require`，不是配置级 `required`。`MixinConfig.java` 默认 `0`；只为省略/`-1` 的 injector `require` 提供 default-group 回退，parent merge 仍是版本敏感行为。
 
-以上默认值和省略语义是官方 UniMix `9d4b487ed3`（MixinBooter 10.7 上游 build 引用的 commit）历史证据，不自动代表当前 11.17/0.7.2 CleanMix；11.13/0.7.1 相关记录也仅是迁移阶段历史。当前 provider 已有 dev/SRG 装载证据，但每个配置的 `required`、`injectors.defaultRequire` 及 injector 的 `require`/`expect` 仍必须由 T14.5 逐文件登记，不能从模块名、`required=false` 或默认值推断；未收敛处保持 **[UNKNOWN]**。
+以上默认值和省略语义是官方 UniMix `9d4b487ed3`（MixinBooter 10.7 上游 build 引用的 commit）历史证据。**当前 11.17 / CleanMix 0.7.2 已按字节码核对，结论同形**：`javap` 读 `mixinbooter-11.17.jar` 内嵌的 `org/spongepowered/asm/mixin/injection/struct/InjectionInfo`，`parseRequirements` 只取注解节点里显式写出的 `require`，值为 `null` 或 `<= -1` 时走 `MixinTargetContext.getDefaultRequiredInjections()`；该值来自 `MixinConfig$InjectorOptions.defaultRequireValue`，构造器为 `iconst_0 putfield`（默认 `0`），JSON 键名是 `@SerializedName("defaultRequire")`，`mergeFrom` 只在自身仍为 `0` 时才从 parent 复制。因此「不显式写 `require` 的 injector 零命中时静默」在当前基线成立。仍需由 T14.5 逐文件登记每个配置的 `required`、`injectors.defaultRequire` 及 injector 的 `require`/`expect`，不能从模块名或 `required=false` 推断；未登记的项保持 **[UNKNOWN]**。
 
 **当前基线静态结果（未完成 T14.5）**：`mixins.stackupup.early.json` 未声明 `required`；`late.integrateddynamics.json`、`enderio.json`、`cyclopscore.json`、`brandonscore.json`、`immersiveengineering.json`、`limelib.json` 声明 `required=false`；静态检索未发现 `injectors.defaultRequire`。这只是现状记录，不是逐文件目标/loader/日志/refmap/AP 登记，也不是 fail-fast 或 optional skip 已通过的证明。
 

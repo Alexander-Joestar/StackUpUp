@@ -2,6 +2,44 @@
 
 中文在前，英文在后，每个版本内分块；英文块以 `### English` 标题引出，其内部子节使用四级标题。
 
+## 0.2.5.1
+
+这是一版修复：上一版「让容器自己报出真实容量」的做法漏掉了把 `64` 写在接口默认方法与抽象基类里的那一类容器，它们仍然卡在 64；同一条路径上还修掉了一处「扩容看着生效、实际会把超量部分截断丢掉」的问题。
+
+### 核心变化
+
+- 现在大多数模组容器都能接受超过 64 的物品堆叠，包括 RFTools 的 Modular Storage、Storage Scanner 与各类机器。
+- 原版运输矿车（箱子矿车、漏斗矿车）现在也能突破 64：它们的容量写在抽象基类里，此前没有生效。
+- 修复 RFTools Storage Scanner 输入槽的吞物品问题：当扫描仪没有可路由的存储时，放入超过 64 的物品会在下一帧被截断回 64，超出的部分直接消失。
+- 物品本身的堆叠上限仍由规则文件决定，item 级粒度不变，规则求值没有改动。
+- 对外显示的容量仍然不会超过对应写入路径的真实容量，所以这次放开不会让容器放入多吞物品（唯一的例外见下方黑名单说明）。
+
+### 兼容
+
+- RFTools 只新增一个安全补丁，打在它唯一会主动截断余量的位置上；其余容器靠公共的容量读侧改写自动覆盖，没有逐类登记。
+- 少数确实冲突的模组仍可用 `compat.inventoryStackLimitBlacklist.modIds` 应急绕行；开关与名单的行为不变，改变后仍需重启。
+- 黑名单只让容量扩展跳过所列模组，不会关闭它们的其他兼容配置，也不会全局关掉其他模组。
+- 容量「广告面」的一个已知边界：`getSlotLimit` 只影响显示与余量判断，真实写入读的是库存自己的上限。若某个 wrapper 与它包装的库存分属两个 Mod（McJtyLib 与 RFTools 就是这种情况），只把库存所在的 Mod 加进黑名单会让 wrapper 继续广告扩容后的值，此时显示的余量大于实际能放进去的数量——不会丢物，只是多几次无用的插入尝试。需要时把两个 Mod 都加进名单。
+
+### English
+
+This is a fix release: the previous "let containers report their own real capacity" approach missed the containers that write `64` inside an interface default method or an abstract base class, so those still clamped at 64; the same path also hid a truncation bug where the expansion looked active but the leftover was cut off and lost.
+
+#### Core changes
+
+- Most mod containers now accept stacks larger than 64, including RFTools Modular Storage, the Storage Scanner and its machines.
+- Vanilla container minecarts (chest and hopper variants) can now go beyond 64 as well: their capacity is declared in an abstract base class and previously had no effect.
+- Fixed item loss in the RFTools Storage Scanner input slot: with no routable storage available, a stack above 64 was truncated back to 64 on the next tick and the excess disappeared.
+- Item stack limits are still decided by the rule files, item-level granularity is unchanged, and rule evaluation was not touched.
+- The advertised capacity still never exceeds the real capacity of the matching write path, so this widening does not make containers swallow leftover items (the one exception is described under Compatibility).
+
+#### Compatibility
+
+- RFTools gets exactly one safety patch, at the only place where it actively truncates the leftover; every other container follows from the shared capacity-read-side rewrite, with no per-class registration.
+- A mod that genuinely conflicts can still be added to `compat.inventoryStackLimitBlacklist.modIds` as an emergency bypass; the switch and the list behave as before and still require a restart.
+- The blacklist only makes capacity expansion skip the listed mods; it does not disable their other compatibility configs and does not switch off other mods globally.
+- One known edge on the advertised side: `getSlotLimit` only affects display and free-space checks, while real writes read the inventory's own limit. When a wrapper and the inventory it wraps belong to two different mods (McJtyLib and RFTools are such a pair), adding only the inventory's mod to the blacklist leaves the wrapper advertising the expanded value, so the reported free space is larger than what actually fits — no items are lost, it just costs a few pointless insert attempts. Add both mods to the list when that matters.
+
 ## 0.2.5
 
 这一版改变了「让模组容器接受超过 64 的堆叠」的做法：不再为每个模组单独写补丁，改由容器自己报出真实容量，因此原版箱子等普通容器、多数模组机器和库存都能自然接受更大的堆叠。物品本身的堆叠上限仍然完全由规则文件决定，item 级粒度不变。

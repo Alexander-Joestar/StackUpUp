@@ -15,9 +15,9 @@ Changelog: [CHANGELOG.md](CHANGELOG.md) (bilingual, Chinese and English)
 ## Status
 
 - Target: Minecraft **1.12.2** + Forge **14.23.5.2847**
-- Current version: **0.2.5**
+- Current version: **0.2.5.1**
 - Rule system: DSL v2, using `.su` files or Markdown `.su.md` containers with `state` and `gate`
-- Compatibility layer: [MixinBooter](https://github.com/CleanroomMC/MixinBooter) **11.17** ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/mixin-booter)) + [CleanMix](https://github.com/CleanroomMC/CleanMix) **0.7.2**; `IMixinConnector` registers always-on early/baseline and mod-presence-selected ordinary late Mixin configs, then adds separate capacity configs when inventory expansion is enabled. `StackUpUpCore` conditionally registers the narrow `InventoryStackLimitTransformer` only when the startup switch is enabled and there is no conflict; it replaces the literal `64` in concrete `IInventory` / `IItemHandler` / `Slot` capacity getters with a call-time policy lookup at class load. MixinBooter 10.7 and the old loaders are historical baselines only
+- Compatibility layer: [MixinBooter](https://github.com/CleanroomMC/MixinBooter) **11.17** ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/mixin-booter)) + [CleanMix](https://github.com/CleanroomMC/CleanMix) **0.7.2**; `IMixinConnector` registers always-on early/baseline and mod-presence-selected ordinary late Mixin configs, then adds separate capacity configs when inventory expansion is enabled. `StackUpUpCore` conditionally registers the narrow `InventoryStackLimitTransformer` only when the startup switch is enabled and there is no conflict; it replaces the literal `64` in capacity getters declared by `IInventory` / `IItemHandler` / `Slot` implementations — including interface `default` methods and concrete method bodies on abstract classes — with a call-time policy lookup at class load. MixinBooter 10.7 and the old loaders are historical baselines only
 
 ## Download
 
@@ -119,11 +119,13 @@ after changing either setting.
 - `general.maxStackSize`: global compatibility stack limit, default `64`; rule results and compatibility entry points are clamped to this value.
 - `compat.vanilla.craftingSlotLimit`: workbench grid and crafting-result slot limit, default `64`. `0` keeps vanilla/default behavior; values above `0` use the custom limit. This is mainly a Performance setting: holding Shift to batch-craft very large stacks can cause severe lag, not a balance switch. The effective limit can still be reduced by `general.maxStackSize` and item/recipe limits.
 - `compat.nuclearcraft.speedUpgradeLimit` and `compat.nuclearcraft.energyUpgradeLimit`: NuclearCraft speed/energy upgrade stack limits, default `0` (keep NuclearCraft's native behavior); values above `0` use a custom limit. These settings have no effect when NuclearCraft is not loaded.
-- `compat.inventoryExpansion.enabled`: startup inventory-capacity expansion switch, default `true` for new or missing configuration (broad-default); an existing explicit `false` remains off, and setting `false` is a restart-time emergency fallback. When enabled it registers the structural capacity getter transformer (capacity getters of concrete `IInventory` / `IItemHandler` / `Slot` implementations) and queues optional capacity Mixin configs. When off, those optional capacity hooks are skipped; ItemStack rules, always-loaded early/baseline configs, and ordinary late configs remain. The dedicated `InventoryWriteLimitMixin` in `mixins.stackupup.baseline.early.json` still calls `resolveInventoryWriteLimit`; neither this switch nor `modIds` disables that writer-safety path.
+- `compat.inventoryExpansion.enabled`: startup inventory-capacity expansion switch, default `true` for new or missing configuration (broad-default); an existing explicit `false` remains off, and setting `false` is a restart-time emergency fallback. When enabled it registers the structural capacity getter transformer (capacity getters declared by `IInventory` / `IItemHandler` / `Slot` implementations, including interface `default` methods and concrete method bodies on abstract classes) and queues optional capacity Mixin configs. When off, those optional capacity hooks are skipped; ItemStack rules, always-loaded early/baseline configs, and ordinary late configs remain. The dedicated `InventoryWriteLimitMixin` in `mixins.stackupup.baseline.early.json` still calls `resolveInventoryWriteLimit`; neither this switch nor `modIds` disables that writer-safety path.
 - `debug.mergeLimitTrace`: diagnostic switch, default `false`. It logs each container merge slot-limit resolution for a single reproduction and does not change the resolved value; leave it off in normal play.
 - `compat.inventoryStackLimitBlacklist.modIds`: selectively bypass capacity expansion for listed mods and skip their capacity-late configs; an empty list is a no-op. `/stackupup inspect` can suggest a candidate, but is not a safety proof.
 
 The blacklist uses Forge `ownedPackages` and exact package boundaries for the actual receiver or supported public owner. Merely extending a listed superclass or implementing its interface does not automatically exclude an unlisted addon. Shared objects without a public owner, private delegates, and receiverless constructor paths can remain UNKNOWN. Startup fails if a loaded mod has no attributable packages; an ID for a mod that is not loaded has no effect. This is not a whole-mod disable switch. MixinBooter's `general.blacklistedConfigs`, by contrast, suppresses an entire named config (which may contain safety Mixins) and is not a capacity-only blacklist.
+
+**Granularity note for `getSlotLimit`:** `getSlotLimit(int)` only affects the advertised side; real writes read the inventory's own `getInventoryStackLimit()`. The two usually agree because the same compatibility limit is written into both lanes, but the blacklist matches by owned package and a wrapper can live in a different mod than the inventory it wraps — McJtyLib's `NullSidedInvWrapper` / `FacedSidedInvWrapper` and RFTools' `ItemFilterInvWrapper` return a hardcoded `return 64;` with no forwarding, while the inventories behind them also hardcode 64 in `mcjty.rftools.*`. **Blacklisting only the inventory's mod (`rftools`) without the wrapper's mod (`mcjtylib`) therefore produces advertised > real**: free-space readouts look larger and a few insert attempts run for nothing, but no items are lost. Blacklist both to avoid it. This comes from source, production jar bytecode and caller code, not from runtime validation.
 
 ## Compatibility
 
@@ -138,12 +140,14 @@ mod's own overflow handling.
 
 The current architecture combines a narrow coremod getter transformer with separated Mixin profiles. `StackUpUpCore`
 registers `InventoryStackLimitTransformer` only when `compat.inventoryExpansion.enabled=true` and there is no detected
-conflict. At class load it matches concrete `IInventory` / `IItemHandler` / `Slot` implementations by hierarchy
-regardless of namespace (so vanilla concrete classes are matched too) and replaces the literal `64` inside their
-capacity getters (`getInventoryStackLimit()I` including the 1.12 SRG name, `getSlotLimit(I)I`, `getSlotStackLimit()I`,
-`getItemStackLimit(ItemStack)`) with a call-time policy lookup; interfaces, abstract classes, this mod's own package, and
-the config-managed `InventoryCrafting` / `InventoryCraftResult` are excluded. It is not the removed broad dynamic ASM
-replacement layer. Through `IMixinConnector`,
+conflict. At class load it matches implementations that declare an `IInventory` / `IItemHandler` / `Slot` capacity getter,
+regardless of namespace (so vanilla concrete classes are matched too), and replaces the literal `64` inside those
+getters (`getInventoryStackLimit()I` including the 1.12 SRG name, `getSlotLimit(I)I`, `getSlotStackLimit()I`,
+`getItemStackLimit(ItemStack)`) with a call-time policy lookup; **interface `default` methods and concrete method bodies on
+abstract classes are rewritten too**, so implementations and subclasses that never override the getter inherit the expanded
+capacity. Methods are skipped individually when abstract/native/static, and this mod's own package plus the config-managed
+`InventoryCrafting` / `InventoryCraftResult` are excluded. It is not the removed broad dynamic ASM replacement layer and it
+does not rewrite write methods. Through `IMixinConnector`,
 `StackUpUpMixinConnector` always queues ordinary early and baseline early configs, and queues ordinary late configs when
 the target mod is present. It adds `mixins.stackupup.capacity.early.json` and `mixins.stackupup.capacity.late.*.json` only
 when expansion is enabled; `modIds` skips only capacity-late configs for listed mods.
@@ -167,8 +171,10 @@ Some registered late modules in the connector are listed below (ordinary and cap
 - [Integrated Dynamics](https://github.com/CyclopsMC/IntegratedDynamics) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/integrated-dynamics))
 - [LimeLib](https://www.curseforge.com/minecraft/mc-mods/limelib)
 - [Immersive Engineering](https://github.com/BluSunrize/ImmersiveEngineering) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/immersive-engineering))
+- [RFTools](https://github.com/McJtyMods/RFTools) ([CurseForge](https://www.curseforge.com/minecraft/mc-mods/rftools)): new in 0.2.5.1; only one capacity config, `mixins.stackupup.capacity.late.rftools.json`, holding a safety patch for the Storage Scanner input slots. Its other containers follow from the shared interface-`default` rewrite and are not registered class by class.
 - IC2 Classic: `mixins.stackupup.late.ic2classic.json` is an ordinary config queued when the mod is present. Its `SlotBaseMixin` caps the reported slot limit at native 64 and is not affected by the capacity switch or an `ic2` entry in `modIds`. The only IC2-related entry in the capacity table is `mixins.stackupup.capacity.late.ic2.json` (registered under mod id `ic2`); there is no `mixins.stackupup.capacity.late.ic2classic.json` file.
-- Mystical Agriculture: capacity-only — `mixins.stackupup.capacity.late.mysticalagriculture.json`, with no ordinary config. The target is the capacity getter of the abstract base class `TileEssenceReprocessor`: `InventoryStackLimitTransformer` skips `ACC_ABSTRACT` classes at class level, the getter body is the literal `64`, and none of the six concrete reprocessor subclasses (Inferium/Intermedium/Prudentium/Superium/Supremium/Ultimate) overrides it, so a single mixin on the base covers all six machines; the write side (`setInventorySlotContents`) already clamps against that same getter, so it was neither changed nor needed changing. This conclusion comes from jar bytecode plus a repository structural test; the maintainer has since tested the six essence reprocessors in-game without reproducing the oversized-insert issue, which covers this path only and is not a matrix-wide validation.
+- Mystical Agriculture: capacity-only — `mixins.stackupup.capacity.late.mysticalagriculture.json`, with no ordinary config. The target is the capacity getter of the abstract base class `TileEssenceReprocessor`: the getter body is the literal `64`, and none of the six concrete reprocessor subclasses (Inferium/Intermedium/Prudentium/Superium/Supremium/Ultimate) overrides it. The transformer now rewrites concrete getter bodies on abstract classes too, so this mixin is a defensive second path (a passthrough whenever the transformer runs first); the write side (`setInventorySlotContents`) already clamps against that same getter, so it was neither changed nor needed changing. This conclusion comes from jar bytecode plus a repository structural test; the maintainer has since tested the six essence reprocessors in-game without reproducing the oversized-insert issue, which covers this path only and is not a matrix-wide validation.
+- RFTools: capacity-only — `mixins.stackupup.capacity.late.rftools.json` (registered under mod id `rftools`), with no ordinary config. **Capacity largely comes from the shared rewrite**: Modular Storage, the Storage Scanner and the other machines inherit `getInventoryStackLimit()` from `mcjty.lib.container.DefaultSidedInventory`, an interface `default` method returning a literal `return 64;`, which the transformer now rewrites — so no per-class registration for those containers. **The single explicit patch is a safety one**: `StorageScannerTileEntity#update` pushes the leftover of an injection back into its input slot via `InventoryHelper.setInventorySlotContents(stackLimit, index, stack)`, whose first parameter is a limit rather than a slot index; McJtyLib truncates `stack` to it in place, so with no routable storage an input stack above 64 was cut back to 64 on the next tick and the excess disappeared. `RftoolsStorageScannerLimitMixin` replaces that argument with the receiver's own `getInventoryStackLimit()` via `@ModifyArg(index = 0)` and rewrites no write method. **The maintainer has confirmed this fix in-game**; that covers this path only.
 - Farmer's Delight Legacy: there is no dedicated Mixin config. Its Basket, Cabinet, Cooking Pot, and Skillet are concrete `IInventory` implementations whose capacity getter only returns the literal `64`, so the structural transformer described above rewrites them at class load. This does not cover every inventory in that mod or prove real write capacity.
 
 These are source registration/target details, not third-party runtime validation or blanket compatibility promises.
@@ -207,7 +213,7 @@ mixins.stackupup.late.ic2classic.json
 mixins.stackupup.late.nuclearcraft.json
 ```
 
-A separate table registers 16 capacity late configs (`capacityModules`). The two tables are independent and do not map
+A separate table registers 17 capacity late configs (`capacityModules`). The two tables are independent and do not map
 one-to-one; capacity configs are queued only when inventory expansion is enabled:
 
 ```
@@ -226,6 +232,7 @@ mixins.stackupup.capacity.late.mantle.json
 mixins.stackupup.capacity.late.mysticalagriculture.json
 mixins.stackupup.capacity.late.nuclearcraft.json
 mixins.stackupup.capacity.late.refinedstorage.json
+mixins.stackupup.capacity.late.rftools.json
 mixins.stackupup.capacity.late.techreborn.json
 ```
 

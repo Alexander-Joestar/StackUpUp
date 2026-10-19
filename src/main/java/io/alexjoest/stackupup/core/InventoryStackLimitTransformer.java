@@ -177,6 +177,8 @@ public final class InventoryStackLimitTransformer implements IClassTransformer {
         public MethodVisitor visitMethod(int access, final String name, final String descriptor,
                                          String signature, String[] exceptions) {
             MethodVisitor delegate = super.visitMethod(access, name, descriptor, signature, exceptions);
+            // ACC_ABSTRACT/ACC_NATIVE are defensive only (no Code attribute to rewrite); the bit with real
+            // regression coverage is ACC_STATIC, which keeps ALOAD 0 out of a method that has no `this`.
             if (!isCapacityMethod(name, descriptor)
                 || (access & (Opcodes.ACC_ABSTRACT | Opcodes.ACC_NATIVE | Opcodes.ACC_STATIC)) != 0) {
                 return delegate;

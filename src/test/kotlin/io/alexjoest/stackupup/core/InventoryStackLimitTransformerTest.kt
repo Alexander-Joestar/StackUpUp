@@ -220,7 +220,8 @@ class InventoryStackLimitTransformerTest {
 
     @Test
     fun abstractGetterDeclarations_shouldRemainUnchangedWithoutThrowing() {
-        // 接口/抽象方法的 abstract 声明没有方法体：类级 target 判定命中也不得注入 hook。
+        // abstract 声明没有 Code 属性，ClassReader 不产生任何指令回调，所以 ACC_ABSTRACT 位按构造是惰性的：
+        // 从掩码里删掉它也不会让本用例变红。本用例守的是「类级 target 判定命中、声明无方法体时不抛异常且字节不变」。
         val inventoryInterface = inventoryClassBytes(
             className = "example.AbstractGetterInterface",
             interfaceClass = true,
@@ -245,7 +246,8 @@ class InventoryStackLimitTransformerTest {
 
     @Test
     fun staticAndNativeCapacityMethods_shouldRemainUnchangedInsideATargetClass() {
-        // 方法级跳过必须仍然生效：static 没有 receiver 可注入，native 没有方法体；
+        // 方法级掩码里真正被检测的是 ACC_STATIC：删掉它，static getter 的 bipush 会消失、sipush 出现。
+        // native 声明没有 Code 属性，按构造惰性，不构成 ACC_NATIVE 位的回归保护；
         // 同一类的具体实例方法仍要被改写，才能证明是方法级而不是类级跳过。
         val original = inventoryClassBytes(
             className = "example.MixedInventory",
@@ -292,10 +294,13 @@ class InventoryStackLimitTransformerTest {
 
         InventoryStackLimitHook.configureExpansionEnabled(false)
 
-        assertArrayEquals(inventoryInterface, transformer.transform(null, null, inventoryInterface))
-        assertArrayEquals(abstractInventory, transformer.transform(null, null, abstractInventory))
-        assertEquals(0, hookInvocationCount(inventoryInterface))
-        assertEquals(0, hookInvocationCount(abstractInventory))
+        val transformedInterface = transformer.transform(null, null, inventoryInterface)
+        val transformedAbstract = transformer.transform(null, null, abstractInventory)
+
+        assertArrayEquals(inventoryInterface, transformedInterface)
+        assertArrayEquals(abstractInventory, transformedAbstract)
+        assertEquals(0, hookInvocationCount(transformedInterface), "OFF 时返回字节不得携带 hook 调用")
+        assertEquals(0, hookInvocationCount(transformedAbstract), "OFF 时返回字节不得携带 hook 调用")
     }
 
     @Test

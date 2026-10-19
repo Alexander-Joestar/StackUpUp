@@ -15,6 +15,14 @@ import java.nio.file.Paths
  * `InventoryHelper.setInventorySlotContents(stackLimit, index, stack)` 的限值参数，会就地截断
  * （`stack.setCount(stackLimit)`），把余量丢掉。本 mixin 用 `@ModifyArg` 把该限值换成 receiver 自己的
  * `getInventoryStackLimit()`；该 getter 已经承载扩展开关与容量黑名单，所以这里不再叠加开关判断。
+ *
+ * **这些断言只能验证「声明形状」，验证不了运行时是否真的命中。** 本类的检查对象是源文件文本与编译产物
+ * 常量池：它能证明 `func_73660_a`/`update` 两个名字都写进了注解、`require = 1` 没有退回 0，却无法证明
+ * 生产环境里目标方法真的叫 `func_73660_a`、也无法证明调用点在 jar 里真的落在 `update` 内。Mixin 的名字
+ * 匹配发生在类加载期，JVM 单元测试碰不到那条路径；上一个 bug 正是「结构检查全绿、运行时一次都没生效」。
+ * 真实验证只有两条路：实机放入 >64 的物品观察下一帧是否被截断，或对生产 jar 做
+ * `javap -p -c mcjty.rftools.blocks.storagemonitor.StorageScannerTileEntity`（本轮已做，见
+ * `RftoolsStorageScannerLimitMixin` 的类注释）。
  */
 class RftoolsStorageScannerMixinSourceTest {
     @Test
@@ -50,8 +58,19 @@ class RftoolsStorageScannerMixinSourceTest {
             mixin.contains("Lmcjty/lib/container/InventoryHelper;setInventorySlotContents(IILnet/minecraft/item/ItemStack;)V"),
             "注入点必须是 InventoryHelper.setInventorySlotContents(int stackLimit, int index, ItemStack)",
         )
-        assertTrue(mixin.contains("method = \"update\""), "两个调用点都在 update() 内")
-        assertTrue(mixin.contains("require = 0"), "目标缺失时必须静默跳过")
+        assertTrue(
+            mixin.contains("method = {\"func_73660_a\", \"update\"}"),
+            "生产环境声明名是 SRG func_73660_a（ITickable#update 覆写被 reobf），dev 是 MCP update；" +
+                "remap=false 不走 refmap，必须两个都声明",
+        )
+        // 负向断言只看代码、不看注释：类注释里为了记录历史会提到旧的 MCP-only 形状与 require 0。
+        val mixinCode = mixin.replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), "")
+        assertFalse(
+            Regex("method = \"update\"").containsMatchIn(mixinCode),
+            "只声明 MCP 名会在生产环境静默不命中——本轮实机丢物的根因",
+        )
+        assertTrue(mixinCode.contains("require = 1"), "两个名字至少命中一个；一个都命中不了必须报错，不得静默跳过")
+        assertFalse(mixinCode.contains("require = 0"), "不得把 require 退回 0（回到静默跳过）")
         assertTrue(
             mixin.contains("((IInventory) (Object) this).getInventoryStackLimit()"),
             "限值必须来自 receiver 自己的 getter（该 getter 已承载扩展开关与黑名单）",
@@ -72,6 +91,8 @@ class RftoolsStorageScannerMixinSourceTest {
         )
         assertTrue(classBytes.containsAscii(TARGET_CLASS), "编译产物应携带目标类名")
         assertTrue(classBytes.containsAscii("mcjty/lib/container/InventoryHelper"), "编译产物应携带注入点 owner")
+        assertTrue(classBytes.containsAscii("func_73660_a"), "编译产物常量池应携带 SRG 方法名（生产环境真实声明名）")
+        assertTrue(classBytes.containsAscii("update"), "编译产物常量池应同时携带 MCP 方法名（dev 环境声明名）")
         assertTrue(classBytes.containsAscii("getInventoryStackLimit"), "编译产物应携带 receiver getter 调用")
         assertFalse(classBytes.containsAscii("kotlin/jvm/internal"), "编译产物不得携带 Kotlin 运行期入口（纯 Java 结构检查）")
     }

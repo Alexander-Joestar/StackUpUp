@@ -23,11 +23,23 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
  * solely by that class-load rewrite while this file still looks like it owns the getter. Keeping the
  * explicit constant hook states the AE2S decision where a reader looks for it, and both paths
  * resolve the same compatibility size, so they agree rather than fight.</p>
+ *
+ * <p><b>Method name:</b> {@code ContainerAdapter implements IInventory}, so the reobfuscated release
+ * jar declares {@code getInventoryStackLimit()} as {@code func_70297_j_()I} and the MCP name exists
+ * only in the dev environment. {@code remap = false} bypasses the refmap, so both names are declared;
+ * with the MCP name alone this hook never matched in production. {@code require = 0} is intentional
+ * here (unlike the RFTools scanner fix): this is the secondary path behind the class-load transformer,
+ * and the literal it targets is an implementation detail of {@code int max = 64;}, so a fork that
+ * folds the minimum differently should fall back to the transformer instead of aborting class load.</p>
  */
 @Pseudo
 @Mixin(targets = "ae2.api.inventories.ContainerAdapter", remap = false)
 abstract class ContainerAdapterMixin {
-    @ModifyConstant(method = "getInventoryStackLimit", constant = @Constant(intValue = 64), require = 0)
+    @ModifyConstant(
+        method = {"func_70297_j_()I", "getInventoryStackLimit()I"},
+        constant = @Constant(intValue = 64),
+        require = 0
+    )
     private int replaceCompatibilityLimit(int original) {
         if (StackLimitHooks.shouldBypassInventoryStackLimit(this)) {
             return original;

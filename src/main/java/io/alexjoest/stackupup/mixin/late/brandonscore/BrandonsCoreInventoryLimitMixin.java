@@ -32,7 +32,16 @@ abstract class BrandonsCoreInventoryLimitMixin {
         this.stackLimit = StackLimitHooks.getInventoryCompatibilityStackSize(this, this.stackLimit);
     }
 
-    @ModifyReturnValue(method = "getInventoryStackLimit", at = @At("RETURN"), require = 0)
+    /**
+     * {@code getInventoryStackLimit()} is a {@code net.minecraft.inventory.IInventory} member, so in
+     * the reobfuscated release jar it is declared as {@code func_70297_j_()I} and the MCP name only
+     * exists in the dev environment (SRG&rarr;MCP deobfuscation). {@code remap = false} bypasses the
+     * refmap, so both names must be declared or the hook silently never runs in production.
+     * {@code require = 0} is kept on purpose: the two names always cover both environments, and a mod
+     * version that stops declaring the getter here (inheriting it instead) should degrade to "no extra
+     * capacity", not to a startup crash.
+     */
+    @ModifyReturnValue(method = {"func_70297_j_()I", "getInventoryStackLimit()I"}, at = @At("RETURN"), require = 0)
     private int stackupup$expandDefaultInventoryLimit(int original) {
         if (StackLimitHooks.shouldBypassInventoryStackLimit(this)) {
             return original;

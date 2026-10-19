@@ -33,21 +33,33 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
  * are not acceptable substitutes here (repository rule: argument-level edit only, no control-flow
  * takeover). Both call sites share one injection point descriptor, so a single handler covers them.
  * The upstream RFTools class and both TianMi forks keep
- * the same package and the same two call sites, so one {@code targets} entry covers all three;
- * {@code require = 0} keeps any other variant from failing class load.</p>
+ * the same package and the same two call sites, so one {@code targets} entry covers all three.</p>
+ *
+ * <p><b>Why two method names:</b> {@code remap = false} makes Mixin match the name that is really in
+ * the class file, bypassing {@code mixins.StackUpUp.refmap.json}. {@code StorageScannerTileEntity}
+ * implements {@code net.minecraft.util.ITickable}, so its {@code update()} override is a Minecraft
+ * interface member and the reobfuscated release jar declares it under the SRG name
+ * {@code func_73660_a()V} (production) while the dev environment, whose SRG&rarr;MCP deobfuscation
+ * renames mod classes back, declares {@code update()V}. Declaring both names covers both
+ * environments. {@code require = 1} is deliberate: the earlier shape ({@code method = "update"} with
+ * {@code require = 0}) matched neither in production and skipped the injection in total silence,
+ * which is exactly the field report — a stack above 64 left in the input slot was truncated back to
+ * 64 on the next tick. "One of the two names must hit, or the mixin fails" is the only shape that
+ * cannot regress back into a silent no-op. Mixin's callback-count check is aggregated over all
+ * resolved target methods, so one matching name is enough.</p>
  */
 @Pseudo
 @Mixin(targets = "mcjty.rftools.blocks.storagemonitor.StorageScannerTileEntity", remap = false)
 abstract class RftoolsStorageScannerLimitMixin {
 
     @ModifyArg(
-        method = "update",
+        method = {"func_73660_a", "update"},
         at = @At(
             value = "INVOKE",
             target = "Lmcjty/lib/container/InventoryHelper;setInventorySlotContents(IILnet/minecraft/item/ItemStack;)V"
         ),
         index = 0,
-        require = 0
+        require = 1
     )
     private int stackupup$useReceiverInventoryLimit(int stackLimit) {
         return ((IInventory) (Object) this).getInventoryStackLimit();

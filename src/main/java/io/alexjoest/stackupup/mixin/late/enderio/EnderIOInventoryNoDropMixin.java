@@ -34,6 +34,20 @@ import org.spongepowered.asm.mixin.injection.At;
  * 不引入 Redirect 类注入器，使用 @WrapOperation 且刻意不调用 original（抑制语义，非链式吞调用）；目标为明确可选
  * 目标（EnderIO mod gate + @Pseudo + require=0 结构化缺失诊断）。失败方向安全：注入不生效时维持 EnderIO
  * 原掉落行为，不会引入新的物品丢失。两个调用点在方法内各仅出现一次（:187/:188），无需 ordinal。
+ *
+ * <p><b>Why every {@code @At} carries two targets:</b> the injection point is a call to a Minecraft
+ * member inside a mod class, and EnderIO's release jar is reobfuscated, so those calls appear under
+ * their SRG names ({@code javap -c} on {@code EnderIO-CEu-5.5.1.jar} shows
+ * {@code ItemStack.func_190918_g:(I)V} for {@code shrink} and {@code Block.func_180635_a} for
+ * {@code spawnAsEntity}). In the dev environment the SRG&rarr;MCP deobfuscation renames them back, so
+ * the MCP target is the one that matches. {@code remap = false} consults no refmap, therefore one
+ * {@code @At} per environment is declared and exactly one of them matches in either. Before this,
+ * only the MCP target existed, so both {@code @WrapOperation}s were silently inert in production
+ * (require=0) and the drop/truncation branch ran unmodified. The enclosing method name itself stays
+ * {@code setInventorySlotContents}: the production jar declares it under that name, because
+ * {@code AbstractInventoryMachineEntity} does not implement {@code IInventory} (only its inner
+ * {@code InventoryWrapper} does), so the method is not an interface override and reobf left it
+ * alone.</p>
  */
 @Pseudo
 @Mixin(targets = "crazypants.enderio.base.machine.baselegacy.AbstractInventoryMachineEntity", remap = false)
@@ -41,7 +55,10 @@ abstract class EnderIOInventoryNoDropMixin {
 
     @WrapOperation(
         method = "setInventorySlotContents(ILnet/minecraft/item/ItemStack;)V",
-        at = @At(value = "INVOKE", target = "Lnet/minecraft/item/ItemStack;shrink(I)V"),
+        at = {
+            @At(value = "INVOKE", target = "Lnet/minecraft/item/ItemStack;func_190918_g(I)V"),
+            @At(value = "INVOKE", target = "Lnet/minecraft/item/ItemStack;shrink(I)V")
+        },
         require = 0
     )
     private void stackupup$keepRemainderInCallerStack(ItemStack instance, int amount, Operation<Void> original) {
@@ -50,10 +67,16 @@ abstract class EnderIOInventoryNoDropMixin {
 
     @WrapOperation(
         method = "setInventorySlotContents(ILnet/minecraft/item/ItemStack;)V",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/block/Block;spawnAsEntity(Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/item/ItemStack;)V"
-        ),
+        at = {
+            @At(
+                value = "INVOKE",
+                target = "Lnet/minecraft/block/Block;func_180635_a(Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/item/ItemStack;)V"
+            ),
+            @At(
+                value = "INVOKE",
+                target = "Lnet/minecraft/block/Block;spawnAsEntity(Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/item/ItemStack;)V"
+            )
+        },
         require = 0
     )
     private void stackupup$noOverflowDrop(World world, BlockPos pos, ItemStack contents, Operation<Void> original) {
